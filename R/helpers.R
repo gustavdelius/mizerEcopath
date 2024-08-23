@@ -60,46 +60,51 @@ reduceEcopathDiet <- function(ecopath_diet, dict) {
 
 #' Add Ecopath parameters to species parameters
 #'
-#' Uses a dictionary for translating between Ecopath groups and mizer species
-#' to calculate the biomass, consumption and production rates for each species
+#' Determines the biomass, consumption and production rates for each species
 #' based on the Ecopath parameters and adds these to the species parameters.
 #'
-#' The `dict` list must have the same names as the species in `species_params`
-#' and the values must be vectors of Ecopath groups that should be combined to
-#' give the mizer species. This is usually used to combine Ecopath stanzas.
-#' These vectors of groups are added to the `species_params` data frame as the
-#' column `ecopath_groups`.
+#' Ecopath works with "groups" where mizer works with "species". The
+#' `groups_to_species` parameter is a named list that maps Ecopath groups to
+#' mizer species. The names must be the same as the species in `species_params`
+#' and the values must be the names of the corresponding Ecopath groups.
+#'
+#' In case the Ecopath model has groups that are split into stanzas, then the
+#' biomass, production and consumption of these stanzas need to be added
+#' together to give the values for the corresponding mizer species. In that case
+#' the value in `groups_to_species` should be a vector with the names of the
+#' stanzas that need to be combined.
 #'
 #' @param species_params A data frame with mizer species parameters
-#' @param dict A named list where the names are mizer species and the values
-#'   are vectors of Ecopath groups.
+#' @param groups_to_species A named list where the names are mizer species and
+#'   the values are vectors of Ecopath groups.
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
 #'
 #' @return The mizer species parameter data frame with the added columns
-#'  `biomass_observed`, `ecopath_groups`, `ecopath_consumption` and
-#'  `ecopath_production`.
+#'  `biomass_observed`, `ecopath_consumption` and `ecopath_production`.
 #' @export
-addEcopathParams <- function(species_params, dict, ecopath_params) {
+addEcopathParams <- function(species_params, ecopath_params,
+                             groups_to_species) {
     sp <- validSpeciesParams(species_params)
-    ecopath_params <- ecopath_params |>
-        filter(!is.na(...1))
+    ecopath_params <- validEcopathParams(ecopath_params, dict)
+    # Remove rows that are just header rows to the stanza groups
+    ecopath_params <- filter(ecopath_params, !is.na(X))
+
     sp$biomass_observed <- 0
     sp$ecopath_production <- 0
     sp$ecopath_consumption <- 0
     for (species in sp$species) {
-        sp[species, "ecopath_groups"] <- dict[[species]]
         for (group in dict[[species]]) {
-            estimates <- ecopath_params[ecopath_params$`Group name` == group, ]
-            biomass <- estimates$`Biomass (t/km²)`
+            estimates <- ecopath_params[ecopath_params$Group.name == group, ]
+            biomass <- estimates$Biomass..t.km..
             sp[species, "biomass_observed"] <-
                 sp[species, "biomass_observed"] + biomass
 
-            consumption <- estimates$`Consumption / biomass (/year)` * biomass
+            consumption <- estimates$Consumption...biomass...year. * biomass
             sp[species, "ecopath_consumption"] <-
                 sp[species, "ecopath_consumption"] + consumption
 
-            production <- estimates$`Production / consumption (/year)` * consumption
+            production <- estimates$Production...consumption...year. * consumption
             sp[species, "ecopath_production"] <-
                 sp[species, "ecopath_production"] + production
         }
@@ -134,4 +139,43 @@ makeNoninteracting <- function(params) {
     species_params(params)$interaction_resource <- 0
 
     return(params)
+}
+
+#' Validate Ecopath parameter data frame
+#'
+#' Checks that the Ecopath parameter data frame has the required columns and
+#' that the group names are unique and that all groups in the dictionary are
+#' included in the data frame.
+#'
+#' @param ecopath_params A data frame with Ecopath parameters for each group
+#'   as exported by the Ecopath software.
+#' @param dict A named list where the names are mizer species and the values
+#'   are vectors of Ecopath groups.
+#'
+#' @return The validated Ecopath parameter data frame
+#' @export
+validEcopathParams <- function(ecopath_params, dict) {
+    if (!is.data.frame(ecopath_params)) {
+        stop("ecopath_params must be a data frame.")
+    }
+    required_cols <- c("X", "Group.name", "Biomass..t.km..",
+                       "Consumption...biomass...year.",
+                       "Production...consumption...year.")
+    if (!all(required_cols %in% names(ecopath_params))) {
+        stop("ecopath_params must have columns ",
+             paste(required_cols, collapse = ", "))
+    }
+
+    # Check that the group names are unique
+    if (length(unique(ecopath_params$Group.name)) != nrow(ecopath_params)) {
+        stop("Group names in ecopath_params must be unique.")
+    }
+
+    # Check that all groups are included
+    required_groups <- dict |> unlist()
+    if (!all(required_groups %in% ecopath_params$Group.name)) {
+        stop("Not all groups in dict are included in ecopath_params.")
+    }
+
+    return(ecopath_params)
 }
