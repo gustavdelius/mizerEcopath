@@ -32,3 +32,5 @@ Collate:
     'matchConsumption.R'
     'matchDiet.R'
     'matchProduction.R'
+URL: https://github.com/gustavdelius/mizerEcopath
+BugReports: https://github.com/gustavdelius/mizerEcopath/issues
