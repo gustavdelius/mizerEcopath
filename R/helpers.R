@@ -7,7 +7,7 @@
 #'
 #' @param ecopath_diet The Ecopath diet matrix, as exported by the Ecopath
 #'   software.
-#' @param dict A named list where the names are mizer species and the values
+#' @param groups_to_species A named list where the names are mizer species and the values
 #'  are vectors of Ecopath groups.
 #'
 #' @return A matrix with dimnames `predator` and `prey`, where the row names are
@@ -16,9 +16,9 @@
 #'   give for each predator the proportion of its diet that comes from each prey
 #'   species or from other ecosystem components.
 #' @export
-reduceEcopathDiet <- function(ecopath_diet, dict) {
+reduceEcopathDiet <- function(ecopath_diet, groups_to_species) {
     ecopath_diet[is.na(ecopath_diet)] <- 0
-    species <- names(dict)
+    species <- names(groups_to_species)
     no_sp <- length(species)
     # The second column of ecopath diet matrix has the group names.
     ecopath_groups <- ecopath_diet[, 2]
@@ -33,7 +33,7 @@ reduceEcopathDiet <- function(ecopath_diet, dict) {
     rownames(ecopath_diet_reduced) <- ecopath_groups
     colnames(ecopath_diet_reduced) <- ecopath_groups[preds]
     # Keep only predators that correspond to our species
-    selected_groups <- unlist(dict)
+    selected_groups <- unlist(groups_to_species)
     ignored_groups <- setdiff(ecopath_groups, selected_groups)
     ecopath_diet_reduced <- ecopath_diet_reduced[, selected_groups]
     # Create mizer diet matrix
@@ -41,9 +41,9 @@ reduceEcopathDiet <- function(ecopath_diet, dict) {
                 dimnames = list(predator = species,
                                 prey = c(species, "other")))
     for (predator in species) {
-        for (pred_group in dict[[predator]]) {
+        for (pred_group in groups_to_species[[predator]]) {
             for (prey in species) {
-                for (prey_group in dict[[prey]]) {
+                for (prey_group in groups_to_species[[prey]]) {
                     dm[predator, prey] <- dm[predator, prey] +
                         ecopath_diet_reduced[prey_group, pred_group]
                 }
@@ -86,7 +86,7 @@ reduceEcopathDiet <- function(ecopath_diet, dict) {
 addEcopathParams <- function(species_params, ecopath_params,
                              groups_to_species) {
     sp <- validSpeciesParams(species_params)
-    ecopath_params <- validEcopathParams(ecopath_params, dict)
+    ecopath_params <- validEcopathParams(ecopath_params, groups_to_species)
     # Remove rows that are just header rows to the stanza groups
     ecopath_params <- filter(ecopath_params, !is.na(X))
 
@@ -94,7 +94,7 @@ addEcopathParams <- function(species_params, ecopath_params,
     sp$ecopath_production <- 0
     sp$ecopath_consumption <- 0
     for (species in sp$species) {
-        for (group in dict[[species]]) {
+        for (group in groups_to_species[[species]]) {
             estimates <- ecopath_params[ecopath_params$Group.name == group, ]
             biomass <- estimates$Biomass..t.km..
             sp[species, "biomass_observed"] <-
@@ -144,17 +144,17 @@ makeNoninteracting <- function(params) {
 #' Validate Ecopath parameter data frame
 #'
 #' Checks that the Ecopath parameter data frame has the required columns and
-#' that the group names are unique and that all groups in the dictionary are
-#' included in the data frame.
+#' that the group names are unique and that all groups in the
+#' `groups_to_species` list are included in the data frame.
 #'
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
-#' @param dict A named list where the names are mizer species and the values
-#'   are vectors of Ecopath groups.
+#' @param groups_to_species A named list where the names are mizer species and
+#'   the values are vectors of the Ecopath groups/stanzas making up the species.
 #'
 #' @return The validated Ecopath parameter data frame
 #' @export
-validEcopathParams <- function(ecopath_params, dict) {
+validEcopathParams <- function(ecopath_params, groups_to_species) {
     if (!is.data.frame(ecopath_params)) {
         stop("ecopath_params must be a data frame.")
     }
@@ -172,9 +172,9 @@ validEcopathParams <- function(ecopath_params, dict) {
     }
 
     # Check that all groups are included
-    required_groups <- dict |> unlist()
+    required_groups <- groups_to_species |> unlist()
     if (!all(required_groups %in% ecopath_params$Group.name)) {
-        stop("Not all groups in dict are included in ecopath_params.")
+        stop("Not all groups in groups_to_species are included in ecopath_params.")
     }
 
     return(ecopath_params)
