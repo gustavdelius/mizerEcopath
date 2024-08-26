@@ -57,7 +57,11 @@ matchProduction <- function(params, tol = 0.1, max_iter = 10) {
     params
 }
 
-matchProductionOnce <- function(params) {
+#' @rdname matchProduction
+#' @param steady Whether to return the model to a steady state after adjusting
+#'   the production. Default is TRUE.
+#' @export
+matchProductionOnce <- function(params, steady = TRUE) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
@@ -73,38 +77,20 @@ matchProductionOnce <- function(params) {
         stop("You must provide the yield_observed gear parameter.")
     }
 
-    # Adjust respiration
-    R <- getRespiration(params)
-    Q <- getConsumption(params)
-    # ecopath_production is only the somatic production. To get total production
-    # we need to divide by 1 - gonad_proportion
-    P_desired <- sp$ecopath_production / (1 - sp$gonad_proportion)
-    R_desired <- sp$alpha * Q - P_desired
-    if (any(R_desired < 0)) {
-        stop("Negative respiration required.")
-    }
-    Rratio <- R_desired / R
-    sp$ks <- sp$ks * Rratio
-    species_params(params)$ks <- sp$ks
+    params <- matchRespirationOnce(params, steady = FALSE)
 
     params <- matchGonadicProportionOnce(params, steady = FALSE)
 
     params <- matchYieldOnce(params, steady = FALSE)
 
-    # Adjust external mortality so that the loss due to mortality matches
-    # the somatic production: M0B + C = Ps
-    current <- getM0B(params)
-    desired <- getSomaticProduction(params) - gp$yield_observed
-    if (any(desired < 0)) {
-        stop("Somatic production does not cover observed yield.")
-    }
-    Zratio <- desired / current
-    sel <- !is.na(Zratio)
-    ext_mort(params)[sel, ] <- ext_mort(params)[sel, ] * Zratio
+    params <- matchExtMortOnce(params, steady = FALSE)
 
-    # Return new steady state
-    params |> steadySingleSpecies() |>
-        matchBiomasses() |> steadySingleSpecies()
+    if (steady) {
+        # Determine new steady state
+        params |> steadySingleSpecies() |>
+            matchBiomasses() |> steadySingleSpecies()
+    }
+    return(params)
 }
 
 #' @rdname matchProduction

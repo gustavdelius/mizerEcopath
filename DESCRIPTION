@@ -35,6 +35,8 @@ Collate:
     'match.R'
     'matchConsumption.R'
     'matchDiet.R'
+    'matchExtMort.R'
     'matchGonadicProportion.R'
     'matchProduction.R'
+    'matchRespiration.R'
     'matchYield.R'
