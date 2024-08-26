@@ -88,7 +88,7 @@ addEcopathParams <- function(species_params, ecopath_params,
     sp <- validSpeciesParams(species_params)
     ecopath_params <- validEcopathParams(ecopath_params, groups_to_species)
     # Remove rows that are just header rows to the stanza groups
-    ecopath_params <- filter(ecopath_params, !is.na(X))
+    ecopath_params <- ecopath_params[!is.na(ecopath_params$X)]
 
     sp$biomass_observed <- 0
     sp$ecopath_production <- 0

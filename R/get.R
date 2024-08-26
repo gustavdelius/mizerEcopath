@@ -80,7 +80,11 @@ getProduction <- function(params) {
 #' number density of species \eqn{i} at weight \eqn{w}.
 #'
 #' @param params A MizerParams object
-#' @return A named vector of consumption for each species
+#' @param w_min The minimum weight of prey species to include in the consumption
+#'  rate calculation
+#' @param w_max The maximum weight of prey species to include in the consumption
+#'  rate calculation
+#' @return A named vector of consumption rate for each species
 #' @export
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
