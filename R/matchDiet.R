@@ -4,12 +4,6 @@
 #' matrix matches the Ecopath diet matrix. It then adjusts the external
 #' encounter and mortality rates so that the steady state is not changed.
 #'
-#' It is assumed that the Ecopath diet matrix did not account for prey items
-#' with a weight below `w_cutoff`. We make the assumption that for such small
-#' prey items, the prey species becomes less relevant. We add the encounter
-#' rate of these small prey items, multiplied by the `centering` argument,
-#' to the Ecopath diet matrix before matching.
-#'
 #' The function will raise an error if negative external encounter rates are
 #' required for any species and issues a warning for any species that requires
 #' negative external mortality rates.
@@ -17,16 +11,32 @@
 #' Note that the function does not currently work properly when the mizer model
 #' makes use of additional ecosystem components that add to the encounter rate.
 #'
+#' @section Centering:
+#' Ecopath diet matrices often contain many zeros, which would mean that it is
+#' impossible for two species to interact. This is because the Ecopath diet
+#' matrix does not account for small prey items that do not contribute
+#' significantly to a predator's diet. The `centering` parameter allows one to
+#' experiment with adding an estimate of the diet of these small prey to the
+#' diet matrix.
+#'
+#' For this purpose we assume that the Ecopath diet matrix did not account for
+#' prey items with a weight below `w_cutoff`. To estimate their contribution to
+#' the diet we make the assumption that for such small prey items the predator
+#' does not distinguish between species and feeds solely according to its prey
+#' size preference. We multipoly the resulting encounter rate of these small
+#' prey items by the `centering` argument and add it to the Ecopath diet matrix
+#' before matching.
+#'
 #' @param params A MizerParams object
 #' @param diet_matrix The Ecopath diet matrix as produced by
 #'   `reduceEcopathDiet()`.
-#' @param w_prey_cutoff The weight cutoff for the diet matrix. Prey items below this
-#'   size were not included in the Ecopath diet matrix. Default is 1g.
-#' @param centering The centering parameter for the interaction matrix.
+#' @param centering The centering parameter, see "Centering" section below for
+#'   details.
+#' @param w_prey_cutoff See "Centering" section below for details.
 #'
-#' @return A MizerParams object with the diet matrix matched
+#' @return A MizerParams object with the diet matrix matched.
 #' @export
-matchDiet <- function(params, diet_matrix, centering = 1,
+matchDiet <- function(params, diet_matrix, centering = 0,
                              w_prey_cutoff = 1) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
