@@ -1,5 +1,5 @@
 #' @keywords internal
-#' @import mizer ggplot2 dplyr
+#' @import mizer ggplot2 dplyr assertthat
 #' @importFrom methods is
 #' @importFrom utils hasName
 "_PACKAGE"
