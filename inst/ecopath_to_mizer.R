@@ -19,7 +19,6 @@ sp["alpha"] <- 0.8  # Ecopath default (conversion efficiency)
 sp$gonad_proportion <- 0.2 # Proportion of total production which goes into gonads
 
 # Dictionary between species and ecopath groups
-sp$species
 groups_to_species <- list(
     "Herring" = "Herring",
     "Sprat" = "Sprat",
@@ -42,31 +41,31 @@ ecopath_params <- read.csv(
                 package = "mizerEcopath"))
 sp <- addEcopathParams(sp, ecopath_params, groups_to_species)
 
-## Create model ----
-p <- newMultispeciesParams(sp, no_w = 200, lambda = 2, info_level = 0)
-sp <- p@species_params
-
 ## Set up gear params ----
-Catch <- read_csv("ecopath/Hernvann/Celtic Sea-Catch.csv")
+catch <- read.csv(system.file("extdata/celtic_sea_hernvann_et_al/catch.csv",
+                              package = "mizerEcopath"))
 gp <- data.frame(
     species = sp$species,
     gear = "total",
     sel_func = "sigmoid_length",
-    l50 = w2l(sp$w_mat, p),
-    l25 = w2l(sp$w_mat, p) * 0.8,
+    l50 = w2l(sp$w_mat, sp),
+    l25 = w2l(sp$w_mat, sp) * 0.8,
     catchability = 1,
     yield_observed = 0
 )
 for (species in gp$species) {
-    for (group in dict[[species]]) {
-        yield <- Catch$`TotalCatch (t/km²/year)`[Catch$`Group name` == group]
+    for (group in groups_to_species[[species]]) {
+        yield <- catch$TotalCatch..t.km..year.[catch$Group.name == group]
         gp$yield_observed[gp$species == species] <-
             gp$yield_observed[gp$species == species] + yield
     }
 }
 gp$catchability <- gp$yield_observed / sp$biomass_observed
-gear_params(p) <- gp
-initial_effort(p) <- 1
+
+## Create model ----
+p <- newMultispeciesParams(sp, gear_params = gp, initial_effort = 1,
+                           no_w = 200, lambda = 2, info_level = 0)
+sp <- p@species_params
 
 ## Make non-interacting ----
 # Extend the resource to maximum size and switch off dynamics
@@ -97,20 +96,15 @@ species_params(p)$interaction_resource[] <- 0
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
     matchBiomasses() |> steadySingleSpecies()
 
-plotlySpectra(p, resource = FALSE)
+plotlySpectra(p)
 p_backup <- p
 
 ## Match to Ecopath params ----
-p <- p_backup |> matchEcopath()
+p <- p_backup |> match()
 
-# Turn of satiation
-px <- p
+# Turn off satiation
 species_params(p)$h <- Inf
 ext_encounter(p) <- ext_encounter(p) * 0.4
-# Check that this did not change the steady state
-ps <- p |> steadySingleSpecies()
-compareParams(p, ps)
-compareParams(p, px)
 
 # Set resource to be in line with fish
 total <- colSums(initialN(p))
@@ -137,19 +131,26 @@ getM0B(p)
 # rates any more in order to not disturb the steady-state size spectra.
 
 ## Aggregate ecopath diet matrix ----
-ecopath_diet <- read.csv("ecopath/Hernvann/Celtic Sea-Diet composition.csv")
-dm <- reduceEcopathDiet(ecopath_diet, dict)
+ecopath_diet <- read.csv(
+    system.file("extdata/celtic_sea_hernvann_et_al/diet_composition.csv",
+                package = "mizerEcopath"))
+dm <- reduceEcopathDiet(ecopath_diet, groups_to_species)
 
-p <- matchEcopathDiet(p, dm)
+p <- matchDiet(p, dm)
 
 # Check that steady state has not changed
 ps <- p |> steadySingleSpecies()
 waldo::compare(initialN(p), initialN(ps), tolerance = 1e-9)
 # Check that ecopath is still matched
-isEcopathMatched(p)
+isMatched(p)
 # Check that diet matrix is matched
 Kn <- getDietMatrix(p)[, 1:no_sp]
-all.equal(Kn, dmr, tolerance = 1e-2)
+# Convert ecopath diet matrix from proportions to absolute consumption
+Q <- sp$ecopath_consumption
+dm <- dm * Q / rowSums(dm)
+# Drop the "other" column
+D <- dm[, -ncol(dm)]
+all.equal(Kn, D, tolerance = 1e-2)
 
 
 # Tune dynamics ----
