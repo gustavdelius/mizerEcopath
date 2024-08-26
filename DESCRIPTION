@@ -1,31 +1,33 @@
-Package: mizerEcopath
 Type: Package
+Package: mizerEcopath
 Title: Extending an Ecopath model to a mizer model
 Version: 0.1.0
+Authors@R: 
+    person("Gustav", "Delius", , "gustav.delius@york.ac.uk", role = c("cre", "aut", "cph"),
+           comment = c(ORCID = "0000-0003-4092-8228"))
 Maintainer: Gustav Delius <gustav.delius@york.ac.uk>
-Authors@R: c(person("Gustav", "Delius", email="gustav.delius@york.ac.uk",
-                    role=c("cre", "aut", "cph"),
-                    comment = c(ORCID = "0000-0003-4092-8228")))
 Description: Tools for creating a mizer model from an Ecopath model.
 License: GPL-3
-Encoding: UTF-8
-LazyData: true
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+URL: https://github.com/gustavdelius/mizerEcopath
+BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
     mizer (> 2.5.1)
 Imports:
     assertthat,
-    mizerExperimental,
-    methods,
     dplyr,
-    ggplot2
+    ggplot2,
+    methods,
+    mizerExperimental
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat
 Remotes:
     sizespectrum/mizerExperimental
-Suggests:
-    testthat,
-    knitr,
-    rmarkdown
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
 Collate:
     'mizerEcopath-package.R'
     'get.R'
@@ -36,5 +38,3 @@ Collate:
     'matchGonadicProportion.R'
     'matchProduction.R'
     'matchYield.R'
-URL: https://github.com/gustavdelius/mizerEcopath
-BugReports: https://github.com/gustavdelius/mizerEcopath/issues
