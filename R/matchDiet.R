@@ -35,6 +35,7 @@
 #' @param w_prey_cutoff See "Centering" section below for details.
 #'
 #' @return A MizerParams object with the diet matrix matched.
+#' @family match functions
 #' @export
 matchDiet <- function(params, diet_matrix, centering = 0,
                              w_prey_cutoff = 1) {

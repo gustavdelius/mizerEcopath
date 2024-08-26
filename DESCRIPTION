@@ -12,8 +12,10 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Depends:
+    mizer (> 2.5.1)
 Imports:
-    mizer (> 2.5.1),
+    assertthat,
     mizerExperimental,
     methods,
     dplyr,
@@ -31,6 +33,8 @@ Collate:
     'match.R'
     'matchConsumption.R'
     'matchDiet.R'
+    'matchGonadicProportion.R'
     'matchProduction.R'
+    'matchYield.R'
 URL: https://github.com/gustavdelius/mizerEcopath
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues

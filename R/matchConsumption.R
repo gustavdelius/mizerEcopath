@@ -15,6 +15,7 @@
 #' @param max_iter The maximum number of iterations. Default is 10.
 #'
 #' @return A MizerParams object with the consumption matched
+#' @family match functions
 #' @export
 matchConsumption <- function(params, tol = 0.1, max_iter = 10) {
     if (!is(params, "MizerParams")) {

@@ -24,8 +24,8 @@
 #' @param max_iter The maximum number of iterations. Default is 10.
 #'
 #' @return A MizerParams object with the production matched
+#' @family match functions
 #' @export
-#' @md
 matchProduction <- function(params, tol = 0.1, max_iter = 10) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
@@ -87,29 +87,9 @@ matchProductionOnce <- function(params) {
     sp$ks <- sp$ks * Rratio
     species_params(params)$ks <- sp$ks
 
-    # Adjust gonadic production
-    current <- getGonadicProduction(params) / getProduction(params)
-    ratio <- sp$gonad_proportion / current
-    sp <- set_species_param_default(sp, "w_repro_max", sp$w_max)
-    sp <- set_species_param_default(sp, "m", 1)
-    w_maxratio <- ratio ^ (1 / (sp$n - sp$m))
-    sp$w_repro_max <- sp$w_repro_max * w_maxratio
-    if (any(sp$w_repro_max < sp$w_mat)) {
-        stop("The gonadic proportion leads to a `w_repro_max` smaller than `w_mat`.")
-    }
-    species_params(params)$w_repro_max <- sp$w_repro_max
+    params <- matchGonadicProportionOnce(params, steady = FALSE)
 
-    # Adjust fishing mortality
-    # TODO: I am just lazy here at the moment. Code for making yield match
-    # for each gear and each species will probably require looping
-    if (nrow(gp) != nrow(sp) ||
-        !all(gp$species == sp$species)) {
-        stop("This code currently requires a single gear for each species.")
-    }
-    Cratio <- gp$yield_observed / getYield(params)
-    sel <- !is.na(Cratio)
-    gp$catchability[sel] <- gp$catchability[sel] * Cratio
-    gear_params(params)$catchability <- gp$catchability
+    params <- matchYieldOnce(params, steady = FALSE)
 
     # Adjust external mortality so that the loss due to mortality matches
     # the somatic production: M0B + C = Ps
