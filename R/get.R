@@ -85,11 +85,12 @@ getProduction <- function(params) {
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getConsumption(params)
-getConsumption <- function(params) {
+getConsumption <- function(params, w_min = 0, w_max = Inf) {
     N <- initialN(params)
-    dw <- dw(params)
-    Q <- as.vector((getEncounter(params) * (1 - getFeedingLevel(params)) * N) %*% dw)
-    names(Q) <- params@species_params$species
+    q <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)) * N,
+               2, dw(params), "*")
+    sel <- params@w >= w_min & params@w <= w_max
+    Q <- rowSums(q[, sel])
     return(Q)
 }
 
