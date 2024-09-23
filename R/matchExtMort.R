@@ -2,7 +2,7 @@ matchExtMortOnce <- function(params, steady = TRUE) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    gp <- validGearParams(params@gear_params)
+    gp <- validGearParams(params@gear_params, params@species_params)
     if (!hasName(gp, "yield_observed")) {
         stop("You must provide the yield_observed gear parameter.")
     }
