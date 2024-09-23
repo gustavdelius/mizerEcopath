@@ -40,3 +40,5 @@ Collate:
     'matchProduction.R'
     'matchRespiration.R'
     'matchYield.R'
+    'addEcopathCatchTotal.R'
+    'newAllometricParams.R'
