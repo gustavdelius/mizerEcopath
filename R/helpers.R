@@ -60,8 +60,8 @@ reduceEcopathDiet <- function(ecopath_diet, groups_to_species) {
 
 #' Add Ecopath parameters to species parameters
 #'
-#' Determines the biomass, consumption and production rates for each species
-#' based on the Ecopath parameters and adds these to the species parameters.
+#' Determines the biomass, consumption and production rates for each species in
+#' the ecopath model and adds these to the species parameters.
 #'
 #' Ecopath works with "groups" where mizer works with "species". The
 #' `groups_to_species` parameter is a named list that maps Ecopath groups to
@@ -74,14 +74,23 @@ reduceEcopathDiet <- function(ecopath_diet, groups_to_species) {
 #' the value in `groups_to_species` should be a vector with the names of the
 #' stanzas that need to be combined.
 #'
+#' The biomasses are added to the species_params data frame in the
+#' `biomass_observed` column. The consumption rates are put into a
+#' `ecopath_consumption` column and the production rates are put into a
+#' `ecopath_production` column. The names of the Ecopath groups associated to
+#' each mizer species are put ino the `ecopath_groups` column. This column is a
+#' list column so that it can store a vector of groups in the case where a
+#' species is made up of several groups.
+#'
 #' @param species_params A data frame with mizer species parameters
 #' @param groups_to_species A named list where the names are mizer species and
-#'   the values are vectors of Ecopath groups.
+#'   the values are vectors of Ecopath groups, see Details below.
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
 #'
 #' @return The mizer species parameter data frame with the added columns
-#'  `biomass_observed`, `ecopath_consumption` and `ecopath_production`.
+#'  `biomass_observed`, `ecopath_consumption`, `ecopath_production` and
+#'  `ecopath_groups`.
 #' @export
 addEcopathParams <- function(species_params, ecopath_params,
                              groups_to_species) {
@@ -93,7 +102,10 @@ addEcopathParams <- function(species_params, ecopath_params,
     sp$biomass_observed <- 0
     sp$ecopath_production <- 0
     sp$ecopath_consumption <- 0
-    for (species in sp$species) {
+    sp$ecopath_groups <- vector("list", nrow(sp))
+    for (i in seq_len(nrow(sp))) {
+        species <- sp$species[i]
+        sp$ecopath_groups[[i]] <- groups_to_species[[species]]
         for (group in groups_to_species[[species]]) {
             estimates <- ecopath_params[ecopath_params$Group.name == group, ]
             biomass <- estimates$Biomass..t.km..

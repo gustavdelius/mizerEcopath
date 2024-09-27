@@ -53,11 +53,10 @@ gp <- data.frame(
     catchability = 1,
     yield_observed = 0
 )
-for (species in gp$species) {
-    for (group in groups_to_species[[species]]) {
+for (i in seq_len(nrow(sp))) {
+    for (group in sp$ecopath_groups[[i]]) {
         yield <- catch$TotalCatch..t.km..year.[catch$Group.name == group]
-        gp$yield_observed[gp$species == species] <-
-            gp$yield_observed[gp$species == species] + yield
+        gp$yield_observed[i] <- gp$yield_observed[i] + yield
     }
 }
 gp$catchability <- gp$yield_observed / sp$biomass_observed
