@@ -4,8 +4,8 @@
 #' mortality rates.
 #'
 #' @param species_params A data frame with species parameters
-#' @params no_w The number of weight bins to use in the model
-#' @params lambda The exponent of the Sheldon spectrum
+#' @param no_w The number of weight bins to use in the model
+#' @param lambda The exponent of the Sheldon spectrum
 #' @return A MizerParams object
 #' @export
 newAllometricParams <- function(species_params, no_w = 200, lambda = 2) {

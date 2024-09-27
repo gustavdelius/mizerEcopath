@@ -10,6 +10,7 @@
 #' @param params A MizerParams object
 #' @return A named vector of somatic production for each species
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getSomaticProduction(params)
@@ -28,6 +29,7 @@ getSomaticProduction <- function(params) {
 #' @param params A MizerParams object
 #' @return A named vector of gonadic production for each species
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getGonadicProduction(params)
@@ -56,6 +58,7 @@ getGonadicProduction <- function(params) {
 #' @param params A MizerParams object
 #' @return A named vector of production for each species
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getProduction(params)
@@ -86,6 +89,7 @@ getProduction <- function(params) {
 #'  rate calculation
 #' @return A named vector of consumption rate for each species
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getConsumption(params)
@@ -110,6 +114,7 @@ getConsumption <- function(params, w_min = 0, w_max = Inf) {
 #' @param params A MizerParams object
 #' @return A named vector of respiration for each species
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getRespiration(params)
@@ -132,8 +137,8 @@ getRespiration <- function(params) {
 #'
 #' @param params A MizerParams object
 #' @return A named vector of unassimilated food for each species
-#'
 #' @export
+#' @family rate functions
 #' @examples
 #' params <- readRDS("models/Celtic_16_untuned.rds")
 #' getUnassimilated(params)
@@ -156,6 +161,7 @@ getUnassimilated <- function(params) {
 #' @param params A MizerParams object
 #' @return A named vector of biomass loss rate due to mortality for each species
 #' @export
+#' @family rate functions
 getZB <- function(params) {
     N <- initialN(params)
     w <- w(params)
@@ -178,6 +184,7 @@ getZB <- function(params) {
 #' @return A named vector of biomass loss rate due to external mortality for
 #'   each species
 #' @export
+#' @family rate functions
 getM0B <- function(params) {
     N <- initialN(params)
     w <- w(params)
@@ -200,6 +207,7 @@ getM0B <- function(params) {
 #' @return A named vector of biomass loss rate due to predation mortality for
 #'   each species
 #' @export
+#' @family rate functions
 getM2B <- function(params) {
     N <- initialN(params)
     w <- w(params)
@@ -220,6 +228,7 @@ getM2B <- function(params) {
 #' @param params A MizerParams object
 #' @return A named vector of ecotrophic efficiency for each species
 #' @export
+#' @family rate functions
 getEcotrophicEfficiency <- function(params) {
     P <- getProduction(params)
     M0B <- getM0B(params)
@@ -237,6 +246,8 @@ getEcotrophicEfficiency <- function(params) {
 #'
 #' @param params A MizerParams object
 #' @return A named vector of egg biomass production for each species
+#' @export
+#' @family rate functions
 getEggProduction <- function(params) {
     sp <- species_params(params)
     Egg_biomass <- getRDD(params) * sp$w_min
@@ -257,6 +268,7 @@ getEggProduction <- function(params) {
 #'   matrix
 #' @return A matrix with dimnames `predator` and `prey`
 #' @export
+#' @family rate functions
 getDietMatrix <- function(params, min_w_prey = 0, max_w_prey = Inf) {
     w_sel <- params@w >= min_w_prey & params@w <= max_w_prey
     N <- initialN(params)[, w_sel]
