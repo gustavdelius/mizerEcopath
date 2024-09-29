@@ -77,6 +77,7 @@
 tuneEcopath <- function(params,
                         controls = c("fishing",
                                      "reproduction",
+                                     "other",
                                      "exponent"),
                         tabs = c("Spectra",
                                  "Catch",

@@ -58,6 +58,7 @@ Collate:
     'exponentControl.R'
     'fishingControl.R'
     'growthTab.R'
+    'otherControl.R'
     'reproTab.R'
     'reproductionControl.R'
     'spectraTab.R'
