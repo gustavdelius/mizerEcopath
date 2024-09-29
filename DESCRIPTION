@@ -14,13 +14,22 @@ Depends:
     mizer (> 2.5.1)
 Imports:
     assertthat,
+    bslib,
     dplyr,
     ggplot2,
     methods,
+    plotly,
+    prompter,
+    rintrojs,
+    shiny,
+    shinyBS,
+    shinyjs,
     mizerExperimental
 Suggests:
+    pkgdown,
     knitr,
     rmarkdown,
+    roxygen2,
     testthat
 Remotes:
     sizespectrum/mizerExperimental
@@ -42,3 +51,14 @@ Collate:
     'matchYield.R'
     'addEcopathCatchTotal.R'
     'newAllometricParams.R'
+    'catchTab.R'
+    'deathTab.R'
+    'dietTab.R'
+    'ecopath_tune.R'
+    'exponentControl.R'
+    'fishingControl.R'
+    'growthTab.R'
+    'reproTab.R'
+    'reproductionControl.R'
+    'spectraTab.R'
+    'tuneParams_helpers.R'
