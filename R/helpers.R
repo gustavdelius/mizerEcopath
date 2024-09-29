@@ -64,14 +64,14 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #' the ecopath model and adds these to the species parameters.
 #'
 #' Ecopath works with "groups" where mizer works with "species". The
-#' `groups_to_species` parameter is a named list that maps Ecopath groups to
+#' `species_to_groups` parameter is a named list that maps Ecopath groups to
 #' mizer species. The names must be the same as the species in `species_params`
 #' and the values must be the names of the corresponding Ecopath groups.
 #'
 #' In case the Ecopath model has groups that are split into stanzas, then the
 #' biomass, production and consumption of these stanzas need to be added
 #' together to give the values for the corresponding mizer species. In that case
-#' the value in `groups_to_species` should be a vector with the names of the
+#' the value in `species_to_groups` should be a vector with the names of the
 #' stanzas that need to be combined.
 #'
 #' The biomasses are added to the species_params data frame in the
@@ -83,7 +83,7 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #' species is made up of several groups.
 #'
 #' @param species_params A data frame with mizer species parameters
-#' @param groups_to_species A named list where the names are mizer species and
+#' @param species_to_groups A named list where the names are mizer species and
 #'   the values are vectors of Ecopath groups, see Details below.
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
@@ -93,9 +93,9 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #'  `ecopath_groups`.
 #' @export
 addEcopathParams <- function(species_params, ecopath_params,
-                             groups_to_species) {
+                             species_to_groups) {
     sp <- validSpeciesParams(species_params)
-    ecopath_params <- validEcopathParams(ecopath_params, groups_to_species)
+    ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 
     sp$biomass_observed <- 0
     sp$ecopath_production <- 0
@@ -103,8 +103,8 @@ addEcopathParams <- function(species_params, ecopath_params,
     sp$ecopath_groups <- vector("list", nrow(sp))
     for (i in seq_len(nrow(sp))) {
         species <- sp$species[i]
-        sp$ecopath_groups[[i]] <- groups_to_species[[species]]
-        for (group in groups_to_species[[species]]) {
+        sp$ecopath_groups[[i]] <- species_to_groups[[species]]
+        for (group in species_to_groups[[species]]) {
             estimates <- ecopath_params[ecopath_params$Group.name == group, ]
             biomass <- estimates$Biomass..t.km..
             sp[species, "biomass_observed"] <-
@@ -155,16 +155,16 @@ makeNoninteracting <- function(params) {
 #'
 #' Checks that the Ecopath parameter data frame has the required columns and
 #' that the group names are unique and that all groups in the
-#' `groups_to_species` list are included in the data frame.
+#' `species_to_groups` list are included in the data frame.
 #'
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
-#' @param groups_to_species A named list where the names are mizer species and
+#' @param species_to_groups A named list where the names are mizer species and
 #'   the values are vectors of the Ecopath groups/stanzas making up the species.
 #'
 #' @return The validated Ecopath parameter data frame
 #' @export
-validEcopathParams <- function(ecopath_params, groups_to_species) {
+validEcopathParams <- function(ecopath_params, species_to_groups) {
     if (!is.data.frame(ecopath_params)) {
         stop("ecopath_params must be a data frame.")
     }
@@ -189,9 +189,9 @@ validEcopathParams <- function(ecopath_params, groups_to_species) {
     }
 
     # Check that all groups are included
-    required_groups <- groups_to_species |> unlist()
+    required_groups <- species_to_groups |> unlist()
     if (!all(required_groups %in% ecopath_params$Group.name)) {
-        stop("Not all groups in groups_to_species are included in ecopath_params.")
+        stop("Not all groups in species_to_groups are included in ecopath_params.")
     }
 
     return(ecopath_params)

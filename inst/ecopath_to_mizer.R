@@ -19,7 +19,7 @@ sp["alpha"] <- 0.8  # Ecopath default (conversion efficiency)
 sp$gonad_proportion <- 0.2 # Proportion of total production which goes into gonads
 
 # Dictionary between species and ecopath groups
-groups_to_species <- list(
+species_to_groups <- list(
     "Herring" = "Herring",
     "Sprat" = "Sprat",
     "Cod" = c("Cod large", "Cod small"),
@@ -39,7 +39,7 @@ groups_to_species <- list(
 ecopath_params <- read.csv(
     system.file("extdata/celtic_sea_hernvann_et_al/basic_estimates.csv",
                 package = "mizerEcopath"))
-sp <- addEcopathParams(sp, ecopath_params, groups_to_species)
+sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 
 ## Set up gear params ----
 catch <- read.csv(system.file("extdata/celtic_sea_hernvann_et_al/catch.csv",
@@ -133,7 +133,7 @@ getM0B(p)
 ecopath_diet <- read.csv(
     system.file("extdata/celtic_sea_hernvann_et_al/diet_composition.csv",
                 package = "mizerEcopath"))
-dm <- reduceEcopathDiet(ecopath_diet, groups_to_species)
+dm <- reduceEcopathDiet(ecopath_diet, species_to_groups)
 
 p <- matchDiet(p, dm)
 
