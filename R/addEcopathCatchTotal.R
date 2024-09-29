@@ -2,7 +2,7 @@
 #'
 #' @export
 addEcopathCatchTotal <- function(params, catch) {
-    sp <- p@species_params
+    sp <- params@species_params
     if (!hasName(sp, "ecopath_groups") ||
         !hasName(sp, "biomass_observed")) {
         stop("You must use `addEcopathParams()` first.")
@@ -15,8 +15,8 @@ addEcopathCatchTotal <- function(params, catch) {
         species = sp$species,
         gear = "total",
         sel_func = "sigmoid_length",
-        l50 = w2l(sp$w_mat, p),
-        l25 = w2l(sp$w_mat, p) * 0.8,
+        l50 = w2l(sp$w_mat, params),
+        l25 = w2l(sp$w_mat, params) * 0.8,
         catchability = 1,
         yield_observed = 0
     )
