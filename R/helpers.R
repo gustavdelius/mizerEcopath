@@ -96,8 +96,6 @@ addEcopathParams <- function(species_params, ecopath_params,
                              groups_to_species) {
     sp <- validSpeciesParams(species_params)
     ecopath_params <- validEcopathParams(ecopath_params, groups_to_species)
-    # Remove rows that are just header rows to the stanza groups
-    ecopath_params <- ecopath_params[!is.na(ecopath_params$X), ]
 
     sp$biomass_observed <- 0
     sp$ecopath_production <- 0
@@ -170,6 +168,11 @@ validEcopathParams <- function(ecopath_params, groups_to_species) {
     if (!is.data.frame(ecopath_params)) {
         stop("ecopath_params must be a data frame.")
     }
+    # Sometimes some columns have different names
+    wrong <- colnames(ecopath_params) == "Biomass..t.km.2."
+    if (any(wrong)) {
+        colnames(ecopath_params)[wrong] <- "Biomass..t.km.."
+    }
     required_cols <- c("X", "Group.name", "Biomass..t.km..",
                        "Consumption...biomass...year.",
                        "Production...consumption...year.")
@@ -178,7 +181,9 @@ validEcopathParams <- function(ecopath_params, groups_to_species) {
              paste(required_cols, collapse = ", "))
     }
 
-    # Check that the group names are unique
+    # Remove rows that are just header rows to the stanza groups
+    ecopath_params <- ecopath_params[!is.na(ecopath_params$X), ]
+    # Check that the group names are now unique
     if (length(unique(ecopath_params$Group.name)) != nrow(ecopath_params)) {
         stop("Group names in ecopath_params must be unique.")
     }
