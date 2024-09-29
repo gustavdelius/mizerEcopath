@@ -54,7 +54,7 @@ getEcopathRatios <- function(params) {
 #'
 #' @return A MizerParams object matched to the Ecopath data
 #' @export
-match <- function(params, tol = 0.1, max_iter = 100) {
+matchEcopath <- function(params, tol = 0.1, max_iter = 100) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
@@ -74,7 +74,7 @@ match <- function(params, tol = 0.1, max_iter = 100) {
 
     for (i in seq_len(max_iter)) {
         # Break if tolerance achieved
-        if (isMatched(params, tol)) {
+        if (isEcopathMatched(params, tol)) {
             break
         }
         params <- params |>
@@ -89,8 +89,8 @@ match <- function(params, tol = 0.1, max_iter = 100) {
     params
 }
 
-#' @rdname match
-isMatched <- function(params, tol = 0.1) {
+#' @rdname matchEcopath
+isEcopathMatched <- function(params, tol = 0.1) {
     isConsumptionMatched(params, tol) &&
         isProductionMatched(params, tol)
 }

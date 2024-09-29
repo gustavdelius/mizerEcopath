@@ -7,7 +7,7 @@
 #' - `catchability` to get the desired yield, and
 #' - `ext_mort` to get the desired mortality.
 #'
-#' Note that adjusting the `catchability` parameter to match the yield may no
+#' Note that adjusting the `catchability` parameter to match the yield may not
 #' lead to a convergent iteration because it currently assumes that increasing
 #' the catchability will increase the yield. This may not be the case if the
 #' increased mortality on large individuals truncates the size spectrum too

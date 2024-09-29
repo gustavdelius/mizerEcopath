@@ -141,7 +141,7 @@ p <- matchDiet(p, dm)
 ps <- p |> steadySingleSpecies()
 waldo::compare(initialN(p), initialN(ps), tolerance = 1e-9)
 # Check that ecopath is still matched
-isMatched(p)
+isEcopathMatched(p)
 # Check that diet matrix is matched
 Kn <- getDietMatrix(p)[, 1:no_sp]
 # Convert ecopath diet matrix from proportions to absolute consumption

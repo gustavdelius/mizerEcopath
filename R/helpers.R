@@ -5,10 +5,9 @@
 #' Given an Ecopath diet matrix and a dictionary that maps Ecopath groups to
 #' mizer species, this function returns a diet matrix for the mizer species.
 #'
+#' @param species_params A data frame with mizer species parameters
 #' @param ecopath_diet The Ecopath diet matrix, as exported by the Ecopath
 #'   software.
-#' @param groups_to_species A named list where the names are mizer species and the values
-#'  are vectors of Ecopath groups.
 #'
 #' @return A matrix with dimnames `predator` and `prey`, where the row names are
 #'   the species names of the predators and the column names are the species
@@ -16,9 +15,10 @@
 #'   give for each predator the proportion of its diet that comes from each prey
 #'   species or from other ecosystem components.
 #' @export
-reduceEcopathDiet <- function(ecopath_diet, groups_to_species) {
+reduceEcopathDiet <- function(species_params, ecopath_diet) {
     ecopath_diet[is.na(ecopath_diet)] <- 0
-    species <- names(groups_to_species)
+    sp <- validSpeciesParams(species_params)
+    species <- sp$species
     no_sp <- length(species)
     # The second column of ecopath diet matrix has the group names.
     ecopath_groups <- ecopath_diet[, 2]
@@ -33,23 +33,23 @@ reduceEcopathDiet <- function(ecopath_diet, groups_to_species) {
     rownames(ecopath_diet_reduced) <- ecopath_groups
     colnames(ecopath_diet_reduced) <- ecopath_groups[preds]
     # Keep only predators that correspond to our species
-    selected_groups <- unlist(groups_to_species)
+    selected_groups <- unlist(sp$ecopath_groups)
     ignored_groups <- setdiff(ecopath_groups, selected_groups)
     ecopath_diet_reduced <- ecopath_diet_reduced[, selected_groups]
     # Create mizer diet matrix
     dm <- array(0, dim = c(no_sp, no_sp + 1),
                 dimnames = list(predator = species,
                                 prey = c(species, "other")))
-    for (predator in species) {
-        for (pred_group in groups_to_species[[predator]]) {
-            for (prey in species) {
-                for (prey_group in groups_to_species[[prey]]) {
-                    dm[predator, prey] <- dm[predator, prey] +
+    for (i in seq_along(species)) {
+        for (pred_group in sp$ecopath_groups[[i]]) {
+            for (j in seq_along(species)) {
+                for (prey_group in sp$ecopath_groups[[j]]) {
+                    dm[i, j] <- dm[i, j] +
                         ecopath_diet_reduced[prey_group, pred_group]
                 }
             }
             # Add consumption from all other groups
-            dm[predator, "other"] <- dm[predator, "other"] +
+            dm[i, "other"] <- dm[i, "other"] +
                 sum(ecopath_diet_reduced[ignored_groups, pred_group])
         }
     }

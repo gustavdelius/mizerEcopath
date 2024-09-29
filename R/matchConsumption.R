@@ -1,8 +1,9 @@
 #' Match the consumption of the model to the Ecopath consumption
 #'
 #' This function adjusts the consumption parameters of the model to match the
-#' Ecopath consumption It does this by adjusting the `gamma`, `h`, `ks` and
-#' `ext_mort` parameters.
+#' Ecopath consumption It does this by rescaling the `gamma`, `h`, `ks`,
+#' `ext_mort` and `ext_encounter` parameters. It also calls `matchBiomasses()`
+#' and recalculates the steady state.
 #'
 #' The `matchConsumption` function calls `matchConsumptionOnce()`
 #' repeatedly until the production matches within the tolerance specified by
@@ -61,6 +62,9 @@ matchConsumptionOnce <- function(params) {
     species_params(params)$gamma[sel] <- species_params(params)$gamma[sel] * Qratio
     species_params(params)$h[sel] <- species_params(params)$h[sel] * Qratio
     species_params(params)$ks[sel] <- species_params(params)$ks[sel] * Qratio
+    if (hasName(sp, "k")) {
+        species_params(params)$k[sel] <- sp$k[sel] * Qratio
+    }
     ext_mort(params)[sel, ] <- ext_mort(params)[sel, ] * Qratio
     ext_encounter(params)[sel, ] <- ext_encounter(params)[sel, ] * Qratio
 

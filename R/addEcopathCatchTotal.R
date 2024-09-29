@@ -1,9 +1,16 @@
 #' Add Ecopath catch data to gear parameters
 #'
 #' @export
-addEcopathCatchTotal <- function(params, species_params,
-                                 groups_to_species, catch) {
-    sp <- validSpeciesParams(species_params)
+addEcopathCatchTotal <- function(params, catch) {
+    sp <- p@species_params
+    if (!hasName(sp, "ecopath_groups") ||
+        !hasName(sp, "biomass_observed")) {
+        stop("You must use `addEcopathParams()` first.")
+    }
+    if (!hasName(catch, "TotalCatch..t.km..year.") ||
+        !hasName(catch, "Group.name")) {
+        stop("The catch argument is invalid. It must be a data frame with columns 'TotalCatch..t.km..year.' and 'Group.name'.")
+    }
     gp <- data.frame(
         species = sp$species,
         gear = "total",
@@ -13,11 +20,16 @@ addEcopathCatchTotal <- function(params, species_params,
         catchability = 1,
         yield_observed = 0
     )
-    for (species in gp$species) {
-        for (group in groups_to_species[[species]]) {
+    for (i in seq_len(nrow(sp))) {
+        for (group in sp$ecopath_groups[[i]]) {
             yield <- catch$TotalCatch..t.km..year.[catch$Group.name == group]
-            gp$yield_observed[gp$species == species] <-
-                gp$yield_observed[gp$species == species] + yield
+            if (length(yield) == 0) {
+                warning("No catch data found for group ", group)
+            }
+            if (is.na(yield)) {
+                warning("Missing catch data for group ", group)
+            }
+            gp$yield_observed[i] <- gp$yield_observed[i] + yield
         }
     }
     gp$catchability <- gp$yield_observed / sp$biomass_observed
