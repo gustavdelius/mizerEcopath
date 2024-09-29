@@ -37,7 +37,7 @@ matchYieldOnce <- function(params, steady = TRUE) {
 
     if (steady) {
         # Determine new steady state
-        params |> steadySingleSpecies() |>
+        params <- params |> steadySingleSpecies() |>
             matchBiomasses() |> steadySingleSpecies()
     }
     return(params)
