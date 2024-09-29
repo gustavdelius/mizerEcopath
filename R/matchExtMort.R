@@ -51,5 +51,6 @@ matchExtMortOnce <- function(params, steady = TRUE) {
         params |> steadySingleSpecies() |>
             matchBiomasses() |> steadySingleSpecies()
     }
+    params@time_modified <- lubridate::now()
     return(params)
 }

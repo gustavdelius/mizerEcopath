@@ -17,6 +17,7 @@ Imports:
     bslib,
     dplyr,
     ggplot2,
+    lubridate,
     methods,
     plotly,
     prompter,
