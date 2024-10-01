@@ -7,11 +7,13 @@
 
 library(mizerEcopath)
 library(mizerExperimental)
+library(dplyr)
 
 ## Set up species parameters ----
 
-sp <- read.csv(system.file("extdata/species_params_celtic_sea.csv",
-                                       package = "mizerEcopath"))
+sp <- read.csv("../CelticSea/ecopath/Lauria/species_params.csv")
+# keep only selected parameters
+sp <- sp |> select(species, w_max, w_mat, a, b, LWRSource, age_mat)
 
 no_sp <- nrow(sp) # Number of species
 sp["n"] <- 0.7 # Exponent of consumption
@@ -20,27 +22,35 @@ sp["d"] <- -0.3 # Exponent of mortality (in Mizer n - 1)
 sp["alpha"] <- 0.8  # Ecopath default (conversion efficiency)
 sp$gonad_proportion <- 0.2 # Proportion of total production which goes into gonads
 
+# Add predation kernel params from stomach data
+fits <- readRDS("../CelticSea/data/stomach_data_fit.rds")
+sp$pred_kernel_type <- "power_law"
+lambda <- 2
+sp$kernel_exp <- fits$alpha + 4/3 - lambda
+sp$kernel_l_l <- fits$ll
+sp$kernel_u_l <- fits$ul
+sp$kernel_l_r <- fits$lr
+sp$kernel_u_r <- fits$ur
+
 # Dictionary between species and ecopath groups
 species_to_groups <- list(
     "Herring" = "Herring",
-    "Sprat" = "Sprat",
-    "Cod" = c("Cod large", "Cod small"),
-    "Haddock" = "Haddock",
-    "Whiting" = "Whiting",
-    "Blue whiting" = "Blue whiting",
-    "Norway Pout" = "Pouts",
-    "European Hake" = c("Hake large", "Hake small"),
-    "Horse Mackerel" = "Horse mackerel",
+    "Cod" = c("Cod", "Juvenile cod"),
+    "Haddock" = c("Haddock", "Juvenile haddock"),
+    "Whiting" = c("Whiting", "Juvenile whiting"),
+    "Blue whiting" = c("Blue whiting", "Juvenile blue whiting"),
+    "Hake" = c("Hake", "Juvenile hake"),
+    "Monkfish" = c("Monkfish", "Juvenile monkfish"),
+    "Horse mackerel" = "Horse mackerel",
     "Mackerel" = "Mackerel",
-    "Plaice" = "Plaice",
-    "Megrim" = "Megrim",
+    "Plaice" = c("Plaice", "Juvenile plaice"),
+    "Megrim" = c("Megrim", "Juvenile megrim"),
     "Sole" = "Sole"
 )
 
 ## Add Ecopath species parameters ----
-ecopath_params <- read.csv(
-    system.file("extdata/celtic_sea_hernvann_et_al/basic_estimates.csv",
-                package = "mizerEcopath"))
+ecopath_params <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Basic estimates.csv")
+ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 
 ## Create MizerParams object ----
@@ -49,13 +59,19 @@ p <- newMultispeciesParams(sp, no_w = 200, info_level = 0,
                            # extend resource over entire size range
                            max_w = max_w,
                            w_pp_cutoff = max_w * (1 + 1e-9),
-                           lambda = 2,
+                           lambda = lambda,
                            resource_dynamics = "resource_constant")
 sp <- p@species_params
 
 ## Set up gear params ----
-catch <- read.csv(system.file("extdata/celtic_sea_hernvann_et_al/catch.csv",
-                              package = "mizerEcopath"))
+# For the lauria model we do not yet have the catch data
+# We'll calculate it from the fishing mortalities and biomases
+catch <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Fishing mortality rates.csv")
+catch$totalF <- rowSums(catch[, -(1:2)], na.rm = TRUE)
+catch <- left_join(ecopath_params, catch, by = c("Group.name" = "Fleet.group")) |>
+    mutate(TotalCatch..t.km..year. = totalF * Biomass..t.km..) |>
+    select(Group.name, TotalCatch..t.km..year.)
+
 p <- addEcopathCatchTotal(p, catch)
 
 ## Power-law mortality ----
@@ -78,15 +94,20 @@ species_params(p)$interaction_resource[] <- 0
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
     matchBiomasses() |> steadySingleSpecies()
 
+# Turn off satiation
+species_params(p)$h <- Inf
+ext_encounter(p) <- ext_encounter(p) * 0.4
+
 plotlySpectra(p)
 p_backup <- p
 
 ## Match to Ecopath params ----
+p <- p_backup |>
+    matchConsumption() |> matchYield() |>
+    matchConsumption() |> matchYield() |>
+    matchConsumption() |> matchYield()
+p <- p |> matchProductionOnce()
 p <- p_backup |> matchEcopath()
-
-# Turn off satiation
-species_params(p)$h <- Inf
-ext_encounter(p) <- ext_encounter(p) * 0.4
 
 # Set resource to be in line with fish
 total <- colSums(initialN(p))
@@ -95,12 +116,8 @@ ratio <- max(total / initialNResource(p)[fish_sel])
 p <- scaleDownBackground(p, 1/ratio)
 plotSpectra(p)
 
-# saveParams(p, here("ecopath/Hernvann/Celtic_13_ecopath.rds"))
-
 ## Aggregate ecopath diet matrix ----
-ecopath_diet <- read.csv(
-    system.file("extdata/celtic_sea_hernvann_et_al/diet_composition.csv",
-                package = "mizerEcopath"))
+ecopath_diet <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Diet composition.csv")
 dm <- reduceEcopathDiet(sp, ecopath_diet)
 
 # Prepare catch data

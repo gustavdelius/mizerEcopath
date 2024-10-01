@@ -1,24 +1,7 @@
-#' Match the respiration rate to that required by the ecopath production rate.
+#' Match the external mortality to that required by the ecopath production rate.
 #'
-#' This function sets the respiration rate (called the metabolic rate in mizer)
-#' according to the first master equation of Ecopath, which is:
-#' \deqn{Q = P + R + U}
-#' where \eqn{Q} is the consumption rate, \eqn{P} is the production rate,
-#' \eqn{R} is the respiration rate, and \eqn{U} is the unassimilated part of the
-#' consumption rate, i.e., \eqn{U = (1 - \alpha) Q}, where \eqn{\alpha} is the
-#' assimilation efficiency. Solving this for \eqn{R} we get:
-#' \deqn{R = Q \alpha - P}
-#'
-#' The production rate of a species is the sum of the somatic production rate and
-#' the gonad production rate. The somatic production rate is the production rate
-#'
-#' The Ecopath production rate is the somatic production rate, i.e., the production
-#' rate of the somatic tissue. To get the total production rate we need to divide
-#' the somatic production rate by \eqn{1 - f}, where \eqn{f} is the gonad
-#' proportion. This is because the gonad production is not included in the Ecopath
-#' production rate.
-#'
-#' This function calculates \eqn{Q} using `getConsumption()`
+#' Adjust the external mortality so that the biomass loss due to mortality
+#' (including the fisheries yield) matches the somatic production.
 #'
 #' @param params A MizerParams object
 #' @param steady Whether to return the model to a steady state after adjusting

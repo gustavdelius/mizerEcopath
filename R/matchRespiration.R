@@ -40,12 +40,11 @@ matchRespirationOnce <- function(params, steady = TRUE) {
 
     R <- getRespiration(params)
     Q <- getConsumption(params)
-    # ecopath_production is only the somatic production. To get total production
-    # we need to divide by 1 - gonad_proportion
-    P_desired <- sp$ecopath_production / (1 - sp$gonad_proportion)
+    # ecopath_production is only the somatic production.
+    P_desired <- sp$ecopath_production + getGonadicProduction(params)
     R_desired <- sp$alpha * Q - P_desired
     if (any(R_desired < 0)) {
-        stop("Negative respiration required.")
+        warning("Negative respiration required.")
     }
     Rfactor <- R_desired / R
     # If the metabolic rate was set manually, we need to rescale it, otherwise we

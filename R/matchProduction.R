@@ -1,17 +1,23 @@
 #' Match the production of the model to the Ecopath production
 #'
-#' This function adjusts the parameters of the model to match the
-#' Ecopath production. Specifically it adjusts:
-#' - `ks` to get the desired respiration,
-#' - `w_repro_max` to get the desired gonadic proportion,
-#' - `catchability` to get the desired yield, and
-#' - `ext_mort` to get the desired mortality.
+#' This function sets the respiration rate according to the first master
+#' equation of Ecopath, which is: \deqn{Q = P + R + U} where \eqn{Q} is the
+#' consumption rate, \eqn{P} is the somatic production rate, \eqn{R} is the
+#' respiration rate, and \eqn{U} is the unassimilated part of the consumption
+#' rate, i.e., \eqn{U = (1 - \alpha) Q}, where \eqn{\alpha} is the assimilation
+#' efficiency. Solving this for \eqn{R} we get: \deqn{R = Q \alpha - P}
 #'
-#' Note that adjusting the `catchability` parameter to match the yield may not
-#' lead to a convergent iteration because it currently assumes that increasing
-#' the catchability will increase the yield. This may not be the case if the
-#' increased mortality on large individuals truncates the size spectrum too
-#' much.
+#' Ecopath does not explicitly account for the loss due to gonad production.
+#' However most of the energy invested into gonad production is lost due to
+#' the inefficiency of the reproductive process. Therefore in mizer we need
+#' to include this loss in the respiration rate. Thus
+#' \deqn{R = K + G - R_dd * w_0}
+#' where \eqn{K} is the metabolic rate, \eqn{G} is the gonadic production rate,
+#' \eqn{R_dd} is the rate of offspring production, and \eqn{w_0} is the weight
+#' of an offspring at the size it enters the model. Thus \eqn{G - R_dd * w_0}
+#' is the net loss due to gonad production.
+#'
+#'
 #'
 #' The `matchProduction` function calls `matchProductionOnce()`
 #' repeatedly until the production matches within the tolerance specified by
@@ -38,9 +44,6 @@ matchProduction <- function(params, tol = 0.1, max_iter = 10) {
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
     }
-    if (!hasName(gp, "yield_observed")) {
-        stop("You must provide the yield_observed gear parameter.")
-    }
 
     for (i in seq_len(max_iter)) {
         # Break if tolerance achieved
@@ -66,24 +69,51 @@ matchProductionOnce <- function(params, steady = TRUE) {
         stop("params must be a MizerParams object.")
     }
     sp <- params@species_params
-    gp <- params@gear_params
     if (!hasName(sp, "ecopath_production")) {
         stop("You must provide the ecopath_production species parameter.")
     }
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
     }
-    if (!hasName(gp, "yield_observed")) {
-        stop("You must provide the yield_observed gear parameter.")
+
+    # # Adjust gonadic production
+    # Q <- getConsumption(params)
+    # R_desired <- sp$alpha * Q - sp$ecopath_production
+    # if (any(R_desired < 0)) {
+    #     warning("Assimilated consumption not sufficient to cover production.")
+    # }
+    # G_desired <- sp$gonad_proportion * R_desired
+    # G <- getGonadicProduction(params)
+    # G_factor <- G_desired / G
+    # sp <- set_species_param_default(sp, "w_repro_max", sp$w_max)
+    # sp <- set_species_param_default(sp, "m", 1)
+    # w_max_factor <- G_factor ^ (1 / (sp$n - sp$m))
+    # sp$w_repro_max <- sp$w_repro_max * w_max_factor
+    # if (any(sp$w_repro_max < sp$w_mat)) {
+    #     stop("The gonadic proportion leads to a `w_repro_max` smaller than `w_mat`.")
+    # }
+    # species_params(params)$w_repro_max <- sp$w_repro_max
+
+    # Adjust respiration
+    Q <- getConsumption(params)
+    G <- getGonadicProduction(params)
+    K_desired <- sp$alpha * Q - sp$ecopath_production - G
+    if (any(K_desired < 0)) {
+        warning("Assimilated consumption not sufficient to cover production.")
     }
-
-    params <- matchRespirationOnce(params, steady = FALSE)
-
-    params <- matchGonadicProportionOnce(params, steady = FALSE)
-
-    params <- matchYieldOnce(params, steady = FALSE)
-
-    params <- matchExtMortOnce(params, steady = FALSE)
+    K <- getRespiration(params)
+    K_factor <- K_desired / K
+    # If the metabolic rate was set manually, we need to rescale it, otherwise we
+    # rescale the species parameters used to calculate the metabolic rate
+    if (!is.null(comment(metab(params)))) {
+        warning("This function has rescaled the metabolic rate that was set manually.")
+        params@metab[] <- params@metab[] * K_factor
+    } else {
+        species_params(params)$ks <- sp$ks * K_factor
+        if (hasName(sp, "k")) {
+            species_params(params)$k <- sp$k * K_factor
+        }
+    }
 
     if (steady) {
         # Determine new steady state
@@ -99,31 +129,12 @@ isProductionMatched <- function(params, tol = 0.1) {
         stop("params must be a MizerParams object.")
     }
     sp <- params@species_params
-    gp <- params@gear_params
     if (!hasName(sp, "ecopath_production")) {
         stop("You must provide the ecopath_production species parameter.")
-    }
-    if (!hasName(sp, "gonad_proportion")) {
-        stop("You must provide the gonad_proportion species parameter.")
-    }
-    if (!hasName(gp, "yield_observed")) {
-        stop("You must provide the yield_observed gear parameter.")
     }
 
     # Calculate discrepancy in production
     Pratio <- sp$ecopath_production / getSomaticProduction(params)
-    # Calculate discrepancy in gonadic production
-    Gratio <- getGonadicProduction(params) / getProduction(params) /
-        sp$gonad_proportion
-    # Calculate discrepancy in yields
-    Cratio <- gp$yield_observed / getYield(params)
-    # Calculate discrepancy in mortality
-    current <- getM0B(params) + getM2B(params)
-    desired <- getSomaticProduction(params) - gp$yield_observed
-    Zratio <- desired / current
 
-    return(max(abs(Cratio - 1)) < tol &&
-               max(abs(Zratio - 1)) < tol &&
-               max(abs(Pratio - 1)) < tol &&
-               max(abs(Gratio - 1)) < tol)
+    return(max(abs(Pratio - 1)) < tol)
 }

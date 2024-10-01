@@ -1,6 +1,6 @@
 #' Get somatic production
 #'
-#' For each species returns the rate at which somatic tissue is produced. This
+#' For each species returns the rate at which somatic biomass is produced. This
 #' is calculated as
 #' \deqn{P_{s.i} = \int g_i(w) N_i(w) dw}
 #' where \eqn{g(w)} is the somatic growth rate of an individual of species \eqn{i}
@@ -11,9 +11,6 @@
 #' @return A named vector of somatic production for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getSomaticProduction(params)
 getSomaticProduction <- function(params) {
     N <- initialN(params)
     dw <- dw(params)
@@ -24,15 +21,12 @@ getSomaticProduction <- function(params) {
 
 #' Get gonadic production
 #'
-#' For each species returns the rate at which gonads are produced.
+#' For each species returns the rate at which gonad biomass is produced.
 #'
 #' @param params A MizerParams object
 #' @return A named vector of gonadic production for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getGonadicProduction(params)
 getGonadicProduction <- function(params) {
     N <- initialN(params)
     dw <- dw(params)
@@ -44,30 +38,25 @@ getGonadicProduction <- function(params) {
 #' Get production
 #'
 #' For each species returns the rate at which biomass is produced.
-#' This is calculated as
-#' \deqn{P_i = \int E_{r.i}(w) N_i(w) dw}
-#' where \eqn{E_{r.i}(w)} is the rate at which an individual of species \eqn{i}
-#' and weight \eqn{w} allocates energy to reproduction and growth (calculated
-#' with \code{\link{getEReproAndGrowth}}) and \eqn{N_i(w)} is the number density
-#' of species \eqn{i} at weight \eqn{w}.
 #'
-#' The production rate is the sum of the gonadic and somatic production rates
-#' obtained with \code{\link{getGonadicProduction}} and
-#' \code{\link{getSomaticProduction}}.
+#' We follow the Ecopath definition whereby the production rate in a
+#' mass-balanced model is equal to the rate at which biomass is removed by
+#' mortality. Thus the production rate includes the somatic production rate
+#' that is due to growth of individuals and it includes the rate at which
+#' offspring biomass is produced during reproduction. It does not include the
+#' full rate of gonad production because most of that is lost during the
+#' inefficient reproduction process.
+#'
+#' The production rate is the sum of the somatic production rate
+#' obtained with \code{\link{getSomaticProduction}} and the rate of production
+#' of offspring biomass obtained with \code{\link{getOffspringProduction}}.
 #'
 #' @param params A MizerParams object
 #' @return A named vector of production for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getProduction(params)
 getProduction <- function(params) {
-    N <- initialN(params)
-    dw <- dw(params)
-    P <- as.vector((getEReproAndGrowth(params) * N) %*% dw)
-    names(P) <- params@species_params$species
-    return(P)
+    getSomaticProduction(params) + getOffspringProduction(params)
 }
 
 #' Get consumption
@@ -90,9 +79,6 @@ getProduction <- function(params) {
 #' @return A named vector of consumption rate for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getConsumption(params)
 getConsumption <- function(params, w_min = 0, w_max = Inf) {
     N <- initialN(params)
     q <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)) * N,
@@ -104,9 +90,23 @@ getConsumption <- function(params, w_min = 0, w_max = Inf) {
 
 #' Get respiration
 #'
+#' We use the Ecopath definition of respiration as the rate at which assimilated
+#' food is NOT used for production. This is expressed by the first master
+#' equation of Ecopath: \deqn{Q = P + R + U} where \eqn{Q} is the consumption
+#' rate, \eqn{P} is the production rate, \eqn{R} is the respiration rate,
+#' and \eqn{U} is the unassimilated part of the consumption rate, i.e.,
+#' \eqn{U = (1 - \alpha) Q}, where \eqn{\alpha} is the assimilation efficiency.
+#' Solving this for \eqn{R} we get: \deqn{R = \alpha Q - P}
+#'
+#' In mizer, this respiration rate has two components: the metabolic respiration
+#' and the loss due to gonad production that does not result in offspring
+#' biomass.
+
+#' Get metabolic respiration
+#'
 #' For each species returns the rate at which energy is used for respiration.
 #' This is calculated as
-#' \deqn{R_i = \int k_i(w) N_i(w) dw}
+#' \deqn{K_i = \int k_i(w) N_i(w) dw}
 #' where \eqn{k_i(w)} is the metabolic rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getMetabolicRate}}) and
 #' \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
@@ -115,10 +115,7 @@ getConsumption <- function(params, w_min = 0, w_max = Inf) {
 #' @return A named vector of respiration for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getRespiration(params)
-getRespiration <- function(params) {
+getMetabolicRespiration <- function(params) {
     N <- initialN(params)
     dw <- dw(params)
     R <- as.vector((getMetabolicRate(params) * N) %*% dw)
@@ -139,9 +136,6 @@ getRespiration <- function(params) {
 #' @return A named vector of unassimilated food for each species
 #' @export
 #' @family rate functions
-#' @examples
-#' params <- readRDS("models/Celtic_16_untuned.rds")
-#' getUnassimilated(params)
 getUnassimilated <- function(params) {
     sp <- species_params(params)
     Q <- getConsumption(params)
@@ -236,22 +230,20 @@ getEcotrophicEfficiency <- function(params) {
     return(EE)
 }
 
-#' Get rate at which egg biomass is produced
+#' Get rate at which offspring biomass is produced
 #'
-#' For each species the rate at which egg biomass is produced
-#' is calculated as
-#' \deqn{Eggs_i = R_i w_{0.i}}
-#' where \eqn{R_i} is the rate of egg production for species \eqn{i}
-#' and \eqn{w_{0.i}} is the egg weight of species \eqn{i}.
+#' For each species the rate at which offspring biomass is produced is the
+#' product of the rate of offspring production and the offspring biomass
+#' \eqn{w_{0.i}}.
 #'
 #' @param params A MizerParams object
 #' @return A named vector of egg biomass production for each species
 #' @export
 #' @family rate functions
-getEggProduction <- function(params) {
+getOffspringProduction <- function(params) {
     sp <- species_params(params)
-    Egg_biomass <- getRDD(params) * sp$w_min
-    return(Egg_biomass)
+    Offspring_biomass <- getRDD(params) * sp$w_min
+    return(Offspring_biomass)
 }
 
 #' Get diet matrix
