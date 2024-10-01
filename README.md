@@ -1,76 +1,251 @@
-This package provides functions that help to create a mizer model based on the
-parameters of an Ecopath model.
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
 
-An Ecopath model requires the user to specify for each group $i$ included in the
-model the following parameters:
+## Introduction
 
-* Biomass $B_i$
-* Consumption $Q_i$
-* Production $P_i$
-* Fishery catch $C_i$
-* The diet composition $D_{ij}$ that gives the proportion of the diet of group
-  $i$ that is made up of group $j$
+This package provides functions that help to create a mizer model based
+on the parameters of an Ecopath model.
 
-One of the first three parameters above can be replaced by the "Ecotrophic
-Efficiency" $EE$, because Ecopath can then deduce the missing parameter, see
-below.
+An Ecopath model requires the user to specify for each group $i$
+included in the model the following parameters:
 
-We want to use this information to create a mizer model that in its steady state
-has the same values for the above parameters. The challenge is that mizer,
-which is a size-structured model, is parametrized differently. Instead of
-specifying properties at the group level, we specify parameters at the level of
-the individual and these parameters are size-dependent. In this document we
-will discuss how we deduce mizer parameters from the Ecopath parameters.
+-   Biomass $B_i$
+-   Consumption $Q_i$
+-   Production $P_i$
+-   Fishery catch $C_i$
+-   The diet composition matrix $DC_{ij}$
+
+One of the first three parameters above can be replaced by the
+"Ecotrophic Efficiency" $EE$, because Ecopath can then deduce the
+missing parameter, see below.
+
+We want to use this information to create a mizer model that in its
+steady state has the same values for the above parameters. The challenge
+is that mizer, which is a size-structured model, is parametrized
+differently. Instead of specifying properties at the group level, we
+specify parameters at the level of the individual and these parameters
+are size-dependent. In this document we will discuss how we deduce mizer
+parameters from the Ecopath parameters.
 
 An Ecopath model usually includes a large number of ecosystem components
-(called groups), only some of which it would be appropriate to model explicitly
-in mizer. We will therefore need to select a subset of the Ecopath groups to
-include in the mizer model. Everything else we will treat as external forcing
-on the mizer model. So the groups that we do not include in the mizer model
-will still be sources of consumption and of mortality for the groups that we do
-include.
+(called groups), only some of which it would be appropriate to model
+explicitly in mizer. We will therefore need to select a subset of the
+Ecopath groups to include in the mizer model. Everything else we will
+treat as external forcing on the mizer model. So the groups that we do
+not include in the mizer model will still be sources of consumption and
+of mortality for the groups that we do include.
 
-In cases where a species in the Ecopath model is split into several stanzas,
-the rates for the stanzas can be added together to get the total rate for the
-species. Mizer then decides itself how the rate is distributed over the mizer
-size classes.
+In cases where a species in the Ecopath model is split into several
+stanzas, the rates for the stanzas can be added together to get the
+total rate for the species. Mizer then decides itself how the rate is
+distributed over the mizer size classes.
 
-The Ecopath parameters give us no direct information on the size structure of
-the populations. Therefore we supplement the Ecopath parameters with information
-about the size structure of the catches. This information is usually readily
-available from fishery-based observations.
+The Ecopath parameters give us no direct information on the size
+structure of the populations. Therefore we supplement the Ecopath
+parameters with information about the size structure of the catches.
+This information is usually readily available from fishery-based
+observations.
 
-We furthermore make some allometric assumptions, i.e., we assume that in the
-steady state the following parameters for an individual of weight $w$ scale as a
-power of that weight:
+We furthermore make some allometric assumptions, i.e., we assume that in
+the steady state the following parameters for an individual of weight
+$w$ scale as a power of that weight:
 
-* The consumption rate
-* The metabolic respiration rate
-* The mortality rate
-* The rate at which a mature individual invests in reproduction
+-   The consumption rate
+-   The metabolic respiration rate
+-   The mortality rate
+-   The rate at which a mature individual invests in reproduction
 
-Of course, when we turn on the dynamics of the mizer model (which corresponds to
-going from Ecopath to Ecosim) and leave the steady state, the rates will change
-in response to changes in the abundances of prey and predators.
+Of course, when we turn on the dynamics of the mizer model (which
+corresponds to going from Ecopath to Ecosim) and leave the steady state,
+the rates will change in response to changes in the abundances of prey
+and predators.
 
 ## Definition of the Ecopath parameters
 
-To start, we need to understand the definition of the Ecopath parameters and
-how to calculate their values in a mizer model.
+To start, we need to understand the definition of the Ecopath parameters
+and how to calculate their values in a mizer model. Each of these
+parameters has a value for each Ecopath component (or mizer species). We
+indicate that by an index $i$.
 
 ### Biomass
-The biomass parameter $B$ in Ecopath is the total biomass of all the individuals
-in the group in the model. In mizer, the total biomass of a species is given by
-integrating over all sizes:
-$$B_i = \int_0^\infty N_i(w) w dw$$
-where $N_i(w)$ is the number density of the species $i$ at size $w$.
+
+The biomass parameter $B_i$ in Ecopath is the total biomass of all the
+individuals in the group $i$ in the model. In mizer, the total biomass
+of a species is given by integrating over all sizes:
+$$B_i = \int_{w_0}^{w_{max}} N_i(w) w dw,$$where $N_i(w)$ is the number
+density of the species $i$ at size $w$. This is calculated by
+`mizer::getBiomass()`.
 
 ### Consumption
-The consumption parameter $Q$ in Ecopath is the total rate at which all the
-individuals taken together consume food. In mizer, This is calculated as 
-$$Q_i = \int E_{e.i}(w) (1 - f_i(w)) N_i(w) dw$$ 
-where $E_{e.i}(w)$ is the encounter rate of an individual of species $i$ and
-weight $w$ (calculated with getEncounter), $f_i(w)$ is the feeding level of
-an individual of species $i$ and weight $w$ (calculated with
-`getFeedingLevel()`) and $N_i(w)$ is the number density of species $i$ at
-weight $w$.
+
+The consumption rate parameter $Q$ in Ecopath is the total rate at which
+all the individuals taken together consume food. In mizer, this is
+calculated as $$Q_i = \int_{w_0}^{w_{max}} q_i(w) N_i(w) dw,$$where
+$q_i(w)$ is the consumption rate of an individual of species $i$ and
+weight $w$ (calculated with `getFeedingLevel()`) and $N_i(w)$ is the
+number density of species $i$ at weight $w$. This is calculated with
+`getConsumption()`.
+
+Irrelevant detail: in mizer the individual consumption rate is split
+into two factors: $q_i(w)=E_{e.i}(w)(1-f_i(w))$ where $E_{e.i}(w)$ is
+the encounter rate of an individual of species $i$ and weight $w$, and
+$f_i(w)$ is its feeding level.
+
+### Production
+
+The production rate parameter $P$ in Ecopath is the rate at which
+biomass would be accumulated if there were no mortality. Thus the
+production rate includes the somatic production rate that is due to
+growth of individuals and it includes the rate at which offspring
+biomass is produced during reproduction. It does not include the full
+rate of gonad production because most of that is lost during the
+inefficient reproduction process.
+
+#### Somatic production
+
+The rate at which biomass is created through somatic growth is
+
+$$
+P_{s.i} = \int_{w_0}^{w_{max}} g_i(w) N_i(w) dw,
+$$
+
+where $g_i(w)$ is the somatic growth rate of an individual of species
+$i$ and weight $w$ (calculated with `getEGrowth`) and $N_i(w)$ is the
+number density of species $i$ at weight $w$. This is calculated with
+`getSomaticProduction()`.
+
+#### Offspring production
+
+In mizer the rate at which offspring are produced is calculated from the
+rate of gonad production via a non-linear function. This rate is
+returned by `getRDD()`. To get the rate at which this offspring
+production adds biomass to the group this rate needs to be multiplied by
+the weight of an individual offspring. The resulting rate is returned by
+`getOffspringProduction()`.
+
+The total production obtained by summing the somatic production and the
+offspring biomass production is returned by `getProduction()`.
+
+### Catch
+
+The Catch rate parameter $C_i$ in Ecopath is the rate at which biomass
+of group $i$ is removed by fishing. This should include landings as well
+as the part of the discards that does not survive. In mizer, this rate
+is calculated with `mizer::getYield()`.
+
+The Ecopath model may disaggregate the catch into the catch by
+individual gears or fleets. This is calculated in mizer with
+`mizer::getYieldGear()`.
+
+### Diet composition
+
+The diet composition matrix $DC_{ij}$ gives the proportion of the
+consumption of group $i$ that is made up of group $j$. So
+
+$$
+Q_i = \sum_j DC_{ij}\cdot B_j.
+$$
+
+Therefore it also gives the proportion of the predation loss of species
+$j$ that is due to predator species $i$:
+
+$$
+M2_j\cdot B_j = \sum_i B_i\cdot DC_{ij}.
+$$
+
+## Ecopath master equations
+
+Ecopath has two master equations that ensure that all biomass is
+accounted for. They are thus also referred to as mass balance equations.
+These are of course also true in mizer.
+
+### First master equation
+
+The first master equation expresses the fact that consumed biomass will
+either contribute to the biomass production or it will be used up in
+respiration or it will remain unassimilated:
+
+$$
+Q_i = P_i + R_i + U_i.
+$$
+
+Here $Q_i$ and $P_i$ are the consumption and production rates already
+discussed above. $U_i$ is the rate at which biomass remains
+unassimilated and $R_i$ is the respiration rate, i.e., the rate at which
+biomass is lost. Both Ecopath and mizer assume that the unassimilated
+biomass is a fixed proportion of the consumed biomass. In mizer this
+parameter is called $1-\alpha_i$ so that $Q_i-U_i=\alpha Q_i$. Therefore
+the first master equation can be seen as an equation for the respiration
+rate:
+
+$$
+R_i=\alpha Q_i-P_i.
+$$
+
+So respiration $R$ contains all the losses of accumulated biomass. In
+mizer there are two such sources: the metabolic respiration and the loss
+due to gonad production that does not result in offspring biomass.
+
+The rate of metabolic respiration is calculated by
+`getMetabolicRespiration()` as
+
+$$
+\int_{w_0}^{w_{max}}k_i(w)N_i(w)dw,
+$$
+
+where $k_i(w)$ is the metabolic rate of an individual of species $i$ of
+weight $w$ and $N_i(w)$ is the number density of such individuals.
+
+The rate of loss due to reproduction is the difference between the rate
+of investment into reproduction (the gonadic production rate obtained
+with `getGonadProduction()`) and the rate of creation of offspring
+biomass (obtained with `getOffspringProduction()`). This difference is
+returned by `getReproductionLoss()`.
+
+The total respiration rate is returned by `getRespiration()`.
+
+### Second master equation
+
+The second master equation expresses that the produced biomass is either
+lost again to predation or to emigration or it is accumulated:
+
+$$
+P_i = M2_i\cdot B_i+C_i+BA_i+E_i+M0_i\cdot B_i.
+$$
+
+Here $M2_i$ is the predation mortality rate so that $M2_i\cdot B_i$ is
+the rate at which biomass is lost to predation. This is calculated in
+mizer by `getM2B()`. Similarly $M0_i$ is the rate of mortality due to
+causes other than the predation in the model and the resulting rate of
+biomass loss $M0_i\cdot B_i$ is calculated in mizer by `getM0B()`. As
+discussed above, $C_i$ is the rate at which biomass is lost to fishing.
+It is often expressed as $F_i\cdot B_i$ where $F_i$ is the fishing
+mortality rate. $E_i$ is the rate at which biomass is lost due to
+emigration (if $E_i$ is negative it would correspond to immigration) and
+$BA_i$ is the rate at which biomass is accumulated.
+
+We will simplify matter and restrict to models without emigration and
+biomass accumulation. Then this second master equation says that the
+production rate is equal to the biomass loss due to the various sources
+of mortality. In fact, when estimating the production rate for an
+Ecopath model, one usually estimates the mortality rate instead.
+
+## Fixing mizer parameters
+
+As we have seen, the Ecopath parameters Biomass, Consumption, Production
+and Catch are emergent properties in mizer and can be calculated only
+once the size-dependent densities $N_i(w)$ are known. In the steady
+state these densities in turn can be calculated from the size-dependent
+growth rates $g_i(w)$ and mortality rates $\mu_i(w)$ as $$
+N_i(w)=N(w_0)\frac{g(w_0)}{g(w)}\exp\left(-\int_{w_0}^w \frac{\mu_i(w')}{g_i(w)}dw'\right).
+$$
+
+These rates $g_i(w)$ and $\mu_i(w)$ depend on the mizer parameters that
+we want to determine.
+
+As we said in the introduction, we are making allometric assumptions
+that simplify the expressions for the rates in the steady state. For the
+mortality rates we have
