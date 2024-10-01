@@ -2,7 +2,7 @@
 #'
 #' For each species returns the rate at which somatic biomass is produced. This
 #' is calculated as
-#' \deqn{P_{s.i} = \int g_i(w) N_i(w) dw}
+#' \deqn{P_{s.i} = \int_{w_0}^{w_{max}} g_i(w) N_i(w) dw}
 #' where \eqn{g(w)} is the somatic growth rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getEGrowth}})
 #' and \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
@@ -63,7 +63,7 @@ getProduction <- function(params) {
 #'
 #' For each species returns the rate at which food is consumed. This is
 #' calculated as
-#' \deqn{Q_i = \int E_{e.i}(w) (1 - f_i(w)) N_i(w) dw}
+#' \deqn{Q_i = \int_{w_0}^{w_{max}} E_{e.i}(w) (1 - f_i(w)) N_i(w) dw}
 #' where
 #' \eqn{E_{e.i}(w)} is the encounter rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getEncounter}}), \eqn{f_i(w)}
@@ -88,25 +88,11 @@ getConsumption <- function(params, w_min = 0, w_max = Inf) {
     return(Q)
 }
 
-#' Get respiration
-#'
-#' We use the Ecopath definition of respiration as the rate at which assimilated
-#' food is NOT used for production. This is expressed by the first master
-#' equation of Ecopath: \deqn{Q = P + R + U} where \eqn{Q} is the consumption
-#' rate, \eqn{P} is the production rate, \eqn{R} is the respiration rate,
-#' and \eqn{U} is the unassimilated part of the consumption rate, i.e.,
-#' \eqn{U = (1 - \alpha) Q}, where \eqn{\alpha} is the assimilation efficiency.
-#' Solving this for \eqn{R} we get: \deqn{R = \alpha Q - P}
-#'
-#' In mizer, this respiration rate has two components: the metabolic respiration
-#' and the loss due to gonad production that does not result in offspring
-#' biomass.
-
 #' Get metabolic respiration
 #'
 #' For each species returns the rate at which energy is used for respiration.
 #' This is calculated as
-#' \deqn{K_i = \int k_i(w) N_i(w) dw}
+#' \deqn{K_i = \int_{w_0}^{w_{max}} k_i(w) N_i(w) dw}
 #' where \eqn{k_i(w)} is the metabolic rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getMetabolicRate}}) and
 #' \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
@@ -121,6 +107,45 @@ getMetabolicRespiration <- function(params) {
     R <- as.vector((getMetabolicRate(params) * N) %*% dw)
     names(R) <- params@species_params$species
     return(R)
+}
+
+#' Get rate of biomass loss due to reproduction
+#'
+#' Returns the difference between the rate of gonad production (calculated with
+#' `getGonadicProduction`) and the rate of offspring biomass production (calculated with
+#' `getOffspringProduction`).
+#'
+#' @param params A MizerParams object
+#' @return A named vector of reproduction biomass loss for each species
+#' @export
+#' @family rate functions
+getReproductiveLoss <- function(params) {
+    getGonadicProduction(params) - getOffspringProduction(params)
+}
+
+#' Get rate of metabolic respiration
+#'
+#' We use the Ecopath definition of respiration as the rate at which assimilated
+#' food is NOT used for production. This is expressed by the first master
+#' equation of Ecopath: \deqn{Q = P + R + U} where \eqn{Q} is the consumption
+#' rate, \eqn{P} is the production rate, \eqn{R} is the respiration rate,
+#' and \eqn{U} is the unassimilated part of the consumption rate, i.e.,
+#' \eqn{U = (1 - \alpha) Q}, where \eqn{\alpha} is the assimilation efficiency.
+#' Solving this for \eqn{R} we get: \deqn{R = \alpha Q - P}
+#'
+#' In mizer, this respiration rate has two components: the metabolic respiration
+#' and the loss due to gonad production that does not result in offspring
+#' biomass. Thus the respiration rate is the sum of the metabolic respiration
+#' rate (calculated with `getMetabolicRespiration()`) and the rate of
+#' biomass loss due to reproduction (calculated with
+#' `getReproductiveLoss()`).
+#'
+#' @param params A MizerParams object
+#' @return A named vector of respiration for each species
+#' @export
+#' @family rate functions
+getRespiration <- function(params) {
+    getMetabolicRespiration(params) + getReproductiveLoss(params)
 }
 
 #' Get unassimilated food
@@ -147,7 +172,7 @@ getUnassimilated <- function(params) {
 #'
 #' For each species returns the rate at which biomass is lost due to mortality
 #' is calculated as
-#' \deqn{ZB_i = \int \mu_i(w) N_i(w) w dw}
+#' \deqn{ZB_i = \int_{w_0}^{w_{max}} \mu_i(w) N_i(w) w dw}
 #' where \eqn{\mu_i(w)} is the mortality rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getMort}}) and \eqn{N_i(w)} is the
 #' number density of species \eqn{i} at weight \eqn{w}.
@@ -169,7 +194,7 @@ getZB <- function(params) {
 #'
 #' For each species returns the rate at which biomass is lost due to external
 #' mortality is calculated as
-#' \deqn{M0B = \int \mu_{ext.i}(w) N_i(w) w dw}
+#' \deqn{M0B_i = \int_{w_0}^{w_{max}} \mu_{ext.i}(w) N_i(w) w dw}
 #' where \eqn{\mu_{ext.i}(w)} is the external mortality rate of an individual
 #' of species \eqn{i} and weight \eqn{w} (obtained with \code{\link{getExtMort}})
 #' and \eqn{N_i(w)} is the number density of species i at weight w.
@@ -192,7 +217,7 @@ getM0B <- function(params) {
 #'
 #' For each species returns the rate at which biomass is lost due to predation
 #' mortality is calculated as
-#' \deqn{M2B = \int \mu_{p.i}(w) N_i(w) w dw}
+#' \deqn{M2B_i = \int_{w_0}^{w_{max}} \mu_{p.i}(w) N_i(w) w dw}
 #' where \eqn{\mu_{p.i}(w)} is the predation mortality rate of an individual
 #' of species \eqn{i} and weight \eqn{w} (obtained with \code{\link{getPredMort}})
 #' and \eqn{N_i(w)} is the number density of species i at weight w.

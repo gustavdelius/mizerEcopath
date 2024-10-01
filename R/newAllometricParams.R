@@ -39,3 +39,36 @@ newAllometricParams <- function(species_params, no_w = 200, lambda = 2) {
 
     return(p)
 }
+
+#' Test whether a model has allometric encounter and mortality rates
+#'
+#' This function returns TRUE when the model has allometric encounter and
+#' mortality rates and FALSE otherwise.
+#'
+#' @param params A MizerParams object
+#' @return TRUE if the model has allometric encounter and mortality rates
+#' @export
+isAllometric <- function(params, tol = 1e-6) {
+    sp <- params@species_params
+    sp <- set_species_param_default(sp, "d", sp$n - 1)
+    m <- getMort(params)
+    e <- getEncounter(params)
+    for (species in sp$species) {
+        spc <- sp[species, ]
+        mc <- m[species, ] / params@w ^ spc$d
+        if (anyNA(mc) || any(is.nan(mc)) || any(mc < 0) || all(mc == 0)) {
+            stop("The model has invalid mortality rates.")
+        }
+        if (abs((max(mc) - min(mc)) / max(mc)) > tol) {
+            return(FALSE)
+        }
+        ec <- e[species, ] / params@w ^ spc$n
+        if (anyNA(ec) || any(is.nan(ec)) || any(ec < 0) || all(ec == 0)) {
+            stop("The model has invalid encounter rates.")
+        }
+        if (abs((max(ec) - min(ec)) / max(ec)) > tol) {
+            return(FALSE)
+        }
+    }
+    return(TRUE)
+}
