@@ -156,7 +156,7 @@ $$
 M2_j\cdot B_j = \sum_i B_i\cdot DC_{ij}.
 $$
 
-## Ecopath master equations
+## Master equations
 
 Ecopath has two master equations that ensure that all biomass is
 accounted for. They are thus also referred to as mass balance equations.
@@ -185,15 +185,16 @@ $$
 R_i=\alpha Q_i-P_i.
 $$
 
-So respiration $R$ contains all the losses of accumulated biomass. In
-mizer there are two such sources: the metabolic respiration and the loss
-due to gonad production that does not result in offspring biomass.
+So respiration $R$ contains all the losses of accumulated biomass.
+
+In mizer there are two such sources: the metabolic respiration and the
+loss due to gonad production that does not result in offspring biomass.
 
 The rate of metabolic respiration is calculated by
 `getMetabolicRespiration()` as
 
 $$
-\int_{w_0}^{w_{max}}k_i(w)N_i(w)dw,
+K_i = \int_{w_0}^{w_{max}}k_i(w)N_i(w)dw,
 $$
 
 where $k_i(w)$ is the metabolic rate of an individual of species $i$ of
@@ -206,6 +207,32 @@ biomass (obtained with `getOffspringProduction()`). This difference is
 returned by `getReproductionLoss()`.
 
 The total respiration rate is returned by `getRespiration()`.
+
+#### Size-resolved first master equation
+
+Ecopath does not explicitly include gonadal growth. Production is
+thought of essentially as somatic production and respiration is thought
+of essentially as metabolic respiration. The first master equation can
+then be written as $P_{s.i}=\alpha Q_i - K_i$. If we similarly ignore
+investment into gonads in mizer, then mizer has an equivalent to this
+master equation acting at the level of the individual:
+
+$$
+g_i(w) = \alpha_i q_i(w) - k_i(w).
+$$
+
+However because of investment into reproduction, which is proportional
+to growth in mizer, the first master equation at the level of the
+individual becomes
+
+$$
+g_i(w) = (1-\psi_i(w))(\alpha_i q_i(w) - k_i(w)),
+$$
+
+i.e., the individual only invests a proportion $1-\psi_i(w)$ of its
+surplus biomass into somatich growth and the the remaining proportion
+$\psi_i(w)$ gets invested into gonadic growth. Unfortunately Ecopath
+tells us nothing about how to choose this proportion $\psi_i(w)$.
 
 ### Second master equation
 
@@ -230,8 +257,24 @@ $BA_i$ is the rate at which biomass is accumulated.
 We will simplify matter and restrict to models without emigration and
 biomass accumulation. Then this second master equation says that the
 production rate is equal to the biomass loss due to the various sources
-of mortality. In fact, when estimating the production rate for an
-Ecopath model, one usually estimates the mortality rate instead.
+of mortality: $P_i = Z_i\cdot B_i$ where $Z_i = M2_i+F_i+M0_i$ is the
+total mortality rate. In fact, when estimating the production rate for
+an Ecopath model, one usually estimates the mortality rate instead.
+
+#### Size-resolved second master equation
+
+Mizer keeps track not only of how biomass is produced and then removed
+through mortality, it also keeps track of how biomass is moved from
+small sizes to larger sizes. Thus it has a size-resolved version of the
+second master equation:
+
+$$
+g_i(w)N_i(w) - \frac{d}{dw}\left(g_i(w)w N_i(w)\right) = \mu_i(w)wN_i(w),
+$$
+
+where $\mu_i(w)$ is the mortality rate of an individual. When integrated
+over all sizes the first term gives the somatic production $P_{s.i}$ and
+the second term gives the offspring production.
 
 ## Fixing mizer parameters
 
