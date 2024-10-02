@@ -123,7 +123,7 @@ matchDiet <- function(params, diet_matrix, centering = 0,
         if (any(new_ext_encounter[i, ] < 0) &&
             (min(params@w[new_ext_encounter[i, ] < 0]) <=
              max(params@w[initialN(params)[i, ] > 1e-10]))) {
-            stop("Negative external encounter rate required for ",
+            warning("Negative external encounter rate required for ",
                  params@species_params$species[i])
         }
     }
