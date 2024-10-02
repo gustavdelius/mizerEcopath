@@ -121,10 +121,14 @@ ecopath_diet <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Diet composition.c
 dm <- reduceEcopathDiet(sp, ecopath_diet)
 
 # Prepare catch data
-catch <- readRDS("../CelticSea/data/ecopath_catch_v1.rds")
+catch <- readRDS("../CelticSea/data/ecopath_catch_v2.rds")
 catch$dl <- 1
 catch$gear <- as.character(catch$gear)
 catch$gear[catch$gear == "commercial"] <- "total"
+
+# Change case for Horse Mackerel:
+catch <- catch %>%
+    mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
 
 ## Tune ----
 p <- tuneEcopath(p, catch = catch, diet = dm,
