@@ -12,7 +12,7 @@
 #' increased mortality on large individuals truncates the size spectrum too
 #' much.
 #'
-#' The `matchYield` function calls `matchYieldOnce()` repeatedly until the
+#' The `matchCatch` function calls `matchCatchOnce()` repeatedly until the
 #' production matches within the tolerance specified by the `tol` parameter.
 #' The function will return a warning if the maximum number of iterations is
 #' reached without converging.
@@ -22,7 +22,7 @@
 #'   observed yield
 #' @family match functions
 #' @export
-matchYield <- function(params, tol = 0.1, max_iter = 10) {
+matchCatch <- function(params, tol = 0.1, max_iter = 10) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
@@ -33,10 +33,10 @@ matchYield <- function(params, tol = 0.1, max_iter = 10) {
 
     for (i in seq_len(max_iter)) {
         # Break if tolerance achieved
-        if (isYieldMatched(params, tol)) {
+        if (isCatchMatched(params, tol)) {
             break
         }
-        params <- matchYieldOnce(params)
+        params <- matchCatchOnce(params)
     }
     if (i == max_iter) {
         warning("Did not converge.")
@@ -46,11 +46,11 @@ matchYield <- function(params, tol = 0.1, max_iter = 10) {
     return(params)
 }
 
-#' @rdname matchYield
+#' @rdname matchCatch
 #' @param steady Whether to return the model to a steady state after adjusting
 #'   the production. Default is TRUE.
 #' @export
-matchYieldOnce <- function(params, steady = TRUE) {
+matchCatchOnce <- function(params, steady = TRUE) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
@@ -82,8 +82,8 @@ matchYieldOnce <- function(params, steady = TRUE) {
 }
 
 
-#' @rdname matchYield
-isYieldMatched <- function(params, tol = 0.1) {
+#' @rdname matchCatch
+isCatchMatched <- function(params, tol = 0.1) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }

@@ -466,7 +466,8 @@ tuneParams_match <- function(p, params, params_old, logs, session, input) {
         progress <- shiny::Progress$new(session)
         on.exit(progress$close())
 
-        p <- matchEcopath(p)
+        p <- matchConsumption(p)
+        p <- matchYield(p, keep = "biomass")
 
         # Update the reactive params objects
         params_old(p)
