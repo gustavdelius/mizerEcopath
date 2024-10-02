@@ -18,13 +18,13 @@ reproductionControl <- function(input, output, session, params, params_old,
                 flags$sp_old_repro <- sp
                 return()
             }
-            # Update w_max in respone to change in gonad_proportion
+            # Update w_repro_max in respone to change in gonad_proportion
             ratio <- input$gonad_proportion /
                 p@species_params[sp, "gonad_proportion"]
             if (ratio != 1) {
                 w_maxratio <- ratio ^ (1 / (p@species_params[sp, "n"] -
                                                 p@species_params[sp, "m"]))
-                p@species_params[sp, "w_max"] <- p@species_params[sp, "w_max"] *
+                p@species_params[sp, "w_repro_max"] <- p@species_params[sp, "w_repro_max"] *
                     w_maxratio
             }
 
