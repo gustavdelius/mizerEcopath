@@ -1,0 +1,39 @@
+---
+title: "From Ecopath to Mizer"
+author: "Gustav Delius"
+format: html
+---
+
+## Introduction
+
+This package provides functions that help to create a mizer model based
+on the parameters of an Ecopath model.
+
+I still have to write the instructions, but the general procedure is as follows:
+
+1) You open the Ecopath model in Ecopath with Ecosim and export the
+parameters to a CSV file. (Details to follow)
+
+2) You load these files into R.
+
+3) You create a table with one row for each species you want to include in
+the mizer model. The table must contain the following columns:
+
+- `species`: The name of the species in the mizer model
+- `w_max`: The largest observed size of the species
+- `w_mat`: The weight at maturity of the species
+- `ecopath_groups`: The Ecopath group corresponding to this species. If in the
+Ecopath model the species is split into several stanzas, then this column should
+contain a vector of the names of the stanzas that need to be combined to give
+the values for this species.
+
+4) You pass this table and the Ecopath tables to the `newAllometricParams()` to 
+create a mizer model based on these parameters.
+
+5) You load in information on the size-structure of the fishery catches.
+
+6) You use the shiny gadget `tuneEcopath()` to fine-tune the mizer model
+to reproduce the observed size structure.
+
+7) You turn on the dynamics and run the model.
+

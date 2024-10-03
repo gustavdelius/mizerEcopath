@@ -64,3 +64,4 @@ Collate:
     'reproductionControl.R'
     'spectraTab.R'
     'tuneParams_helpers.R'
+VignetteBuilder: knitr
