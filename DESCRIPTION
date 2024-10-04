@@ -31,7 +31,7 @@ Suggests:
     knitr,
     rmarkdown,
     roxygen2,
-    testthat
+    testthat (>= 3.0.0)
 Remotes:
     sizespectrum/mizerExperimental
 Encoding: UTF-8
@@ -62,6 +62,8 @@ Collate:
     'otherControl.R'
     'reproTab.R'
     'reproductionControl.R'
+    'setFeedingLevel.R'
     'spectraTab.R'
     'tuneParams_helpers.R'
 VignetteBuilder: knitr
+Config/testthat/edition: 3

@@ -95,8 +95,7 @@ p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
     matchBiomasses() |> steadySingleSpecies()
 
 # Turn off satiation
-species_params(p)$h <- Inf
-ext_encounter(p) <- ext_encounter(p) * 0.4
+p <- setFeedingLevel(p, 0)
 
 plotlySpectra(p)
 p_backup <- p
@@ -136,6 +135,9 @@ p <- tuneEcopath(p, catch = catch, diet = dm,
 
 ## Switch on interactions
 p <- matchDiet(p, dm)
+
+## Switch on satiation
+p <- setFeedingLevel(p, 0.6)
 
 # Check that steady state has not changed
 ps <- p |> steadySingleSpecies()
