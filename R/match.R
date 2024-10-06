@@ -79,7 +79,7 @@ matchEcopath <- function(params, tol = 0.1, max_iter = 10) {
         }
         params <- params |>
             matchConsumptionOnce() |>
-            #matchYieldOnce() |>
+            matchYield(keep = "biomass") |>
             matchProductionOnce()
     }
     if (i == max_iter) {
@@ -94,5 +94,5 @@ matchEcopath <- function(params, tol = 0.1, max_iter = 10) {
 isEcopathMatched <- function(params, tol = 0.1) {
     isConsumptionMatched(params, tol) &&
         isProductionMatched(params, tol) &&
-        isYieldMatched(params, tol)
+        isCatchMatched(params, tol)
 }
