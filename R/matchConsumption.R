@@ -1,9 +1,13 @@
 #' Match the consumption of the model to the Ecopath consumption
 #'
 #' This function adjusts the consumption parameters of the model to match the
-#' Ecopath consumption It does this by rescaling the `gamma`, `h`, `ks`,
-#' `ext_mort` and `ext_encounter` parameters. It also calls `matchBiomasses()`
-#' and recalculates the steady state.
+#' Ecopath consumption It does this by rescaling the external mortality and
+#' encounter rates as well as the maximum intake rate and the metabolic
+#' respiration rate. This means that the ratio between growth and mortality
+#' is preserved and hence the size spectrum is not changed.
+#'
+#' Besides rescaling the rates it also rescales the associated species parameters
+#' `gamma`, `h`, and `ks` and `k`.
 #'
 #' The `matchConsumption` function calls `matchConsumptionOnce()`
 #' repeatedly until the production matches within the tolerance specified by
@@ -51,22 +55,37 @@ matchConsumptionOnce <- function(params) {
     }
     sp <- params@species_params
     if (!hasName(sp, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
+        sp$ecopath_consumption <- NA
     }
 
     Q <- getConsumption(params)
     Qratio <- sp$ecopath_consumption / Q
-    sel <- !is.na(Qratio)
 
-    # Adjust consumption
-    species_params(params)$gamma[sel] <- species_params(params)$gamma[sel] * Qratio
-    species_params(params)$h[sel] <- species_params(params)$h[sel] * Qratio
-    species_params(params)$ks[sel] <- species_params(params)$ks[sel] * Qratio
-    if (hasName(sp, "k")) {
-        species_params(params)$k[sel] <- sp$k[sel] * Qratio
+    # For species without `ecopath_consumption` use age at maturity
+    sel <- is.na(Qratio)
+    sp <- set_species_param_default(sp, "age_mat", NA)
+    # If age at maturity is not specified, calculate it from von Bertalanffy
+    if (all(c("k_vb", "w_inf") %in% names(sp))) {
+        sp <- set_species_param_default(sp, "age_mat", age_mat_vB(params))
     }
-    ext_mort(params)[sel, ] <- ext_mort(params)[sel, ] * Qratio
-    ext_encounter(params)[sel, ] <- ext_encounter(params)[sel, ] * Qratio
+    Qratio[sel] <- age_mat(params)[sel] / sp$age_mat[sel]
+
+    # Don't affect species where no info is available
+    Qratio[is.na(Qratio)] <- 1
+
+    # Adjust consumption without changing size spectrum
+    search_vol(params) <- search_vol(params) * Qratio
+    intake_max(params) <- intake_max(params) * Qratio
+    metab(params) <- metab(params) * Qratio
+    ext_mort(params) <- ext_mort(params) * Qratio
+    ext_encounter(params) <- ext_encounter(params) * Qratio
+    # Also adjust species params
+    params@species_params$gamma <- sp$gamma * Qratio
+    params@species_params$h <- sp$h * Qratio
+    params@species_params$ks <- sp$ks * Qratio
+    if (hasName(sp, "k")) {
+        params@species_params$k <- sp$k * Qratio
+    }
 
     # Return new steady state
     params |> steadySingleSpecies() |>
@@ -80,11 +99,23 @@ isConsumptionMatched <- function(params, tol = 0.1) {
     }
     sp <- params@species_params
     if (!hasName(sp, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
+        sp$ecopath_consumption <- NA
     }
 
     Q <- getConsumption(params)
     Qratio <- sp$ecopath_consumption / Q
+
+    # For species without `ecopath_consumption` use age at maturity
+    sel <- is.na(Qratio)
+    sp <- set_species_param_default(sp, "age_mat", NA)
+    # If age at maturity is not specified, calculate it from von Bertalanffy
+    if (all(c("k_vb", "w_inf") %in% names(sp))) {
+        sp <- set_species_param_default(sp, "age_mat", age_mat_vB(params))
+    }
+    Qratio[sel] <- age_mat(params)[sel] / sp$age_mat[sel]
+
+    # Ignore species where no info is available
+    Qratio[is.na(Qratio)] <- 1
 
     return(max(abs(Qratio - 1)) < tol)
 }
