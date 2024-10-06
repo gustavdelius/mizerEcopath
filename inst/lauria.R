@@ -54,13 +54,7 @@ ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 
 ## Create MizerParams object ----
-max_w <- max(sp$w_max)
-p <- newMultispeciesParams(sp, no_w = 200, info_level = 0,
-                           # extend resource over entire size range
-                           max_w = max_w,
-                           w_pp_cutoff = max_w * (1 + 1e-9),
-                           lambda = lambda,
-                           resource_dynamics = "resource_constant")
+p <- newAllometricParams(sp, no_w = 200, lambda = lambda)
 sp <- p@species_params
 
 ## Set up gear params ----
@@ -74,26 +68,9 @@ catch <- left_join(ecopath_params, catch, by = c("Group.name" = "Fleet.group")) 
 
 p <- addEcopathCatchTotal(p, catch)
 
-## Power-law mortality ----
-comment(p@mu_b) <- "Using power-law mortality"
-species_params(p)$z0 <- 0
-for (species in sp$species) {
-    spc <- sp[species, ]
-    # calculate power-law mortality with value 0.4 at maturity size
-    power_mort <- 0.4 * (p@w / spc$w_mat)^(spc$n - 1)
-    # add it as background mortality
-    ext_mort(p)[species, ] <- power_mort
-}
-
-# Switch off all species interactions ----
-p <- makeNoninteracting(p)
-
 # Get new steady state
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
     matchBiomasses() |> steadySingleSpecies()
-
-# Turn off satiation
-p <- setFeedingLevel(p, 0)
 
 p_backup <- p
 
@@ -102,13 +79,6 @@ p <- p_backup |>
     matchConsumption() |> matchYield(keep = "biomass") |>
     matchConsumption() |> matchYield(keep = "biomass") |>
     matchConsumption() |> matchYield(keep = "biomass")
-
-# Set resource to be in line with fish (optional, cosmetic only)
-total <- colSums(initialN(p))
-fish_sel <- p@w_full >= p@w[1]
-ratio <- max(total / initialNResource(p)[fish_sel])
-p <- scaleDownBackground(p, 1/ratio)
-plotSpectra(p)
 
 ## Aggregate ecopath diet matrix ----
 ecopath_diet <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Diet composition.csv")
