@@ -3,7 +3,7 @@ test_that("setFeedingLevel works", {
                  "only works for models where all encounter is external.")
     params <- makeNoninteracting(NS_params)
     expect_error(setFeedingLevel(params, c(1, 2)),
-                 "wrong length")
+                 "The length of feeding_level vector")
     expect_error(setFeedingLevel(params, -1),
                  "must be positive")
     expect_error(setFeedingLevel(params, 1),
