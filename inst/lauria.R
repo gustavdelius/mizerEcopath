@@ -86,9 +86,7 @@ for (species in sp$species) {
 }
 
 # Switch off all species interactions ----
-p@interaction[] <- 0
-ext_encounter(p) <- getEncounter(p)
-species_params(p)$interaction_resource[] <- 0
+p <- makeNoninteracting(p)
 
 # Get new steady state
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
@@ -97,18 +95,15 @@ p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
 # Turn off satiation
 p <- setFeedingLevel(p, 0)
 
-plotlySpectra(p)
 p_backup <- p
 
-## Match to Ecopath params ----
+## Match consumption and yield ----
 p <- p_backup |>
-    matchConsumption() |> matchYield() |>
-    matchConsumption() |> matchYield() |>
-    matchConsumption() |> matchYield()
-p <- p |> matchProductionOnce()
-p <- p_backup |> matchEcopath()
+    matchConsumption() |> matchYield(keep = "biomass") |>
+    matchConsumption() |> matchYield(keep = "biomass") |>
+    matchConsumption() |> matchYield(keep = "biomass")
 
-# Set resource to be in line with fish
+# Set resource to be in line with fish (optional, cosmetic only)
 total <- colSums(initialN(p))
 fish_sel <- p@w_full >= p@w[1]
 ratio <- max(total / initialNResource(p)[fish_sel])
