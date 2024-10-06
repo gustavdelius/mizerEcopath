@@ -11,7 +11,7 @@
 #'   \code{species} (the name of the species), \code{gear} (the name of the
 #'   gear) and \code{catch} (the number of individuals of a particular species
 #'   caught by a particular gear in a size bin).
-catchTab <- function(input, output, session, params, logs, trigger_update,
+catchTab <- function(input, output, session, params, logs,
                      catch = NULL, ...) {
 
     if (!is.null(catch)) {

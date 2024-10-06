@@ -1,5 +1,7 @@
 #' Add Ecopath catch data to gear parameters
 #'
+#' @param params A MizerParams object
+#' @param catch The Ecopath Catch data frame
 #' @export
 addEcopathCatchTotal <- function(params, catch) {
     sp <- params@species_params

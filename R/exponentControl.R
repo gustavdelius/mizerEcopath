@@ -76,7 +76,7 @@ exponentControl <- function(input, output, session, params, params_old,
 
 #' @rdname exponentControl
 #'
-#' @param The MizerParams object currently being tuned.
+#' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
 exponentControlUI <- function(p, input) {

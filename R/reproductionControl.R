@@ -49,7 +49,7 @@ reproductionControl <- function(input, output, session, params, params_old,
 }
 
 #' @rdname reproductionControl
-#' @param The MizerParams object currently being tuned.
+#' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
 reproductionControlUI <- function(p, input) {

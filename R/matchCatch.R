@@ -18,6 +18,8 @@
 #' reached without converging.
 #'
 #' @param params A MizerParams object
+#' @param tol The relative tolerance for the match. Default is 0.1.
+#' @param max_iter The maximum number of iterations. Default is 10.
 #' @return A MizerParams object with the catchability adjusted to match the
 #'   observed yield
 #' @family match functions

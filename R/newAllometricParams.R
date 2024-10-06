@@ -51,6 +51,7 @@ newAllometricParams <- function(species_params, no_w = 200, lambda = 2) {
 #' mortality rates and FALSE otherwise.
 #'
 #' @param params A MizerParams object
+#' @param tol The relative tolerance.
 #' @return TRUE if the model has allometric encounter and mortality rates
 #' @export
 isAllometric <- function(params, tol = 1e-6) {
