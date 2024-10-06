@@ -60,6 +60,8 @@ Collate:
     'fishingControl.R'
     'growthTab.R'
     'otherControl.R'
+    'plotConsumptionVsSpecies.R'
+    'plotProductionVsSpecies.R'
     'reproTab.R'
     'reproductionControl.R'
     'setFeedingLevel.R'

@@ -21,6 +21,11 @@ deathTab <- function(input, output, session, params, logs,
                   proportion = input$death_prop == "Proportion",
                   xtrans = input$death_xtrans)
     })
+
+    # Plot Production
+    output$plot_prod <- renderPlotly({
+        plotProductionVsSpecies(params())
+    })
 }
 
 #' @rdname deathTab
@@ -33,6 +38,7 @@ deathTabUI <- function(...) {
                      inline = TRUE),
         radioButtons("death_xtrans", "x-axis scale:",
                      choices = c("log10", "identity"),
-                     selected = "log10", inline = TRUE)
+                     selected = "log10", inline = TRUE),
+        plotlyOutput("plot_prod")
     )
 }
