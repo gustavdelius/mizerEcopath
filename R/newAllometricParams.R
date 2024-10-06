@@ -12,8 +12,12 @@
 #' @export
 newAllometricParams <- function(species_params, no_w = 200, lambda = 2) {
 
-    max_w <- max(species_params$w_max)
-    p <- newMultispeciesParams(species_params, no_w = no_w, info_level = 0,
+    sp <- species_params
+    sp <- set_species_param_default(sp, "n", 0.7)
+    sp <- set_species_param_default(sp, "p", sp$n)
+    sp <- set_species_param_default(sp, "d", 1 - sp$n)
+    max_w <- max(sp$w_max)
+    p <- newMultispeciesParams(sp, no_w = no_w, info_level = 0,
                                # extend resource over entire size range
                                max_w = max_w,
                                w_pp_cutoff = max_w * (1 + 1e-9),
