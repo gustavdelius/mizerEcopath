@@ -26,10 +26,8 @@ matchConsumption <- function(params, tol = 0.1, max_iter = 10) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    sp <- params@species_params
-    if (!hasName(sp, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
-    }
+    sp <- set_species_param_default(params@species_params,
+                                    "ecopath_consumption", NA)
 
     params |> steadySingleSpecies() |>
         matchBiomasses() |> steadySingleSpecies()
@@ -53,10 +51,8 @@ matchConsumptionOnce <- function(params) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    sp <- params@species_params
-    if (!hasName(sp, "ecopath_consumption")) {
-        sp$ecopath_consumption <- NA
-    }
+    sp <- set_species_param_default(params@species_params,
+                                    "ecopath_consumption", NA)
 
     Q <- getConsumption(params)
     Qratio <- sp$ecopath_consumption / Q
@@ -97,10 +93,8 @@ isConsumptionMatched <- function(params, tol = 0.1) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    sp <- params@species_params
-    if (!hasName(sp, "ecopath_consumption")) {
-        sp$ecopath_consumption <- NA
-    }
+    sp <- set_species_param_default(params@species_params,
+                                    "ecopath_consumption", NA)
 
     Q <- getConsumption(params)
     Qratio <- sp$ecopath_consumption / Q
