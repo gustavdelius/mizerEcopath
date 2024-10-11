@@ -16,6 +16,7 @@ makeInteractive <- function(params, interaction) {
         any(params@species_params$interaction_resource != 0)) {
         stop("This function should be called with a non-interacting model.")
     }
+    sp <- params@species_params
 
     interaction_matrix(params) <- interaction
 
