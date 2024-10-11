@@ -12,7 +12,8 @@
 #' @return The modified MizerParams object
 #' @export
 makeInteractive <- function(params, interaction) {
-    if (any(params@interaction != 0) || any(params@interaction_resource != 0)) {
+    if (any(params@interaction != 0) ||
+        any(params@species_params$interaction_resource != 0)) {
         stop("This function should be called with a non-interacting model.")
     }
 
