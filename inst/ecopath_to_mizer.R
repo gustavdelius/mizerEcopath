@@ -14,12 +14,46 @@ sp <- read.csv(system.file("extdata/species_params_celtic_sea.csv",
                                        package = "mizerEcopath"))
 
 no_sp <- nrow(sp) # Number of species
-sp["n"] <- 0.7 # Exponent of consumption
+sp["n"] <- 0.7 # Exponent of encounter
 sp["p"] <- 0.7 # Exponent of respiration (metabolism)
 sp["d"] <- -0.3 # Exponent of mortality (in Mizer n - 1)
+sp["M"] <- 1 # Mortality rate at 1g
 sp["alpha"] <- 0.8  # Ecopath default (conversion efficiency)
 sp$gonad_proportion <- 0.2 # Proportion of total production which goes into gonads
 
+# Add predation kernel params from stomach data ----
+fits <- readRDS("../CelticSea/data/stomach_data_fit.rds")
+# This dataframe uses latin names for the species, so we add these to the
+# species_params dataframe.
+latin_names <- c(
+    "Herring" = "Clupea harengus",
+    "Sprat" = "Gadus morhua",
+    "Cod" = "Melanogrammus aeglefinus",
+    "Haddock" = "Merlangius merlangus",
+    "Whiting" = "Micromesistius poutassou",
+    "Blue whiting" = "Merluccius merluccius",
+    "Norway Pout" = "Lophius piscatorius",
+    "European Hake" = "Trachurus trachurus",
+    "Horse Mackerel" = "Scomber scombrus",
+    "Mackerel" = "Pleuronectes platessa",
+    "Plaice" = "Lepidorhombus whiffiagonis",
+    "Megrim" = "Solea solea",
+    "Sole" = "Solea solea"
+)
+sp$latin_names <- latin_names[sp$species]
+row.names(fits) <- fits$species
+sp$pred_kernel_type <- "power_law"
+lambda <- 2
+sp$kernel_exp <- fits[sp$latin_names, "alpha"] + 4/3 - lambda
+sp$kernel_l_l <- fits[sp$latin_names, "ll"]
+sp$kernel_u_l <- fits[sp$latin_names, "ul"]
+sp$kernel_l_r <- fits[sp$latin_names, "lr"]
+sp$kernel_u_r <- fits[sp$latin_names, "ur"]
+
+## Add Ecopath species parameters ----
+ecopath_params <- read.csv(
+    system.file("extdata/celtic_sea_hernvann_et_al/basic_estimates.csv",
+                package = "mizerEcopath"))
 # Dictionary between species and ecopath groups
 species_to_groups <- list(
     "Herring" = "Herring",
@@ -36,43 +70,16 @@ species_to_groups <- list(
     "Megrim" = "Megrim",
     "Sole" = "Sole"
 )
-
-## Add Ecopath species parameters ----
-ecopath_params <- read.csv(
-    system.file("extdata/celtic_sea_hernvann_et_al/basic_estimates.csv",
-                package = "mizerEcopath"))
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 
 ## Create MizerParams object ----
-max_w <- max(sp$w_max)
-p <- newMultispeciesParams(sp, no_w = 200, info_level = 0,
-                           # extend resource over entire size range
-                           max_w = max_w,
-                           w_pp_cutoff = max_w * (1 + 1e-9),
-                           lambda = 2,
-                           resource_dynamics = "resource_constant")
+p <- newAllometricParams(sp, no_w = 200, lambda = lambda)
 sp <- p@species_params
 
 ## Set up gear params ----
 catch <- read.csv(system.file("extdata/celtic_sea_hernvann_et_al/catch.csv",
                               package = "mizerEcopath"))
 p <- addEcopathCatchTotal(p, catch)
-
-## Power-law mortality ----
-comment(p@mu_b) <- "Using power-law mortality"
-species_params(p)$z0 <- 0
-for (species in sp$species) {
-    spc <- sp[species, ]
-    # calculate power-law mortality with value 0.4 at maturity size
-    power_mort <- 0.4 * (p@w / spc$w_mat)^(spc$n - 1)
-    # add it as background mortality
-    ext_mort(p)[species, ] <- power_mort
-}
-
-# Switch off all species interactions ----
-p@interaction[] <- 0
-ext_encounter(p) <- getEncounter(p)
-species_params(p)$interaction_resource[] <- 0
 
 # Get new steady state
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
@@ -83,10 +90,6 @@ p_backup <- p
 
 ## Match to Ecopath params ----
 p <- p_backup |> matchEcopath()
-
-# Turn off satiation
-species_params(p)$h <- Inf
-ext_encounter(p) <- ext_encounter(p) * 0.4
 
 # Set resource to be in line with fish
 total <- colSums(initialN(p))
