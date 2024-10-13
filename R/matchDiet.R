@@ -53,10 +53,6 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     if (!is(diet_matrix, "matrix")) {
         stop("diet_matrix must be a matrix.")
     }
-    if (nrow(diet_matrix) != no_sp ||
-        ncol(diet_matrix) != no_sp + 1) {
-        stop("diet_matrix has the wrong dimensions.")
-    }
     # Convert diet matrix from proportions to absolute consumption
     Q <- sp$ecopath_consumption
     dm <- diet_matrix * Q / rowSums(diet_matrix)
