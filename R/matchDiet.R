@@ -50,9 +50,23 @@ matchDiet <- function(params, diet_matrix, centering = 0,
         stop("This function is for models with infinite maximum intake rate.")
     }
 
+    # Check diet matrix ----
     if (!is(diet_matrix, "matrix")) {
-        stop("diet_matrix must be a matrix.")
+        stop("`diet_matrix` must be a matrix.")
     }
+    if (!is.numeric(diet_matrix)) {
+        stop("`diet_matrix` must be numeric.")
+    }
+    if (any(isnan(diet_matrix))) {
+        stop("`diet_matrix` contains NaNs.")
+    }
+    if (any(is.na(diet_matrix))) {
+        stop("`diet_matrix` contains NAs.")
+    }
+    if (any(rowSums(diet_matrix) == 0)) {
+        stop("According to the diet matrix, some species do not eat anything.")
+    }
+
     # Convert diet matrix from proportions to absolute consumption
     Q <- sp$ecopath_consumption
     dm <- diet_matrix * Q / rowSums(diet_matrix)
