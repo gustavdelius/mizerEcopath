@@ -42,7 +42,8 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    no_sp <- nrow(params@species_params)
+    sp <- params@species_params
+    no_sp <- nrow(sp)
 
     # This function is to be used on a model with infinite maximum intake rate
     if (any(intake_max(params) != Inf)) {
@@ -57,10 +58,13 @@ matchDiet <- function(params, diet_matrix, centering = 0,
         stop("diet_matrix has the wrong dimensions.")
     }
     # Convert diet matrix from proportions to absolute consumption
-    Q <- params@species_params$ecopath_consumption
+    Q <- sp$ecopath_consumption
     dm <- diet_matrix * Q / rowSums(diet_matrix)
-    # Drop the "other" column
-    D <- dm[, -ncol(dm)]
+    # Keep only the part corresponding to species
+    D <- dm[sp$species, sp$species]
+    if (nrow(D) != no_sp || ncol(D) != no_sp) {
+        stop("diet_matrix does not include all model species.")
+    }
 
     params <- makeNoninteracting(params)
 
