@@ -57,7 +57,7 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     if (!is.numeric(diet_matrix)) {
         stop("`diet_matrix` must be numeric.")
     }
-    if (any(isnan(diet_matrix))) {
+    if (any(is.nan(diet_matrix))) {
         stop("`diet_matrix` contains NaNs.")
     }
     if (any(is.na(diet_matrix))) {
