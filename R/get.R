@@ -84,7 +84,7 @@ getConsumption <- function(params, w_min = 0, w_max = Inf) {
     q <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)) * N,
                2, dw(params), "*")
     sel <- params@w >= w_min & params@w <= w_max
-    Q <- rowSums(q[, sel])
+    Q <- rowSums(q[, sel, drop = FALSE])
     return(Q)
 }
 
