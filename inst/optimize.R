@@ -2,7 +2,7 @@ library(mizerEcopath)
 library(here)
 
 source(here("inst/prepareLogLikelihoodFn.R"))
-source(here("inst/optimize.R"))
+source(here("inst/objective_function.R"))
 
 # Load catch size distribution
 catch <- readRDS(here("../CelticSea/data/ecopath_catch_v_FMP.rds"))
@@ -26,14 +26,11 @@ model_lengths <- (w(p) / sp$a)^(1/sp$b)
 log_likelihood_fn <- prepare_log_likelihood(catch)
 
 # Initial parameter estimates
-initial_params <- c(l50 = gp$l50, ratio = gp$l25 / gp$l50, M = 0,
-                    U = 10)
+initial_params <- c(l50 = gp$l50, ratio = gp$l25 / gp$l50, M = 0)
 
 # Set parameter bounds (if necessary)
-lower_bounds <- c(l50 = 5, ratio = 0.1, M = 0,
-                  U = 0.1)
-upper_bounds <- c(l50 = Inf, ratio = 0.99, M = Inf,
-                  U = 20)
+lower_bounds <- c(l50 = 5, ratio = 0.1, M = 0)
+upper_bounds <- c(l50 = Inf, ratio = 0.99, M = Inf)
 
 # Perform the optimization
 optim_result <- optim(
