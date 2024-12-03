@@ -61,18 +61,23 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #' Add Ecopath parameters to species parameters
 #'
 #' Determines the biomass, consumption and production rates for each species in
-#' the ecopath model and adds these to the species parameters.
-#'
-#' Ecopath works with "groups" where mizer works with "species". The
-#' `species_to_groups` parameter is a named list that maps Ecopath groups to
-#' mizer species. The names must be the same as the species in `species_params`
-#' and the values must be the names of the corresponding Ecopath groups.
+#' the ecopath model and adds these to the species parameters. Ecopath works
+#' with "groups" where mizer works with "species". The `species_to_groups`
+#' parameter is a named list that maps Ecopath groups to mizer species. The
+#' names must be the same as the species in `species_params` and the values must
+#' be the names of the corresponding Ecopath groups. Species in the mizer model
+#' that are not mapped to groups in the Ecopath model are left unchanged.
 #'
 #' In case the Ecopath model has groups that are split into stanzas, then the
-#' biomass, production and consumption of these stanzas need to be added
-#' together to give the values for the corresponding mizer species. In that case
-#' the value in `species_to_groups` should be a vector with the names of the
-#' stanzas that need to be combined.
+#' value in `species_to_groups` should be a vector with the names of the stanzas
+#' that need to be combined. The biomass, production and consumption of these
+#' stanzas are added together to give the values for the corresponding mizer
+#' species.
+#'
+#' The species mapping from `species_to_groups` is stored in the `ecopath_groups`
+#' column of the species_params data frame. This column is a list column so that
+#' it can store a vector of groups in the case where a species is made up of
+#' several groups.
 #'
 #' The biomasses are added to the species_params data frame in the
 #' `biomass_observed` column. The consumption rates are put into a
@@ -81,6 +86,13 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #' each mizer species are put ino the `ecopath_groups` column. This column is a
 #' list column so that it can store a vector of groups in the case where a
 #' species is made up of several groups.
+#'
+#' If `biomass_observed`, `ecopath_production` or `ecopath_consumption` columns
+#' already have values differing from the Ecopath values, a warning is issued
+#' and the values are overwritten.
+#'
+#' If a species in `species_params` is not found in `species_to_groups`, a
+#' message is issued and the species is skipped.
 #'
 #' @param species_params A data frame with mizer species parameters
 #' @param species_to_groups A named list where the names are mizer species and
@@ -93,34 +105,88 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #'  `ecopath_groups`.
 #' @export
 addEcopathParams <- function(species_params, ecopath_params,
-                             species_to_groups) {
+                             species_to_groups = list()) {
+    # Validate species parameters
     sp <- validSpeciesParams(species_params)
+
+    # Validate Ecopath parameters
     ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 
-    sp$biomass_observed <- 0
-    sp$ecopath_production <- 0
-    sp$ecopath_consumption <- 0
-    sp$ecopath_groups <- vector("list", nrow(sp))
-    for (i in seq_len(nrow(sp))) {
-        species <- sp$species[i]
-        sp$ecopath_groups[[i]] <- species_to_groups[[species]]
-        for (group in species_to_groups[[species]]) {
-            estimates <- ecopath_params[ecopath_params$Group.name == group, ]
-            biomass <- estimates$Biomass..t.km..
-            sp[species, "biomass_observed"] <-
-                sp[species, "biomass_observed"] + biomass
-
-            consumption <- estimates$Consumption...biomass...year. * biomass
-            sp[species, "ecopath_consumption"] <-
-                sp[species, "ecopath_consumption"] + consumption
-
-            production <- estimates$Production...consumption...year. * consumption
-            sp[species, "ecopath_production"] <-
-                sp[species, "ecopath_production"] + production
+    # Ensure necessary columns exist in species_params
+    required_columns <- c("biomass_observed", "ecopath_production", "ecopath_consumption", "ecopath_groups")
+    for (col in required_columns) {
+        if (!col %in% colnames(sp)) {
+            sp[[col]] <- if (col == "ecopath_groups") vector("list", nrow(sp)) else NA_real_
         }
     }
+
+    # Indices of mapped species
+    mapped_species_indices <- which(sp$species %in% names(species_to_groups))
+    unmapped_species_indices <- setdiff(seq_len(nrow(sp)), mapped_species_indices)
+
+    # Check if any Ecopath-related columns already have non-default values for mapped species
+    already_populated <- sp[mapped_species_indices, ] %>%
+        select(all_of(required_columns)) %>%
+        select(-ecopath_groups) %>%
+        summarise(across(everything(), ~ any(!is.na(.) & . != 0))) %>%
+        unlist()
+
+    if (any(already_populated)) {
+        mapped_species <- sp$species[mapped_species_indices]
+        warning(
+            paste0(
+                "Ecopath-related columns already contain non-default values for the following mapped species: ",
+                paste(mapped_species, collapse = ", "), ". ",
+                "These values will be overwritten based on the Ecopath data. ",
+                "Unmapped species will retain their pre-existing values or be given defaults."
+            )
+        )
+    }
+
+    # Only overwrite values for mapped species
+    for (i in mapped_species_indices) {
+        species <- sp$species[i]
+        sp$ecopath_groups[[i]] <- species_to_groups[[species]]
+
+        # Initialize the values to zero for accumulation
+        sp$biomass_observed[i] <- 0
+        sp$ecopath_consumption[i] <- 0
+        sp$ecopath_production[i] <- 0
+
+        for (group in species_to_groups[[species]]) {
+            # Extract Ecopath estimates for the group
+            estimates <- ecopath_params[ecopath_params$Group.name == group, ]
+
+            if (nrow(estimates) > 0) {
+                # Accumulate biomass, consumption, and production
+                biomass <- estimates$Biomass..t.km..
+                sp$biomass_observed[i] <- sp$biomass_observed[i] + biomass
+
+                consumption <- estimates$Consumption...biomass...year. * biomass
+                sp$ecopath_consumption[i] <- sp$ecopath_consumption[i] + consumption
+
+                production <- estimates$Production...consumption...year. * consumption
+                sp$ecopath_production[i] <- sp$ecopath_production[i] + production
+            }
+        }
+    }
+
+    # Issue a warning if there are unmapped species
+    if (length(unmapped_species_indices) > 0) {
+        unmapped_species <- sp$species[unmapped_species_indices]
+        warning(
+            paste0(
+                "The following species were not found in species_to_groups and were skipped: ",
+                paste(unmapped_species, collapse = ", "), "."
+            )
+        )
+    }
+
     return(sp)
 }
+
+
+
 
 #' Make model non-interacting
 #'
