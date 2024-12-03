@@ -23,7 +23,7 @@
 #' prey items with a weight below `w_cutoff`. To estimate their contribution to
 #' the diet we make the assumption that for such small prey items the predator
 #' does not distinguish between species and feeds solely according to its prey
-#' size preference. We multipoly the resulting encounter rate of these small
+#' size preference. We multiply the resulting encounter rate of these small
 #' prey items by the `centering` argument and add it to the Ecopath diet matrix
 #' before matching.
 #'

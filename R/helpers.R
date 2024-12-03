@@ -83,7 +83,7 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #' `biomass_observed` column. The consumption rates are put into a
 #' `ecopath_consumption` column and the production rates are put into a
 #' `ecopath_production` column. The names of the Ecopath groups associated to
-#' each mizer species are put ino the `ecopath_groups` column. This column is a
+#' each mizer species are put into the `ecopath_groups` column. This column is a
 #' list column so that it can store a vector of groups in the case where a
 #' species is made up of several groups.
 #'

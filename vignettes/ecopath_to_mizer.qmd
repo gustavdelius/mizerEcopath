@@ -227,7 +227,7 @@ g_i(w) = (1-\psi_i(w))(\alpha_i q_i(w) - k_i(w)),
 $$
 
 i.e., the individual only invests a proportion $1-\psi_i(w)$ of its
-surplus biomass into somatich growth and the the remaining proportion
+surplus biomass into somatic growth and the the remaining proportion
 $\psi_i(w)$ gets invested into gonadic growth. Unfortunately Ecopath
 tells us nothing about how to choose this proportion $\psi_i(w)$.
 
@@ -266,7 +266,7 @@ small sizes to larger sizes. Thus it has a size-resolved version of the
 second master equation:
 
 $$
-g_i(w)N_i(w) - \frac{d}{dw}\left(g_i(w)w N_i(w)\right) = \mu_i(w)wN_i(w),
+g_i(w)N_i(w) - \frac{d}{dw}\left(g_i(w)w N_i(w)\right) = \mu_i(w) w N_i(w),
 $$
 
 where $\mu_i(w)$ is the mortality rate of an individual. When integrated
