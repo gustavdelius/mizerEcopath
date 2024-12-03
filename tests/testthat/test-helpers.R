@@ -1,9 +1,7 @@
-library(testthat)
-
 # Sample data for tests
 species_params <- data.frame(
     species = c("Species1", "Species2", "Species3"),
-    w_inf = c(100, 200, 300),  # Required by validSpeciesParams()
+    w_max = c(100, 200, 300),  # Required by validSpeciesParams()
     biomass_observed = c(NA, NA, NA),
     ecopath_production = c(NA, NA, NA),
     ecopath_consumption = c(NA, NA, NA),
@@ -25,7 +23,8 @@ species_to_groups <- list(
 )
 
 test_that("Function adds Ecopath parameters correctly", {
-    result <- addEcopathParams(species_params, ecopath_params, species_to_groups)
+    expect_warning(result <- addEcopathParams(species_params, ecopath_params, species_to_groups),
+                   "The following species were not found in species_to_groups and were skipped: Species3\\.")
 
     # Check added columns
     expect_true(all(c("biomass_observed", "ecopath_consumption", "ecopath_production", "ecopath_groups") %in% colnames(result)))
@@ -54,18 +53,12 @@ test_that("Function warns about existing non-default values", {
     expect_warning(
         addEcopathParams(species_params_with_values, ecopath_params, species_to_groups),
         "Ecopath-related columns already contain non-default values"
-    )
-})
-
-test_that("Function warns about unmapped species", {
-    expect_warning(
-        result <- addEcopathParams(species_params, ecopath_params, list(Species1 = "Group1")),
-        "The following species were not found in species_to_groups and were skipped: Species2, Species3\\."
-    )
+    ) |> suppressWarnings()
 })
 
 test_that("Function handles multiple stanzas correctly", {
-    result <- addEcopathParams(species_params, ecopath_params, species_to_groups)
+    result <- addEcopathParams(species_params, ecopath_params, species_to_groups) |>
+        suppressWarnings()
     expect_equal(result$biomass_observed[2], 20)  # Sum of Stanza1 and Stanza2 biomass
     expect_equal(result$ecopath_consumption[2], 75)  # Correct total consumption
     expect_equal(result$ecopath_production[2], 58.5)  # Correct total production
@@ -81,8 +74,9 @@ test_that("Function works with missing Ecopath parameters", {
 })
 
 test_that("Function initializes missing columns in species_params", {
-    species_params_no_cols <- species_params[, c("species", "w_inf"), drop = FALSE]
-    result <- addEcopathParams(species_params_no_cols, ecopath_params, species_to_groups)
+    species_params_no_cols <- species_params[, c("species", "w_max"), drop = FALSE]
+    result <- addEcopathParams(species_params_no_cols, ecopath_params, species_to_groups) |>
+        suppressWarnings()
 
     expect_true(all(c("biomass_observed", "ecopath_consumption", "ecopath_production", "ecopath_groups") %in% colnames(result)))
 
@@ -101,7 +95,8 @@ test_that("Function does not overwrite values for unmapped species", {
     species_params_with_values$ecopath_consumption[3] <- 300
     species_params_with_values$ecopath_groups[[3]] <- "ExistingGroup"
 
-    result <- addEcopathParams(species_params_with_values, ecopath_params, species_to_groups)
+    result <- addEcopathParams(species_params_with_values, ecopath_params, species_to_groups) |>
+        suppressWarnings()
 
     # Check that values for unmapped species are unchanged
     expect_equal(result$biomass_observed[3], 100)
