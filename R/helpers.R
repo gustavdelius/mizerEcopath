@@ -148,7 +148,7 @@ addEcopathParams <- function(species_params, ecopath_params,
         species <- sp$species[i]
         sp$ecopath_groups[[i]] <- species_to_groups[[species]]
 
-        # Initialize the values to zero for accumulation
+        # Initialise the values to zero for accumulation
         sp$biomass_observed[i] <- 0
         sp$ecopath_consumption[i] <- 0
         sp$ecopath_production[i] <- 0
