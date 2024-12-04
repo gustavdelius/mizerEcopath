@@ -1,7 +1,14 @@
 ---
 title: "From Ecopath to Mizer"
 author: "Gustav Delius"
-format: html
+format: 
+  html:
+    toc: true
+    html-math-method: mathjax
+vignette: >
+  %\VignetteIndexEntry{From Ecopath to Mizer}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
