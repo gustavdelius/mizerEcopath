@@ -4,10 +4,8 @@
 #' @importFrom utils hasName
 #' @importFrom stats runif
 #' @rawNamespace import(plotly, except = last_plot)
+#' @useDynLib mizerEcopath
+#' @importFrom TMB MakeADFun compile dynlib
 #' @md
 #' @keywords internal
 "_PACKAGE"
-
-## usethis namespace: start
-## usethis namespace: end
-NULL

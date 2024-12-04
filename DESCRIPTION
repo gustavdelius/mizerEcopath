@@ -12,7 +12,8 @@ URL: https://github.com/gustavdelius/mizerEcopath
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
     mizer (>= 2.5.3),
-    mizerExperimental (>= 2.5.3)
+    mizerExperimental (>= 2.5.3),
+    R (>= 3.5)
 Imports:
     assertthat,
     bslib,
@@ -25,7 +26,8 @@ Imports:
     rintrojs,
     shiny,
     shinyBS,
-    shinyjs
+    shinyjs,
+    TMB
 Suggests:
     pkgdown,
     quarto,
@@ -63,13 +65,17 @@ Collate:
     'fishingControl.R'
     'growthTab.R'
     'otherControl.R'
+    'plot_catch.R'
     'plotConsumptionVsSpecies.R'
     'plotProductionVsSpecies.R'
+    'prepare_data.R'
     'reproTab.R'
     'reproductionControl.R'
     'setFeedingLevel.R'
     'spectraTab.R'
     'tuneParams_helpers.R'
+    'update_params.R'
 VignetteBuilder: quarto
 Config/testthat/edition: 3
 Language: en-GB
+LinkingTo: TMB, RcppEigen
