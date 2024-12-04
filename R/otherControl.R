@@ -86,11 +86,11 @@ otherControl <- function(input, output, session, params, params_old,
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
-otherControlUI <- function(p, input) {
-    sp <- p@species_params[input$sp, ]
+otherControlUI <- function(params, input) {
+    sp <- params@species_params[input$sp, ]
     # determine external mortality at maturity
-    mat_idx <- sum(p@w < sp$w_mat)
-    mu_mat <- ext_mort(p)[input$sp, mat_idx]
+    mat_idx <- sum(params@w < sp$w_mat)
+    mu_mat <- ext_mort(params)[input$sp, mat_idx]
     tagList(
         tags$h3(tags$a(id = "other"), "Other"),
         sliderInput("ks", "Coefficient of standard metabolism 'ks'",

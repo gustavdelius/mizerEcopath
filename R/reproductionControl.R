@@ -52,8 +52,8 @@ reproductionControl <- function(input, output, session, params, params_old,
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
-reproductionControlUI <- function(p, input) {
-    sp <- p@species_params[input$sp, ]
+reproductionControlUI <- function(params, input) {
+    sp <- params@species_params[input$sp, ]
     tagList(
         tags$h3(tags$a(id = "reproduction"), "Reproduction"),
         sliderInput("w_mat", "w_mat", value = sp$w_mat,

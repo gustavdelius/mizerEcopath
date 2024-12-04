@@ -1,7 +1,8 @@
 #' @keywords internal
-#' @import mizer ggplot2 dplyr assertthat shiny rintrojs
-#' @importFrom methods is
+#' @import mizer ggplot2 dplyr assertthat shiny rintrojs mizerExperimental
+#' @importFrom methods is validObject
 #' @importFrom utils hasName
+#' @importFrom stats runif
 #' @rawNamespace import(plotly, except = last_plot)
 #' @md
 #' @keywords internal

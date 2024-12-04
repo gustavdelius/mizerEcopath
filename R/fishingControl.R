@@ -98,9 +98,9 @@ fishingControl <- function(input, output, session, params, params_old,
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the gear parameters
-fishingControlUI <- function(p, input) {
-    sp <- p@species_params[input$sp, ]
-    gp <- p@gear_params[p@gear_params$species == sp$species, ]
+fishingControlUI <- function(params, input) {
+    sp <- params@species_params[input$sp, ]
+    gp <- params@gear_params[p@gear_params$species == sp$species, ]
     if (nrow(gp) == 0) { # Species not selected by any gears
         return(tagList())
     }

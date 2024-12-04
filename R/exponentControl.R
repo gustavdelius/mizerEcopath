@@ -79,8 +79,8 @@ exponentControl <- function(input, output, session, params, params_old,
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
-exponentControlUI <- function(p, input) {
-    sp <- p@species_params[input$sp, ]
+exponentControlUI <- function(params, input) {
+    sp <- params@species_params[input$sp, ]
     tagList(
         tags$h3(tags$a(id = "exponent"), "Allometric exponents"),
         sliderInput("n", "Exponent of consumption",
