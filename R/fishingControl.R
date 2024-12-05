@@ -100,7 +100,7 @@ fishingControl <- function(input, output, session, params, params_old,
 #' @return A tagList with sliders for the gear parameters
 fishingControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
-    gp <- params@gear_params[p@gear_params$species == sp$species, ]
+    gp <- params@gear_params[params@gear_params$species == sp$species, ]
     if (nrow(gp) == 0) { # Species not selected by any gears
         return(tagList())
     }
