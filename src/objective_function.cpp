@@ -2,14 +2,14 @@
 
 template<class Type>
 vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
-                              vector<Type> bin_boundary_lengths)
+                              vector<Type> l)
 {
     Type c1 = Type(1.0);
     Type sr = l50 * (c1 - ratio);
     Type s1 = l50 * log(Type(3.0)) / sr;
     Type s2 = s1 / l50;
     vector<Type> F_mort = catchability /
-        (c1 + exp(s1 - s2 * bin_boundary_lengths));
+        (c1 + exp(s1 - s2 * l));
 
     // Check that all elements are finite and non-negative
     TMBAD_ASSERT((F_mort.array().isFinite() && (F_mort.array() >= 0)).all());
@@ -18,24 +18,13 @@ vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
 }
 
 template<class Type>
-vector<Type> calculate_mort(vector<Type> F_mort, Type M, Type d,
-                            vector<Type> bin_boundaries)
-{
-    vector<Type> mort = M * pow(bin_boundaries, d) + F_mort;
-
-    // Check that all elements are finite and positive
-    TMBAD_ASSERT((mort.array().isFinite() && (mort.array() > 0)).all());
-    return mort;
-}
-
-template<class Type>
 vector<Type> calculate_growth(vector<Type>EReproAndGrowth,
                               vector<Type>repro_prop,
                               Type w_mat, Type U,
-                              vector<Type> bin_boundaries)
+                              vector<Type> w)
 {
     Type c1 = Type(1.0);
-    vector<Type> psi = repro_prop / (c1 + pow(bin_boundaries / w_mat, -U));
+    vector<Type> psi = repro_prop / (c1 + pow(w / w_mat, -U));
     vector<Type> growth = EReproAndGrowth * (c1 - psi);
 
     // Check that all elements are finite and non-negative
@@ -46,25 +35,21 @@ vector<Type> calculate_growth(vector<Type>EReproAndGrowth,
 template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
                          Type biomass,
-                         vector<Type> bin_widths,
-                         vector<Type> bin_boundaries)
+                         vector<Type> dw,
+                         vector<Type> w)
 {
-    int size = bin_widths.size();
+    int size = dw.size();
     vector<Type> N(size + 1);
     N(0) = Type(1.0);
     for (int i = 1; i < size; ++i) {
-        Type denominator = growth(i) + mort(i) * bin_widths(i);
+        Type denominator = growth(i) + mort(i) * dw(i);
         N(i) = N(i - 1) * growth(i - 1) / denominator;
     }
     N(size) = N(size - 1) * growth(size - 1) /
-        (mort(size - 1) * bin_widths(size - 1) + growth(size - 1));
+        (mort(size - 1) * dw(size - 1) + growth(size - 1));
 
     // Rescale to get observed biomass
-    Type total_biomass = Type(0.0);
-    for (int i = 0; i < size; ++i) {
-        total_biomass += N(i) * bin_widths(i) *
-            (bin_boundaries(i) + bin_boundaries(i + 1)) / Type(2.0);
-    }
+    vector<Type> total_biomass = N * w * dw;
     N = N * biomass / total_biomass;
 
     // Check that all elements are finite and non-negative
@@ -74,8 +59,8 @@ vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
 }
 
 template<class Type>
-vector<Type> calculate_catch_per_bin(vector<Type> N, vector<Type> F_mort,
-                                     vector<Type> bin_widths)
+vector<Type> calculate_catch_densities(vector<Type> N, vector<Type> F_mort,
+                                       vector<Type> bin_widths)
 {
     // **Calculate catch Densities at Bin Boundaries**
     vector<Type> densities = N * F_mort;
@@ -114,9 +99,13 @@ Type objective_function<Type>::operator() ()
 {
     // **Data Section**
     DATA_VECTOR(counts);           // Count observations in bins
-    DATA_VECTOR(bin_widths);       // Width of each bin in grams
-    DATA_VECTOR(bin_boundaries);   // Boundaries of each bin in grams
-    DATA_VECTOR(bin_boundary_lengths);  // Boundaries of each bin in cm
+    DATA_IVECTOR(bin_index);     // Bin indices for overlapping segments
+    DATA_IVECTOR(f_index);       // Function indices (j) for overlapping segments
+    DATA_VECTOR(coeff_fj);       // Coefficients for f(j)
+    DATA_VECTOR(coeff_fj1);      // Coefficients for f(j+1)
+    DATA_VECTOR(dw);
+    DATA_VECTOR(w);
+    DATA_VECTOR(l);                // lengths corresponding to w
     DATA_SCALAR(yield);            // Observed yield
     DATA_SCALAR(biomass);          // Observed biomass
     DATA_VECTOR(EReproAndGrowth);  // The rate at which energy is available for growth
@@ -134,39 +123,43 @@ Type objective_function<Type>::operator() ()
     PARAMETER(U);            // Steepness parameter of maturity ogive
     PARAMETER(catchability); // Catchability
 
-    // Check lengths of data vectors
-    TMBAD_ASSERT(bin_widths.size() == bin_boundaries.size() - 1);
-    TMBAD_ASSERT(bin_boundaries.size() == bin_boundary_lengths.size());
-    TMBAD_ASSERT(counts.size() == bin_widths.size());
-    TMBAD_ASSERT(EReproAndGrowth.size() == bin_boundaries.size());
-    TMBAD_ASSERT(repro_prop.size() == bin_boundaries.size());
-
     // **Calculate fishing mortality rate**
-    vector<Type> F_mort = calculate_F_mort(l50, ratio, catchability,
-                                           bin_boundary_lengths);
+    vector<Type> F_mort = calculate_F_mort(l50, ratio, catchability, l);
 
     // **Calculate total mortality rate**
-    vector<Type> mort = calculate_mort(F_mort, M, d, bin_boundaries);
+    vector<Type> mort = M * pow(w, d) + F_mort;
 
     // **Calculate growth rate**
     vector<Type> growth = calculate_growth(EReproAndGrowth, repro_prop,
-                                           w_mat, U, bin_boundaries);
+                                           w_mat, U, w);
 
     // **Calculate steady-state number density**
-    vector<Type> N = calculate_N(mort, growth, biomass,
-                                 bin_widths, bin_boundaries);
+    vector<Type> N = calculate_N(mort, growth, biomass, dw, w);
 
-    // **Calculate catch per bin**
-    vector<Type> catch_per_bin = calculate_catch_per_bin(N, F_mort, bin_widths);
+    // **Calculate catch Densities at Bin Boundaries**
+    vector<Type> catch_dens = N * F_mort;
 
     // **Calculate model yield**
-    Type model_yield = calculate_yield(catch_per_bin, bin_boundaries);
+    Type model_yield = sum(catch_dens * dw);
 
     // **Calculate catch probabilities**
-    // Ensure Probabilities Are Positive and Sum to 1
-    // Add a small epsilon to avoid log(0) and normalize
-    vector<Type> probs = catch_per_bin + Type(1e-10);
-    probs = probs / probs.sum();
+    int num_bins = counts.size();    // Number of bins
+    int num_segs = bin_index.size(); // Number of overlapping segments
+
+    vector<Type> probs(num_bins);   // Vector to store bin probabilities
+    probs.setZero();             // Initialize to zero
+
+    // Compute bin probabilities using precomputed weights
+    for (int k = 0; k < num_segs; k++) { // Loop over segments
+        int i = bin_index(k);      // Bin index
+        int j = f_index(k);        // Function index
+
+        // Accumulate the contributions to the bin probability
+        probs(i) += coeff_fj(k) * catch_dens(j) + coeff_fj1(k) * catch_dens(j+1);
+    }
+
+    // Normalize the bin probabilities so they sum to 1
+    probs = probs / sum(probs);
     REPORT(probs);
 
     // **Negative Log-Likelihood Calculation**
