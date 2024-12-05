@@ -5,7 +5,6 @@
 # total yield.
 
 library(mizerEcopath)
-library(TMB)
 p <- celtic_params
 sp <- species_params(p)
 gp <- gear_params(p)
@@ -32,10 +31,11 @@ initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50, M = 2, U = 10,
                     catchability = gps$catchability)
 
 # Prepare the objective function.
-data <- prepare_data(p, species, catch, yield_lambda = 1e7)
+data <- prepare_data(p, species, catch, yield_lambda = 1)
 obj <- MakeADFun(data = data,
                  parameters = initial_params,
-                 DLL = "mizerEcopath")
+                 DLL = "mizerEcopath",
+                 silent = TRUE)
 
 # Perform the optimization. This starts with the initial parameter estimates and
 # iteratively updates them to minimize the objective function.
@@ -56,6 +56,20 @@ gps$yield_observed
 report$model_yield
 getYield(optimal_params)[sp_select]
 # If you want a better match you can increase the `yield_lambda` parameter
+
+plot(data$bin_boundaries, report$N, type = "l", log = "y")
+N_model <- approx(w(optimal_params), initialN(optimal_params)[sp_select, ],
+                  xout = data$bin_boundaries)$y
+lines(data$bin_boundaries, N_model, col = "red")
+
+# Biomass
+data$biomass
+num_bins <- length(data$bin_widths)
+sum(report$N[1:num_bins] * data$bin_boundaries[1:num_bins] *
+        data$bin_widths)
+sum(N_model[1:num_bins] * data$bin_boundaries[1:num_bins] *
+        data$bin_widths)
+sum(initialN(optimal_params)[sp_select, ] * p@w * p@dw)
 
 # Biomass is matched perfectly, by design
 sps$biomass_observed
