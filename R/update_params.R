@@ -3,7 +3,7 @@
 #' This function currently updates the gear selectivity parameters `l50` and
 #' `l25, the catchability, the steepness `U` of the maturity ogive and the
 #' coefficient `M` of the power-law mortality rate. It then recalculates the
-#' steady state of the model and rescales it to match the observed biomass.
+#' steady state of the model and rescales it to keep the biomass unchanged.
 #'
 #' @param params The MizerParams object to update
 #' @param pars A named numeric vector of parameter values
@@ -42,11 +42,7 @@ update_params <- function(params, species = 1, pars) {
     params <- setReproduction(params)
 
     # Calculate the new steady state ----
-    params <- steadySingleSpecies(params)
-    # Rescale it to get the observed biomass
-    total <- sum(params@initial_n[sp_select, ] * params@w * params@dw)
-    factor <- sps$biomass_observed / total
-    params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * factor
+    params <- steadySingleSpecies(params, keep = "biomass")
 
     return(params)
 }

@@ -8,7 +8,8 @@
 #' at all sizes. Missing observations should be interpreted as a 0 count.
 #'
 #' @param params A MizerParams object
-#' @param species The species for which the objective function is to be prepared.
+#' @param species The species for which the data is to be prepared. By default
+#'   the first species in the model.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
 #'   * `length`: The start of each bin.
@@ -16,12 +17,10 @@
 #'   * `count`: The observed count for each bin.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
-#' @param pars A named list of starting values for the parameters that will be
-#'   optimized.
 #'
 #' @return The objective function
 #' @export
-prepare_data <- function(params, species = 1, catch, yield_lambda) {
+prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
 
     # Validate MizerParams object
     params <- validParams(params)
@@ -111,8 +110,12 @@ prepare_data <- function(params, species = 1, catch, yield_lambda) {
         stop("Interpolation of repro_prop failed.")
     }
 
-    # Calculate biomass above 2cm
-    biomass <- getBiomass(params, min_w = min(w_bin_boundaries))[sp_select]
+    # Calculate biomass
+    N <- approx(w(params), initialN(params)[sp_select, ],
+                xout = w_bin_boundaries)$y
+    sel <- seq_along(w_bin_widths)
+    biomass <- sum(N[sel] * w_bin_widths *
+                       (w_bin_boundaries[sel] + w_bin_boundaries[sel + 1]) / 2)
 
     # Prepare data
     data <- list(

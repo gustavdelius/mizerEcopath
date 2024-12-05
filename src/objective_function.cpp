@@ -181,6 +181,8 @@ Type objective_function<Type>::operator() ()
     if (!CppAD::isfinite(nll)) error("nll is not finite");
 
     REPORT(model_yield);
+    REPORT(N);
+    REPORT(F_mort);
 
     return nll;
 }
