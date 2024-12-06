@@ -88,13 +88,19 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
     w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
     w_bin_widths <- diff(w_bin_boundaries)
 
-    w <- w(p)
+    w <- w(params)
     # Select subset of w that totally contains the observed range
     w_min <- max(w[w <= min(w_bin_boundaries)])
     w_max <- min(w[w >= max(w_bin_boundaries)])
+    w_select <- w >= w_min & w <= w_max
     w <- w[w >= w_min & w <= w_max]
-    dw <- diff(w)
-    l <- sps$a * w^sps$b
+    dw <- dw(params)[w_select]
+    l <- (w / sps$a) ^ (1 / sps$b)
+
+    N <- initialN(params)[sp_select, w_select]
+    biomass <- sum(N * w * dw)
+
+    EReproAndGrowth <- getEReproAndGrowth(params)[sp_select, w_select]
 
     # Precompute weights for interpolation
     weight_list <- precompute_weights(w_bin_boundaries, w)
@@ -106,13 +112,13 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
         f_index = weight_list$f_index,
         coeff_fj = weight_list$coeff_fj,
         coeff_fj1 = weight_list$coeff_fj1,
-        dw = w_bin_widths,
-        w = w_bin_boundaries,
-        l = l_bin_boundaries,
+        dw = dw,
+        w = w,
+        l = l,
         yield = gps$yield_observed,
         biomass = biomass,
         EReproAndGrowth = EReproAndGrowth,
-        repro_prop = repro_prop,
+        repro_prop = repro_prop(params)[sp_select, w_select],
         w_mat = sps$w_mat,
         d = sps$d,
         yield_lambda = yield_lambda
@@ -120,6 +126,17 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
     return(data)
 }
 
+#' Precompute weights for integration of density over observed bins
+#'
+#' We have a set of weight bins with boundaries `w_bin_boundaries` and need
+#' an efficient way to integrate a probability density to determine a
+#' probability for each bin. The probability density is available at the set
+#' of weights given in the vector `w`. We want to use linear interpolation
+#' for the density between these values. Because the values in `w` do not
+#' align with the values in `w_bin_boundaries` we need to split each bin into
+#' segments. In this function we want to
+#' precompute the weights with which we need to add up the density values to
+#' approximate the integral over each bin.
 precompute_weights <- function(w_bin_boundaries, w) {
     # Precompute overlaps and weights
     num_bins <- length(w_bin_boundaries) - 1
@@ -140,16 +157,16 @@ precompute_weights <- function(w_bin_boundaries, w) {
             x1 <- w[j + 1]
 
             # Check for overlap
-            overlap_start <- max(x0, bin_start)
-            overlap_end <- min(x1, bin_end)
+            segment_start <- max(x0, bin_start)
+            segment_end <- min(x1, bin_end)
 
-            if (overlap_start < overlap_end) {
-                delta_x <- overlap_end - overlap_start
+            if (segment_start < segment_end) {
+                delta_x <- segment_end - segment_start
                 dx_j <- x1 - x0
 
                 # Calculate interpolation weights
-                w0_k <- (overlap_start - x0) / dx_j  # Weight at overlap_start
-                w1_k <- (overlap_end - x0) / dx_j    # Weight at overlap_end
+                w0_k <- (segment_start - x0) / dx_j  # Weight at segment_start
+                w1_k <- (segment_end - x0) / dx_j    # Weight at segment_end
 
                 # Coefficients for f(j) and f(j+1)
                 coeff_fj_k = delta_x * (1 - (w0_k + w1_k)/2)

@@ -34,49 +34,24 @@ vector<Type> calculate_growth(vector<Type>EReproAndGrowth,
 
 template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
-                         Type biomass,
-                         vector<Type> dw,
-                         vector<Type> w)
+                         Type biomass, vector<Type> w, vector<Type> dw)
 {
     int size = dw.size();
-    vector<Type> N(size + 1);
+    vector<Type> N(size);
     N(0) = Type(1.0);
     for (int i = 1; i < size; ++i) {
         Type denominator = growth(i) + mort(i) * dw(i);
         N(i) = N(i - 1) * growth(i - 1) / denominator;
     }
-    N(size) = N(size - 1) * growth(size - 1) /
-        (mort(size - 1) * dw(size - 1) + growth(size - 1));
 
     // Rescale to get observed biomass
-    vector<Type> total_biomass = N * w * dw;
-    N = N * biomass / total_biomass;
+    vector<Type> biomass_in_bins = N * w * dw;
+    N = N * biomass / biomass_in_bins.sum();
 
     // Check that all elements are finite and non-negative
     TMBAD_ASSERT((N.array().isFinite() && (N.array() >= 0)).all());
 
     return N;
-}
-
-template<class Type>
-vector<Type> calculate_catch_densities(vector<Type> N, vector<Type> F_mort,
-                                       vector<Type> bin_widths)
-{
-    // **Calculate catch Densities at Bin Boundaries**
-    vector<Type> densities = N * F_mort;
-    TMBAD_ASSERT((densities.array() >= 0).all());
-
-
-    // **Integrate density over bin using Trapezoidal Rule**
-    int num_bins = bin_widths.size(); // Number of bins
-    TMBAD_ASSERT(densities.size() == num_bins + 1);
-    vector<Type> catch_per_bin(num_bins);
-    for (int i = 0; i < num_bins; ++i) {
-        // Trapezoidal rule
-        catch_per_bin[i] = bin_widths[i] *
-            (densities[i] + densities[i + 1]) / Type(2.0);
-    }
-    return catch_per_bin;
 }
 
 template<class Type>
@@ -134,13 +109,14 @@ Type objective_function<Type>::operator() ()
                                            w_mat, U, w);
 
     // **Calculate steady-state number density**
-    vector<Type> N = calculate_N(mort, growth, biomass, dw, w);
+    vector<Type> N = calculate_N(mort, growth, biomass, w, dw);
 
-    // **Calculate catch Densities at Bin Boundaries**
+    // **Calculate catch density**
     vector<Type> catch_dens = N * F_mort;
 
     // **Calculate model yield**
-    Type model_yield = sum(catch_dens * dw);
+    vector<Type> catches = catch_dens * dw;
+    Type model_yield = catches.sum();
 
     // **Calculate catch probabilities**
     int num_bins = counts.size();    // Number of bins
@@ -159,7 +135,7 @@ Type objective_function<Type>::operator() ()
     }
 
     // Normalize the bin probabilities so they sum to 1
-    probs = probs / sum(probs);
+    probs = probs / probs.sum();
     REPORT(probs);
 
     // **Negative Log-Likelihood Calculation**
