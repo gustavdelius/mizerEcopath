@@ -119,6 +119,11 @@ Type objective_function<Type>::operator() ()
         probs(i) += coeff_fj(k) * catch_dens(j) + coeff_fj1(k) * catch_dens(j+1);
     }
 
+    // Avoid 0 probability for non-zero counts
+    for (int i = 0; i < probs.size(); ++i) {
+        if (probs[i] == 0 && counts[i] == 0) probs[i] = 1e-10; // Small epsilon value
+    }
+
     // Normalize the bin probabilities so they sum to 1
     probs = probs / probs.sum();
 
@@ -137,6 +142,7 @@ Type objective_function<Type>::operator() ()
     REPORT(model_yield);
     REPORT(N);
     REPORT(F_mort);
+    REPORT(growth)
 
     // Check that rescaling worked
     biomass_in_bins = N * w * dw;
