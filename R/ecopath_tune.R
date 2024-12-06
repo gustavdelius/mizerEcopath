@@ -468,7 +468,7 @@ tuneParams_match <- function(p, params, params_old, logs, session, input) {
         progress <- shiny::Progress$new(session)
         on.exit(progress$close())
 
-        p <- matchGrowth(p)
+        p <- matchGrowth(p, keep = "biomass")
         p <- matchCatch(p, species = input$sp, catch = catch)
 
         # Update the reactive params objects

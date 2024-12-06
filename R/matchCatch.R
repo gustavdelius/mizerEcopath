@@ -22,7 +22,8 @@
 #' @family match functions
 #' @export
 matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
-    prepare_data(params, species = 1, catch, yield_lambda = yield_lambda)
+    data <- prepare_data(params, species = species, catch,
+                         yield_lambda = yield_lambda)
     species <- valid_species_arg(params, species = species)
     sp <- species_params(params)
     gp <- gear_params(params)
@@ -52,7 +53,9 @@ matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
                            control = list(trace = 0))
 
     # Set model to use the optimal parameters
-    optimal_params <- update_params(params, species, optim_result$par)
+    w_select <- w(params) %in% data$w
+    optimal_params <- update_params(params, species, optim_result$par,
+                                    data$biomass, w_select)
 
     return(optimal_params)
 }

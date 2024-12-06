@@ -44,30 +44,11 @@ vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
         N(i) = N(i - 1) * growth(i - 1) / denominator;
     }
 
-    // Rescale to get observed biomass
-    vector<Type> biomass_in_bins = N * w * dw;
-    N = N * biomass / biomass_in_bins.sum();
-
     // Check that all elements are finite and non-negative
     TMBAD_ASSERT((N.array().isFinite() && (N.array() >= 0)).all());
 
     return N;
 }
-
-template<class Type>
-Type calculate_yield(vector<Type> catch_per_bin,
-                            vector<Type> bin_boundaries)
-{
-    // **Calculate model yield**
-    Type model_yield = Type(0.0);
-    for (int i = 0; i < catch_per_bin.size(); ++i) {
-        model_yield += catch_per_bin[i] *
-            (bin_boundaries[i] + bin_boundaries[i + 1]) / Type(2.0);
-    }
-    return model_yield;
-}
-
-
 
 template<class Type>
 Type objective_function<Type>::operator() ()
@@ -111,12 +92,16 @@ Type objective_function<Type>::operator() ()
     // **Calculate steady-state number density**
     vector<Type> N = calculate_N(mort, growth, biomass, w, dw);
 
+    // Rescale to get observed biomass
+    vector<Type> biomass_in_bins = N * w * dw;
+    N = N * biomass / biomass_in_bins.sum();
+
     // **Calculate catch density**
     vector<Type> catch_dens = N * F_mort;
 
     // **Calculate model yield**
-    vector<Type> catches = catch_dens * dw;
-    Type model_yield = catches.sum();
+    vector<Type> yield_per_bin = catch_dens * w * dw;
+    Type model_yield = yield_per_bin.sum();
 
     // **Calculate catch probabilities**
     int num_bins = counts.size();    // Number of bins
@@ -136,7 +121,6 @@ Type objective_function<Type>::operator() ()
 
     // Normalize the bin probabilities so they sum to 1
     probs = probs / probs.sum();
-    REPORT(probs);
 
     // **Negative Log-Likelihood Calculation**
     // Compute the negative log-likelihood using the multinomial distribution
@@ -149,9 +133,15 @@ Type objective_function<Type>::operator() ()
     TMBAD_ASSERT(CppAD::isfinite(nll));
     if (!CppAD::isfinite(nll)) error("nll is not finite");
 
+    REPORT(probs);
     REPORT(model_yield);
     REPORT(N);
     REPORT(F_mort);
+
+    // Check that rescaling worked
+    biomass_in_bins = N * w * dw;
+    Type total_biomass = biomass_in_bins.sum();
+    REPORT(total_biomass);
 
     return nll;
 }
