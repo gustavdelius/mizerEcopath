@@ -45,7 +45,8 @@ matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
     # Initial parameter estimates
     initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
                         mu_mat = mu_mat, U = U,
-                        catchability = gps$catchability)
+                        # we need non-zero catchability to match catch
+                        catchability = max(gps$catchability, 1e-8))
 
     # Prepare the objective function.
     obj <- MakeADFun(data = data,
@@ -55,7 +56,7 @@ matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
 
     # Set parameter bounds
     lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0, U = 1,
-                      catchability = 0)
+                      catchability = 1e-8)
     upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
                       catchability = Inf)
 
