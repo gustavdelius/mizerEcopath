@@ -48,8 +48,13 @@ otherControl <- function(input, output, session, params, params_old,
             updateSliderInput(session, "mu_mat",
                               min = signif(input$mu_mat / 2, 2),
                               max = signif((input$mu_mat + 0.1) * 1.5, 2))
-            # re-calculate ext_mort.
-            ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$mu_mat / mu_mat)
+            # re-calculate ext_mort
+            if (mu_mat > 0) {
+                ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$mu_mat / mu_mat)
+            } else { # If no mortality already set at w_mat, set power law
+                ext_mort(p)[sp, ] <- input$mu_mat *
+                    (p@w / p@w[mat_idx]) ^ p@species_params[sp, "d"]
+            }
         }
 
         p@species_params[sp, "alpha"] <- input$alpha
@@ -88,9 +93,6 @@ otherControl <- function(input, output, session, params, params_old,
 #' @return A tagList with sliders for the exponents
 otherControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
-    # determine external mortality at maturity
-    mat_idx <- sum(params@w < sp$w_mat)
-    mu_mat <- ext_mort(params)[input$sp, mat_idx]
     tagList(
         tags$h3(tags$a(id = "other"), "Other"),
         sliderInput("ks", "Coefficient of standard metabolism 'ks'",
@@ -109,9 +111,9 @@ otherControlUI <- function(params, input) {
                     step = 0.01),
         tags$h3(tags$a(id = "ext_mort"), "Mort"),
         sliderInput("mu_mat", "External mortality at maturity size",
-                    value = mu_mat,
-                    min = signif(mu_mat / 2, 2),
-                    max = signif((mu_mat + 0.1) * 1.5, 2),
+                    value = sp$mu_mat,
+                    min = signif(sp$mu_mat / 2, 2),
+                    max = signif((sp$mu_mat + 0.1) * 1.5, 2),
                     step = 0.05),
         sliderInput("alpha", "Assimilation efficiency 'alpha'",
                     value = sp$alpha,

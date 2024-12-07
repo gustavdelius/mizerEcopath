@@ -17,11 +17,19 @@
 #' @export
 update_params <- function(params, species = 1, pars, biomass, w_select) {
     params <- validParams(params)
+    sp <- species_params(params)
+
+    # Need to add mu_mat column if it does not exist
+    # TODO: change once we have introduced a standard species param for this
+    mat_idx <- colSums(outer(params@w, sp$w_mat, "<"))
+    mu_mat <- ext_mort(params)[cbind(seq_len(nrow(sp)), mat_idx)]
+    params <- set_species_param_default(params, "mu_mat", mu_mat)
+
     species <- valid_species_arg(params, species, error_on_empty = TRUE)
     if (length(species) > 1) {
         stop("Only one species can be updated at a time.")
     }
-    sp <- species_params(params)
+
     sp_select <- sp$species == species
     sps <- sp[sp_select, ]
 
@@ -39,11 +47,16 @@ update_params <- function(params, species = 1, pars, biomass, w_select) {
     gear_params(params)[gp_select, ] <- gps
 
     # recalculate the power-law mortality rate
-    # sps$M <- pars["M"]
-    ext_mort(params)[sp_select, ] <- pars["M"] * params@w^sps$d
+    sps$mu_mat <- pars["mu_mat"]
+    # Note that `mu_mat` is the mortality at the w just below w_mat
+    mat_idx <- sum(params@w < sps$w_mat)
+    w_mat <- params@w[mat_idx]
+    ext_mort(params)[sp_select, ] <-
+        pars["mu_mat"] * (params@w / w_mat)^sps$d
 
     # Update the steepness of the maturity ogive
     sps$w_mat25 <- sps$w_mat / 3^(1 / pars["U"])
+
     params@species_params[sp_select, ] <- sps
     params <- setReproduction(params)
 

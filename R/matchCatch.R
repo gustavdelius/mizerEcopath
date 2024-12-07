@@ -31,8 +31,20 @@ matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
     sps <- sp[sp_select, ]
     gps <- gp[gp$species == species, ]
 
+    if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
+        # determine external mortality at maturity
+        mat_idx <- sum(params@w < sps$w_mat)
+        mu_mat <- ext_mort(params)[sp_select, mat_idx]
+    } else {
+        mu_mat <- sps$mu_mat
+    }
+
+    # Steepness of maturity ogive
+    U <- log(3) / log(sps$w_mat / sps$w_mat25)
+
     # Initial parameter estimates
-    initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50, M = 2, U = 10,
+    initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
+                        mu_mat = mu_mat, U = U,
                         catchability = gps$catchability)
 
     # Prepare the objective function.
@@ -42,9 +54,9 @@ matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
                      silent = TRUE)
 
     # Set parameter bounds
-    lower_bounds <- c(l50 = 5, ratio = 0.1, M = 0, U = 1,
+    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0, U = 1,
                       catchability = 0)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, M = Inf, U = 20,
+    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
                       catchability = Inf)
 
     # Perform the optimization.

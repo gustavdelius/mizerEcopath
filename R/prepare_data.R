@@ -105,6 +105,10 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
     # Precompute weights for interpolation
     weight_list <- precompute_weights(w_bin_boundaries, w)
 
+    # The w_mat relevant for calculating mortality is the w just below it
+    w_mat_idx <- sum(params@w < sps$w_mat)
+    w_mat <- params@w[w_mat_idx]
+
     # Prepare data list for TMB ----
     data <- list(
         counts = counts,
@@ -119,7 +123,7 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
         biomass = biomass,
         EReproAndGrowth = EReproAndGrowth,
         repro_prop = repro_prop(params)[sp_select, w_select],
-        w_mat = sps$w_mat,
+        w_mat = w_mat,
         d = sps$d,
         yield_lambda = yield_lambda
     )

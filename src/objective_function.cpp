@@ -75,7 +75,7 @@ Type objective_function<Type>::operator() ()
     // **Parameter Section**
     PARAMETER(l50);          // Length at 50% gear selectivity
     PARAMETER(ratio);        // Ratio between l25 and l50
-    PARAMETER(M);            // Coefficient of natural mortality rate power law
+    PARAMETER(mu_mat);       // Mortality at maturity size
     PARAMETER(U);            // Steepness parameter of maturity ogive
     PARAMETER(catchability); // Catchability
 
@@ -83,7 +83,7 @@ Type objective_function<Type>::operator() ()
     vector<Type> F_mort = calculate_F_mort(l50, ratio, catchability, l);
 
     // **Calculate total mortality rate**
-    vector<Type> mort = M * pow(w, d) + F_mort;
+    vector<Type> mort = mu_mat * pow(w / w_mat, d) + F_mort;
 
     // **Calculate growth rate**
     vector<Type> growth = calculate_growth(EReproAndGrowth, repro_prop,
@@ -142,7 +142,8 @@ Type objective_function<Type>::operator() ()
     REPORT(model_yield);
     REPORT(N);
     REPORT(F_mort);
-    REPORT(growth)
+    REPORT(mort);
+    REPORT(growth);
 
     // Check that rescaling worked
     biomass_in_bins = N * w * dw;

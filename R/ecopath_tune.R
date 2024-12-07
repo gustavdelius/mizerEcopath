@@ -352,12 +352,15 @@ tuneEcopath <- function(params,
             introjs(session)
         )
 
-        ## Steady ####
-        # triggered by "Steady" button in sidebar
+        ## Match ####
+        # triggered by "Match" button in sidebar
         observeEvent(input$sp_steady, {
             tuneParams_match(params(), params = params,
                              params_old = params_old,
                              logs = logs, session = session, input = input)
+            # We need to update species sliders but make sure that that
+            # does not trigger an update of params
+            flags$sp_old_other <- -1
             trigger_update(runif(1))
         })
 
@@ -464,11 +467,7 @@ tuneEcopath <- function(params,
 tuneParams_match <- function(p, params, params_old, logs, session, input) {
 
     tryCatch({
-        # Create a Progress object
-        progress <- shiny::Progress$new(session)
-        on.exit(progress$close())
-
-        p <- matchGrowth(p, keep = "biomass")
+        # p <- matchGrowth(p, keep = "biomass")
         p <- matchCatch(p, species = input$sp, catch = catch)
 
         # Update the reactive params objects
