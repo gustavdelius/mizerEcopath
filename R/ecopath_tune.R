@@ -360,7 +360,7 @@ tuneEcopath <- function(params,
                              logs = logs, session = session, input = input)
             # We need to update species sliders but make sure that that
             # does not trigger an update of params
-            flags$sp_old_other <- -1
+            rm(list = ls(flags), pos = flags)
             trigger_update(runif(1))
         })
 
