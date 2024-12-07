@@ -8,8 +8,10 @@
 #' single gear catching each species.
 #'
 #' @param params A MizerParams object
-#' @param species The name of the selected species. By default the first
-#'   species in the model.
+#' @param species The species for which to match the catch. Optional. By default
+#'   all target species are selected. A vector of species names, or a numeric
+#'   vector with the species indices, or a logical vector indicating for each
+#'   species whether it is to be selected (TRUE) or not.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
 #'   * `length`: The start of each bin.
@@ -21,10 +23,19 @@
 #'   catchability for the selected species
 #' @family match functions
 #' @export
-matchCatch <- function(params, species = 1, catch, yield_lambda = 1) {
+matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
+    species <- valid_species_arg(params, species = species)
+    if (length(species) > 1) {
+        for (s in species) {
+            params <- matchCatch(params, species = s, catch = catch,
+                                 yield_lambda = yield_lambda)
+        }
+        return(params)
+    }
+
     data <- prepare_data(params, species = species, catch,
                          yield_lambda = yield_lambda)
-    species <- valid_species_arg(params, species = species)
+
     sp <- species_params(params)
     gp <- gear_params(params)
     sp_select <- sp$species == species
