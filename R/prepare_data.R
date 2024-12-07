@@ -49,22 +49,21 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
         bin_start = catch$length,
         bin_end = catch$length + catch$dl,
         count = catch$count)
-    # Add empty bins at either end to ensure that the full range is covered
-    # if (min(catch$length) > 2) {
-    #     observed_bins <- rbind(observed_bins,
-    #                            data.frame(bin_start = 1,
-    #                                       bin_end = min(catch$length),
-    #                                       count = 0))
-    # }
-    # max_idx <- which.max(catch$length)
-    # max_length <- catch$length[max_idx] + catch$dl[max_idx]
-    # l_max <- (sps$w_max / sps$a)^(1/sps$b)
-    # if (l_max - max_length > 1) {
-    #     observed_bins <- rbind(observed_bins,
-    #                            data.frame(bin_start = max_length,
-    #                                       bin_end = l_max,
-    #                                       count = 0))
-    # }
+    # Add empty bins at either end. This will have an effect only when the
+    # catch data is very poor and would be matched by curves that are still
+    # large at the end of the observation interval.
+    if (min(catch$length) > 2) {
+        observed_bins <- rbind(observed_bins,
+                               data.frame(bin_start = 1,
+                                          bin_end = min(catch$length),
+                                          count = 0))
+    }
+    max_idx <- which.max(catch$length)
+    max_length <- catch$length[max_idx] + catch$dl[max_idx]
+    observed_bins <- rbind(observed_bins,
+                           data.frame(bin_start = max_length,
+                                      bin_end = max_length + catch$dl[max_idx],
+                                      count = 0))
 
     # Create a comprehensive set of bin edges covering all observed bins
     bin_edges <- sort(unique(c(observed_bins$bin_start, observed_bins$bin_end)))
