@@ -67,6 +67,7 @@ update_params <- function(params, species = 1, pars, biomass, w_select) {
                      params@w[w_select] * params@dw[w_select])
     factor <- biomass / total
     params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * factor
+    params <- setBevertonHolt(params, reproduction_level = 0)
 
     return(params)
 }
