@@ -100,6 +100,10 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
     biomass <- sum(N * w * dw)
 
     EReproAndGrowth <- getEReproAndGrowth(params)[sp_select, w_select]
+    repro_prop <- getReproductionProportion(params)[sp_select, w_select]
+    # Work around bug #299
+    # TODO: remove this once this package depends on mizer version > 2.5.3.9000
+    repro_prop[repro_prop > 1] <- 1
 
     # Precompute weights for interpolation
     weight_list <- precompute_weights(w_bin_boundaries, w)
@@ -121,7 +125,7 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
         yield = gps$yield_observed,
         biomass = biomass,
         EReproAndGrowth = EReproAndGrowth,
-        repro_prop = repro_prop(params)[sp_select, w_select],
+        repro_prop = repro_prop,
         w_mat = w_mat,
         d = sps$d,
         yield_lambda = yield_lambda
