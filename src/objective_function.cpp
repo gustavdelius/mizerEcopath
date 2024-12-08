@@ -108,20 +108,16 @@ Type objective_function<Type>::operator() ()
     int num_segs = bin_index.size(); // Number of overlapping segments
 
     vector<Type> probs(num_bins);   // Vector to store bin probabilities
-    probs.setZero();             // Initialize to zero
+    probs.fill(Type(1e-10)); // To avoid zero probabilities
 
     // Compute bin probabilities using precomputed weights
+    Type eps = Type(1e-10);
     for (int k = 0; k < num_segs; k++) { // Loop over segments
         int i = bin_index(k);      // Bin index
         int j = f_index(k);        // Function index
 
         // Accumulate the contributions to the bin probability
         probs(i) += coeff_fj(k) * catch_dens(j) + coeff_fj1(k) * catch_dens(j+1);
-    }
-
-    // Avoid 0 probability for non-zero counts
-    for (int i = 0; i < probs.size(); ++i) {
-        if (probs[i] == 0 && counts[i] == 0) probs[i] = 1e-10; // Small epsilon value
     }
 
     // Normalize the bin probabilities so they sum to 1
