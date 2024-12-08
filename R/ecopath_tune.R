@@ -467,7 +467,7 @@ tuneEcopath <- function(params,
 tuneParams_match <- function(p, params, params_old, logs, session, input) {
 
     tryCatch({
-        p <- matchGrowth(p, keep = "biomass")
+        p <- matchGrowth(p, species = input$sp, keep = "biomass")
         p <- matchCatch(p, species = input$sp, catch = catch)
 
         # Update the reactive params objects
