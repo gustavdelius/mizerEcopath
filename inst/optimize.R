@@ -11,48 +11,64 @@ sp <- species_params(params)
 gp <- gear_params(params)
 catch <- celtic_catch
 
-# Set parameter bounds
-lower_bounds <- c(l50 = 5, ratio = 0.1, M = 0, U = 1, catchability = 0)
-upper_bounds <- c(l50 = Inf, ratio = 0.99, M = Inf, U = 20, catchability = Inf)
+params <- matchGrowth(params, keep = "biomass")
+params <- matchCatch(params, catch = catch)
 
-species <- valid_species_arg(params, 3)
+species <- valid_species_arg(params, 5)
 
+# Model does not fit the observed catch yet:
+plot_catch(params, species, catch)
+
+data <- prepare_data(params, species = species, catch)
+species <- valid_species_arg(params, species = species)
+sp <- species_params(params)
+gp <- gear_params(params)
 sp_select <- sp$species == species
 sps <- sp[sp_select, ]
 gps <- gp[gp$species == species, ]
 
-# Model does not fit the observed catch yet:
-plot_catch(params, species, catch)
-# and it has the wrong total yield:
-gps$yield_observed
-getYield(params)[sp_select]
+if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
+    # determine external mortality at maturity
+    mat_idx <- sum(params@w < sps$w_mat)
+    mu_mat <- ext_mort(params)[sp_select, mat_idx]
+} else {
+    mu_mat <- sps$mu_mat
+}
+
+# Steepness of maturity ogive
+U <- log(3) / log(sps$w_mat / sps$w_mat25)
 
 # Initial parameter estimates
-initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50, M = 2, U = 10,
+initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
+                    mu_mat = mu_mat, U = U,
                     catchability = gps$catchability)
 
 # Prepare the objective function.
-data <- prepare_data(params, species, catch, yield_lambda = 1)
 obj <- MakeADFun(data = data,
                  parameters = initial_params,
                  DLL = "mizerEcopath",
                  silent = TRUE)
 
-# Perform the optimization. This starts with the initial parameter estimates and
-# iteratively updates them to minimize the objective function.
+# Set parameter bounds
+lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2, U = 1,
+                  catchability = 0.001)
+upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
+                  catchability = Inf)
+
+# Perform the optimization.
 optim_result <- nlminb(obj$par, obj$fn, obj$gr,
                        lower = lower_bounds, upper = upper_bounds,
                        control = list(trace = 0))
-
-optim_result$par
-report <- obj$report()
 
 # Set model to use the optimal parameters
 w_select <- w(params) %in% data$w
 optimal_params <- update_params(params, species, optim_result$par,
                                 data$biomass, w_select)
-# and plot the model catch again against the observed catch
+
+
 plot_catch(optimal_params, species, catch)
+
+report <- obj$report()
 
 # Also the yield is approximately matched:
 gps$yield_observed
@@ -69,4 +85,5 @@ data$biomass
 report$total_biomass
 getBiomass(optimal_params, min_w = data$w[1], max_w = max(data$w))[sp_select]
 sum(initialN(optimal_params)[sp_select, w_select] * data$w * data$dw)
+
 
