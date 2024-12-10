@@ -5,9 +5,10 @@ library(mizer)
 test_that("matchCatch runs without error with valid inputs for a single species", {
     # Run the function for Hake
     result <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch)
-
-    # Check that the result is a MizerParams object
-    expect_s4_class(result, "MizerParams")
+    # Running it again should not make further changes except on time-stamp
+    result2 <- matchCatch(result, species = "Hake", catch = celtic_catch)
+    result2@time_modified <- result@time_modified
+    expect_equal(result, result2)
 })
 
 test_that("matchCatch throws error if catch data is missing required columns", {

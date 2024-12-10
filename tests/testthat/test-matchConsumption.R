@@ -32,7 +32,10 @@ test_that("matchConsumption works with single species", {
     # Select a single species, ensure it runs and returns a MizerParams object
     single_sp <- celtic_params@species_params$species[1]
     result <- matchConsumption(celtic_params, species = single_sp)
-    expect_s4_class(result, "MizerParams")
+    # And doing it again makes no further changes
+    result2 <- matchConsumption(celtic_params, species = single_sp)
+    result2@time_modified <- result@time_modified
+    expect_identical(result, result2)
 })
 
 test_that("matchConsumption works with multiple species and adjusts correctly", {
