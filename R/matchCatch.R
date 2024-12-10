@@ -76,6 +76,9 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
 
     data <- prepare_data(params, species = species, catch,
                          yield_lambda = yield_lambda)
+    if (is.null(data)) { # There is no catch data for this species
+        return(params)
+    }
 
     sp <- species_params(params)
     gp <- gear_params(params)

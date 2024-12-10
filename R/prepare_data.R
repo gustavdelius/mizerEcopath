@@ -18,7 +18,8 @@
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #'
-#' @return The objective function
+#' @return A list with the data to be passed to the TMB objective function. If
+#'   there is no catch data for the species, the function returns NULL.
 #' @export
 prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
 
@@ -41,6 +42,10 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
 
     # Validate catch data frame and extract data for the selected species ----
     catch <- valid_catch(catch, species)
+
+    if (nrow(catch) == 0) {
+        return(NULL)
+    }
 
     # Fill in missing zero counts ----
 
@@ -212,8 +217,6 @@ valid_catch <- function(catch, species) {
     if ("gear" %in% names(catch) && length(unique(catch$gear)) > 1) {
         stop("The code currently assumes that there is only a single gear for each species.")
     }
-    if (nrow(catch) == 0) {
-        stop("No catch data for species ", species)
-    }
+
     return(catch)
 }
