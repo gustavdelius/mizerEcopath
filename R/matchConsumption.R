@@ -4,15 +4,15 @@
 #' matches the species parameter `ecopath_consumption`, while keeping the same
 #' energy available for growth and reproduction. Thus the function also adjusts
 #' the external encounter rate to compensate for the changed respiration rate.
-#' To be able to do this the function needs to assume that both the encounter
-#' rate and the metabolic respiration rate are given by power laws with the same
-#' exponent `n`.
+#' To do this the function assumes that both the encounter rate and the metabolic
+#' respiration rate are given by power laws with the same exponent `n`.
 #'
-#' If the production for a species is higher than the consumption in
-#' `ecopath_consumption`, then this will lead to a negative metabolic
-#' respiration rate. In this case the function will issue a warning.
+#' If for any species the production is higher than the `ecopath_consumption`,
+#' then this will lead to a negative metabolic respiration rate. In this case
+#' the function will issue a warning for all such species.
 #'
 #' @param params A MizerParams object
+#' @param species A vector of species names or indices. If NULL, all species are considered.
 #'
 #' @return A MizerParams object with adjusted encounter and metabolic respiration
 #'   rates.
@@ -35,39 +35,65 @@ matchConsumption <- function(params, species = NULL) {
         stop("You must provide the ecopath_consumption species parameter.")
     }
     species <- valid_species_arg(params, species, error_on_empty = TRUE)
-    if (length(species) > 1) {
-        for (i in seq_along(species)) {
-            params <- matchConsumption(params, i)
-        }
-        return(params)
-    }
 
-    # Select the desired species
+    # Identify selected species
     sp <- params@species_params
-    sp_select <- sp$species == species
-    sps <- sp[sp_select, ]
-    if (is.na(sps$ecopath_consumption)) {
-        stop("The ecopath_consumption parameter for species ", species, " is NA.")
-    }
-    if (sps$p != sps$n) {
-        stop("The encounter rate and metabolic respiration rate must have the same exponent.")
+    sp_select <- sp$species %in% species
+
+    # Check for NA ecopath_consumption
+    if (any(is.na(sp$ecopath_consumption[sp_select]))) {
+        stop("The ecopath_consumption parameter is NA for some selected species.")
     }
 
-    # According to Ecopath, R = alpha * Q - P
-    R = sps$alpha * sps$ecopath_consumption - getTotalProduction(params)[sp_select]
-    if (R < 0) {
-        warning("Negative metabolic respiration required for species ", species, ".")
+    # Check that encounter and metabolic exponent match for all selected species
+    if (any(sp$p[sp_select] != sp$n[sp_select])) {
+        stop("The encounter rate and metabolic respiration rate must have the same exponent for all selected species.")
     }
-    metab_old <- params@metab[sp_select, ]
-    # Set metabolic rate with unit coefficient
-    params@metab[sp_select, ] <- params@w ^ sps$n
-    # Rescale the metabolic rate
-    ks <- R / getMetabolicRespiration(params)[sp_select]
-    params@species_params[sp_select, "ks"] <- ks
-    params@metab[sp_select, ] <- ks * params@w ^ sps$n
-    # Increase the encounter rate to compensate
-    ext_encounter(params)[sp_select, ] <- ext_encounter(params)[sp_select, ] +
-        (metab(params)[sp_select, ] - metab_old) / sps$alpha
+
+    # Calculate R = alpha * Q - P for each selected species
+    total_production <- getTotalProduction(params)
+    R <- sp$alpha[sp_select] * sp$ecopath_consumption[sp_select] - total_production[sp_select]
+
+    # Warn if any species require negative metabolic respiration
+    negative_species <- sp$species[sp_select][R < 0]
+    if (length(negative_species) > 0) {
+        warning("Negative metabolic respiration required for species: ",
+                paste(negative_species, collapse = ", "), ".")
+    }
+
+    # Store old metabolic rates
+    metab_old <- params@metab[sp_select, , drop = FALSE]
+
+    # Reset metabolic rate to w^n for each selected species
+    # We need a matrix of w raised to the power n for each selected species
+    w <- params@w
+    n_vals <- sp$n[sp_select]
+    # Create a matrix of w^(n) for each species (rows = species, cols = size classes)
+    w_matrix <- matrix(w, nrow = sum(sp_select), ncol = length(w), byrow = TRUE)
+    n_matrix <- matrix(n_vals, nrow = sum(sp_select), ncol = length(w))
+    metab_unit <- w_matrix ^ n_matrix
+    params@metab[sp_select, ] <- metab_unit
+
+    # Calculate scaling factor ks so that total metabolic respiration matches R
+    # getMetabolicRespiration(params) should return a vector (one value per species)
+    tot_metab_resp <- getMetabolicRespiration(params)[sp_select]
+    ks <- R / tot_metab_resp
+
+    # Update ks in species_params
+    params@species_params$ks[sp_select] <- ks
+
+    # Scale metab by ks
+    # Multiply each species' w^n vector by its ks
+    metab_new <- sweep(metab_unit, 1, ks, "*")
+    params@metab[sp_select, ] <- metab_new
+
+    # Increase the encounter rate to compensate: ext_encounter + (metab_new - metab_old) / alpha
+    ext_en <- ext_encounter(params)
+    met_diff <- metab_new - metab_old
+    alpha_vec <- sp$alpha[sp_select]
+    adj_mat <- sweep(met_diff, 1, alpha_vec, "/")
+    ext_en[sp_select, ] <- ext_en[sp_select, ] + adj_mat
+    ext_encounter(params) <- ext_en
 
     return(params)
 }
