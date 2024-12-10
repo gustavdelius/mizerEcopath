@@ -35,6 +35,24 @@ getGonadicProduction <- function(params) {
     return(Pg)
 }
 
+
+#' Get total production
+#'
+#' For each species returns the rate at which biomass is produced. This includes
+#' both somatic and gonadic production.
+#'
+#' @param params A MizerParams object
+#' @return A named vector of gonadic production for each species
+#' @export
+#' @family rate functions
+getTotalProduction <- function(params) {
+    N <- initialN(params)
+    dw <- dw(params)
+    Pg <- as.vector((getEReproAndGrowth(params) * N) %*% dw)
+    names(Pg) <- params@species_params$species
+    return(Pg)
+}
+
 #' Get production
 #'
 #' For each species returns the rate at which biomass is produced.
@@ -61,8 +79,8 @@ getProduction <- function(params) {
 
 #' Get consumption
 #'
-#' For each species returns the rate at which food is consumed. This is
-#' calculated as
+#' For each species, this function returns the rate at which food is consumed.
+#' This is calculated as
 #' \deqn{Q_i = \int_{w_0}^{w_{max}} E_{e.i}(w) (1 - f_i(w)) N_i(w) dw}
 #' where
 #' \eqn{E_{e.i}(w)} is the encounter rate of an individual of species \eqn{i}
