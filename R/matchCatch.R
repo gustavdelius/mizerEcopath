@@ -1,11 +1,40 @@
-#' Match the observed yield by adjusting catchability
+#' Match the observed catch and yield
 #'
-#' This function adjusts the gear selectivity parameters and the catchability
-#' for the selected species so that the model in steady state reproduces the
-#' observed catch size distribution and the observed total observed yield.
+#' This function adjusts various model parameters for the selected species so
+#' that the model in steady state reproduces the observed catch size
+#' distribution and the observed yield.
 #'
 #' Currently this function is implemented only for the case where there is a
 #' single gear catching each species.
+#'
+#' The function sets new values for the following parameters:
+#' * `l50`: The size at which the gear selectivity is 50%.
+#' * `l25`: The size at which the gear selectivity is 25%.
+#' * `catchability`: The catchability of the gear.
+#' * `mu_mat`: The external mortality at maturity.
+#' * `w_mat25`: The size at which 25% of individuals are mature.
+#' It uses these to recalculate the corresponding rate arrays in the params
+#' object. It sets the initial size spectrum to the steady state size spectrum.
+#' The total biomass of each species remains unchanged. Only the selected
+#' species are adjusted.
+#'
+#' The function estimates these parameters by minimizing an objective function.
+#' The objective function is the negative log likelihood of the observed catch
+#' size distribution given the probabilities predicted by the model plus the sum
+#' of squares difference between the log of the observed yield and the log of
+#' the predicted yield, multiplied by `yield_lambda`.
+#'
+#' The catch predicted by the model is calculated by integrating the
+#' catchability and the gear selectivity over the size distribution of the
+#' species. The size distribution itself is shaped by the model through the
+#' interplay between growth and mortality. This is why the gear selectivity and
+#' catchability need to be adjusted together with the other parameters that
+#' shape the size distribution.
+#'
+#' The objective function is coded in C++ and the TMB package is used to compile
+#' the objective function and to create functions for automatically calculating
+#' the gradients. These are then passed to the `nlminb` function to minimize the
+#' objective function.
 #'
 #' @param params A MizerParams object
 #' @param species The species for which to match the catch. Optional. By default
@@ -22,9 +51,21 @@
 #' @return A MizerParams object with the adjusted gear selectivity and
 #'   catchability for the selected species
 #' @family match functions
+#' @examples
+#' params <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch)
+#' plot_catch(params, species = "Hake", catch = celtic_catch)
+#' # The function leaves the biomass of the species unchanged
+#' all.equal(getBiomass(params), getBiomass(celtic_params), tol = 1e-4)
+#' # It also leaves the energy available to an individual for reproduction
+#' # and growth unchanged
+#' all.equal(getEReproAndGrowth(params), getEReproAndGrowth(celtic_params))
+#' # The initial size spectrum is set to the steady state size spectrum
+#' params_steady <- steadySingleSpecies(params)
+#' all.equal(initialN(params), initialN(params_steady))
 #' @export
 matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
-    species <- valid_species_arg(params, species = species)
+    species <- valid_species_arg(params, species = species,
+                                 error_on_empty = TRUE)
     if (length(species) > 1) {
         for (s in species) {
             params <- matchCatch(params, species = s, catch = catch,
@@ -82,20 +123,4 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
                                     data$biomass, w_select)
 
     return(optimal_params)
-}
-
-#' @rdname matchCatch
-isCatchMatched <- function(params, tol = 0.1) {
-    if (!is(params, "MizerParams")) {
-        stop("params must be a MizerParams object.")
-    }
-    sp <- params@species_params
-    gp <- params@gear_params
-    if (!hasName(gp, "yield_observed")) {
-        stop("You must provide the yield_observed gear parameter.")
-    }
-    # Calculate discrepancy in yields
-    Cratio <- gp$yield_observed / getYield(params)
-
-    return(max(abs(Cratio - 1)) < tol)
 }
