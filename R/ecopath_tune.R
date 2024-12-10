@@ -469,6 +469,7 @@ tuneParams_match <- function(p, params, params_old, logs, session, input) {
     tryCatch({
         p <- matchGrowth(p, species = input$sp, keep = "biomass")
         p <- matchCatch(p, species = input$sp, catch = catch)
+        p <- matchConsumption(p, species = input$sp)
 
         # Update the reactive params objects
         params_old(p)
