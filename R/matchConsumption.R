@@ -1,17 +1,31 @@
 #' Match the consumption of the model to the Ecopath consumption
 #'
 #' This function sets the metabolic respiration rate so that the consumption
-#' matches the Ecopath consumption while keeping the same energy available for
-#' growth and reproduction. Thus the function also adjusts the external encounter
-#' rate to compensate for the changed respiration rate. To be able to do this
-#' the function needs to assume that both the encounter rate and the metabolic
-#' respiration rate are given by power laws with the same exponent `n`.
+#' matches the species parameter `ecopath_consumption`, while keeping the same
+#' energy available for growth and reproduction. Thus the function also adjusts
+#' the external encounter rate to compensate for the changed respiration rate.
+#' To be able to do this the function needs to assume that both the encounter
+#' rate and the metabolic respiration rate are given by power laws with the same
+#' exponent `n`.
+#'
+#' If the production for a species is higher than the consumption in
+#' `ecopath_consumption`, then this will lead to a negative metabolic
+#' respiration rate. In this case the function will issue a warning.
 #'
 #' @param params A MizerParams object
 #'
 #' @return A MizerParams object with adjusted encounter and metabolic respiration
 #'   rates.
 #' @family match functions
+#' @examples
+#' params <- matchConsumption(celtic_params)
+#' # The consumption now matches the observation
+#' all.equal(getConsumption(params),
+#'           species_params(params)$ecopath_consumption,
+#'           check.attributes = FALSE)
+#' # The energy available for growth and reproduction is not changed
+#' all.equal(getEReproAndGrowth(params),
+#'           getEReproAndGrowth(celtic_params))
 #' @export
 matchConsumption <- function(params, species = NULL) {
     if (!is(params, "MizerParams")) {
@@ -44,7 +58,8 @@ matchConsumption <- function(params, species = NULL) {
     if (R < 0) {
         warning("Negative metabolic respiration required for species ", species, ".")
     }
-    # Set arbitrary value for the metabolic rate
+    metab_old <- params@metab[sp_select, ]
+    # Set metabolic rate with unit coefficient
     params@metab[sp_select, ] <- params@w ^ sps$n
     # Rescale the metabolic rate
     ks <- R / getMetabolicRespiration(params)[sp_select]
@@ -52,7 +67,7 @@ matchConsumption <- function(params, species = NULL) {
     params@metab[sp_select, ] <- ks * params@w ^ sps$n
     # Increase the encounter rate to compensate
     ext_encounter(params)[sp_select, ] <- ext_encounter(params)[sp_select, ] +
-        metab(params)[sp_select, ] / sps$alpha
+        (metab(params)[sp_select, ] - metab_old) / sps$alpha
 
     return(params)
 }
