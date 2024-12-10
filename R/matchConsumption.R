@@ -7,6 +7,8 @@
 #' To do this the function assumes that both the encounter rate and the metabolic
 #' respiration rate are given by power laws with the same exponent `n`.
 #'
+#' Any of the selected species for which `ecopath_consumption` is NA will be
+#' quietly ignored.
 #' If for any species the production is higher than the `ecopath_consumption`,
 #' then this will lead to a negative metabolic respiration rate. In this case
 #' the function will issue a warning for all such species.
@@ -34,11 +36,15 @@ matchConsumption <- function(params, species = NULL) {
     if (!hasName(params@species_params, "ecopath_consumption")) {
         stop("You must provide the ecopath_consumption species parameter.")
     }
-    species <- valid_species_arg(params, species, error_on_empty = TRUE)
+    species <- valid_species_arg(params, species)
 
     # Identify selected species
     sp <- params@species_params
-    sp_select <- sp$species %in% species
+    sp_select <- sp$species %in% species & !is.na(sp$ecopath_consumption)
+
+    if (sum(sp_select) == 0) {
+        return(params)
+    }
 
     # Check for NA ecopath_consumption
     if (any(is.na(sp$ecopath_consumption[sp_select]))) {
@@ -49,6 +55,8 @@ matchConsumption <- function(params, species = NULL) {
     if (any(sp$p[sp_select] != sp$n[sp_select])) {
         stop("The encounter rate and metabolic respiration rate must have the same exponent for all selected species.")
     }
+
+
 
     # Calculate R = alpha * Q - P for each selected species
     total_production <- getTotalProduction(params)

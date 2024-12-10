@@ -3,9 +3,16 @@ test_that("matchConsumption throws error for non-MizerParams input", {
                  "params must be a MizerParams object.")
 })
 
-test_that("matchConsumption throws error if ecopath_consumption missing", {
-    # Create a copy of celtic_params without the ecopath_consumption column
+test_that("matchConsumption behaves correctly when ecopath_consumption missing", {
+    # Create a copy of celtic_params with some NAs in ecopath_consumption
+    # The corresponding species should be ignored
     params_no_ecopath <- celtic_params
+    params_no_ecopath@species_params$ecopath_consumption[1] <- NA
+    result <- matchConsumption(params_no_ecopath, species = 1)
+    # The result should be the same as the input
+    expect_identical(result, params_no_ecopath)
+
+    # Remove the ecopath_consumption column
     params_no_ecopath@species_params$ecopath_consumption <- NULL
     expect_error(matchConsumption(params_no_ecopath),
                  "You must provide the ecopath_consumption species parameter.")
