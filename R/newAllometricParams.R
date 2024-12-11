@@ -1,46 +1,80 @@
 #' Set up parameters for a model with allometric encounter and mortality rates
 #'
-#' This function sets up a model with allometric encounter and
-#' mortality rates for each species and no interaction between the species
-#' or with the resource. The model has power-law mortality with a value of 0.4
-#' at maturity size and no satiation.
+#' This function sets up a model with allometric encounter and mortality rates
+#' for each species and no interaction between the species or with the resource.
+#' The initial abundances are set to the steady-state abundances with the total
+#' biomass for each species matched to observations.
+#' The metabolic respiration rate, the feeding level and the reproduction level
+#' are set to zero.
+#'
+#' The coefficient of the power-law encounter rate for each species is chosen so
+#' that the species grows to maturity size by its maturity age. The coefficient
+#' of the power-law mortality rate is chosen so that the juvenile biomass
+#' density has a slightly negative slope (of 0.5).
+#'
+#' The species uses `matchGrowth()` to adjust the encounter rate coefficient to
+#' produce the desired growth rate. It uses `matchBiomasses()` to match the
+#' biomass to the observations and `steadySingleSpecies()` to set the model to
+#' steady state.
+#'
+#' Because the model does not make use of the resource spectrum, the resource
+#' dynamics is switched off.
+#'
 #'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
-#' @param lambda The exponent of the Sheldon spectrum
 #' @return A MizerParams object
 #' @export
-newAllometricParams <- function(species_params, no_w = 200, lambda = 2) {
+newAllometricParams <- function(species_params, no_w = 200) {
+    sp <- validSpeciesParams(species_params)
 
-    sp <- species_params
+    # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
-    sp <- set_species_param_default(sp, "p", sp$n)
-    sp <- set_species_param_default(sp, "d", 1 - sp$n)
+    sp$p <- sp$n
+    sp$d <- 1 - sp$n
+
+    # Switch off metabolic respiration
+    sp$ks <- 0
+    # Switch off constant mortality
+    sp$z0 <- 0
+
+    # Generate a default mizer model with the desired species We extend the
+    # resource spectrum over the entire size range to ensure that all species
+    # have sufficient prey throughout their life.
     max_w <- max(sp$w_max)
     p <- newMultispeciesParams(sp, no_w = no_w, info_level = 0,
                                # extend resource over entire size range
                                max_w = max_w,
                                w_pp_cutoff = max_w * (1 + 1e-9),
-                               lambda = lambda,
                                resource_dynamics = "resource_constant")
     sp <- p@species_params
 
     # Switch off all interactions
-    p <- makeNoninteracting(p)
+    interaction_matrix(p)[] <- 0
+    sp$interaction_resource <- 0
 
-    # Power-law mortality
-    comment(p@mu_b) <- "Using power-law mortality"
-    species_params(p)$z0 <- 0
-    for (species in sp$species) {
-        spc <- sp[species, ]
-        # calculate power-law mortality with value 0.4 at maturity size
-        power_mort <- 0.4 * (p@w / spc$w_mat)^(spc$n - 1)
-        # add it as background mortality
-        ext_mort(p)[species, ] <- power_mort
-    }
+    # Switch off satiation
+    sp$h <- Inf
+    intake_max(p)[] <- Inf
 
-    # Turn off satiation
-    p <- setFeedingLevel(p, 0)
+    # Set power-law encounter rate (the coefficient will be adjusted below)
+    ext_encounter(p) <- t(outer(p@w, sp$n, "^"))
+    # Set encounter rate coefficient to produce desired growth rate
+    p <- matchGrowth(p)
+    # Determine power-law coefficient for encounter rate
+    e0 <- getEncounter(p)[, 1] / w(p)[1] ^ sp$n[1]
+
+    # Set power-law mortality
+    # Choose a positive coefficient so that the juvenile biomass density
+    # has a slightly negative slope (of -0.2).
+    mu0 <- e0 * (1 + 0.2 - sp$n)
+    ext_mort(p) <- sweep(t(outer(p@w, sp$n - 1, "^")), 1, mu0, "*")
+
+    # Match Biomasses
+    p <- matchBiomasses(p)
+    # Set to steady state
+    p <- steadySingleSpecies(p, keep = "biomass")
+    p <- setBevertonHolt(p, reproduction_level = 0)
 
     return(p)
 }
