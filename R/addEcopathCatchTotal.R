@@ -1,17 +1,17 @@
 #' Add Ecopath catch data to gear parameters
 #'
 #' @param params A MizerParams object
-#' @param catch The Ecopath Catch data frame
+#' @param ecopath_catch The Ecopath Catch data frame
 #' @export
-addEcopathCatchTotal <- function(params, catch) {
+addEcopathCatchTotal <- function(params, ecopath_catch) {
     sp <- params@species_params
     if (!hasName(sp, "ecopath_groups") ||
         !hasName(sp, "biomass_observed")) {
         stop("You must use `addEcopathParams()` first.")
     }
-    if (!hasName(catch, "TotalCatch..t.km..year.") ||
-        !hasName(catch, "Group.name")) {
-        stop("The catch argument is invalid. It must be a data frame with columns 'TotalCatch..t.km..year.' and 'Group.name'.")
+    if (!hasName(ecopath_catch, "TotalCatch..t.km..year.") ||
+        !hasName(ecopath_catch, "Group.name")) {
+        stop("The ecopath_catch argument is invalid. It must be a data frame with columns 'TotalCatch..t.km..year.' and 'Group.name'.")
     }
     gp <- data.frame(
         species = sp$species,
@@ -24,7 +24,7 @@ addEcopathCatchTotal <- function(params, catch) {
     )
     for (i in seq_len(nrow(sp))) {
         for (group in sp$ecopath_groups[[i]]) {
-            yield <- catch$TotalCatch..t.km..year.[catch$Group.name == group]
+            yield <- ecopath_catch$TotalCatch..t.km..year.[ecopath_catch$Group.name == group]
             if (length(yield) == 0) {
                 warning("No catch data found for group ", group)
             }
