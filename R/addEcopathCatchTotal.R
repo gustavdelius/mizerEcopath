@@ -28,10 +28,7 @@ addEcopathCatchTotal <- function(params, ecopath_catch) {
             if (length(yield) == 0) {
                 warning("No catch data found for group ", group)
             }
-            if (is.na(yield)) {
-                warning("Missing catch data for group ", group)
-            }
-            gp$yield_observed[i] <- gp$yield_observed[i] + yield
+            gp$yield_observed[i] <- sum(gp$yield_observed[i], yield, na.rm = TRUE)
         }
     }
     gp$catchability <- gp$yield_observed / sp$biomass_observed
