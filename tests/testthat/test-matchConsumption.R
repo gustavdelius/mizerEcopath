@@ -18,14 +18,14 @@ test_that("matchConsumption behaves correctly when ecopath_consumption missing",
                  "You must provide the ecopath_consumption species parameter.")
 })
 
-test_that("matchConsumption throws error if exponent mismatch", {
+test_that("matchConsumption sets p = n for selected species", {
     # Create a scenario where one species has p != n
     params_mismatch <- celtic_params
     # Assume we have at least one species; set mismatch for the first selected species
-    params_mismatch@species_params$p[1] <- params_mismatch@species_params$n[1] + 0.1
-    expect_error(matchConsumption(params_mismatch,
-                                  species = params_mismatch@species_params$species[1]),
-                 "The encounter rate and metabolic respiration rate must have the same exponent.")
+    params_mismatch@species_params$p <- 0.9
+    result <- matchConsumption(params_mismatch, species = 1:4)
+    expect_identical(result@species_params$p[1:4], result@species_params$n[1:4])
+    expect_identical(result@species_params$p[5], 0.9)
 })
 
 test_that("matchConsumption works with single species", {
@@ -59,9 +59,10 @@ test_that("matchConsumption warns when negative metabolic respiration required",
     params_negative@species_params$ecopath_consumption[sp_idx] <-
         getTotalProduction(params_negative)[sp_idx] / params_negative@species_params$alpha[sp_idx] * 0.5
 
-    expect_warning(matchConsumption(params_negative,
-                                    species = params_negative@species_params$species[sp_idx]),
-                   "Negative metabolic respiration required for species")
+    expect_warning(result <- matchConsumption(params_negative,
+                                              species = params_negative@species_params$species[sp_idx]),
+                   "Perfect match to Ecopath consumption not possible")
+    expect_identical(result@species_params$ks[sp_idx], 0)
 })
 
 test_that("matchConsumption updates ks correctly", {

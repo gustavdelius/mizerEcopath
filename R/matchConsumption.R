@@ -11,8 +11,8 @@
 #' Any of the selected species for which `ecopath_consumption` is NA will be
 #' quietly ignored.
 #' If for any species the production is higher than the `ecopath_consumption`,
-#' then this will lead to a negative metabolic respiration rate. In this case
-#' the function will issue a warning for all such species.
+#' then this would lead to a negative metabolic respiration rate. In this case
+#' the metabolic rate is set to 0 and a warning for all such species.
 #'
 #' @param params A MizerParams object
 #' @param species A vector of species names or indices. If NULL, all species for
@@ -58,15 +58,16 @@ matchConsumption <- function(params, species = NULL) {
     # Warn if any species require negative metabolic respiration
     negative_species <- sp$species[sp_select][R < 0]
     if (length(negative_species) > 0) {
-        warning("Negative metabolic respiration required for species: ",
+        warning("Perfect match to Ecopath consumption not possible for: ",
                 paste(negative_species, collapse = ", "), ".")
+        # Set R to 0 for these species
+        R[R < 0] <- 0
     }
 
     # Store old metabolic rates
     metab_old <- params@metab[sp_select, , drop = FALSE]
 
     # Reset metabolic rate to w^n for each selected species
-    # We need a matrix of w raised to the power n for each selected species
     w <- params@w
     n_vals <- sp$n[sp_select]
     # Create a matrix of w^(n) for each species (rows = species, cols = size classes)
