@@ -9,18 +9,34 @@ species_params <- data.frame(
 )
 
 ecopath_params <- data.frame(
-    X = c(1, 2, 3, 4),
-    Group.name = c("Group1", "Group2", "Stanza1", "Stanza2"),
-    Biomass..t.km.. = c(10, 20, 5, 15),
-    Consumption...biomass...year. = c(2, 1.5, 3, 4),
-    Production...consumption...year. = c(0.5, 0.6, 0.7, 0.8),
-    stringsAsFactors = FALSE
+    `...1` = c(1, 2, 3, 4),
+    `Group name` = c("Group1", "Group2", "Stanza1", "Stanza2"),
+    `Biomass (t/km²)` = c(10, 20, 5, 15),
+    `Consumption / biomass (/year)` = c(2, 1.5, 3, 4),
+    `Production / consumption (/year)` = c(0.5, 0.6, 0.7, 0.8)
 )
 
 species_to_groups <- list(
     Species1 = "Group1",
     Species2 = c("Stanza1", "Stanza2")
 )
+
+test_that("Function can handle old column names", {
+    ecopath_params_wrong_names <- data.frame(
+        X = c(1, 2, 3, 4),
+        Group.name = c("Group1", "Group2", "Stanza1", "Stanza2"),
+        Biomass..t.km.. = c(10, 20, 5, 15),
+        Consumption...biomass...year. = c(2, 1.5, 3, 4),
+        Production...consumption...year. = c(0.5, 0.6, 0.7, 0.8)
+    )
+    result_wrong <- addEcopathParams(species_params, ecopath_params_wrong_names,
+                                     species_to_groups) |>
+        suppressWarnings()
+    result <- addEcopathParams(species_params, ecopath_params_wrong_names,
+                               species_to_groups) |>
+        suppressWarnings()
+    expect_identical(result, result_wrong)
+})
 
 test_that("Function adds Ecopath parameters correctly", {
     expect_warning(result <- addEcopathParams(species_params, ecopath_params, species_to_groups),

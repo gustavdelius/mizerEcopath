@@ -155,17 +155,17 @@ addEcopathParams <- function(species_params, ecopath_params,
 
         for (group in species_to_groups[[species]]) {
             # Extract Ecopath estimates for the group
-            estimates <- ecopath_params[ecopath_params$Group.name == group, ]
+            estimates <- ecopath_params[ecopath_params$`Group name` == group, ]
 
             if (nrow(estimates) > 0) {
                 # Accumulate biomass, consumption, and production
-                biomass <- estimates$Biomass..t.km..
+                biomass <- estimates$`Biomass (t/km²)`
                 sp$biomass_observed[i] <- sp$biomass_observed[i] + biomass
 
-                consumption <- estimates$Consumption...biomass...year. * biomass
+                consumption <- estimates$`Consumption / biomass (/year)` * biomass
                 sp$ecopath_consumption[i] <- sp$ecopath_consumption[i] + consumption
 
-                production <- estimates$Production...consumption...year. * consumption
+                production <- estimates$`Production / consumption (/year)` * consumption
                 sp$ecopath_production[i] <- sp$ecopath_production[i] + production
             }
         }
@@ -223,6 +223,10 @@ makeNoninteracting <- function(params) {
 #' that the group names are unique and that all groups in the
 #' `species_to_groups` list are included in the data frame.
 #'
+#' The function also deals with the fact that the column names in the Ecopath
+#' data frame can be different from the expected names if it was loaded in with
+#' `read.csv` instead of `readr::read_csv`.
+#'
 #' @param ecopath_params A data frame with Ecopath parameters for each group
 #'   as exported by the Ecopath software.
 #' @param species_to_groups A named list where the names are mizer species and
@@ -235,29 +239,43 @@ validEcopathParams <- function(ecopath_params, species_to_groups) {
         stop("ecopath_params must be a data frame.")
     }
     # Sometimes some columns have different names
-    wrong <- colnames(ecopath_params) == "Biomass..t.km.2."
-    if (any(wrong)) {
-        colnames(ecopath_params)[wrong] <- "Biomass..t.km.."
+    column_mappings <- list(
+        "Biomass..t.km.." = "Biomass (t/km²)",
+        "Biomass..t.km." = "Biomass (t/km²)",
+        "Biomass..t.km.2." = "Biomass (t/km²)",
+        "Consumption...biomass...year." = "Consumption / biomass (/year)",
+        "Production...consumption...year." = "Production / consumption (/year)",
+        "X" = "...1",
+        "Group.name" = "Group name"
+    )
+
+    # Rename columns dynamically based on the mappings
+    for (old_name in names(column_mappings)) {
+        new_name <- column_mappings[[old_name]]
+        if (hasName(ecopath_params, old_name)) {
+            ecopath_params <- ecopath_params |> rename(!!new_name := !!sym(old_name))
+        }
     }
-    required_cols <- c("X", "Group.name", "Biomass..t.km..",
-                       "Consumption...biomass...year.",
-                       "Production...consumption...year.")
+
+    required_cols <- unique(column_mappings)
     if (!all(required_cols %in% names(ecopath_params))) {
         stop("ecopath_params must have columns ",
              paste(required_cols, collapse = ", "))
     }
 
     # Remove rows that are just header rows to the stanza groups
-    ecopath_params <- ecopath_params[!is.na(ecopath_params$X), ]
+    ecopath_params <- ecopath_params[!is.na(ecopath_params$`...1`), ]
     # Check that the group names are now unique
-    if (length(unique(ecopath_params$Group.name)) != nrow(ecopath_params)) {
+    if (length(unique(ecopath_params$`Group name`)) != nrow(ecopath_params)) {
         stop("Group names in ecopath_params must be unique.")
     }
 
     # Check that all groups are included
     required_groups <- species_to_groups |> unlist()
-    if (!all(required_groups %in% ecopath_params$Group.name)) {
-        stop("Not all groups in species_to_groups are included in ecopath_params.")
+    missing_groups <- setdiff(required_groups, ecopath_params$`Group name`)
+    if (length(missing_groups) > 0) {
+        stop("The following groups in species_to_groups are not included in ecopath_params: ",
+             missing_groups)
     }
 
     return(ecopath_params)
