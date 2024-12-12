@@ -5,7 +5,8 @@
 #' energy available for growth and reproduction. Thus the function also adjusts
 #' the external encounter rate to compensate for the changed respiration rate.
 #' To do this the function assumes that both the encounter rate and the metabolic
-#' respiration rate are given by power laws with the same exponent `n`.
+#' respiration rate are given by power laws with the same exponent `n`, so it
+#' sets the species parameter `p` to the same value as `n`.
 #'
 #' Any of the selected species for which `ecopath_consumption` is NA will be
 #' quietly ignored.
@@ -14,7 +15,8 @@
 #' the function will issue a warning for all such species.
 #'
 #' @param params A MizerParams object
-#' @param species A vector of species names or indices. If NULL, all species are considered.
+#' @param species A vector of species names or indices. If NULL, all species for
+#'   which the species parameter `ecopath_consumption` is provided are affected.
 #'
 #' @return A MizerParams object with adjusted encounter and metabolic respiration
 #'   rates.
@@ -46,17 +48,8 @@ matchConsumption <- function(params, species = NULL) {
         return(params)
     }
 
-    # Check for NA ecopath_consumption
-    if (any(is.na(sp$ecopath_consumption[sp_select]))) {
-        stop("The ecopath_consumption parameter is NA for some selected species.")
-    }
-
-    # Check that encounter and metabolic exponent match for all selected species
-    if (any(sp$p[sp_select] != sp$n[sp_select])) {
-        stop("The encounter rate and metabolic respiration rate must have the same exponent for all selected species.")
-    }
-
-
+    # Set p = n for selected species
+    params@species_params$p[sp_select] <- sp$n[sp_select]
 
     # Calculate R = alpha * Q - P for each selected species
     total_production <- getTotalProduction(params)
