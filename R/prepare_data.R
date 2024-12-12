@@ -50,7 +50,7 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
     max_length <- max(catch$length + catch$dl)
     max_weight <- sps$a * max_length^sps$b
     if (max_weight > sps$w_max) {
-        stop("For ", species, "you have observed catches of larger weight than the `w_max` that you specified.")
+        stop("For ", species, " you have observed catches of larger weight than the `w_max` that you specified.")
     }
 
     # Fill in missing zero counts ----
