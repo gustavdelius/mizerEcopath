@@ -7,6 +7,14 @@
 #' The metabolic respiration rate, the feeding level and the reproduction level
 #' are set to zero.
 #'
+#' If the exponent `n` of the power-law encounter rate is not provided as a
+#' species parameter, it is set to 0.7. If the exponent `d` of the power-law
+#' mortality rate is not provided, it is set to `n - 1`.
+#'
+#' If the species parameter `alpha`, which gives the proportion of the consumption
+#' that is assimilated, is not provided, it is set to 0.8, the default value
+#' used by Ecopath.
+#'
 #' The coefficient of the power-law encounter rate for each species is chosen so
 #' that the species grows to maturity size by its maturity age. The coefficient
 #' of the power-law mortality rate is chosen so that the juvenile biomass
@@ -20,7 +28,6 @@
 #' Because the model does not make use of the resource spectrum, the resource
 #' dynamics is switched off.
 #'
-#'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
 #' @return A MizerParams object
@@ -30,8 +37,10 @@ newAllometricParams <- function(species_params, no_w = 200) {
 
     # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
-    sp$p <- sp$n
-    sp$d <- 1 - sp$n
+    sp <- set_species_param_default(sp, "d", sp$n - 1)
+
+    # Set default assimilation efficiency
+    sp <- set_species_param_default(sp, "alpha", 0.8)
 
     # Switch off metabolic respiration
     sp$ks <- 0
@@ -68,7 +77,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
     # Choose a positive coefficient so that the juvenile biomass density
     # has a slightly negative slope (of -0.2).
     mu0 <- e0 * (1 + 0.2 - sp$n)
-    ext_mort(p) <- sweep(t(outer(p@w, sp$n - 1, "^")), 1, mu0, "*")
+    ext_mort(p) <- sweep(t(outer(p@w, sp$d, "^")), 1, mu0, "*")
 
     # Match Biomasses
     p <- matchBiomasses(p)
