@@ -1,5 +1,5 @@
 # The task is to create a mizer model with a steady state that agrees with
-# the Ecopath model for the Celtic Sea by Hernvann et.al.
+# the Ecopath model for the Celtic Sea by Lauria et.al.
 
 # We start by creating the species with power-law consumption and mortality,
 # then setting the predation kernel using stomach data and
@@ -9,28 +9,39 @@ library(mizerEcopath)
 library(mizerExperimental)
 library(dplyr)
 
+## Prepare catch data ----
+# We do this first because we will use it to set maximum sizes for species
+catch <- readRDS("../CelticSea/data/ecopath_catch_v2.rds")
+catch$dl <- 1
+catch$gear <- as.character(catch$gear)
+catch$gear[catch$gear == "commercial"] <- "total"
+# Change case for Horse Mackerel:
+catch <- catch %>%
+    mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
+# Select "total" gear only
+catch <- catch[catch$gear == "total", ]
+
 ## Set up species parameters ----
 
 sp <- read.csv("../CelticSea/ecopath/Lauria/species_params.csv")
+
+# Set maximum weights to at least 1.2 times the maximum observed weight
+sp <- catch |>
+    group_by(species) |>
+    summarise(max_observed_length = max(length + dl)) |>
+    right_join(sp, by = c("species" = "species")) |>
+    mutate(max_observed_weight = a * max_observed_length^b) |>
+    mutate(w_max = pmax(w_max, 1.2 * max_observed_weight))
+
 # keep only selected parameters
 sp <- sp |> select(species, w_max, w_mat, a, b, LWRSource, age_mat)
+# Add gonadic proportion
+sp$gonad_proportion <- 0.2
 
-no_sp <- nrow(sp) # Number of species
-sp["n"] <- 0.7 # Exponent of consumption
-sp["p"] <- 0.7 # Exponent of respiration (metabolism)
-sp["d"] <- -0.3 # Exponent of mortality (in Mizer n - 1)
-sp["alpha"] <- 0.8  # Ecopath default (conversion efficiency)
-sp$gonad_proportion <- 0.2 # Proportion of total production which goes into gonads
+# Change age_mat of Mackerel
+# sp$age_mat[sp$species == "Mackerel"] <- 2.8
 
-# Add predation kernel params from stomach data
-fits <- readRDS("../CelticSea/data/stomach_data_fit.rds")
-sp$pred_kernel_type <- "power_law"
-lambda <- 2
-sp$kernel_exp <- fits$alpha + 4/3 - lambda
-sp$kernel_l_l <- fits$ll
-sp$kernel_u_l <- fits$ul
-sp$kernel_l_r <- fits$lr
-sp$kernel_u_r <- fits$ur
+## Add Ecopath species parameters ----
 
 # Dictionary between species and ecopath groups
 species_to_groups <- list(
@@ -48,60 +59,64 @@ species_to_groups <- list(
     "Sole" = "Sole"
 )
 
-## Add Ecopath species parameters ----
 ecopath_params <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Basic estimates.csv")
-ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 
-## Create MizerParams object ----
-p <- newAllometricParams(sp, no_w = 200, lambda = lambda)
+## Create allometric model ----
+p <- newAllometricParams(sp)
+
 sp <- p@species_params
+no_sp <- nrow(sp) # Number of species
 
 ## Set up gear params ----
 # For the lauria model we do not yet have the catch data
-# We'll calculate it from the fishing mortalities and biomases
-catch <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Fishing mortality rates.csv")
-catch$totalF <- rowSums(catch[, -(1:2)], na.rm = TRUE)
-catch <- left_join(ecopath_params, catch, by = c("Group.name" = "Fleet.group")) |>
-    mutate(TotalCatch..t.km..year. = totalF * Biomass..t.km..) |>
+# Because we do not have access to the Ecopath Catch data frame, we calculate it
+# from the fishing mortalities and biomases
+fmort <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Fishing mortality rates.csv")
+fmort$totalF <- rowSums(fmort[, -(1:2)], na.rm = TRUE)
+ecopath_catch <- left_join(ecopath_params, fmort, by = c("Group.name" = "Fleet.group")) |>
+    mutate(TotalCatch..t.km..year. = totalF * Biomass..t.km.2.) |>
     select(Group.name, TotalCatch..t.km..year.)
 
-p <- addEcopathCatchTotal(p, catch)
+p <- addEcopathCatchTotal(p, ecopath_catch)
 
-# Get new steady state
+# Get new steady state with desired biomass and growth
 p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
     matchBiomasses() |> steadySingleSpecies()
 
+## Match catch ----
+p <- matchCatch(p, catch = catch)
+# Fix the species with unrealistic reproductive efficiency (Monkfish can't be fixed)
+p <- tuneEcopath(p, catch = catch)
 p_backup <- p
 
-## Match consumption and yield ----
-p <- p_backup |>
-    matchConsumption() |> matchYield(keep = "biomass") |>
-    matchConsumption() |> matchYield(keep = "biomass") |>
-    matchConsumption() |> matchYield(keep = "biomass")
+## Match consumption ----
+p <- matchConsumption(p)
 
 ## Aggregate ecopath diet matrix ----
 ecopath_diet <- read.csv("../CelticSea/ecopath/Lauria/Ecopath-Diet composition.csv")
 dm <- reduceEcopathDiet(sp, ecopath_diet)
 
-# Prepare catch data
-catch <- readRDS("../CelticSea/data/ecopath_catch_v2.rds")
-catch$dl <- 1
-catch$gear <- as.character(catch$gear)
-catch$gear[catch$gear == "commercial"] <- "total"
-
-# Change case for Horse Mackerel:
-catch <- catch %>%
-    mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
+## Add predation kernel params from stomach data ----
+fits <- readRDS("../CelticSea/data/stomach_data_fit.rds")
+sp <- species_params(p)
+sp$pred_kernel_type <- "power_law"
+lambda <- 2
+sp$kernel_exp <- fits$alpha + 4/3 - lambda
+sp$kernel_l_l <- fits$ll
+sp$kernel_u_l <- fits$ul
+sp$kernel_l_r <- fits$lr
+sp$kernel_u_r <- fits$ur
+species_params(p) <- sp
 
 ## Tune ----
 p <- tuneEcopath(p, catch = catch, diet = dm,
                  tabs = c("Spectra", "Catch", "Growth", "Repro", "Diet", "Death"))
 
-## Switch on interactions
+## Switch on interactions ----
 p <- matchDiet(p, dm)
 
-## Switch on satiation
+## Switch on satiation ----
 p <- setFeedingLevel(p, 0.6)
 
 # Check that steady state has not changed
