@@ -110,7 +110,7 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
                      silent = TRUE)
 
     # Set parameter bounds
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0, U = 1,
+    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0, U = 8,
                       catchability = 1e-8)
     upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
                       catchability = Inf)
