@@ -66,6 +66,8 @@ newAllometricParams <- function(species_params, no_w = 200) {
     sp$h <- Inf
     intake_max(p)[] <- Inf
 
+    species_params(p) <- sp
+
     # Set power-law encounter rate (the coefficient will be adjusted below)
     ext_encounter(p) <- t(outer(p@w, sp$n, "^"))
     # Set encounter rate coefficient to produce desired growth rate
