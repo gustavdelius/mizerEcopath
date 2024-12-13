@@ -1,4 +1,5 @@
 library(mizerEcopath)
+library(rfishbase)
 library(dplyr)
 library(readr)
 
@@ -14,6 +15,21 @@ sp <- NS_species_params |>
     select(species, w_mat, w_max)
 
 # We will need better weight-length relationship parameters
+species_to_latin <- list(
+    "Sprat"   = "Sprattus sprattus",
+    "Sandeel" = "Ammodytes spp",
+    "N.pout"  = "Trisopterus esmarkii",
+    "Herring" = "Clupea harengus",
+    "Dab"     = "Limanda limanda",
+    "Whiting" = "Gadus merlangus",
+    "Sole"    = "Solea solea",
+    "Gurnard" = c("Triglidae", "Eutrigula gurnardus"),
+    "Plaice"  = "Pleuronectes platessa",
+    "Haddock" = "Gadus aeglefinus",
+    "Cod"     = "Gadus morhua",
+    "Saithe"  = "Pollachius virens"
+)
+
 sp$a <- 0.01
 sp$b <- 3
 
