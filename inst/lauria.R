@@ -6,7 +6,6 @@
 # and the interaction matrix so as to reproduce the ecopath diet matrix.
 
 library(mizerEcopath)
-library(mizerExperimental)
 library(dplyr)
 
 ## Prepare catch data ----
