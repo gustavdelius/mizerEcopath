@@ -48,6 +48,9 @@
 #'   * `count`: The observed count for each bin.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
+#' @param production_lambda A parameter that controls the strength of the penalty
+#'  for deviation from the observed production.
+#'
 #' @return A MizerParams object with the adjusted gear selectivity and
 #'   catchability for the selected species
 #' @family match functions
@@ -63,7 +66,8 @@
 #' params_steady <- steadySingleSpecies(params)
 #' all.equal(initialN(params), initialN(params_steady))
 #' @export
-matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
+matchCatch <- function(params, species = NULL, catch,
+                       yield_lambda = 1, production_lambda = 0.01) {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
     if (length(species) > 1) {
@@ -75,7 +79,8 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
     }
 
     data <- prepare_data(params, species = species, catch,
-                         yield_lambda = yield_lambda)
+                         yield_lambda = yield_lambda,
+                         production_lambda = production_lambda)
     if (is.null(data)) { # There is no catch data for this species
         return(params)
     }

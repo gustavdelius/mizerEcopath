@@ -48,12 +48,15 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(w);
     DATA_VECTOR(l);                // lengths corresponding to w
     DATA_SCALAR(yield);            // Observed yield
+    DATA_SCALAR(production);       // Observed production
     DATA_SCALAR(biomass);          // Observed biomass
     DATA_VECTOR(growth);           // Growth rate
     DATA_SCALAR(w_mat);            // Maturity size
     DATA_SCALAR(d);                // Exponent of mortality power-law
     DATA_SCALAR(yield_lambda);     // controls the strength of the penalty for
                                    // deviation from the observed yield.
+    DATA_SCALAR(production_lambda); // controls the strength of the penalty for
+                                    // deviation from the observed production.
 
     // **Parameter Section**
     PARAMETER(l50);          // Length at 50% gear selectivity
@@ -80,6 +83,10 @@ Type objective_function<Type>::operator() ()
     // **Calculate model yield**
     vector<Type> yield_per_bin = catch_dens * w * dw;
     Type model_yield = yield_per_bin.sum();
+
+    // **Calculate model production**
+    vector<Type> production_per_bin = growth * N * dw;
+    Type model_production = production_per_bin.sum();
 
     // **Calculate catch probabilities**
     int num_bins = counts.size();    // Number of bins
@@ -108,6 +115,9 @@ Type objective_function<Type>::operator() ()
     // **Add penalty for deviation from observed yield**
     nll += yield_lambda * pow(log(model_yield / yield), Type(2));
 
+    // **Add penalty for deviation from observed production**
+    nll += production_lambda * pow(log(model_production / production), Type(2));
+
     TMBAD_ASSERT(nll >= 0);
     TMBAD_ASSERT(CppAD::isfinite(nll));
     if (!CppAD::isfinite(nll)) error("nll is not finite");
@@ -115,6 +125,7 @@ Type objective_function<Type>::operator() ()
     // TODO: remove unused reports
     REPORT(probs);
     REPORT(model_yield);
+    REPORT(model_production);
     REPORT(N);
     REPORT(F_mort);
     REPORT(mort);

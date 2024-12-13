@@ -21,7 +21,8 @@
 #' @return A list with the data to be passed to the TMB objective function. If
 #'   there is no catch data for the species, the function returns NULL.
 #' @export
-prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
+prepare_data <- function(params, species = 1, catch,
+                         yield_lambda = 1, production_lambda = 0.01) {
 
     # Validate MizerParams object and extract data for the selected species ----
     params <- validParams(params)
@@ -130,11 +131,13 @@ prepare_data <- function(params, species = 1, catch, yield_lambda = 1) {
         w = w,
         l = l,
         yield = gps$yield_observed,
+        production = sps$ecopath_production,
         biomass = biomass,
         growth = growth,
         w_mat = w_mat,
         d = sps$d,
-        yield_lambda = yield_lambda
+        yield_lambda = yield_lambda,
+        production_lambda = production_lambda
     )
     return(data)
 }
