@@ -18,21 +18,6 @@ vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
 }
 
 template<class Type>
-vector<Type> calculate_growth(vector<Type>EReproAndGrowth,
-                              vector<Type>repro_prop,
-                              Type w_mat, Type U,
-                              vector<Type> w)
-{
-    Type c1 = Type(1.0);
-    vector<Type> psi = repro_prop / (c1 + pow(w / w_mat, -U));
-    vector<Type> growth = EReproAndGrowth * (c1 - psi);
-
-    // Check that all elements are finite and non-negative
-    TMBAD_ASSERT((growth.array().isFinite() && (growth.array() >= 0)).all());
-    return growth;
-}
-
-template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
                          Type biomass, vector<Type> w, vector<Type> dw)
 {
@@ -64,10 +49,8 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(l);                // lengths corresponding to w
     DATA_SCALAR(yield);            // Observed yield
     DATA_SCALAR(biomass);          // Observed biomass
-    DATA_VECTOR(EReproAndGrowth);  // The rate at which energy is available for growth
-                                   // and reproduction
-    DATA_VECTOR(repro_prop);       // Proportion of energy allocated to reproduction
-    DATA_SCALAR(w_mat);            // Maturity size is currently not optimised
+    DATA_VECTOR(growth);           // Growth rate
+    DATA_SCALAR(w_mat);            // Maturity size
     DATA_SCALAR(d);                // Exponent of mortality power-law
     DATA_SCALAR(yield_lambda);     // controls the strength of the penalty for
                                    // deviation from the observed yield.
@@ -76,7 +59,6 @@ Type objective_function<Type>::operator() ()
     PARAMETER(l50);          // Length at 50% gear selectivity
     PARAMETER(ratio);        // Ratio between l25 and l50
     PARAMETER(mu_mat);       // Mortality at maturity size
-    PARAMETER(U);            // Steepness parameter of maturity ogive
     PARAMETER(catchability); // Catchability
 
     // **Calculate fishing mortality rate**
@@ -84,10 +66,6 @@ Type objective_function<Type>::operator() ()
 
     // **Calculate total mortality rate**
     vector<Type> mort = mu_mat * pow(w / w_mat, d) + F_mort;
-
-    // **Calculate growth rate**
-    vector<Type> growth = calculate_growth(EReproAndGrowth, repro_prop,
-                                           w_mat, U, w);
 
     // **Calculate steady-state number density**
     vector<Type> N = calculate_N(mort, growth, biomass, w, dw);
@@ -134,12 +112,12 @@ Type objective_function<Type>::operator() ()
     TMBAD_ASSERT(CppAD::isfinite(nll));
     if (!CppAD::isfinite(nll)) error("nll is not finite");
 
+    // TODO: remove unused reports
     REPORT(probs);
     REPORT(model_yield);
     REPORT(N);
     REPORT(F_mort);
     REPORT(mort);
-    REPORT(growth);
 
     // Check that rescaling worked
     biomass_in_bins = N * w * dw;

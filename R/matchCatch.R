@@ -94,12 +94,9 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
         mu_mat <- sps$mu_mat
     }
 
-    # Steepness of maturity ogive
-    U <- log(3) / log(sps$w_mat / sps$w_mat25)
-
     # Initial parameter estimates
     initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                        mu_mat = mu_mat, U = U,
+                        mu_mat = mu_mat,
                         # we need non-zero catchability to match catch
                         catchability = max(gps$catchability, 1e-8))
 
@@ -110,9 +107,9 @@ matchCatch <- function(params, species = NULL, catch, yield_lambda = 1) {
                      silent = TRUE)
 
     # Set parameter bounds
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0, U = 8,
+    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
                       catchability = 1e-8)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
+    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf,
                       catchability = Inf)
 
     # Perform the optimization.

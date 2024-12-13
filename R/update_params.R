@@ -54,9 +54,6 @@ update_params <- function(params, species = 1, pars, biomass, w_select) {
     ext_mort(params)[sp_select, ] <-
         pars["mu_mat"] * (params@w / w_mat)^sps$d
 
-    # Update the steepness of the maturity ogive
-    sps$w_mat25 <- sps$w_mat / 3^(1 / pars["U"])
-
     params@species_params[sp_select, ] <- sps
     params <- setReproduction(params)
 
