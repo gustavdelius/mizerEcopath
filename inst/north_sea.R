@@ -17,21 +17,22 @@ sp <- NS_species_params |>
 # We will need better weight-length relationship parameters
 species_to_latin <- list(
     "Sprat"   = "Sprattus sprattus",
-    "Sandeel" = "Ammodytes spp",
+    "Sandeel" = "Ammodytes tobianus",
     "N.pout"  = "Trisopterus esmarkii",
     "Herring" = "Clupea harengus",
     "Dab"     = "Limanda limanda",
-    "Whiting" = "Gadus merlangus",
+    "Whiting" = "Merlangius merlangus",
     "Sole"    = "Solea solea",
-    "Gurnard" = c("Triglidae", "Eutrigula gurnardus"),
+    "Gurnard" = "Eutrigla gurnardus",
     "Plaice"  = "Pleuronectes platessa",
-    "Haddock" = "Gadus aeglefinus",
+    "Haddock" = "Melanogrammus aeglefinus",
     "Cod"     = "Gadus morhua",
     "Saithe"  = "Pollachius virens"
 )
+sp$latin_name <- unlist(species_to_latin[sp$species])
 
-sp$a <- 0.01
-sp$b <- 3
+length_weight <- estimate(species_to_latin, fields = c("Species", "a", "b"))
+sp <- left_join(sp, length_weight, by = c("latin_name" = "Species"))
 
 # Set maximum weights to at least 1.2 times the maximum observed weight
 sp <- catch |>
