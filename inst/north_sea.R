@@ -3,19 +3,9 @@ library(rfishbase)
 library(dplyr)
 library(readr)
 
-## Prepare catch data ----
-# We do this first because we will use it to set maximum sizes for species
-catch <- readRDS("inst/extdata/ns_catch.rds")
-# Select "total" gear only
-catch <- catch[catch$gear == "total", ]
-
 ## Prepare species parameters ----
 
-sp <- NS_species_params |>
-    select(species, w_mat, w_max)
-
-# We will need better weight-length relationship parameters
-species_to_latin <- list(
+species_to_latin <- c(
     "Sprat"   = "Sprattus sprattus",
     "Sandeel" = "Ammodytes tobianus",
     "N.pout"  = "Trisopterus esmarkii",
@@ -29,18 +19,48 @@ species_to_latin <- list(
     "Cod"     = "Gadus morhua",
     "Saithe"  = "Pollachius virens"
 )
-sp$latin_name <- unlist(species_to_latin[sp$species])
+sp <- data.frame(species = names(species_to_latin),
+                 latin_name = species_to_latin)
 
-length_weight <- estimate(species_to_latin, fields = c("Species", "a", "b"))
-sp <- left_join(sp, length_weight, by = c("latin_name" = "Species"))
 
-# Set maximum weights to at least 1.2 times the maximum observed weight
-sp <- catch |>
+# Set maximum sizes from observed sizes
+
+catch <- readRDS("inst/extdata/ns_catch.rds")
+# Select "total" gear only
+catch <- catch[catch$gear == "total", ]
+max_size <- catch |>
     group_by(species) |>
-    summarise(max_observed_length = max(length + dl)) |>
-    right_join(sp, by = c("species" = "species")) |>
-    mutate(max_observed_weight = a * max_observed_length^b) |>
-    mutate(w_max = pmax(w_max, 1.2 * max_observed_weight, na.rm = TRUE))
+    summarise(l_max = max(length) * 1.2)
+missing <- !(sp$species %in% max_size$species)
+max_size_fishbase <- rfishbase::species(sp$latin_name[missing]) |>
+    select(latin_name = Species, l_max = Length) |>
+    left_join(select(sp, species, latin_name),
+              by = "latin_name")
+max_size <- bind_rows(max_size, max_size_fishbase) |>
+    select(species, l_max)
+
+# Add length-weight parameters
+length_weight <- estimate(sp$latin_name, fields = c("Species", "a", "b"))
+
+sp <- sp |>
+    left_join(length_weight, by = c("latin_name" = "Species")) |>
+    left_join(max_size) |>
+    mutate(w_max = a * l_max ^ b)
+
+# Add maturity parameters
+maturity_tbl <- rfishbase::maturity(species_to_latin)
+median_maturity <- maturity_tbl |>
+    group_by(Species) |>
+    filter(!is.na(tm), !is.na(Lm)) |>
+    summarise(age_mat = median(tm),
+              l_mat = median(Lm))
+sp <- sp |>
+    left_join(median_maturity, by = c("latin_name" = "Species")) |>
+    mutate(w_mat = a * l_mat ^ b)
+
+comment(sp$l_mat) <- "Median of `Lm` over all observations on the 'maturity' table on FishBase that had both `Lm` and `tm`."
+comment(sp$age_mat) <- "Median of `tm` over all observations on the 'maturity' table on FishBase that had both `Lm` and `tm`."
+comment(sp$w_mat) <- "Calculated from `l_mat` using weight-length parameters `a` and `b`."
 
 # Add gonadic proportion
 sp$gonad_proportion <- 0.2
@@ -85,11 +105,11 @@ p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
 
 ## Match catch ----
 p <- matchCatch(p, catch = catch)
+## Match consumption ----
+p <- matchConsumption(p)
 # Fix the species with unrealistic reproductive efficiency
 p <- tuneEcopath(p, catch = catch)
 
-## Match consumption ----
-p <- matchConsumption(p)
 
 ## Aggregate ecopath diet matrix ----
 ecopath_diet <- read.csv("inst/extdata/North Sea-Diet composition.csv")
