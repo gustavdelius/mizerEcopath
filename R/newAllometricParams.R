@@ -71,7 +71,8 @@ newAllometricParams <- function(species_params, no_w = 200) {
     # Set power-law encounter rate (the coefficient will be adjusted below)
     ext_encounter(p) <- t(outer(p@w, sp$n, "^"))
     # Set encounter rate coefficient to produce desired growth rate
-    p <- matchGrowth(p)
+    factor <- age_mat(p) / sp$age_mat
+    ext_encounter(p) <- sweep(ext_encounter(p), 1, factor, "*")
     # Determine power-law coefficient for encounter rate
     e0 <- getEncounter(p)[, 1] / w(p)[1] ^ sp$n[1]
 
