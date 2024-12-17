@@ -42,9 +42,8 @@ Type objective_function<Type>::operator() ()
 {
     // **Data Section**
     // Introduce an integer flag to indicate whether 'counts' data are present.
-    // The user or calling code can set 'use_counts = 1' if counts exist, or '0' if they do not.
+    // Calling code can set 'use_counts = 1' if counts exist, or '0' if they do not.
     DATA_INTEGER(use_counts);
-
     // The next lines read counts data, but if use_counts = 0, we won't use them.
     DATA_VECTOR(counts);     // Observed count data for each bin
     DATA_IVECTOR(bin_index); // Bin indices (for overlapping segments)
@@ -92,10 +91,6 @@ Type objective_function<Type>::operator() ()
     vector<Type> yield_per_bin = catch_dens * w * dw;
     Type model_yield = yield_per_bin.sum();
 
-    // **Calculate model production**
-    vector<Type> production_per_bin = N * growth * w * dw;
-    Type model_production = production_per_bin.sum();
-
     // **Negative Log-Likelihood (NLL)**
     // We initialize nll to zero and only add contributions that apply.
     Type nll = Type(0.0);
@@ -125,8 +120,14 @@ Type objective_function<Type>::operator() ()
     // **Add penalty for deviation from observed yield**
     nll += yield_lambda * pow(log(model_yield / yield), Type(2));
 
-    // **Add penalty for deviation from observed production**
-    nll += production_lambda * pow(log(model_production / production), Type(2));
+    if (production_lambda > 0) {
+        // **Calculate production**
+        vector<Type> production_per_bin = N * growth * w * dw;
+        Type model_production = production_per_bin.sum();
+        REPORT(model_production);
+        // **Add penalty for deviation from observed production**
+        nll += production_lambda * pow(log(model_production / production), Type(2));
+    }
 
     // Final sanity checks
     TMBAD_ASSERT(nll >= 0);
@@ -136,14 +137,8 @@ Type objective_function<Type>::operator() ()
     }
 
     // **Reporting**
-    // Even if we skip counts-based calculations, we can still report everything else.
-    if (use_counts == 1) {
-        // Possibly also report the bin probabilities or other relevant metrics
-        // REPORT(probs);   // Only if we computed them
-    }
 
     REPORT(model_yield);
-    REPORT(model_production);
     REPORT(N);
     REPORT(F_mort);
     REPORT(mort);

@@ -12,7 +12,6 @@
 #' * `l25`: The size at which the gear selectivity is 25%.
 #' * `catchability`: The catchability of the gear.
 #' * `mu_mat`: The external mortality at maturity.
-#' * `w_mat25`: The size at which 25% of individuals are mature.
 #' It uses these to recalculate the corresponding rate arrays in the params
 #' object. It sets the initial size spectrum to the steady state size spectrum.
 #' The total biomass of each species remains unchanged. Only the selected
@@ -70,10 +69,12 @@ matchCatch <- function(params, species = NULL, catch,
                        yield_lambda = 1, production_lambda = 0.01) {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
+    params <- validParams(params)
     if (length(species) > 1) {
         for (s in species) {
             params <- matchCatch(params, species = s, catch = catch,
-                                 yield_lambda = yield_lambda)
+                                 yield_lambda = yield_lambda,
+                                 production_lambda = production_lambda)
         }
         return(params)
     }
@@ -81,9 +82,6 @@ matchCatch <- function(params, species = NULL, catch,
     data <- prepare_data(params, species = species, catch,
                          yield_lambda = yield_lambda,
                          production_lambda = production_lambda)
-    if (is.null(data)) { # There is no catch data for this species
-        return(params)
-    }
 
     sp <- species_params(params)
     gp <- gear_params(params)

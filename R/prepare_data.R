@@ -45,64 +45,69 @@ prepare_data <- function(params, species = 1, catch,
     catch <- valid_catch(catch, species)
 
     if (nrow(catch) == 0) {
-        return(NULL)
-    }
+        use_counts <- 0
+        w_min <- 1
+        w_max <- sps$w_max
+    } else {
+        use_counts <- 1
 
-    max_length <- max(catch$length + catch$dl)
-    max_weight <- sps$a * max_length^sps$b
-    if (max_weight > sps$w_max) {
-        stop("For ", species, " you have observed catches of larger weight than the `w_max` that you specified.")
-    }
+        max_length <- max(catch$length + catch$dl)
+        max_weight <- sps$a * max_length^sps$b
+        if (max_weight > sps$w_max) {
+            stop("For ", species, " you have observed catches of larger weight than the `w_max` that you specified.")
+        }
 
-    # Fill in missing zero counts ----
+        # Fill in missing zero counts ----
 
-    # Extract observed bin starts, ends, and counts
-    observed_bins <- data.frame(
-        bin_start = catch$length,
-        bin_end = catch$length + catch$dl,
-        count = catch$count)
-    # Add empty bins at either end. This will have an effect only when the
-    # catch data is very poor and would be matched by curves that are still
-    # large at the end of the observation interval.
-    if (min(catch$length) > 2) {
+        # Extract observed bin starts, ends, and counts
+        observed_bins <- data.frame(
+            bin_start = catch$length,
+            bin_end = catch$length + catch$dl,
+            count = catch$count)
+        # Add empty bins at either end. This will have an effect only when the
+        # catch data is very poor and would be matched by curves that are still
+        # large at the end of the observation interval.
+        if (min(catch$length) > 2) {
+            observed_bins <- rbind(observed_bins,
+                                   data.frame(bin_start = 1,
+                                              bin_end = min(catch$length),
+                                              count = 0))
+        }
+        max_idx <- which.max(catch$length)
+        max_length <- catch$length[max_idx] + catch$dl[max_idx]
         observed_bins <- rbind(observed_bins,
-                               data.frame(bin_start = 1,
-                                          bin_end = min(catch$length),
+                               data.frame(bin_start = max_length,
+                                          bin_end = max_length + catch$dl[max_idx],
                                           count = 0))
+
+        # Create a comprehensive set of bin edges covering all observed bins
+        bin_edges <- sort(unique(c(observed_bins$bin_start, observed_bins$bin_end)))
+
+        # Define full bins covering the observed range
+        full_bins <- data.frame(
+            bin_start = bin_edges[-length(bin_edges)],
+            bin_end = bin_edges[-1],
+            count = 0  # Initialize counts to zero
+        )
+
+        # Map observed counts to the corresponding bins in full_bins
+        bin_key <- paste0(full_bins$bin_start, "_", full_bins$bin_end)
+        observed_bin_key <- paste0(observed_bins$bin_start, "_", observed_bins$bin_end)
+        matched_indices <- match(observed_bin_key, bin_key)
+        full_bins$count[matched_indices] <- observed_bins$count
+
+        # Extract counts, bin boundaries and widths ----
+        counts <- full_bins$count
+        l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
+        w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
+        w_bin_widths <- diff(w_bin_boundaries)
+
+        w <- w(params)
+        # Select subset of w that totally contains the observed range
+        w_min <- max(w[w <= min(w_bin_boundaries)])
+        w_max <- min(w[w >= max(w_bin_boundaries)])
     }
-    max_idx <- which.max(catch$length)
-    max_length <- catch$length[max_idx] + catch$dl[max_idx]
-    observed_bins <- rbind(observed_bins,
-                           data.frame(bin_start = max_length,
-                                      bin_end = max_length + catch$dl[max_idx],
-                                      count = 0))
 
-    # Create a comprehensive set of bin edges covering all observed bins
-    bin_edges <- sort(unique(c(observed_bins$bin_start, observed_bins$bin_end)))
-
-    # Define full bins covering the observed range
-    full_bins <- data.frame(
-        bin_start = bin_edges[-length(bin_edges)],
-        bin_end = bin_edges[-1],
-        count = 0  # Initialize counts to zero
-    )
-
-    # Map observed counts to the corresponding bins in full_bins
-    bin_key <- paste0(full_bins$bin_start, "_", full_bins$bin_end)
-    observed_bin_key <- paste0(observed_bins$bin_start, "_", observed_bins$bin_end)
-    matched_indices <- match(observed_bin_key, bin_key)
-    full_bins$count[matched_indices] <- observed_bins$count
-
-    # Extract counts, bin boundaries and widths ----
-    counts <- full_bins$count
-    l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
-    w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
-    w_bin_widths <- diff(w_bin_boundaries)
-
-    w <- w(params)
-    # Select subset of w that totally contains the observed range
-    w_min <- max(w[w <= min(w_bin_boundaries)])
-    w_max <- min(w[w >= max(w_bin_boundaries)])
     w_select <- w >= w_min & w <= w_max
     w <- w[w >= w_min & w <= w_max]
     dw <- dw(params)[w_select]
@@ -113,15 +118,31 @@ prepare_data <- function(params, species = 1, catch,
 
     growth <- getEGrowth(params)[sp_select, w_select]
 
-    # Precompute weights for interpolation
-    weight_list <- precompute_weights(w_bin_boundaries, w)
+    if (use_counts) {
+        # Precompute weights for interpolation
+        weight_list <- precompute_weights(w_bin_boundaries, w)
+    } else {
+        weight_list <- list(bin_index = integer(0),
+                            f_index = integer(0),
+                            coeff_fj = numeric(0),
+                            coeff_fj1 = numeric(0))
+    }
 
     # The w_mat relevant for calculating mortality is the w just below it
     w_mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[w_mat_idx]
 
+    # If production is not observed
+    if (is.null(sps$ecopath_production) || is.na(sps$ecopath_production)) {
+        production_lambda <- 0
+        if (!use_counts) {
+            stop("Production must be observed if catches are not.")
+        }
+    }
+
     # Prepare data list for TMB ----
     data <- list(
+        use_counts = use_counts,
         counts = counts,
         bin_index = weight_list$bin_index,
         f_index = weight_list$f_index,
