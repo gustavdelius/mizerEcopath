@@ -12,7 +12,7 @@ prepare_params <- function(p) {
     # Determine mu_mat
     # Note that `mu_mat` is the mortality at the w just below w_mat
     # TODO: can be removed once mu_mat is a standard for species_params
-    mat_idx <- colSums(outer(p@w, sp$w_mat, "<"))
+    mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
     mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
     p <- set_species_param_default(p, "mu_mat", mu_mat)
 
