@@ -1,5 +1,6 @@
 #include <TMB.hpp>
 
+// Helper function: Fishing mortality
 template<class Type>
 vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
                               vector<Type> l)
@@ -8,15 +9,16 @@ vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
     Type sr = l50 * (c1 - ratio);
     Type s1 = l50 * log(Type(3.0)) / sr;
     Type s2 = s1 / l50;
-    vector<Type> F_mort = catchability /
-        (c1 + exp(s1 - s2 * l));
 
-    // Check that all elements are finite and non-negative
+    vector<Type> F_mort = catchability / (c1 + exp(s1 - s2 * l));
+
+    // Ensure all elements are finite and >= 0
     TMBAD_ASSERT((F_mort.array().isFinite() && (F_mort.array() >= 0)).all());
 
     return F_mort;
 }
 
+// Helper function: Steady-state numbers-at-size
 template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
                          Type biomass, vector<Type> w, vector<Type> dw)
@@ -29,7 +31,7 @@ vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
         N(i) = N(i - 1) * growth(i - 1) / denominator;
     }
 
-    // Check that all elements are finite and non-negative
+    // Ensure all elements are finite and >= 0
     TMBAD_ASSERT((N.array().isFinite() && (N.array() >= 0)).all());
 
     return N;
@@ -39,24 +41,28 @@ template<class Type>
 Type objective_function<Type>::operator() ()
 {
     // **Data Section**
-    DATA_VECTOR(counts);           // Count observations in bins
-    DATA_IVECTOR(bin_index);     // Bin indices for overlapping segments
-    DATA_IVECTOR(f_index);       // Function indices (j) for overlapping segments
-    DATA_VECTOR(coeff_fj);       // Coefficients for f(j)
-    DATA_VECTOR(coeff_fj1);      // Coefficients for f(j+1)
+    // Introduce an integer flag to indicate whether 'counts' data are present.
+    // The user or calling code can set 'use_counts = 1' if counts exist, or '0' if they do not.
+    DATA_INTEGER(use_counts);
+
+    // The next lines read counts data, but if use_counts = 0, we won't use them.
+    DATA_VECTOR(counts);     // Observed count data for each bin
+    DATA_IVECTOR(bin_index); // Bin indices (for overlapping segments)
+    DATA_IVECTOR(f_index);   // Function indices (for overlapping segments)
+    DATA_VECTOR(coeff_fj);
+    DATA_VECTOR(coeff_fj1);
+
     DATA_VECTOR(dw);
     DATA_VECTOR(w);
-    DATA_VECTOR(l);                // lengths corresponding to w
-    DATA_SCALAR(yield);            // Observed yield
-    DATA_SCALAR(production);       // Observed production
-    DATA_SCALAR(biomass);          // Observed biomass
-    DATA_VECTOR(growth);           // Growth rate
-    DATA_SCALAR(w_mat);            // Maturity size
-    DATA_SCALAR(d);                // Exponent of mortality power-law
-    DATA_SCALAR(yield_lambda);     // controls the strength of the penalty for
-                                   // deviation from the observed yield.
-    DATA_SCALAR(production_lambda); // controls the strength of the penalty for
-                                    // deviation from the observed production.
+    DATA_VECTOR(l);                 // lengths corresponding to w
+    DATA_SCALAR(yield);             // Observed yield
+    DATA_SCALAR(production);        // Observed production
+    DATA_SCALAR(biomass);           // Observed biomass
+    DATA_VECTOR(growth);            // Growth rate
+    DATA_SCALAR(w_mat);             // Maturity size (weight)
+    DATA_SCALAR(d);                 // Exponent for mortality power-law
+    DATA_SCALAR(yield_lambda);      // Penalty strength for yield deviation
+    DATA_SCALAR(production_lambda); // Penalty strength for production deviation
 
     // **Parameter Section**
     PARAMETER(l50);          // Length at 50% gear selectivity
@@ -71,11 +77,13 @@ Type objective_function<Type>::operator() ()
     vector<Type> mort = mu_mat * pow(w / w_mat, d) + F_mort;
 
     // **Calculate steady-state number density**
+    //   This is unscaled (N is not matched to 'biomass' yet).
     vector<Type> N = calculate_N(mort, growth, biomass, w, dw);
 
-    // Rescale to get observed biomass
+    // Rescale to match observed biomass
     vector<Type> biomass_in_bins = N * w * dw;
-    N = N * biomass / biomass_in_bins.sum();
+    Type unscaled_biomass = biomass_in_bins.sum();
+    N *= (biomass / unscaled_biomass);  // Now total biomass matches 'biomass'.
 
     // **Calculate catch density**
     vector<Type> catch_dens = N * F_mort;
@@ -85,32 +93,34 @@ Type objective_function<Type>::operator() ()
     Type model_yield = yield_per_bin.sum();
 
     // **Calculate model production**
-    vector<Type> production_per_bin = growth * N * dw;
+    vector<Type> production_per_bin = N * growth * w * dw;
     Type model_production = production_per_bin.sum();
 
-    // **Calculate catch probabilities**
-    int num_bins = counts.size();    // Number of bins
-    int num_segs = bin_index.size(); // Number of overlapping segments
+    // **Negative Log-Likelihood (NLL)**
+    // We initialize nll to zero and only add contributions that apply.
+    Type nll = Type(0.0);
 
-    vector<Type> probs(num_bins);   // Vector to store bin probabilities
-    probs.fill(Type(1e-10)); // To avoid zero probabilities
+    // If 'use_counts == 1', we have counts data and proceed with the multinomial likelihood.
+    if (use_counts == 1) {
+        int num_bins = counts.size();
+        int num_segs = bin_index.size();
+        vector<Type> probs(num_bins);
+        probs.fill(Type(1e-10)); // Avoid exactly zero probabilities
 
-    // Compute bin probabilities using precomputed weights
-    Type eps = Type(1e-10);
-    for (int k = 0; k < num_segs; k++) { // Loop over segments
-        int i = bin_index(k);      // Bin index
-        int j = f_index(k);        // Function index
+        // Accumulate the bin probabilities from overlapping segments
+        for (int k = 0; k < num_segs; k++) {
+            int i = bin_index(k);
+            int j = f_index(k);
+            probs(i) += coeff_fj(k) * catch_dens(j) + coeff_fj1(k) * catch_dens(j+1);
+        }
+        // Normalize probabilities
+        probs /= probs.sum();
 
-        // Accumulate the contributions to the bin probability
-        probs(i) += coeff_fj(k) * catch_dens(j) + coeff_fj1(k) * catch_dens(j+1);
+        // Multinomial negative log-likelihood
+        // You might or might not want to divide by counts.sum()—that’s up to you.
+        nll -= dmultinom(counts, probs, true) / counts.sum();
     }
-
-    // Normalize the bin probabilities so they sum to 1
-    probs = probs / probs.sum();
-
-    // **Negative Log-Likelihood Calculation**
-    // Compute the negative log-likelihood using the multinomial distribution
-    Type nll = -dmultinom(counts, probs, true) / counts.sum();
+    // else: skip all calculations involving 'counts'
 
     // **Add penalty for deviation from observed yield**
     nll += yield_lambda * pow(log(model_yield / yield), Type(2));
@@ -118,19 +128,27 @@ Type objective_function<Type>::operator() ()
     // **Add penalty for deviation from observed production**
     nll += production_lambda * pow(log(model_production / production), Type(2));
 
+    // Final sanity checks
     TMBAD_ASSERT(nll >= 0);
     TMBAD_ASSERT(CppAD::isfinite(nll));
-    if (!CppAD::isfinite(nll)) error("nll is not finite");
+    if (!CppAD::isfinite(nll)) {
+        error("nll is not finite");
+    }
 
-    // TODO: remove unused reports
-    REPORT(probs);
+    // **Reporting**
+    // Even if we skip counts-based calculations, we can still report everything else.
+    if (use_counts == 1) {
+        // Possibly also report the bin probabilities or other relevant metrics
+        // REPORT(probs);   // Only if we computed them
+    }
+
     REPORT(model_yield);
     REPORT(model_production);
     REPORT(N);
     REPORT(F_mort);
     REPORT(mort);
 
-    // Check that rescaling worked
+    // Check final biomass again
     biomass_in_bins = N * w * dw;
     Type total_biomass = biomass_in_bins.sum();
     REPORT(total_biomass);
