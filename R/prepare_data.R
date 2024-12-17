@@ -46,6 +46,7 @@ prepare_data <- function(params, species = 1, catch,
 
     if (nrow(catch) == 0) {
         use_counts <- 0
+        counts <- numeric(0)
         w_min <- 1
         w_max <- sps$w_max
     } else {
@@ -59,11 +60,18 @@ prepare_data <- function(params, species = 1, catch,
 
         # Fill in missing zero counts ----
 
+        # Sort bins
+        catch <- catch[order(catch$length), ]
         # Extract observed bin starts, ends, and counts
         observed_bins <- data.frame(
             bin_start = catch$length,
             bin_end = catch$length + catch$dl,
             count = catch$count)
+        # Check that bins don't overlap
+        if (any(observed_bins$bin_end[-nrow(observed_bins)] >
+                observed_bins$bin_start[-1])) {
+            stop("Bins in the catch data must not overlap.")
+        }
         # Add empty bins at either end. This will have an effect only when the
         # catch data is very poor and would be matched by curves that are still
         # large at the end of the observation interval.
@@ -108,6 +116,7 @@ prepare_data <- function(params, species = 1, catch,
         w_max <- min(w[w >= max(w_bin_boundaries)])
     }
 
+    w <- w(params)
     w_select <- w >= w_min & w <= w_max
     w <- w[w >= w_min & w <= w_max]
     dw <- dw(params)[w_select]
@@ -136,7 +145,8 @@ prepare_data <- function(params, species = 1, catch,
     if (is.null(sps$ecopath_production) || is.na(sps$ecopath_production)) {
         production_lambda <- 0
         if (!use_counts) {
-            stop("Production must be observed if catches are not.")
+            # Not enough data
+            return(NULL)
         }
     }
 

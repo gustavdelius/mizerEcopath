@@ -122,7 +122,7 @@ Type objective_function<Type>::operator() ()
 
     if (production_lambda > 0) {
         // **Calculate production**
-        vector<Type> production_per_bin = N * growth * w * dw;
+        vector<Type> production_per_bin = N * growth * dw;
         Type model_production = production_per_bin.sum();
         REPORT(model_production);
         // **Add penalty for deviation from observed production**

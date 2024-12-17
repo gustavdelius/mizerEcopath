@@ -355,7 +355,7 @@ tuneEcopath <- function(params,
         ## Match ####
         # triggered by "Match" button in sidebar
         observeEvent(input$sp_steady, {
-            tuneParams_match(params(), params = params,
+            tuneParams_match(params(), catch, params = params,
                              params_old = params_old,
                              logs = logs, session = session, input = input)
             # We need to update species sliders but make sure that that
@@ -464,7 +464,7 @@ tuneEcopath <- function(params,
 
 # Define function that matches to Ecopath and
 # then adds the new steady state to the logs
-tuneParams_match <- function(p, params, params_old, logs, session, input) {
+tuneParams_match <- function(p, catch, params, params_old, logs, session, input) {
 
     tryCatch({
         p <- matchGrowth(p, species = input$sp, keep = "biomass")

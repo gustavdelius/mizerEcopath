@@ -82,6 +82,10 @@ matchCatch <- function(params, species = NULL, catch,
     data <- prepare_data(params, species = species, catch,
                          yield_lambda = yield_lambda,
                          production_lambda = production_lambda)
+    if (is.null(data)) {
+        warning(species, " can not be matched because neither catches nor production are given.")
+        return(params)
+    }
 
     sp <- species_params(params)
     gp <- gear_params(params)
