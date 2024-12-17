@@ -19,8 +19,13 @@ species <- valid_species_arg(params, 5)
 # Model does not fit the observed catch yet:
 plot_catch(params, species, catch)
 
-data <- prepare_data(params, species = species, catch)
-species <- valid_species_arg(params, species = species)
+
+data <- prepare_data(params, species = species, catch,
+                     production_lambda = 1)
+if (is.null(data)) { # There is no catch data for this species
+    return(params)
+}
+
 sp <- species_params(params)
 gp <- gear_params(params)
 sp_select <- sp$species == species
@@ -35,13 +40,11 @@ if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
     mu_mat <- sps$mu_mat
 }
 
-# Steepness of maturity ogive
-U <- log(3) / log(sps$w_mat / sps$w_mat25)
-
 # Initial parameter estimates
 initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                    mu_mat = mu_mat, U = U,
-                    catchability = gps$catchability)
+                    mu_mat = mu_mat,
+                    # we need non-zero catchability to match catch
+                    catchability = max(gps$catchability, 1e-8))
 
 # Prepare the objective function.
 obj <- MakeADFun(data = data,
@@ -50,9 +53,9 @@ obj <- MakeADFun(data = data,
                  silent = TRUE)
 
 # Set parameter bounds
-lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2, U = 1,
-                  catchability = 0.001)
-upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf, U = 20,
+lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
+                  catchability = 1e-8)
+upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf,
                   catchability = Inf)
 
 # Perform the optimization.
@@ -75,6 +78,10 @@ gps$yield_observed
 report$model_yield
 getYield(optimal_params)[sp_select]
 # If you want a better match you can increase the `yield_lambda` parameter
+
+sps$ecopath_production
+report$model_production
+getSomaticProduction(optimal_params)[sp_select]
 
 # Check that TMB code and mizer agree on size distribution
 plot(data$w, report$N, type = "l", log = "y")
