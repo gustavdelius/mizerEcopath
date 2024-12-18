@@ -17,6 +17,9 @@
 #'   biomass flow from a prey species to a predator species.
 #' @export
 #' @family rate functions
+#' @examples
+#' dimnames(getDietMatrix(NS_params))
+#' getDietMatrix(NS_params)["Cod", ]
 getDietMatrix <- function(params, min_w_prey = 0, max_w_prey = Inf) {
     w_sel <- params@w >= min_w_prey & params@w <= max_w_prey
     N <- initialN(params)[, w_sel]
