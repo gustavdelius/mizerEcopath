@@ -1,0 +1,41 @@
+---
+title: "Todo list"
+format: html
+editor: visual
+---
+
+## Improvements to the shiny gadget
+
+There should be a tab where the current match to all the data can be seen at the same time. This would be an extension of the current "catch" tab where below the fit to the catch size distribution one can also see all the other data that is being used in the parameter estimation. Currently that is the yield and the production, but we may add the reproductive success and the consumption later.
+
+On this tab it should be possible to change the penalty factors `yield_lambda` and `production_lambda`, which currently can not be changed from within the shiny gadget.
+
+If there are multiple gears per species, all the gears for the current species
+
+## Multiple gears per species
+
+The parameter estimation should be extended to estimate the selectivity and catchability parameters of multiple gears for each species.
+
+Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will need a selectivity gear that decreases again at larger sizes. We need to experiment to find a suitable functional form for the selectivity curve. One possibility would be sigmoid times power law. But we should also ask the experts in Spain.
+
+It might be easiest to use the generalised selectivity curve for all species but put a penalty on the amount of decrease at larger sizes. That way as much as possible of the decrease in catches at large sizes will be modelled through a decrease in abundance and a decrease in selectivity will be used only when needed.
+
+Should there be the possibility of selecting a different penalty factor `yield_lambda` for each gear?
+
+## Interacting case
+
+As much as possible of the automatic parameter estimation should work also for an interacting model, where the mortality is not given entirely through a power law external mortality.
+
+This can probably be achieved easily by also passing the total current natural mortality to the objective function where it is added to the estimated power law mortality. The lower limit on the coefficient of the added power law mortality should be set so that the existing external mortality plus the estimated power law mortality does not go negative anywhere.
+
+Of course in an interacting model the result of the adjustment of the parameters will not again be a multi-species steady state.
+
+## p != n
+
+Currently the slow-down in growth at larger sizes is entirely due to investment into reproduction because the loss to metabolic respiration is assumed to scale with the same exponent as consumption. We may want to drop this.
+
+This will mean that matching consumption estimates will not be as straighforward as currently but will need to be done as part of the parameter estimation.
+
+## Estimate reproduction parameters
+
+Currently the reproduction parameters `w_repro_max` and `m` need to be tuned by hand. Instead they could be tuned by giving a target value for the reproductive success.
