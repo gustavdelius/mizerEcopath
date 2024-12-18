@@ -2,3 +2,69 @@ url: ~
 template:
   bootstrap: 5
   math-rendering: mathjax
+
+reference:
+- title: "Building model"
+  contents:
+  - newAllometricParams
+  - isAllometric
+  - makeInteractive
+  - makeNoninteracting
+  - setFeedingLevel
+- title: "Calibrating model"
+  contents:
+  - matchCatch
+  - matchConsumption
+  - matchGonadicProportionOnce
+  - matchDiet
+- title: "Working with Ecopath"
+  contents:
+  - addEcopathParams
+  - addEcopathCatchTotal
+  - reduceEcopathDiet
+  - validEcopathParams
+  - validEcopathCatch
+- title: "Shiny gadget"
+  contents:
+  - tuneEcopath
+  - catchTab
+  - deathTab
+  - dietTab
+  - growthTab
+  - reproTab
+  - spectraTab
+  - exponentControl
+  - fishingControl
+  - otherControl
+  - reproductionControl
+- title: "Calculating rates"
+  contents:
+  - getConsumption
+  - getUnassimilated
+  - getProduction
+  - getTotalProduction
+  - getSomaticProduction
+  - getGonadicProduction
+  - getOffspringProduction
+  - getReproductiveLoss
+  - getRespiration
+  - getMetabolicRespiration
+  - getEcotrophicEfficiency
+  - getM0B
+  - getM2B
+  - getZB
+  - getDietMatrix
+- title: "Plotting"
+  contents:
+  - starts_with("plot")
+- title: "Helper functions"
+  contents:
+  - prepare_data
+  - update_params
+  - precompute_weights
+- title: "Obsolete?"
+  contents:
+  - matchEcopath
+  - matchExtMortOnce
+  - matchProduction
+  - matchRespirationOnce
