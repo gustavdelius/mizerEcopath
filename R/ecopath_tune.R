@@ -57,6 +57,8 @@
 #'
 #' @param params MizerParams object to tune. If missing, the gadget tries to
 #'   recover information from log files left over from aborted previous runs.
+#' @inheritParams matchCatch
+#' @inheritParams matchDiet
 #' @param controls A character vector of names of input parameter control
 #'   sections that should be displayed in the sidebar. See "Customisation"
 #'   below.
@@ -74,7 +76,7 @@
 #' @md
 #' @import shinyBS
 #' @export
-tuneEcopath <- function(params,
+tuneEcopath <- function(params, catch = NULL, diet = NULL,
                         controls = c("fishing",
                                      "reproduction",
                                      "other",
@@ -341,6 +343,8 @@ tuneEcopath <- function(params,
                               output = output,
                               session = session,
                               params = params,
+                              catch = catch,
+                              diet = diet,
                               params_old = params_old,
                               logs = logs,
                               trigger_update = trigger_update, ...))
