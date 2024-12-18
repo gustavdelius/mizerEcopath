@@ -1,22 +1,22 @@
 #' Match the consumption of the model to the Ecopath consumption
 #'
 #' This function sets the metabolic respiration rate so that the consumption
-#' matches the species parameter `ecopath_consumption`, while keeping the same
+#' matches the species parameter `consumption_observed`, while keeping the same
 #' energy available for growth and reproduction. Thus the function also adjusts
 #' the external encounter rate to compensate for the changed respiration rate.
 #' To do this the function assumes that both the encounter rate and the metabolic
 #' respiration rate are given by power laws with the same exponent `n`, so it
 #' sets the species parameter `p` to the same value as `n`.
 #'
-#' Any of the selected species for which `ecopath_consumption` is NA will be
+#' Any of the selected species for which `consumption_observed` is NA will be
 #' quietly ignored.
-#' If for any species the production is higher than the `ecopath_consumption`,
+#' If for any species the production is higher than the `consumption_observed`,
 #' then this would lead to a negative metabolic respiration rate. In this case
 #' the metabolic rate is set to 0 and a warning for all such species.
 #'
 #' @param params A MizerParams object
 #' @param species A vector of species names or indices. If NULL, all species for
-#'   which the species parameter `ecopath_consumption` is provided are affected.
+#'   which the species parameter `consumption_observed` is provided are affected.
 #'
 #' @return A MizerParams object with adjusted encounter and metabolic respiration
 #'   rates.
@@ -25,7 +25,7 @@
 #' params <- matchConsumption(celtic_params)
 #' # The consumption now matches the observation
 #' all.equal(getConsumption(params),
-#'           species_params(params)$ecopath_consumption,
+#'           species_params(params)$consumption_observed,
 #'           check.attributes = FALSE)
 #' # The energy available for growth and reproduction is not changed
 #' all.equal(getEReproAndGrowth(params),
@@ -35,14 +35,14 @@ matchConsumption <- function(params, species = NULL) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
-    if (!hasName(params@species_params, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
+    if (!hasName(params@species_params, "consumption_observed")) {
+        stop("You must provide the consumption_observed species parameter.")
     }
     species <- valid_species_arg(params, species)
 
     # Identify selected species
     sp <- params@species_params
-    sp_select <- sp$species %in% species & !is.na(sp$ecopath_consumption)
+    sp_select <- sp$species %in% species & !is.na(sp$consumption_observed)
 
     if (sum(sp_select) == 0) {
         return(params)
@@ -53,7 +53,7 @@ matchConsumption <- function(params, species = NULL) {
 
     # Calculate R = alpha * Q - P for each selected species
     total_production <- getTotalProduction(params)
-    R <- sp$alpha[sp_select] * sp$ecopath_consumption[sp_select] - total_production[sp_select]
+    R <- sp$alpha[sp_select] * sp$consumption_observed[sp_select] - total_production[sp_select]
 
     # Warn if any species require negative metabolic respiration
     negative_species <- sp$species[sp_select][R < 0]

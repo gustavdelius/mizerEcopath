@@ -127,7 +127,7 @@ isEcopathMatched(p)
 # Check that diet matrix is matched
 Kn <- getDietMatrix(p)[, 1:no_sp]
 # Convert ecopath diet matrix from proportions to absolute consumption
-Q <- sp$ecopath_consumption
+Q <- sp$consumption_observed
 dm <- dm * Q / rowSums(dm)
 # Drop the "other" column
 D <- dm[, -ncol(dm)]

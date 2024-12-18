@@ -38,8 +38,8 @@ matchProduction <- function(params, tol = 0.1, max_iter = 10) {
     }
     sp <- params@species_params
     gp <- params@gear_params
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
@@ -69,8 +69,8 @@ matchProductionOnce <- function(params, steady = TRUE) {
         stop("params must be a MizerParams object.")
     }
     sp <- params@species_params
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
@@ -78,7 +78,7 @@ matchProductionOnce <- function(params, steady = TRUE) {
 
     # # Adjust gonadic production
     # Q <- getConsumption(params)
-    # R_desired <- sp$alpha * Q - sp$ecopath_production
+    # R_desired <- sp$alpha * Q - sp$production_observed
     # if (any(R_desired < 0)) {
     #     warning("Assimilated consumption not sufficient to cover production.")
     # }
@@ -97,7 +97,7 @@ matchProductionOnce <- function(params, steady = TRUE) {
     # Adjust respiration
     Q <- getConsumption(params)
     G <- getGonadicProduction(params)
-    K_desired <- sp$alpha * Q - sp$ecopath_production - G
+    K_desired <- sp$alpha * Q - sp$production_observed - G
     if (any(K_desired < 0)) {
         warning("Assimilated consumption not sufficient to cover production.")
     }
@@ -129,12 +129,12 @@ isProductionMatched <- function(params, tol = 0.1) {
         stop("params must be a MizerParams object.")
     }
     sp <- params@species_params
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
 
     # Calculate discrepancy in production
-    Pratio <- sp$ecopath_production / getSomaticProduction(params)
+    Pratio <- sp$production_observed / getSomaticProduction(params)
 
     return(max(abs(Pratio - 1)) < tol)
 }

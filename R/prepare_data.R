@@ -142,7 +142,7 @@ prepare_data <- function(params, species = 1, catch,
     w_mat <- params@w[w_mat_idx]
 
     # If production is not observed
-    if (is.null(sps$ecopath_production) || is.na(sps$ecopath_production)) {
+    if (is.null(sps$production_observed) || is.na(sps$production_observed)) {
         production_lambda <- 0
         if (!use_counts) {
             # Not enough data
@@ -162,7 +162,7 @@ prepare_data <- function(params, species = 1, catch,
         w = w,
         l = l,
         yield = gps$yield_observed,
-        production = sps$ecopath_production,
+        production = sps$production_observed,
         biomass = biomass,
         growth = growth,
         w_mat = w_mat,

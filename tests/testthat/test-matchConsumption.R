@@ -3,19 +3,19 @@ test_that("matchConsumption throws error for non-MizerParams input", {
                  "params must be a MizerParams object.")
 })
 
-test_that("matchConsumption behaves correctly when ecopath_consumption missing", {
-    # Create a copy of celtic_params with some NAs in ecopath_consumption
+test_that("matchConsumption behaves correctly when consumption_observed missing", {
+    # Create a copy of celtic_params with some NAs in consumption_observed
     # The corresponding species should be ignored
     params_no_ecopath <- celtic_params
-    params_no_ecopath@species_params$ecopath_consumption[1] <- NA
+    params_no_ecopath@species_params$consumption_observed[1] <- NA
     result <- matchConsumption(params_no_ecopath, species = 1)
     # The result should be the same as the input
     expect_identical(result, params_no_ecopath)
 
-    # Remove the ecopath_consumption column
-    params_no_ecopath@species_params$ecopath_consumption <- NULL
+    # Remove the consumption_observed column
+    params_no_ecopath@species_params$consumption_observed <- NULL
     expect_error(matchConsumption(params_no_ecopath),
-                 "You must provide the ecopath_consumption species parameter.")
+                 "You must provide the consumption_observed species parameter.")
 })
 
 test_that("matchConsumption sets p = n for selected species", {
@@ -51,12 +51,12 @@ test_that("matchConsumption works with multiple species and adjusts correctly", 
 })
 
 test_that("matchConsumption warns when negative metabolic respiration required", {
-    # Create a scenario where production > ecopath_consumption for a species
+    # Create a scenario where production > consumption_observed for a species
     params_negative <- celtic_params
     # Assume the first species can be manipulated
     sp_idx <- 1
-    # Make production greater than ecopath consumption by reducing ecopath_consumption
-    params_negative@species_params$ecopath_consumption[sp_idx] <-
+    # Make production greater than ecopath consumption by reducing consumption_observed
+    params_negative@species_params$consumption_observed[sp_idx] <-
         getTotalProduction(params_negative)[sp_idx] / params_negative@species_params$alpha[sp_idx] * 0.5
 
     expect_warning(result <- matchConsumption(params_negative,
@@ -87,11 +87,11 @@ test_that("matchConsumption preserves energy for growth and reproduction", {
     expect_equal(new_ERG, orig_ERG, tolerance = 1e-8)
 })
 
-test_that("matchConsumption matches consumption to ecopath_consumption", {
+test_that("matchConsumption matches consumption to consumption_observed", {
     # Run matchConsumption for all species
     result <- matchConsumption(celtic_params)
-    # Check that model consumption matches ecopath_consumption
+    # Check that model consumption matches consumption_observed
     model_consumption <- unname(getConsumption(result))
-    expected_consumption <- result@species_params$ecopath_consumption
+    expected_consumption <- result@species_params$consumption_observed
     expect_equal(model_consumption, expected_consumption, tolerance = 1e-8)
 })

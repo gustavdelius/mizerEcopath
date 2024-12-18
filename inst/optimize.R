@@ -79,7 +79,7 @@ report$model_yield
 getYield(optimal_params)[sp_select]
 # If you want a better match you can increase the `yield_lambda` parameter
 
-sps$ecopath_production
+sps$production_observed
 report$model_production
 getSomaticProduction(optimal_params)[sp_select]
 

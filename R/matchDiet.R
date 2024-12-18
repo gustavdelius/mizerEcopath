@@ -68,7 +68,7 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     }
 
     # Convert diet matrix from proportions to absolute consumption
-    Q <- sp$ecopath_consumption
+    Q <- sp$consumption_observed
     dm <- diet_matrix * Q / rowSums(diet_matrix)
     # Keep only the part corresponding to species
     D <- dm[sp$species, sp$species]

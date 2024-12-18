@@ -4,7 +4,7 @@
 #' @export
 plotProductionVsSpecies <- function(params) {
     no_sp <- length(params@species_params$species)
-    observed <- params@species_params$ecopath_production
+    observed <- params@species_params$production_observed
     if (is.null(observed)) observed <- rep(NA, no_sp)
 
     model <- getProduction(params)

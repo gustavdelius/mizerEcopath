@@ -4,7 +4,7 @@
 #' @export
 plotConsumptionVsSpecies <- function(params) {
     no_sp <- length(params@species_params$species)
-    observed <- params@species_params$ecopath_consumption
+    observed <- params@species_params$consumption_observed
     if (is.null(observed)) observed <- rep(NA, no_sp)
 
     model <- getConsumption(params)

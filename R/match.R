@@ -4,11 +4,11 @@ getEcopathRatios <- function(params) {
     }
     sp <- params@species_params
     gp <- params@gear_params
-    if (!hasName(sp, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
+    if (!hasName(sp, "consumption_observed")) {
+        stop("You must provide the consumption_observed species parameter.")
     }
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
@@ -18,9 +18,9 @@ getEcopathRatios <- function(params) {
     }
 
     # Calculate discrepancy in consumption
-    Qratio <- sp$ecopath_consumption / getConsumption(params)
+    Qratio <- sp$consumption_observed / getConsumption(params)
     # Calculate discrepancy in production
-    Pratio <- sp$ecopath_production / getSomaticProduction(params)
+    Pratio <- sp$production_observed / getSomaticProduction(params)
     # Calculate discrepancy in gonadic production
     Gratio <- getGonadicProduction(params) / getProduction(params) /
         sp$gonad_proportion
@@ -63,11 +63,11 @@ matchEcopath <- function(params, tol = 0.1, max_iter = 10) {
     if (!hasName(gp, "yield_observed")) {
         stop("You must provide the yield_observed gear parameter.")
     }
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
-    if (!hasName(sp, "ecopath_consumption")) {
-        stop("You must provide the ecopath_consumption species parameter.")
+    if (!hasName(sp, "consumption_observed")) {
+        stop("You must provide the consumption_observed species parameter.")
     }
 
     params <- matchConsumption(params, tol)

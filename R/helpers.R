@@ -81,13 +81,13 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #'
 #' The biomasses are added to the species_params data frame in the
 #' `biomass_observed` column. The consumption rates are put into a
-#' `ecopath_consumption` column and the production rates are put into a
-#' `ecopath_production` column. The names of the Ecopath groups associated to
+#' `consumption_observed` column and the production rates are put into a
+#' `production_observed` column. The names of the Ecopath groups associated to
 #' each mizer species are put into the `ecopath_groups` column. This column is a
 #' list column so that it can store a vector of groups in the case where a
 #' species is made up of several groups.
 #'
-#' If `biomass_observed`, `ecopath_production` or `ecopath_consumption` columns
+#' If `biomass_observed`, `production_observed` or `consumption_observed` columns
 #' already have values differing from the Ecopath values, a warning is issued
 #' and the values are overwritten.
 #'
@@ -101,7 +101,7 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 #'   as exported by the Ecopath software.
 #'
 #' @return The mizer species parameter data frame with the added columns
-#'  `biomass_observed`, `ecopath_consumption`, `ecopath_production` and
+#'  `biomass_observed`, `consumption_observed`, `production_observed` and
 #'  `ecopath_groups`.
 #' @export
 addEcopathParams <- function(species_params, ecopath_params,
@@ -113,7 +113,7 @@ addEcopathParams <- function(species_params, ecopath_params,
     ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)
 
     # Ensure necessary columns exist in species_params
-    required_columns <- c("biomass_observed", "ecopath_production", "ecopath_consumption", "ecopath_groups")
+    required_columns <- c("biomass_observed", "production_observed", "consumption_observed", "ecopath_groups")
     for (col in required_columns) {
         if (!col %in% colnames(sp)) {
             sp[[col]] <- if (col == "ecopath_groups") vector("list", nrow(sp)) else NA_real_
@@ -150,8 +150,8 @@ addEcopathParams <- function(species_params, ecopath_params,
 
         # Initialise the values to zero for accumulation
         sp$biomass_observed[i] <- 0
-        sp$ecopath_consumption[i] <- 0
-        sp$ecopath_production[i] <- 0
+        sp$consumption_observed[i] <- 0
+        sp$production_observed[i] <- 0
 
         for (group in species_to_groups[[species]]) {
             # Extract Ecopath estimates for the group
@@ -163,10 +163,10 @@ addEcopathParams <- function(species_params, ecopath_params,
                 sp$biomass_observed[i] <- sp$biomass_observed[i] + biomass
 
                 consumption <- estimates$`Consumption / biomass (/year)` * biomass
-                sp$ecopath_consumption[i] <- sp$ecopath_consumption[i] + consumption
+                sp$consumption_observed[i] <- sp$consumption_observed[i] + consumption
 
                 production <- estimates$`Production / consumption (/year)` * consumption
-                sp$ecopath_production[i] <- sp$ecopath_production[i] + production
+                sp$production_observed[i] <- sp$production_observed[i] + production
             }
         }
     }

@@ -31,8 +31,8 @@ matchRespirationOnce <- function(params, steady = TRUE) {
         stop("params must be a MizerParams object.")
     }
     sp <- params@species_params
-    if (!hasName(sp, "ecopath_production")) {
-        stop("You must provide the ecopath_production species parameter.")
+    if (!hasName(sp, "production_observed")) {
+        stop("You must provide the production_observed species parameter.")
     }
     if (!hasName(sp, "gonad_proportion")) {
         stop("You must provide the gonad_proportion species parameter.")
@@ -40,8 +40,8 @@ matchRespirationOnce <- function(params, steady = TRUE) {
 
     R <- getRespiration(params)
     Q <- getConsumption(params)
-    # ecopath_production is only the somatic production.
-    P_desired <- sp$ecopath_production + getGonadicProduction(params)
+    # production_observed is only the somatic production.
+    P_desired <- sp$production_observed + getGonadicProduction(params)
     R_desired <- sp$alpha * Q - P_desired
     if (any(R_desired < 0)) {
         warning("Negative respiration required.")
