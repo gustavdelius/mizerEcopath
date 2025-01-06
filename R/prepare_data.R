@@ -144,18 +144,23 @@ prepare_data <- function(params, species = 1, catch,
     # If production is not observed
     if (is.null(sps$production_observed) || is.na(sps$production_observed)) {
         production_lambda <- 0
+        production <- 0
         if (!use_counts) {
             # Not enough data
             return(NULL)
         }
+    } else {
+        production <- sps$production_observed
     }
 
     # If yield is not observed
     if (is.null(gps$yield_observed) || is.na(gps$yield_observed) ||
         !(gps$yield_observed > 0)) {
+        yield <- 0
         yield_lambda <- 0
+    } else {
+        yield <- gps$yield_observed
     }
-
     # Prepare data list for TMB ----
     data <- list(
         use_counts = use_counts,
@@ -167,8 +172,8 @@ prepare_data <- function(params, species = 1, catch,
         dw = dw,
         w = w,
         l = l,
-        yield = gps$yield_observed,
-        production = sps$production_observed,
+        yield = yield,
+        production = production,
         biomass = biomass,
         growth = growth,
         w_mat = w_mat,
