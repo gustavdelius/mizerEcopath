@@ -39,3 +39,9 @@ This will mean that matching consumption estimates will not be as straighforward
 ## Estimate reproduction parameters
 
 Currently the reproduction parameters `w_repro_max` and `m` need to be tuned by hand. Instead they could be tuned by giving a target value for the reproductive success.
+
+## Fit to size at age data
+
+We should also use size at age data to pin down the growth after maturity. This will help with the estimation of the reproduction parameters and, once n != p, the metabolic respiration.
+
+If size at age data is not available but only von Bertalanffy parameters, we could create synthetic data by adding noise to the length, using the same model that was used to estimate the von Bertalanffy paremeters.
