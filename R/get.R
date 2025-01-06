@@ -211,7 +211,7 @@ getRespiration <- function(params) {
 getUnassimilated <- function(params) {
     sp <- species_params(params)
     Q <- getConsumption(params)
-    U = (1 - sp$alpha) * Q
+    U <- (1 - sp$alpha) * Q
     return(U)
 }
 
@@ -329,6 +329,6 @@ getEcotrophicEfficiency <- function(params) {
 #' getOffspringProduction(NS_params)
 getOffspringProduction <- function(params) {
     sp <- species_params(params)
-    Offspring_biomass <- getRDD(params) * sp$w_min
-    return(Offspring_biomass)
+    offspring_biomass <- getRDD(params) * sp$w_min
+    return(offspring_biomass)
 }
