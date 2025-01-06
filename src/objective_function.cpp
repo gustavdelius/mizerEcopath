@@ -87,10 +87,6 @@ Type objective_function<Type>::operator() ()
     // **Calculate catch density**
     vector<Type> catch_dens = N * F_mort;
 
-    // **Calculate model yield**
-    vector<Type> yield_per_bin = catch_dens * w * dw;
-    Type model_yield = yield_per_bin.sum();
-
     // **Negative Log-Likelihood (NLL)**
     // We initialize nll to zero and only add contributions that apply.
     Type nll = Type(0.0);
@@ -118,7 +114,14 @@ Type objective_function<Type>::operator() ()
     // else: skip all calculations involving 'counts'
 
     // **Add penalty for deviation from observed yield**
-    nll += yield_lambda * pow(log(model_yield / yield), Type(2));
+    if (yield_lambda > 0) {
+        // **Calculate model yield**
+        vector<Type> yield_per_bin = catch_dens * w * dw;
+        Type model_yield = yield_per_bin.sum();
+        REPORT(model_yield);
+        // Penalise deviation from observed yield
+        nll += yield_lambda * pow(log(model_yield / yield), Type(2));
+    }
 
     if (production_lambda > 0) {
         // **Calculate production**
@@ -138,7 +141,6 @@ Type objective_function<Type>::operator() ()
 
     // **Reporting**
 
-    REPORT(model_yield);
     REPORT(N);
     REPORT(F_mort);
     REPORT(mort);

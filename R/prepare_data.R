@@ -150,6 +150,11 @@ prepare_data <- function(params, species = 1, catch,
         }
     }
 
+    # If yield is not observed
+    if (is.null(sps$yield_observed) || is.na(sps$yield_observed)) {
+        yield_lambda <- 0
+    }
+
     # Prepare data list for TMB ----
     data <- list(
         use_counts = use_counts,
