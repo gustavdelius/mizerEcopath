@@ -1,15 +1,25 @@
 #' Sets up gear parameters from Ecopath catch data
 #'
+#' Uses the Catch data frame exported by Ecopath to set up gear parameters.
 #' Currently this sets up only a single gear for the total catch. The
 #' `yield_observed` gear parameter is set to the total catch for each species.
 #' The `catchability` is set to the ratio of the observed yield to the observed
-#' biomass. The selectivity of the gear is assumed to be sigmoidal with 50% of
+#' biomass. The selectivity of the gear is set to be sigmoidal with 50% of
 #' fish selected at maturity size and 25% selected at 90% of maturity size
 #' (measured in weight). Fishing is turned on with an initial effort of 1. The
 #' result will therefore not be at steady state yet.
 #'
+#' The catchability set by this function for each gear will be an
+#' underestimation of the catchability needed to produce the observed yield
+#' because setting it to the ratio of the observed yield to the observed biomass
+#' neglects that some of the biomass will be at sizes that are not fully
+#' selected by the gear. You will need to call `matchCatch()` to adjust the
+#' catchability to match the observed yield.
+#'
 #' @param params A MizerParams object
 #' @param ecopath_catch The Ecopath Catch data frame
+#' @return A MizerParams object with gear parameters set up and fishing effort
+#'   switched on.
 #' @export
 addEcopathCatchTotal <- function(params, ecopath_catch) {
     sp <- params@species_params

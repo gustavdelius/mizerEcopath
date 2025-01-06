@@ -2,7 +2,7 @@
 #'
 #' This function adjusts various model parameters for the selected species so
 #' that the model in steady state reproduces the observed catch size
-#' distribution and the observed yield.
+#' distribution, the observed yield and the observed production, if available.
 #'
 #' Currently this function is implemented only for the case where there is a
 #' single gear catching each species.
@@ -21,7 +21,24 @@
 #' The objective function is the negative log likelihood of the observed catch
 #' size distribution given the probabilities predicted by the model plus the sum
 #' of squares difference between the log of the observed yield and the log of
-#' the predicted yield, multiplied by `yield_lambda`.
+#' the predicted yield, multiplied by `yield_lambda`, as well as the sum of
+#' squares difference between the log of the observed production and the log of
+#' the predicted production, multiplied by `production_lambda`.
+#'
+#' The function deals with missing data in the following way, for each species
+#' individually:
+#'
+#' -  If the observed yield is not available, the function will only match the
+#' observed catch size distribution and the observed production.
+#'
+#' -  If the observed production is not available, the function will only match the
+#' observed catch size distribution and the observed yield.
+#'
+#' -  If the observed catch size distribution is not available, the function will
+#' only match the observed yield and the observed production.
+#'
+#' -  If neither the observed yield nor the observed production are available, the
+#' function raises an error.
 #'
 #' The catch predicted by the model is calculated by integrating the
 #' catchability and the gear selectivity over the size distribution of the
@@ -50,8 +67,9 @@
 #' @param production_lambda A parameter that controls the strength of the penalty
 #'  for deviation from the observed production.
 #'
-#' @return A MizerParams object with the adjusted gear selectivity and
-#'   catchability for the selected species
+#' @return A MizerParams object with the adjusted external mortality, gear
+#'   selectivity, catchability and steady-state spectrum for the selected
+#'   species.
 #' @family match functions
 #' @examples
 #' params <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch)
