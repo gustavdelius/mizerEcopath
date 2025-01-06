@@ -9,13 +9,12 @@
 #' @param species The species to update. By default the first species in the
 #'   model.
 #' @param pars A named numeric vector of parameter values
-#' @param biomass The observed biomass of the species in the range of the model
-#'   specified by `w_select`.
+#' @param data The list with data as passed to the objective function
 #' @param w_select A logical vector indicating which weight bins were used in
 #'   the likelihood calculation
 #' @return The updated MizerParams object
 #' @export
-update_params <- function(params, species = 1, pars, biomass, w_select) {
+update_params <- function(params, species = 1, pars, data, w_select) {
     params <- validParams(params)
     sp <- species_params(params)
 
@@ -43,7 +42,9 @@ update_params <- function(params, species = 1, pars, biomass, w_select) {
     # Update the gear parameters
     gps$l50 <- pars["l50"]
     gps$l25 <- pars["ratio"] * pars["l50"]
-    gps$catchability <- pars["catchability"]
+    if (data$yield_lambda > 0) {
+        gps$catchability <- pars["catchability"]
+    }
     gear_params(params)[gp_select, ] <- gps
 
     # recalculate the power-law mortality rate
@@ -62,7 +63,7 @@ update_params <- function(params, species = 1, pars, biomass, w_select) {
     # Rescale it to get the observed biomass
     total <- sum(params@initial_n[sp_select, w_select] *
                      params@w[w_select] * params@dw[w_select])
-    factor <- biomass / total
+    factor <- data$biomass / total
     params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * factor
     params <- setBevertonHolt(params, reproduction_level = 0)
 

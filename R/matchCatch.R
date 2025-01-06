@@ -127,7 +127,7 @@ matchCatch <- function(params, species = NULL, catch,
     # Set model to use the optimal parameters
     w_select <- w(params) %in% data$w
     optimal_params <- update_params(params, species, optim_result$par,
-                                    data$biomass, w_select)
+                                    data, w_select)
 
     return(optimal_params)
 }
