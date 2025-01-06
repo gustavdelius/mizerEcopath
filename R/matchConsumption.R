@@ -12,7 +12,12 @@
 #' quietly ignored.
 #' If for any species the production is higher than the `consumption_observed`,
 #' then this would lead to a negative metabolic respiration rate. In this case
-#' the metabolic rate is set to 0 and a warning for all such species.
+#' the metabolic rate is set to 0 and a warning is issued for all such species.
+#' A warning is also issued if the exponent `p` had to be changed to equal `n`.
+#'
+#' Unless the function issues a warning, the energy available for growth and
+#' reproduction is not changed and hence the steady state spectra are also
+#' unchanged.
 #'
 #' @param params A MizerParams object
 #' @param species A vector of species names or indices. If NULL, all species for
@@ -49,6 +54,11 @@ matchConsumption <- function(params, species = NULL) {
     }
 
     # Set p = n for selected species
+    if (!is.null(sp$p) & !is.na(sp$p[sp_select]) &
+        sp$p[sp_select] != sp$n[sp_select]) {
+        warning("Exponent `p` changed from ", sp$n[sp_select], " to ",
+                sp$n[sp_select], "for ", sp$species[sp_select], ".")
+    }
     params@species_params$p[sp_select] <- sp$n[sp_select]
 
     # Calculate R = alpha * Q - P for each selected species
