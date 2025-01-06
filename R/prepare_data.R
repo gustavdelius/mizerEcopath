@@ -151,7 +151,8 @@ prepare_data <- function(params, species = 1, catch,
     }
 
     # If yield is not observed
-    if (is.null(sps$yield_observed) || is.na(sps$yield_observed)) {
+    if (is.null(gps$yield_observed) || is.na(gps$yield_observed) ||
+        !(gps$yield_observed > 0)) {
         yield_lambda <- 0
     }
 
