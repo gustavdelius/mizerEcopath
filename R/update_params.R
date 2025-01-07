@@ -40,8 +40,10 @@ update_params <- function(params, species = 1, pars, data, w_select) {
     }
 
     # Update the gear parameters
-    gps$l50 <- pars["l50"]
-    gps$l25 <- pars["ratio"] * pars["l50"]
+    if (data$use_counts) {
+        gps$l50 <- pars["l50"]
+        gps$l25 <- pars["ratio"] * pars["l50"]
+    }
     if (data$yield_lambda > 0) {
         gps$catchability <- pars["catchability"]
     }

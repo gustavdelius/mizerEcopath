@@ -8,6 +8,7 @@ matchCatch(
   params,
   species = NULL,
   catch,
+  lambda = 2.05,
   yield_lambda = 1,
   production_lambda = 0.01
 )
@@ -27,6 +28,8 @@ contain the following columns:
 \item \code{dl}: The width of each bin.
 \item \code{count}: The observed count for each bin.
 }}
+
+\item{lambda}{The slope of the community spectrum. Default is 2.05.}
 
 \item{yield_lambda}{A parameter that controls the strength of the penalty for
 deviation from the observed yield.}
@@ -54,11 +57,12 @@ The function sets new values for the following parameters:
 \item \code{l25}: The size at which the gear selectivity is 25\%.
 \item \code{catchability}: The catchability of the gear.
 \item \code{mu_mat}: The external mortality at maturity.
-It uses these to recalculate the corresponding rate arrays in the params
-object. It sets the initial size spectrum to the steady state size spectrum.
-The total biomass of each species remains unchanged. Only the selected
-species are adjusted.
 }
+
+Only the parameters of the selected species are adjusted. The function then
+recalculates the corresponding rate arrays in the params object. It sets the
+initial size spectrum to the steady state size spectrum. The total biomass of
+each species remains unchanged.
 
 The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch

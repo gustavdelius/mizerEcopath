@@ -115,7 +115,6 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
-    g_mat <- getEGrowth(params)[sp_select, mat_idx]
     if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
         # determine external mortality at maturity
         mu_mat <- ext_mort(params)[sp_select, mat_idx]
@@ -129,23 +128,36 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                         # we need non-zero catchability to match catch
                         catchability = max(gps$catchability, 1e-8))
 
-    # Prepare the objective function.
-    obj <- MakeADFun(data = data,
-                     parameters = initial_params,
-                     DLL = "mizerEcopath",
-                     silent = TRUE)
-
     # Set parameter bounds
     # Mortality is bounded by the requirement that the juvenile spectrum of
     # each species must be less steep than the community spectrum.
     # With g(w) = g w^n and mu(w) = mu w^{n-1}, the exponent of the juvenile
     # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
-
+    g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
     mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
     lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
                       catchability = 1e-8)
     upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
                       catchability = Inf)
+
+    map <- list()
+    if (!data$use_counts) {
+        map$l50 <- factor(NA)
+        map$ratio <- factor(NA)
+        lower_bounds <- lower_bounds[-(1:2)]
+        upper_bounds <- upper_bounds[-(1:2)]
+    }
+    if (data$yield_lambda == 0) {
+        map$catchability <- factor(NA)
+        lower_bounds <- lower_bounds[-4]
+        upper_bounds <- upper_bounds[-4]
+    }
+    # Prepare the objective function.
+    obj <- MakeADFun(data = data,
+                     parameters = initial_params,
+                     map = map,
+                     DLL = "mizerEcopath",
+                     silent = TRUE)
 
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,
