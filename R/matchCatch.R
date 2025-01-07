@@ -12,10 +12,11 @@
 #' * `l25`: The size at which the gear selectivity is 25%.
 #' * `catchability`: The catchability of the gear.
 #' * `mu_mat`: The external mortality at maturity.
-#' It uses these to recalculate the corresponding rate arrays in the params
-#' object. It sets the initial size spectrum to the steady state size spectrum.
-#' The total biomass of each species remains unchanged. Only the selected
-#' species are adjusted.
+#'
+#' Only the parameters of the selected species are adjusted. The function then
+#' recalculates the corresponding rate arrays in the params object. It sets the
+#' initial size spectrum to the steady state size spectrum. The total biomass of
+#' each species remains unchanged.
 #'
 #' The function estimates these parameters by minimizing an objective function.
 #' The objective function is the negative log likelihood of the observed catch
@@ -62,6 +63,7 @@
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
 #'   * `count`: The observed count for each bin.
+#' @param lambda The slope of the community spectrum. Default is 2.05.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #' @param production_lambda A parameter that controls the strength of the penalty
@@ -83,7 +85,7 @@
 #' params_steady <- steadySingleSpecies(params)
 #' all.equal(initialN(params), initialN(params_steady))
 #' @export
-matchCatch <- function(params, species = NULL, catch,
+matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                        yield_lambda = 1, production_lambda = 0.01) {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
@@ -111,9 +113,11 @@ matchCatch <- function(params, species = NULL, catch,
     sps <- sp[sp_select, ]
     gps <- gp[gp$species == species, ]
 
+    mat_idx <- sum(params@w < sps$w_mat)
+    w_mat <- params@w[mat_idx]
+    g_mat <- getEGrowth(params)[sp_select, mat_idx]
     if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
         # determine external mortality at maturity
-        mat_idx <- sum(params@w < sps$w_mat)
         mu_mat <- ext_mort(params)[sp_select, mat_idx]
     } else {
         mu_mat <- sps$mu_mat
@@ -132,9 +136,15 @@ matchCatch <- function(params, species = NULL, catch,
                      silent = TRUE)
 
     # Set parameter bounds
+    # Mortality is bounded by the requirement that the juvenile spectrum of
+    # each species must be less steep than the community spectrum.
+    # With g(w) = g w^n and mu(w) = mu w^{n-1}, the exponent of the juvenile
+    # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
+
+    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
     lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
                       catchability = 1e-8)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf,
+    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
                       catchability = Inf)
 
     # Perform the optimization.
