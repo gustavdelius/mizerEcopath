@@ -107,7 +107,7 @@ reduceEcopathDiet <- function(species_params, ecopath_diet) {
 addEcopathParams <- function(species_params, ecopath_params,
                              species_to_groups = list()) {
     # Validate species parameters
-    sp <- validSpeciesParams(species_params)
+    sp <- validGivenSpeciesParams(species_params)
 
     # Validate Ecopath parameters
     ecopath_params <- validEcopathParams(ecopath_params, species_to_groups)

@@ -33,7 +33,7 @@
 #' @return A MizerParams object
 #' @export
 newAllometricParams <- function(species_params, no_w = 200) {
-    sp <- validSpeciesParams(species_params)
+    sp <- validGivenSpeciesParams(species_params)
 
     # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
