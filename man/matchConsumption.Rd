@@ -10,28 +10,29 @@ matchConsumption(params, species = NULL)
 \item{params}{A MizerParams object}
 
 \item{species}{A vector of species names or indices. If NULL, all species for
-which the species parameter \code{consumption_observed} is provided are affected.}
+which the species parameter \code{consumption_observed} is provided are
+affected.}
 }
 \value{
-A MizerParams object with adjusted encounter and metabolic respiration
-rates.
+A MizerParams object with adjusted encounter and metabolic
+respiration rates.
 }
 \description{
 This function sets the metabolic respiration rate so that the consumption
 matches the species parameter \code{consumption_observed}, while keeping the same
 energy available for growth and reproduction. Thus the function also adjusts
 the external encounter rate to compensate for the changed respiration rate.
-To do this the function assumes that both the encounter rate and the metabolic
-respiration rate are given by power laws with the same exponent \code{n}, so it
-sets the species parameter \code{p} to the same value as \code{n}.
+To do this the function assumes that both the encounter rate and the
+metabolic respiration rate are given by power laws with the same exponent
+\code{n}, so it sets the species parameter \code{p} to the same value as \code{n}. A warning
+is issued if the exponent \code{p} had to be changed for any species.
 }
 \details{
 Any of the selected species for which \code{consumption_observed} is NA will be
-quietly ignored.
-If for any species the production is higher than the \code{consumption_observed},
-then this would lead to a negative metabolic respiration rate. In this case
-the metabolic rate is set to 0 and a warning is issued for all such species.
-A warning is also issued if the exponent \code{p} had to be changed to equal \code{n}.
+quietly ignored. If for any species the production is higher than the
+\code{consumption_observed}, then this would lead to a negative metabolic
+respiration rate. In this case the metabolic rate is set to 0 and a warning
+is issued for all such species.
 
 Unless the function issues a warning, the energy available for growth and
 reproduction is not changed and hence the steady state spectra are also
