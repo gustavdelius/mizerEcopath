@@ -27,10 +27,13 @@ where $g$ is the growth rate, $\mu$ is the death rate and $d$ is a new diffusion
 The diffusion rate has an expression that is similar to that of the growth rate. Recall that the growth rate is given by
 
 $$
-g(w)=(1-f(w))\,\gamma(w)\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p - K(w)(1-\psi(w)),
+\begin{split}
+g(w)=&(1-f(w))\,\gamma(w)\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p\\
+&- K(w)(1-\psi(w)),
+\end{split}
 $$ {#eq-gw}
 
-where $N_c(w)$ is the abundance density of prey, $\phi(w/w_p)$ is the predation kernel, $\gamma(w)$ is the search volume, $f(w)$ is the feeding level, $K(w)$ is the metabolic respiration rate, $\alpha$ is the conversion efficiency and $\psi(w)$ is the proportion of available energy that is invested into reproduction.
+where $N_c(w)$ is the abundance density of prey, $\phi(w/w_p)$ is the predation kernel, $\gamma(w)$ is the search volume, $f(w)$ is the feeding level, $K(w)$ is the metabolic respiration rate, $\alpha$ is the conversion efficiency and $\psi(w)$ is the proportion of available energy that is invested into reproduction. Because the metabolic respiration loss is subtracted from the available energy before that is split into growth and reproduction, only a proportion $1-\psi$ of the metabolic rate is subtracted from the growth rate.
 
 The factor $\alpha (1- \psi(w))w_p$ in the integral in @eq-gw is the increase in somatic weight of the predator resulting from the ingestion of the prey of weight $w_p$. In the expression for the diffusion rate $d(w)$ this factor is squared:
 
@@ -38,9 +41,9 @@ $$
 d(w) = (1-f(w))\,\gamma(w) \int N_c(w_p)\phi(w/w_p)(\alpha\,(1-\psi(w)) w_p)^2\,dw_p.
 $$
 
-The loss due to metabolic respiration affects the growth rate but not the diffusion rate. In the derivation of the PDE @eq-PDE in [@datta2010] the metabolic respiration was not discussed but its contribution to only the first derivative term can be found in [@capitan2010].
+The loss due to metabolic respiration affects the growth rate but not the diffusion rate. In the derivation of the PDE @eq-PDE in [@datta2010] the metabolic respiration was not discussed but its contribution to only the first-order derivative term can be found in [@capitan2010].
 
-The increase $\alpha (1- \psi(w))w_p$ in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also $\alpha$ and $1-\psi(w)$ are both smaller than $1$. Because this factor is squared in the expression for $d(w)$ it might be expected that the term in the PDE involving $d(w)$ can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. and then by determining its effect of the diffusion term on the slope of the juvenile spectrum.
+The increase $\alpha (1- \psi(w))w_p$ in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also $\alpha$ and $1-\psi(w)$ are both smaller than $1$. Because this factor is squared in the expression for $d(w)$ it might be expected that the term in the PDE involving $d(w)$ can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. We will then use that to determine its effect on the slope of the juvenile spectrum.
 
 # Example calculation of diffusion rate
 
