@@ -1,11 +1,15 @@
 library(dplyr)
 library(mizerEcopath)
-library(deSolve)
-
-params <- newSingleSpeciesParams(no_w = 500, sigma = 2, lambda = 2.2)
+library(ggplot2)
+# library(deSolve)
+library(bvpSolve)
+source("inst/newParams.R")
+params <- newParams(no_w = 500, sigma = 2, lambda = 2.2, ks = 0)
 params <- setPredKernel(params, pred_kernel = getPredKernel(params))
+#params <- setPredKernel(NS_params, pred_kernel = getPredKernel(NS_params))
+
 dm <- getDiffusion(params)
-gm <- getEGrowth(params)
+gm <- getDiffusion(params, order = 1) * (1 - params@psi)
 mum <- getMort(params)
 names(dimnames(mum)) <- c("sp", "w")
 w <- w(params)
@@ -23,11 +27,93 @@ ggplot(da, aes(x = w, y = value, colour = type)) +
     scale_y_log10() +
     facet_wrap(~sp, scales = "free")
 
+# Start near 1g
+sel <- w > 1
 # Choose one species
 sp <- 1
-d <- dm[sp, ]
-g <- gm[sp, ]
-mu <- mum[sp, ]
+d <- dm[sp, sel]
+g <- gm[sp, sel]
+mu <- mum[sp, sel]
+w <- w[sel]
+N.guess <- params@initial_n[sp, sel]
+w0 <- w[1]
+wMax <- w[length(w)]
+
+# We create spline fits for d, g, mu so we can get
+# d'(w), d''(w), etc. from the spline. This might be easiest to keep
+# everything smooth if your data is on a well-defined grid.
+
+d.spline  <- splinefun(w, d,  method = "natural")
+g.spline  <- splinefun(w, g,  method = "natural")
+mu.spline <- splinefun(w, mu, method = "natural")
+N.guess.spline <- splinefun(w, N.guess, method = "natural")
+
+# Then we can also get d'(w) by d.spline'(w), d''(w) by d.spline''(w), etc.
+
+# ODE function for bvpSolve
+odefun <- function(w, y, pars) {
+    N  <- y[1]
+    Np <- y[2]  # derivative
+
+    d   <- d.spline(w)
+    dp  <- d.spline(w, deriv = 1)
+    ddp <- d.spline(w, deriv = 2)
+
+    g   <- g.spline(w)
+    gp  <- g.spline(w, deriv = 1)
+
+    mu  <- mu.spline(w)
+
+    # The second derivative from the expanded ODE:
+    Npp <- (  2*gp*N + 2*g*Np + 2*mu*N
+              - ddp*N   - 2*dp*Np ) / d
+
+    list( c(Np, Npp) )  # Return a list with derivatives
+}
+
+# Specify the boundary conditions as a function that returns the residual of
+# each boundary condition:
+N0 <- N.guess[1]
+bcfun <- function(ya, yb, pars) {
+    bc1 <- ya[1] - N0      # N(w0) - N0 = 0
+    bc2 <- yb[1]           # N(wMax) = 0
+    return( c(bc1, bc2) )
+}
+
+# define an initial guess function
+guessfun <- function(x, pars) {
+    c(N.guess.spline(x), Np.guess.spline(x, deriv = 1))
+}
+
+sol <- bvptwp(yini = c(N = N0, Np = NA),
+              yend = c(N = 0, Np = NA),
+              x = w,
+              func = odefun,
+              atol = N0 * 1e-3)
+
+wn <- sol[, 1]
+Nn <- sol[, 2]
+Npn <- sol[, 3]
+
+plot(wn, Nn * wn, type = "l", col = "blue", lwd = 2,
+     xlab = "w", ylab = "N(w)", ylim = c(2e-6, 2e-5))
+
+N <- N.guess.spline(wn)
+lines(wn, N * wn, col = "red", lwd = 2)
+
+# Using bvpcol did not work
+sol <- bvpcol(
+    x        = c(w0, wMax),   # domain
+    func     = odefun,
+    bound    = bcfun,
+    leftbc   = 1,
+    ncomp    = 2
+)
+
+# The returned object sol has the numerical solution on the mesh
+# used by bvpcol. You can evaluate it or plot it at specific points:
+Nout <- bvpsol(sol, x = w)[,1]  # first component = N
+
 
 # juvenile exponent
 n <- params@species_params[sp, "n"]
@@ -37,14 +123,6 @@ d0 <- d[[1]] / w[[1]]^(n + 1)
 a <- -n + (g0 - d0 / 2 - sqrt((g0 - d0 / 2)^2 + 2 * d0 * mu0)) / d0
 a_old <- -n - mu0 / g0
 
-# Start near 1g
-sel <- w > 1
-# drop last
-sel[length(sel)] <- FALSE
-w <- w[sel]
-d <- d[sel]
-g <- g[sel]
-mu <- mu[sel]
 N0 <- 1
 Np0 <- a / w[[1]] * N0
 

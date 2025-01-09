@@ -83,7 +83,7 @@ getDiffusion <- function(params, n = initialN(params),
         stop("Fourier transform method not implemented for diffusion rate.")
     }
 
-    # Add external encounter
-    return(encounter * (1 - getFeedingLevel(params)) *
-           (params@species_params$alpha * (1 - params@psi))^order)
+    diffusion <- (1 - getFeedingLevel(params)) *
+        (params@species_params$alpha)^order * encounter
+    return(diffusion)
 }
