@@ -9,7 +9,8 @@ params <- setPredKernel(params, pred_kernel = getPredKernel(params))
 #params <- setPredKernel(NS_params, pred_kernel = getPredKernel(NS_params))
 
 dm <- getDiffusion(params)
-gm <- getDiffusion(params, order = 1) * (1 - params@psi)
+#gm <- getEGrowth(params)
+gm <- (getDiffusion(params, order = 1) - metab(params)) * (1 - params@psi)
 mum <- getMort(params)
 names(dimnames(mum)) <- c("sp", "w")
 w <- w(params)
@@ -71,37 +72,48 @@ odefun <- function(w, y, pars) {
     list( c(Np, Npp) )  # Return a list with derivatives
 }
 
-# Specify the boundary conditions as a function that returns the residual of
-# each boundary condition:
-N0 <- N.guess[1]
-bcfun <- function(ya, yb, pars) {
-    bc1 <- ya[1] - N0      # N(w0) - N0 = 0
-    bc2 <- yb[1]           # N(wMax) = 0
-    return( c(bc1, bc2) )
-}
-
 # define an initial guess function
 guessfun <- function(x, pars) {
-    c(N.guess.spline(x), Np.guess.spline(x, deriv = 1))
+    m <- rbind(N.guess.spline(x), N.guess.spline(x, deriv = 1))
+    m[m<0] <- 0
+    return(m)
 }
 
+# Positivity constraint for N(w)
+posbound <- function(x, y, pars) {
+    y[1]  # Constrain the first dependent variable N(w) to be >= 0
+}
+
+N0 <- N.guess[1]
 sol <- bvptwp(yini = c(N = N0, Np = NA),
               yend = c(N = 0, Np = NA),
               x = w,
               func = odefun,
-              atol = N0 * 1e-3)
+              posbound = posbound,
+              xguess = w,
+              yguess = guessfun(w),
+              islin = TRUE,
+              allpoints = FALSE,
+              atol = 1)
 
 wn <- sol[, 1]
 Nn <- sol[, 2]
 Npn <- sol[, 3]
 
 plot(wn, Nn * wn, type = "l", col = "blue", lwd = 2,
-     xlab = "w", ylab = "N(w)", ylim = c(2e-6, 2e-5))
-
-N <- N.guess.spline(wn)
+     xlab = "w", ylab = "B(w)")
+N <- N.guess
 lines(wn, N * wn, col = "red", lwd = 2)
 
+
 # Using bvpcol did not work
+
+bcfun <- function(ya, yb, pars) {
+    bc1 <- ya[1] - N0      # N(w0) - N0 = 0
+    bc2 <- yb[1]           # N(wMax) = 0
+    return( c(bc1, bc2) )
+}
+
 sol <- bvpcol(
     x        = c(w0, wMax),   # domain
     func     = odefun,
