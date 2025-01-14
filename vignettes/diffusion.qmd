@@ -1,6 +1,9 @@
 ---
 title: "Incorporating predation diffusion"
 bibliography: diffusion_references.bib
+toc: true
+crossref:
+  eq-prefix: Eq.
 ---
 
 ```{r, include = FALSE}
@@ -17,30 +20,24 @@ library(mizerSeasonal)
 # The jump-growth equation
 
 As was observed in [@datta2010], the variability in prey size leads to a diffusion term in the PDE for the abundance density $N(w,t)$. This term is neglected in mizer but may well become important when modelling seasonality because it will contribute to a broadening of the yearly cohorts as they grow up. The PDE including the diffusion term is
-
 $$
 \frac{\partial N}{\partial t} = \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N
 $$ {#eq-PDE}
-
 where $g$ is the growth rate, $\mu$ is the death rate and $d$ is a new diffusion rate.
 
 The diffusion rate has an expression that is similar to that of the growth rate. Recall that the growth rate is given by
-
 $$
 \begin{split}
 g(w)=&(1-f(w))\,\gamma(w)\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p\\
 &- K(w)(1-\psi(w)),
 \end{split}
 $$ {#eq-gw}
-
 where $N_c(w)$ is the abundance density of prey, $\phi(w/w_p)$ is the predation kernel, $\gamma(w)$ is the search volume, $f(w)$ is the feeding level, $K(w)$ is the metabolic respiration rate, $\alpha$ is the conversion efficiency and $\psi(w)$ is the proportion of available energy that is invested into reproduction. Because the metabolic respiration loss is subtracted from the available energy before that is split into growth and reproduction, only a proportion $1-\psi$ of the metabolic rate is subtracted from the growth rate.
 
 The factor $\alpha (1- \psi(w))w_p$ in the integral in @eq-gw is the increase in somatic weight of the predator resulting from the ingestion of the prey of weight $w_p$. In the expression for the diffusion rate $d(w)$ this factor is squared:
-
 $$
 d(w) = (1-f(w))\,\gamma(w) \int N_c(w_p)\phi(w/w_p)(\alpha\,(1-\psi(w)) w_p)^2\,dw_p.
 $$
-
 The loss due to metabolic respiration affects the growth rate but not the diffusion rate. In the derivation of the PDE @eq-PDE in [@datta2010] the metabolic respiration was not discussed but its contribution to only the first-order derivative term can be found in [@capitan2010].
 
 The increase $\alpha (1- \psi(w))w_p$ in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also $\alpha$ and $1-\psi(w)$ are both smaller than $1$. Because this factor is squared in the expression for $d(w)$ it might be expected that the term in the PDE involving $d(w)$ can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. We will then use that to determine its effect on the slope of the juvenile spectrum.
@@ -48,29 +45,25 @@ The increase $\alpha (1- \psi(w))w_p$ in predator mass is typically only a small
 # Example calculation of diffusion rate
 
 Let us assume that the prey abundance is given by a power law: $N_c(w)=N_0w^{-\lambda}$ and that the predation kernel is
-
 $$
 \phi(w/w_p) = \exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right).
 $$
 
 For juveniles $\psi(w)=0$ and hence the integral in the expression @eq-gw for the growth rate becomes
-
 $$
 I_g:=\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p =
 \alpha\int w_p^{1-\lambda}\exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right)dw_p.
 $$
-
 This integral can be evaluated most easily by changing integration variable to $x=\log(w_p/w_0)$for an arbitrary reference weight $w_0$ and then recognising the resulting integral
-
 $$
 I_g=\alpha\, w_0^{2-\lambda}\int e^{(2-\lambda)x}\exp\left(-\frac{(x-\log(w/w_0)+\log(\beta))^2}{2\sigma^2}\right)dx
-$$as a Gaussian integral. Using the general result that
-
+$$
+as a Gaussian integral. Using the general result that
 $$
 \int e^{ax}\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)dx = \sqrt{\frac{2\pi}{\sigma^2}}\exp\left(a\mu+\frac{a^2\sigma^2}{2}\right)
 $$
-
-with $a = 2-\lambda$ and $\mu = \log(w)-\log(\beta)$ we find that $$
+with $a = 2-\lambda$ and $\mu = \log(w)-\log(\beta)$ we find that 
+$$
 \begin{split}
 I_g&=
 \alpha\, w_0^{2-\lambda}\sqrt{\frac{2\pi}{\sigma^2}}\exp\left((2-\lambda)(\log(w/w_0)-\log(\beta))+\frac{(2-\lambda)^2\sigma^2}{2}\right)\\
@@ -79,23 +72,19 @@ I_g&=
 $$
 
 Assuming further a constant feeding level $f(w)=f$, an allometric metabolic loss rate $K(w) = k_s w^n$ and an allometric search volume $\gamma(w)=\gamma w^q$ with an exponent of $q = n + 2 - \lambda$ we obtain
-
 $$
 g(w) = \left((1-f)\gamma \alpha \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)-k_s\right) w^n.
 $$
-
-If we assume further that the metabolic loss is a fraction $f_c/f$ of the incoming energy (we refer to $f_c$ as the critical feeding level) then this simplifies to $$
+If we assume further that the metabolic loss is a fraction $f_c/f$ of the incoming energy (we refer to $f_c$ as the critical feeding level) then this simplifies to
+$$
 g(w) =\left( \left(1-\frac{f_c}{f}\right)(1-f)\gamma \alpha \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)\right) w^n.
 $$ {#eq-gwe}
 
 We can evaluate the diffusion rate $d(w)$ in the same manner. The extra factor of $w_p$ changes $a$ from $2-\lambda$ to $3-\lambda$ and we obtain
-
 $$
 d(w) = \left((1-f(w))\gamma \alpha^2 \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 3}\exp\left(\frac{(3-\lambda)^2\sigma^2}{2}\right)\right) w^n.
 $$
-
 Comparing this to the expression @eq-gwe for $g(w)$ we find that
-
 $$
 d(w) = g(w)w\frac{1}{1-f_c/f}\frac{\alpha}{\beta}\exp\left(\frac{(2\lambda - 3)\sigma^2}{2}\right).
 $$
@@ -105,63 +94,46 @@ To get a feel for the typical magnitude of the factor let's consider concrete va
 # Effect on juvenile slope
 
 Now we are ready to investigate the effect of the diffusion on the slope of the juvenile spectrum in the steady state. Without diffusion we find the juvenile spectrum by solving the steady-state equation
-
 $$
 \frac{\partial}{\partial w}(g(w) N(w)) =-\mu(w) N(w).
 $$
-
 This has the solution
-
 $$
 N(w) = \frac{g(w_0)}{g(w)}N(w_0)\exp\left(-\int_{w_0}^w\frac{\mu(w')}{g(w')}dw'\right).
 $$
-
 With allometic growth and death rates $g(w)=g_0w^n$ and $\mu(w)=\mu_0w^{n-1}$ this gives
-
 $$
 N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}
 $$
-
 Thus the juvenile steady state abundance density is given by a power law with exponent $-\mu_0/g_0-n$.
 
 In the presence of diffusion the steady state equation becomes the second-order ODE
-
 $$
 \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N=0.
 $$ {#eq-diffss}
 
 We have seen in the previous section that with $g(w)=g_0w^n$ the diffusion rate is also a power law with one extra factor of $w$: $d(w)=d_0w^{n+1}$. This makes the equation @eq-diffss scale invariant and hence we again expect the solution to be a power law, So we make the Ansatz $N(w)=N(w_0)(w/w_0)^a$ with the exponent $a$ to be determined. Substituting this Ansatz into @eq-diffss gives
-
 $$
 \frac12 d_0N_0(n+1+a)(n+a)w^{n+a-1} -g_0N_0(n+a)w^{n+a-1}-\mu_0 N_0w^{n-1+a} = 0
 $$
-
 which requires that
-
 $$
 \frac12 d_0(n+1+a)(n+a) -g_0(n+a)-\mu_0= 0.
 $$
-
 This is a quadratic equation for $n+a$:
-
 $$
 \frac12 d_0 (n+a)^2+\left(\frac12 d_0 -g_0\right)(n+a)-\mu_0=0.
 $$
-
 This has two solutions
-
 $$
 (n+a_\pm) = \frac1{d_0}\left(g_0-d_0/2\pm\sqrt{(g_0-d_0/2)^2+2d_0\mu_0}\right)
 $$
 
 We are only interested in the solution that goes to $a=-\mu_0/g_0-n$ when $d_0\to 0$. This means we are interested in the solution with the - sign. To check that indeed the solution $a_{-}$ satisfies $\lim_{a_-\to 0}= -\mu_0/g_0-n$ it is helpful to expand the square root term around $d_0=0$:
-
 $$
 \sqrt{(g_0-d_0/2)^2+2d_0\mu_0}=g_0+\frac{-g_0+2\mu_0}{2g_0}d_0+\frac{g_0^2-(-g_0+2\mu_0)^2}{8g_0^3}d_0^2+\dots
 $$
-
 So we find
-
 $$
 \begin{split}
 a &= -n+\frac1{d_0}\left(g_0-d_0/2-\sqrt{(g_0-d_0/2)^2+2d_0\mu_0}\right)\\
@@ -175,3 +147,102 @@ We see that when $\mu_0=g_0$ then the first correction term to the juvenile slop
 Using the example value of $d_0/g_0=0.002$ and $n=0.75$ we get a slope correction of $0.00025$ from $-1.25$ to $-1.24975$. Using the value $d_0/g_0=0.1$ we get a larger slope correction of $0.0125$ from $-1.25$ to $-1.2375$. While this still seems irrelevant, we have to remember that we are looking at a power law exponent and that small changes in the exponent can have a large effect on the value of the power law. If, for example, we have a fixed abundance of eggs of size 0.001g and then look at the resulting density of fish of 1000g, then the diffusion correction increases that by a factor of $(10^6)^{0.0125}\approx 1.19$, an increase by 19\\%.
 
 When $\mu_0/g_0>1$ then the diffusion correction is negative, i.e., the juvenile slope becomes more negative due to diffusion, meaning fewer large fish.
+
+# Transforming to logarithmic weight
+
+Mizer works with logarithmically-spaced weight bins. That is good, but it makes it complicated to work out numerical schemes for solving the equations. It is much easier to work with equally-spaced bins. The obvious solution is to view the logarithm of the weight as the independent variable instead of the weight. So we will work with
+$$
+x = \log(w/w_0)
+$$
+where $w_0$ is an arbitrary reference weight.
+That transforms the logarithmically-spaced bins in $w$ to equally-spaced bins in $x$.
+
+We should then also work with the abundance density as a function of $x$. Let's denote it by $n(x)$. It is related to the abundance density $N(w)$ by
+$$
+N(x)dx = N(w)dw
+$$
+Because $dx = dw / w$ this means $N(w)=n(w)/w$. We can now transform the PDE @eq-PDE for $N(w,t)$ into a PDE for $n(x,t)$:
+$$
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\frac{1}{w}\frac{\partial}{\partial x}\frac{d n}{w}\right) - \frac{\partial}{\partial x}\left(\frac{g n}{w}\right)-\mu n
+$$ {#eq-PDEx}
+We rewrite this using that
+$$
+\frac{1}{w}\frac{\partial}{\partial x}\frac{d n}{w} = \frac{\partial}{\partial x}\frac{d n}{w^2}+\frac{d n}{w^2}
+$$
+Introducing the rescaled growth and diffusion rates
+$$
+\tilde{g} = \frac{g}{w}-\frac12\frac{d}{w^2},~~~~\tilde{d}=\frac{d}{w^2}
+$$
+simplifies the PDE @eq-PDEx to
+$$
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n
+$$ {#eq-PDExs}
+Note that while the diffusion rate was just rescaled by the factor of $1/w^2$ that should be expected from the transformation from $d^2/dw^2$ to $d^2/dx^2$, the growth rate also received an additional contribution from the diffusion.
+
+We can also write the PDE in a form where the derivatives act directly on $n$ by expanding
+$$
+\frac{\partial}{\partial x}\left(\tilde{g}n\right) = \tilde{g}'n + \tilde{g}n'
+$$
+and
+$$
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n)=\frac12\tilde{d}''n+\tilde{d}'n'+\frac12\tilde{d}n''
+$$
+where we have denoted the derivative with respect to $x$ by a prime. Collecting terms gives
+$$
+\frac{\partial n}{\partial t} = \frac12 \tilde{d}n'' - \left(\tilde{g}-\tilde{d'}\right)n'-\left(\mu +\tilde{g}'-\frac12\tilde{d}''\right)n
+$$
+
+# Numerical scheme for steady-state ODE
+
+We can now obtain the steady-state abundance density by solving the second-order ODE
+$$
+an''-bn'-cn=0
+$$
+with 
+$$
+a = \frac12 \tilde{d},~~~~b=\tilde{g}-\tilde{d}',~~~~c=\mu +\tilde{g}'-\frac12\tilde{d}''.
+$$
+Our boundary conditions are
+$$
+n(x_0)=n_0,~~~~n(x_{max})=0.
+$$
+where $x_{max}$ is some size that fish can never reach.
+
+We solve this with a second-order finite-difference scheme, using our equally-spaced grid with spacing $h$:
+$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
+$$
+n'(x_i)=\frac{n_{i+1}-n_{i-1}}{2h},~~~~n''(x_i)=\frac{n_{i+1}-2n_i+n_{i-1}}{h^2}.
+$$
+That gives us the linear system
+$$
+U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
+$$ {#eq-UDL}
+with
+$$
+U_i=a_i-\frac{h}{2}b_i, \qquad L_i=a_i-\frac{h}{2}b_i \qquad \text{ and }~~~D_i = -2a_i-h^2c_i
+$$
+for $i=1,\dots,N$. 
+This can be solved by making the Ansatz
+$$
+n_{i-1}=\alpha_in_i+\beta_i
+$$ {#eq-alphabeta}
+for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
+$$
+U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
+$$ {#eq-UDL2}
+Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
+$$
+\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
+$$ {#eq-UDL3}
+We can satisfy this by making the expressions in the square brackets vanish, which gives us
+$$
+\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
+$$ {#eq-alphabetarecursion}
+Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
+We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
+Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
+
+This scheme is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. The requirement that $U_i>0$ gives us a maximum step size of
+$$
+h\leq\frac{\tilde{d}}{\tilde{g}-\tilde{d}'}.
+$$
