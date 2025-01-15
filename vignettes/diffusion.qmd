@@ -14,10 +14,11 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(mizerSeasonal)
+library(mizerEcopath)
+params <- NS_params
 ```
 
-# The jump-growth equation
+# The jump-growth equation {#sec-jump-growth}
 
 As was observed in [@datta2010], the variability in prey size leads to a diffusion term in the PDE for the abundance density $N(w,t)$. This term is neglected in mizer but may well become important when modelling seasonality because it will contribute to a broadening of the yearly cohorts as they grow up. The PDE including the diffusion term is
 $$
@@ -42,7 +43,7 @@ The loss due to metabolic respiration affects the growth rate but not the diffus
 
 The increase $\alpha (1- \psi(w))w_p$ in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also $\alpha$ and $1-\psi(w)$ are both smaller than $1$. Because this factor is squared in the expression for $d(w)$ it might be expected that the term in the PDE involving $d(w)$ can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. We will then use that to determine its effect on the slope of the juvenile spectrum.
 
-# Example calculation of diffusion rate
+# Example calculation of diffusion rate {#sec-diffusion-example}
 
 Let us assume that the prey abundance is given by a power law: $N_c(w)=N_0w^{-\lambda}$ and that the predation kernel is
 $$
@@ -91,7 +92,7 @@ $$
 
 To get a feel for the typical magnitude of the factor let's consider concrete values $(1-f_c/f)=0.6$, $\alpha = 0.8$, $\beta = 100$, $\sigma = 1$ and $\lambda = 2$. Then $d(w) \approx 0.02 g(w)w$. However we see that the value of $d(w)$ is strongly influenced by the width of the feeding kernel. If we choose $\sigma = 2$ then $d(w)\approx0.1g(w)w$. This increase in the diffusion rate with increasin $\sigma$ may explains the result from [@datta2010a] that the stability of the system increases with increasing $\sigma$.
 
-# Effect on juvenile slope
+# Effect on juvenile slope {#sec-diffusion-juvenile}
 
 Now we are ready to investigate the effect of the diffusion on the slope of the juvenile spectrum in the steady state. Without diffusion we find the juvenile spectrum by solving the steady-state equation
 $$
@@ -148,7 +149,7 @@ Using the example value of $d_0/g_0=0.002$ and $n=0.75$ we get a slope correctio
 
 When $\mu_0/g_0>1$ then the diffusion correction is negative, i.e., the juvenile slope becomes more negative due to diffusion, meaning fewer large fish.
 
-# Transforming to logarithmic weight
+# Transforming to logarithmic weight {#sec-diffusion-log}
 
 Mizer works with logarithmically-spaced weight bins. That is good, but it makes it complicated to work out numerical schemes for solving the equations. It is much easier to work with equally-spaced bins. The obvious solution is to view the logarithm of the weight as the independent variable instead of the weight. So we will work with
 $$
@@ -157,11 +158,24 @@ $$
 where $w_0$ is an arbitrary reference weight.
 That transforms the logarithmically-spaced bins in $w$ to equally-spaced bins in $x$.
 
+```{r}
+w <- w(params)
+x <- log(w / w[1])
+h <- x[2] - x[1]
+```
+
 We should then also work with the abundance density as a function of $x$. Let's denote it by $n(x)$. It is related to the abundance density $N(w)$ by
 $$
-N(x)dx = N(w)dw
+n(x)dx = N(w)dw
 $$
-Because $dx = dw / w$ this means $N(w)=n(w)/w$. We can now transform the PDE @eq-PDE for $N(w,t)$ into a PDE for $n(x,t)$:
+Because $dx = dw / w$ this means $N(w)=n(w)/w$. 
+
+By the chain rule we have
+$$
+\frac{\partial}{\partial w} = \frac{\partial x}{\partial w}\frac{\partial}{\partial x} = \frac{1}{w}\frac{\partial}{\partial x}
+$$
+
+We can now transform the PDE @eq-PDE for $N(w,t)$ into a PDE for $n(x,t)$:
 $$
 \frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\frac{1}{w}\frac{\partial}{\partial x}\frac{d n}{w}\right) - \frac{\partial}{\partial x}\left(\frac{g n}{w}\right)-\mu n
 $$ {#eq-PDEx}
@@ -192,7 +206,8 @@ $$
 \frac{\partial n}{\partial t} = \frac12 \tilde{d}n'' - \left(\tilde{g}-\tilde{d'}\right)n'-\left(\mu +\tilde{g}'-\frac12\tilde{d}''\right)n
 $$
 
-# Numerical scheme for steady-state ODE
+
+# Numerical scheme for steady-state ODE {#sec-diffusion-numerical}
 
 We can now obtain the steady-state abundance density by solving the second-order ODE
 $$
@@ -246,3 +261,131 @@ This scheme is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$
 $$
 h\leq\frac{\tilde{d}}{\tilde{g}-\tilde{d}'}.
 $$
+
+We implement this in the function `solve_steady_state_ode` as follows:
+
+```{r}
+solve_steady_state_ode <- function(a, b, c, n0, h) {
+    # Number of interior points
+    N <- length(a) - 1
+    
+    # Calculate finite difference scheme coefficients
+    U <- a - h/2 * b     # Upper diagonal
+    L <- a + h/2 * b     # Lower diagonal 
+    D <- -2*a - h^2 * c  # Main diagonal
+    
+    # Check stability conditions
+    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
+        warning("Stability conditions not met. Try reducing step size h.")
+    }
+    if (any(U + L > -D)) {
+        warning("Stability condition U + L <= -D not met.")
+    }
+    
+    # Solve using double sweep method
+    n <- solve_ode_double_sweep(U, L, D, n0, N)
+    
+    return(n)
+}
+
+# Helper function for double sweep method
+solve_ode_double_sweep <- function(U, L, D, n0, N) {
+    # Initialize arrays for alpha and beta coefficients
+    alpha <- numeric(N + 1)
+    beta <- numeric(N + 1)
+    n <- numeric(N + 1)
+    
+    # Initial conditions
+    alpha[1] <- 0
+    beta[1] <- n0
+    
+    # Forward sweep - calculate alpha and beta coefficients
+    for (i in 1:N) {
+        denom <- alpha[i] * L[i] + D[i]
+        alpha[i + 1] <- -U[i] / denom
+        beta[i + 1] <- -(beta[i] * L[i]) / denom
+    }
+    
+    # Backward sweep - calculate n values
+    n[N + 1] <- 0  # Boundary condition at x_max
+    
+    # Work backwards to get remaining n values
+    for (i in N:1) {
+        n[i] <- alpha[i + 1] * n[i + 1] + beta[i + 1]
+    }
+    
+    return(n)
+}
+```
+
+# North Sea Cod example {#sec-diffusion-example}
+
+We will now implement this in an example. We start with the North Sea Cod.
+
+```{r}
+species <- "Cod"
+sps <- species_params(params)[species, ]
+n <- sps$n
+m <- sps$m
+w_mat <- sps$w_mat
+U <- log(3) / log(w_mat / sps$w_mat25)
+w_repro_max <- sps$w_repro_max
+mu <- getMort(params)[species, ]
+g <- getEGrowth(params)[species, ]
+# At small size we have $g(w) = g_0 w^n$, hence $g_0 = g(w)/w^n$
+g_0 <- g[1] / w[1]^n
+```
+To calculate the derivative of the growth rate we go back to the expression for the growth rate and calculate the derivatives of the terms in the expression. For simplicity we set metabolic loss to zero.
+$$
+g(w)=g_0w^n(1-\psi(w))
+$$
+where $\psi(w)$ is the proportion of available energy that is invested into reproduction.
+$$
+\psi(w) = \left(1+\left(\frac{w}{w_{mat}}\right)^{U}\right)^{-1}\left(\frac{w}{w_{repro\_max}}\right)^{m-n}
+$$
+For the derivative we get after some simplification (see https://chatgpt.com/share/678776f5-bf00-8007-9549-f1d186829235),
+$$
+\frac{d}{dw}g(w) = g_0 w^{n-1} \left( n - \frac{\left(m + (m - U)\left(\frac{w}{w_{\text{mat}}}\right)^U\right) \left(\frac{w}{w_{\text{repro\_max}}}\right)^{m-n}}{\left(1 + \left(\frac{w}{w_{\text{mat}}}\right)^U\right)^2} \right)
+$$
+
+```{r}
+dgdw <- 
+  g_0 * w^(n - 1) * (n - 
+  (m + (m  - U) * (w / w_mat)^U) * (w / w_repro_max)^(m - n) / 
+  (1 + (w / w_mat)^U)^2)
+```
+
+
+We choose diffusion rate to be a power law with exponent $n+1$ which at small size satisfies $d(w) = 0.1 g(w) w$, see the example at the end of @sec-diffusion-example.
+
+```{r}
+d_0 <- 0.1 * g_0
+d <- d_0 * w^(n + 1)
+dprime <- (n + 1) * d_0 * w^(n)
+```
+
+Now we calculate the parameters for the numerical scheme.
+```{r}
+dtilde <- d / w^2
+dtildeprime <- (n - 1) * d_0 * w^(n - 2)
+dtildepp <- (n - 2) * (n - 1) * d_0 * w^(n - 3)
+gtilde <- g / w - 0.5 * dtilde
+gtildeprime <- dgdw - g / w - 0.5 * dtildeprime
+
+a <- 0.5 * dtilde
+b <- gtilde - dtildeprime
+c <- mu + gtildeprime - 0.5 * dtildepp
+```
+
+We can now solve the ODE.
+
+```{r}
+n0 <- initialN(params)[species, 1] * w[1]
+n <- solve_steady_state_ode(a, b, c, n0, h)
+```
+
+We can now plot the result.
+
+```{r}
+plot(x, n, type = "l")
+```
