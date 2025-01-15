@@ -40,6 +40,7 @@ reference:
 - title: "Calculating rates"
   contents:
   - getConsumption
+  - getDiffusion
   - getUnassimilated
   - getProduction
   - getTotalProduction
