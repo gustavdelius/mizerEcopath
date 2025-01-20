@@ -11,6 +11,9 @@ prepare_params <- function(p) {
     p <- set_species_param_default(p, "d", p@species_params$n - 1)
     p <- set_species_param_default(p, "yield_lambda", 0)
     p <- set_species_param_default(p, "production_lambda", 0)
+    # Determine gonad proportion
+    current <- getGonadicProduction(p) / getProduction(p)
+    p <- set_species_param_default(p, "gonad_proportion", current)
     # Determine mu_mat
     # Note that `mu_mat` is the mortality at the w just below w_mat
     # TODO: can be removed once mu_mat is a standard for species_params
