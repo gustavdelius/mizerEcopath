@@ -64,6 +64,7 @@ Collate:
     'exponentControl.R'
     'fishingControl.R'
     'growthTab.R'
+    'matchControl.R'
     'otherControl.R'
     'plot_catch.R'
     'plotConsumptionVsSpecies.R'

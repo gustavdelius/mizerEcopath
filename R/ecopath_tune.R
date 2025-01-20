@@ -77,7 +77,8 @@
 #' @import shinyBS
 #' @export
 tuneEcopath <- function(params, catch = NULL, diet = NULL,
-                        controls = c("fishing",
+                        controls = c("match",
+                                     "fishing",
                                      "reproduction",
                                      "other",
                                      "exponent"),
@@ -472,7 +473,9 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
 
     tryCatch({
         p <- matchGrowth(p, species = input$sp, keep = "biomass")
-        p <- matchCatch(p, species = input$sp, catch = catch)
+        p <- matchCatch(p, species = input$sp, catch = catch,
+                        production_lambda = 10^input$production_lambda,
+                        yield_lambda = 10^input$yield_lambda)
         p <- matchConsumption(p, species = input$sp)
 
         # Update the reactive params objects

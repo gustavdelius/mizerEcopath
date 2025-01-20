@@ -22,7 +22,7 @@
 #'   there is no catch data for the species, the function returns NULL.
 #' @export
 prepare_data <- function(params, species = 1, catch,
-                         yield_lambda = 1, production_lambda = 0.01) {
+                         yield_lambda = 1, production_lambda = 1) {
 
     # Validate MizerParams object and extract data for the selected species ----
     params <- validParams(params)

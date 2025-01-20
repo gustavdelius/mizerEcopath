@@ -86,7 +86,7 @@
 #' all.equal(initialN(params), initialN(params_steady))
 #' @export
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
-                       yield_lambda = 1, production_lambda = 0.01) {
+                       yield_lambda = 1, production_lambda = 1) {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
     params <- validParams(params)
