@@ -10,14 +10,15 @@
 #' is issued if the exponent `p` had to be changed for any species.
 #'
 #' Any of the selected species for which `consumption_observed` is NA will be
-#' quietly ignored. If for any species the production is higher than the
-#' `consumption_observed`, then this would lead to a negative metabolic
-#' respiration rate. In this case the metabolic rate is set to 0 and a warning
-#' is issued for all such species.
+#' quietly ignored.
 #'
-#' Unless the function issues a warning, the energy available for growth and
-#' reproduction is not changed and hence the steady state spectra are also
-#' unchanged.
+#' If the resulting metabolic loss rate is less than 10% of the production rate,
+#' the function will set the metabolic loss rate to 10% of the production rate
+#' and issue a warning.
+#'
+#' Unless the function issues a warning that it has changed `p`, the energy
+#' available for growth and reproduction is not changed and hence the steady
+#' state spectra are also unchanged.
 #'
 #' @param params A MizerParams object
 #' @param species A vector of species names or indices. If NULL, all species for
@@ -68,13 +69,14 @@ matchConsumption <- function(params, species = NULL) {
     total_production <- getTotalProduction(params)
     R <- sp$alpha[sp_select] * sp$consumption_observed[sp_select] - total_production[sp_select]
 
-    # Warn if any species require negative metabolic respiration
-    negative_species <- sp$species[sp_select][R < 0]
-    if (length(negative_species) > 0) {
+    # If the needed ks value is below the minimal acceptable value, set it to the
+    # minimal acceptable value and issue a warning.
+    problem_species <- sp$species[sp_select][R < 0.1 * total_production[sp_select]]
+    if (length(problem_species) > 0) {
         warning("Perfect match to Ecopath consumption not possible for: ",
-                paste(negative_species, collapse = ", "), ".")
-        # Set R to 0 for these species
-        R[R < 0] <- 0
+                paste(problem_species, collapse = ", "),
+                " because it would lead to a low metabolic rate of less than 10% of the production rate.")
+        ks <- pmax(R, 0.1 * total_production[sp_select])
     }
 
     # Store old metabolic rates
@@ -90,7 +92,7 @@ matchConsumption <- function(params, species = NULL) {
     params@metab[sp_select, ] <- metab_unit
 
     # Calculate scaling factor ks so that total metabolic respiration matches R
-    # getMetabolicRespiration(params) should return a vector (one value per species)
+    # getMetabolicRespiration(params) returns a vector (one value per species)
     tot_metab_resp <- getMetabolicRespiration(params)[sp_select]
     ks <- R / tot_metab_resp
 
