@@ -11,14 +11,10 @@ matchDiet(params, diet_matrix, centering = 0, w_prey_cutoff = 1)
 
 \item{diet_matrix}{The Ecopath diet matrix as produced by
 \code{reduceEcopathDiet()}.}
-
-\item{centering}{The centering parameter, see "Centering" section below for
-details.}
-
-\item{w_prey_cutoff}{See "Centering" section below for details.}
 }
 \value{
-A MizerParams object with the diet matrix matched.
+A MizerParams object with the interaction matrix set so that the
+desired diet is achieved.
 }
 \description{
 This function adjusts the interaction matrix of the model so that its diet
@@ -26,31 +22,9 @@ matrix matches the Ecopath diet matrix. It then adjusts the external
 encounter and mortality rates so that the steady state is not changed.
 }
 \details{
-The function will raise an error if negative external encounter rates are
-required for any species and issues a warning for any species that requires
-negative external mortality rates.
-
-Note that the function does not currently work properly when the mizer model
-makes use of additional ecosystem components that add to the encounter rate.
+The function will raise a warning for any species that requires a negative
+external mortality rate or negative external encounter rate.
 }
-\section{Centering}{
-
-Ecopath diet matrices often contain many zeros, which would mean that it is
-impossible for two species to interact. This is because the Ecopath diet
-matrix does not account for small prey items that do not contribute
-significantly to a predator's diet. The \code{centering} parameter allows one to
-experiment with adding an estimate of the diet of these small prey to the
-diet matrix.
-
-For this purpose we assume that the Ecopath diet matrix did not account for
-prey items with a weight below \code{w_cutoff}. To estimate their contribution to
-the diet we make the assumption that for such small prey items the predator
-does not distinguish between species and feeds solely according to its prey
-size preference. We multiply the resulting encounter rate of these small
-prey items by the \code{centering} argument and add it to the Ecopath diet matrix
-before matching.
-}
-
 \seealso{
 Other match functions: 
 \code{\link{matchCatch}()},

@@ -10,7 +10,7 @@ matchCatch(
   catch,
   lambda = 2.05,
   yield_lambda = 1,
-  production_lambda = 0.01
+  production_lambda = 1
 )
 }
 \arguments{

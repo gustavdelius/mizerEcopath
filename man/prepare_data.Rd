@@ -9,7 +9,7 @@ prepare_data(
   species = 1,
   catch,
   yield_lambda = 1,
-  production_lambda = 0.01
+  production_lambda = 1
 )
 }
 \arguments{

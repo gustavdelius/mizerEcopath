@@ -29,14 +29,15 @@ is issued if the exponent \code{p} had to be changed for any species.
 }
 \details{
 Any of the selected species for which \code{consumption_observed} is NA will be
-quietly ignored. If for any species the production is higher than the
-\code{consumption_observed}, then this would lead to a negative metabolic
-respiration rate. In this case the metabolic rate is set to 0 and a warning
-is issued for all such species.
+quietly ignored.
 
-Unless the function issues a warning, the energy available for growth and
-reproduction is not changed and hence the steady state spectra are also
-unchanged.
+If the resulting metabolic loss rate is less than 10\% of the production rate,
+the function will set the metabolic loss rate to 10\% of the production rate
+and issue a warning.
+
+Unless the function issues a warning that it has changed \code{p}, the energy
+available for growth and reproduction is not changed and hence the steady
+state spectra are also unchanged.
 }
 \examples{
 params <- matchConsumption(celtic_params)
