@@ -78,22 +78,10 @@ matchDiet <- function(params, diet_matrix, centering = 0,
 
     params <- makeNoninteracting(params)
 
-    # Set resource to be in line with fish
-    total <- colSums(initialN(params))
-    fish_sel <- params@w_full >= params@w[1]
-    ratio <- max(total / initialNResource(params)[fish_sel])
-    params <- mizerExperimental::scaleDownBackground(params, 1/ratio)
-
     # Get diet matrix when interaction matrix is all 1. This is also the
     # Encounter matrix because we have switched off satiation.
-    # Set `gamma` so that this interaction matrix produces the desired
-    # consumption
     interaction_matrix(params)[] <- 1
-    dmm <- getDietMatrix(params)
-    ratios <- rowSums(dm) / rowSums(dmm)
-    species_params(params)$gamma <- species_params(params)$gamma * ratios
-    params@search_vol <- params@search_vol * ratios
-    E <- getDietMatrix(params)
+    E <- getDietMatrix(params)[1:no_sp, 1:no_sp]
     interaction_matrix(params)[] <- 0
 
     # If the encounter matrix has zeros where the Ecopath diet does not, then
