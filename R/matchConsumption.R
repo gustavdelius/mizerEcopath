@@ -76,7 +76,7 @@ matchConsumption <- function(params, species = NULL) {
         warning("Perfect match to Ecopath consumption not possible for: ",
                 paste(problem_species, collapse = ", "),
                 " because it would lead to a low metabolic rate of less than 10% of the production rate.")
-        ks <- pmax(R, 0.1 * total_production[sp_select])
+        R <- pmax(R, 0.1 * total_production[sp_select])
     }
 
     # Store old metabolic rates
