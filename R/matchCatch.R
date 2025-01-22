@@ -135,7 +135,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
     g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
     mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
+    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2,
                       catchability = 1e-8)
     upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
                       catchability = Inf)
