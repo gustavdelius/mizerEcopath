@@ -78,22 +78,27 @@ matchDiet <- function(params, diet_matrix, centering = 0,
 
     params <- makeNoninteracting(params)
 
-    # Set resource to be in line with fish
-    total <- colSums(initialN(params))
-    fish_sel <- params@w_full >= params@w[1]
-    ratio <- max(total / initialNResource(params)[fish_sel])
-    params <- mizerExperimental::scaleDownBackground(params, 1/ratio)
-
     # Get diet matrix when interaction matrix is all 1. This is also the
     # Encounter matrix because we have switched off satiation.
-    # Set `gamma` so that this interaction matrix produces the desired
-    # consumption
-    p <- params
-    interaction_matrix(p)[] <- 1
-    species_params(p)$interaction_resource <- 1
-    dmm <- getDietMatrix(p)
-    species_params(params)$gamma <- species_params(params)$gamma *
-        rowSums(dm) / rowSums(dmm)
+    interaction_matrix(params)[] <- 1
+    E <- getDietMatrix(params)[1:no_sp, 1:no_sp]
+    interaction_matrix(params)[] <- 0
+
+    # If the encounter matrix has zeros where the Ecopath diet does not, then
+    # there is no way to match the diet matrix. This is unlikely to happen.
+    if (any(E == 0 & D > 0)) {
+        stop("Diet matrix cannot be matched because the mizer predation kernel does lead to zero predator-prey interaction between some species.")
+    }
+
+    theta <- D / E
+    theta[is.nan(theta)] <- 1  # Avoid NaNs when E is zero
+
+    params <- makeInteractive(params, theta)
+
+    if (centering == 0) {
+        return(params)
+    }
+    stop("Centering not implemented yet.")
 
     # Diet matrix restricted to large prey
     E <- getDietMatrix(p, min_w_prey = w_prey_cutoff)[, 1:no_sp]
