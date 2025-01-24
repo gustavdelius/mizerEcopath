@@ -6,8 +6,12 @@ test_that("setResourceInteraction preserves resource levels and modifies encount
             w_inf = 100,
             interaction_resource = 0.5,
             stringsAsFactors = FALSE
-        )
-    ) |> suppressWarnings() |> suppressMessages()
+        ),
+    ) |> suppressWarnings() |> suppressMessages() |>
+        setResource(resource_level = 0.5)
+
+    power_encounter <- params@w ^ params@species_params$n
+    ext_encounter(params) <- matrix(power_encounter, nrow = 1)
 
     # Store initial values
     initial_resource <- resource_level(params)
@@ -19,6 +23,12 @@ test_that("setResourceInteraction preserves resource levels and modifies encount
 
     # Test resource level is preserved
     expect_equal(resource_level(params_new), initial_resource)
+
+    # Test total encounter rate is preserved
+    expect_equal(getEncounter(params_new), getEncounter(params))
+    # Test that growth and mortality rates are preserved
+    expect_equal(getEGrowth(params_new), getEGrowth(params))
+    expect_equal(getMort(params_new), getMort(params))
 
     # Test interaction_resource increased
     expect_true(params_new@species_params$interaction_resource > initial_interaction)
@@ -36,7 +46,7 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
             interaction_resource = 1,
             stringsAsFactors = FALSE
         )
-    )
+    ) |> suppressWarnings() |> suppressMessages()
 
     # Get encounter rates
     encounter_rates <- getResourceEncounterRate(params)
@@ -52,30 +62,4 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
 
     # Should scale linearly with interaction_resource
     expect_equal(encounter_rates2, 2 * encounter_rates)
-})
-
-test_that("setResourceInteraction maintains steady state", {
-    params <- newMultispeciesParams(
-        species_params = data.frame(
-            species = "species1",
-            w_inf = 100,
-            interaction_resource = 0.5,
-            stringsAsFactors = FALSE
-        )
-    )
-
-    # Run to steady state
-    params <- steady(params)
-    initial_n <- params@initial_n
-    initial_n_pp <- params@initial_n_pp
-
-    # Apply setResourceInteraction
-    params_new <- setResourceInteraction(params)
-
-    # Run again to steady state
-    params_new <- steady(params_new)
-
-    # Test that abundances remain the same
-    expect_equal(params_new@initial_n, initial_n, tolerance = 1e-10)
-    expect_equal(params_new@initial_n_pp, initial_n_pp, tolerance = 1e-10)
 })

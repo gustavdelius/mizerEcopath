@@ -3,7 +3,7 @@
 #' This function sets the resource interaction for each species to absorb as
 #' much of the external encounter rate as possible. It adjusts the resource
 #' capacity so that the resource can sustain the extra encounter without
-#' changing the current resource abundance.
+#' changing the current resource abundance or the resource level.
 #'
 #' If the initial abundances were at steady state, then they will remain at
 #' steady state. This is because the total encounter rate is not modified by
@@ -17,6 +17,9 @@
 setResourceInteraction <- function(params) {
     # Save the resource level so we can restore it later
     resource_level <- resource_level(params)
+    # If the resource level is exactly 1 then decrease it slightly
+    # to make it valid
+    resource_level[resource_level == 1] <- 0.999999999
 
     # Calculate the encounter rate achieved with interaction_resource = 1
     temp_params <- params
