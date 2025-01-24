@@ -23,31 +23,9 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     sp <- params@species_params
     no_sp <- nrow(sp)
 
-    # Check diet matrix ----
-    if (!is(diet_matrix, "matrix")) {
-        stop("`diet_matrix` must be a matrix.")
-    }
-    if (!is.numeric(diet_matrix)) {
-        stop("`diet_matrix` must be numeric.")
-    }
-    if (any(is.nan(diet_matrix))) {
-        stop("`diet_matrix` contains NaNs.")
-    }
-    if (any(is.na(diet_matrix))) {
-        stop("`diet_matrix` contains NAs.")
-    }
-    if (any(rowSums(diet_matrix) == 0)) {
-        stop("According to the diet matrix, some species do not eat anything.")
-    }
+    checkDietMatrix(diet_matrix)
 
-    # Convert diet matrix from proportions to absolute consumption
-    Q <- sp$consumption_observed
-    dm <- diet_matrix * Q / rowSums(diet_matrix)
-    # Keep only the part corresponding to species
-    D <- dm[sp$species, sp$species]
-    if (nrow(D) != no_sp || ncol(D) != no_sp) {
-        stop("diet_matrix does not include all model species.")
-    }
+    D <- convertDietMatrix(diet_matrix, sp, no_sp)
 
     params <- makeNoninteracting(params)
 
@@ -69,4 +47,53 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     params <- makeInteracting(params, theta)
 
     return(params)
+}
+
+#' Check if a diet matrix is valid
+#'
+#' This function performs validation checks on a diet matrix to ensure it meets
+#' the requirements for use in mizer.
+#'
+#' @param diet_matrix The diet matrix to check
+#' @return NULL invisibly. Throws an error if any check fails.
+#' @keywords internal
+checkDietMatrix <- function(diet_matrix) {
+    if (!is(diet_matrix, "matrix")) {
+        stop("`diet_matrix` must be a matrix.")
+    }
+    if (!is.numeric(diet_matrix)) {
+        stop("`diet_matrix` must be numeric.")
+    }
+    if (any(is.nan(diet_matrix))) {
+        stop("`diet_matrix` contains NaNs.")
+    }
+    if (any(is.na(diet_matrix))) {
+        stop("`diet_matrix` contains NAs.")
+    }
+    if (any(rowSums(diet_matrix) == 0)) {
+        stop("According to the diet matrix, some species do not eat anything.")
+    }
+    invisible(NULL)
+}
+
+#' Convert diet matrix to absolute consumption
+#'
+#' This function converts a diet matrix from proportions to absolute consumption
+#' and extracts the part corresponding to species.
+#'
+#' @param diet_matrix The diet matrix to convert
+#' @param sp Species parameters data frame
+#' @param no_sp Number of species
+#' @return The converted diet matrix
+#' @keywords internal
+convertDietMatrix <- function(diet_matrix, sp, no_sp) {
+    # Convert diet matrix from proportions to absolute consumption
+    Q <- sp$consumption_observed
+    dm <- diet_matrix * Q / rowSums(diet_matrix)
+    # Keep only the part corresponding to species
+    D <- dm[sp$species, sp$species]
+    if (nrow(D) != no_sp || ncol(D) != no_sp) {
+        stop("diet_matrix does not include all model species.")
+    }
+    return(D)
 }
