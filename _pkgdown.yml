@@ -8,7 +8,7 @@ reference:
   contents:
   - newAllometricParams
   - isAllometric
-  - makeInteractive
+  - makeInteracting
   - makeNoninteracting
   - setFeedingLevel
 - title: "Calibrating model"

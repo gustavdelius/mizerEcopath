@@ -66,7 +66,7 @@ matchDiet <- function(params, diet_matrix, centering = 0,
     theta <- D / E
     theta[is.nan(theta)] <- 1  # Avoid NaNs when E is zero
 
-    params <- makeInteractive(params, theta)
+    params <- makeInteracting(params, theta)
 
     return(params)
 }

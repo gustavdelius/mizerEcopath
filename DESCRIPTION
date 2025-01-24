@@ -46,7 +46,7 @@ Collate:
     'get.R'
     'getDietMatrix.R'
     'helpers.R'
-    'makeInteractive.R'
+    'makeInteracting.R'
     'match.R'
     'matchConsumption.R'
     'matchDiet.R'
