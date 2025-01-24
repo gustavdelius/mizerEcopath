@@ -43,6 +43,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Collate:
     'mizerEcopath-package.R'
+    'alignResource.R'
     'get.R'
     'getDietMatrix.R'
     'helpers.R'

@@ -2,6 +2,7 @@
 
 export(addEcopathCatchTotal)
 export(addEcopathParams)
+export(alignResource)
 export(getConsumption)
 export(getDietMatrix)
 export(getDiffusion)
