@@ -74,6 +74,7 @@ Collate:
     'reproTab.R'
     'reproductionControl.R'
     'setFeedingLevel.R'
+    'setResourceInteraction.R'
     'spectraTab.R'
     'tuneParams_helpers.R'
     'update_params.R'
