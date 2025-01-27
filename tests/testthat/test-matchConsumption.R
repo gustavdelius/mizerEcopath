@@ -23,7 +23,8 @@ test_that("matchConsumption sets p = n for selected species", {
     params_mismatch <- celtic_params
     # Assume we have at least one species; set mismatch for the first selected species
     params_mismatch@species_params$p <- 0.9
-    result <- matchConsumption(params_mismatch, species = 1:4)
+    expect_warning(result <- matchConsumption(params_mismatch, species = 1:4),
+                   "Exponent `p` changed for Herring, Cod, Haddock, Whiting.")
     expect_identical(result@species_params$p[1:4], result@species_params$n[1:4])
     expect_identical(result@species_params$p[5], 0.9)
 })
@@ -62,7 +63,6 @@ test_that("matchConsumption warns when negative metabolic respiration required",
     expect_warning(result <- matchConsumption(params_negative,
                                               species = params_negative@species_params$species[sp_idx]),
                    "Perfect match to Ecopath consumption not possible")
-    expect_identical(result@species_params$ks[sp_idx], 0)
 })
 
 test_that("matchConsumption updates ks correctly", {

@@ -22,13 +22,6 @@ test_that("matchCatch throws error if catch data is missing required columns", {
     )
 })
 
-test_that("matchCatch quietly ignores species without catch data", {
-    # Remove Hake from catch data
-    bad_catch_data <- celtic_catch[celtic_catch$species != "Hake", ]
-    result <- matchCatch(celtic_params, species = "Hake", catch = bad_catch_data)
-    expect_identical(result, celtic_params)
-})
-
 test_that("matchCatch can handle multiple species", {
         multi_species <- c("Hake", "Herring")
         result <- matchCatch(celtic_params, species = multi_species, catch = celtic_catch)

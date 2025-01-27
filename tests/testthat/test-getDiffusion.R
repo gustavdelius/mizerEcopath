@@ -4,9 +4,9 @@ params_single <- setPredKernel(params_single,
                                pred_kernel = getPredKernel(params_single))
 
 test_that("getDiffusion with order=1 can reproduce growth", {
-    g <- getEGrowth(params)
+    g <- getEReproAndGrowth(params)
     K <- metab(params)
-    d1 <- g + K * (1 - params@psi)
+    d1 <- g + K
     expect_equal(getDiffusion(params, order = 1), d1)
 })
 
