@@ -105,20 +105,17 @@ getProduction <- function(params) {
 #' number density of species \eqn{i} at weight \eqn{w}.
 #'
 #' @param params A MizerParams object
-#' @param w_min The minimum weight of prey species to include in the consumption
-#'  rate calculation
-#' @param w_max The maximum weight of prey species to include in the consumption
-#'  rate calculation
+#' @inheritParams getDietMatrix
 #' @return A named vector of consumption rate for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getConsumption(NS_params)
-getConsumption <- function(params, w_min = 0, w_max = Inf) {
+getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
     N <- initialN(params)
     q <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)) * N,
                2, dw(params), "*")
-    sel <- params@w >= w_min & params@w <= w_max
+    sel <- params@w >= min_w_pred & params@w <= max_w_pred
     Q <- rowSums(q[, sel, drop = FALSE])
     return(Q)
 }

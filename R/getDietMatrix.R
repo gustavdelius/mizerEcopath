@@ -8,16 +8,18 @@
 #' Note that the diet matrix has the absolute rates of biomass flow, not the
 #' proportions of the diet.
 #'
-#' If `min_w_pred` is set, then the diet matrix only represents the flow of
-#' biomass into the part of the predator species population that is larger than
-#' `min_w_pred`. This may make the returned diet matrix correspond more closely
-#' to diet matrices found in the literature, which are often estimated from
-#' observation of large individuals only and ignore that the diet of small
-#' individuals will be different.
+#' If `min_w_pred` or `max_w_pred` are set, then the diet matrix only represents
+#' the flow of biomass into the part of the predator species population that has
+#' sizes in the specified range. This may make the returned diet matrix
+#' correspond more closely to diet matrices found in the literature, which are
+#' often estimated from observation of large individuals only or of juveniles
+#' only.
 #'
 #' @param params A MizerParams object
 #' @param min_w_pred The minimum weight of predators to include in the diet
 #'   matrix. Default is 0.
+#' @param max_w_pred The maximum weight of predators to include in the diet
+#'   matrix. Default is `Inf`.
 #' @return A matrix with dimnames `predator` and `prey` containing the rates of
 #'   biomass flow from a prey species to a predator species (or that part of
 #'   the predator species population that is larger than `min_w_pred`).
@@ -26,8 +28,8 @@
 #' @examples
 #' dimnames(getDietMatrix(NS_params))
 #' getDietMatrix(NS_params)["Cod", ]
-getDietMatrix <- function(params, min_w_pred = 0) {
-    w_sel <- params@w >= min_w_pred
+getDietMatrix <- function(params, min_w_pred = 0, max_w_pred = Inf) {
+    w_sel <- params@w >= min_w_pred & params@w <= max_w_pred
     N <- initialN(params)[, w_sel]
     dw <- dw(params)[w_sel]
     diet_matrix <- getDiet(params, proportion = FALSE)[, w_sel, ] |>

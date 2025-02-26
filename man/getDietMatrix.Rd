@@ -4,20 +4,21 @@
 \alias{getDietMatrix}
 \title{Get diet matrix}
 \usage{
-getDietMatrix(params, min_w_prey = 0, max_w_prey = Inf)
+getDietMatrix(params, min_w_pred = 0, max_w_pred = Inf)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{min_w_prey}{The minimum weight of prey species to include in the diet
-matrix}
+\item{min_w_pred}{The minimum weight of predators to include in the diet
+matrix. Default is 0.}
 
-\item{max_w_prey}{The maximum weight of prey species to include in the diet
-matrix}
+\item{max_w_pred}{The maximum weight of predators to include in the diet
+matrix. Default is \code{Inf}.}
 }
 \value{
 A matrix with dimnames \code{predator} and \code{prey} containing the rates of
-biomass flow from a prey species to a predator species.
+biomass flow from a prey species to a predator species (or that part of
+the predator species population that is larger than \code{min_w_pred}).
 }
 \description{
 Returns the diet matrix with one row for each predator species and one
@@ -28,6 +29,13 @@ predator species.
 \details{
 Note that the diet matrix has the absolute rates of biomass flow, not the
 proportions of the diet.
+
+If \code{min_w_pred} or \code{max_w_pred} are set, then the diet matrix only represents
+the flow of biomass into the part of the predator species population that has
+sizes in the specified range. This may make the returned diet matrix
+correspond more closely to diet matrices found in the literature, which are
+often estimated from observation of large individuals only or of juveniles
+only.
 }
 \examples{
 dimnames(getDietMatrix(NS_params))

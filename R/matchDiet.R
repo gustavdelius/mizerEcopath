@@ -4,11 +4,9 @@
 #' matrix matches the Ecopath diet matrix. It then adjusts the external
 #' encounter and mortality rates so that the steady state is not changed.
 #'
-#' Diet matrices found in the literature are often estimated from
-#' observation of large individuals only and ignore that the diet of small
-#' individuals will be different. If `min_w_pred` is set, then the diet matrix
-#' is assumed to represent the flow of biomass into the part of the predator
-#' species population that is larger than `min_w_pred`.
+#' If `min_w_pred` or `max_w_pred` are set, then the diet matrix is assumed to
+#' represent the flow of biomass into the part of the predator species
+#' population with sizes in the specified range.
 #'
 #' The function will raise a warning for any species that requires a negative
 #' external mortality rate or negative external encounter rate.
@@ -16,14 +14,14 @@
 #' @param params A MizerParams object
 #' @param diet_matrix The Ecopath diet matrix as produced by
 #'   `reduceEcopathDiet()`.
-#' @param min_w_pred The minimum weight of the predators included in the diet
-#'   matrix. Default is 0. See Details.
+#' @inheritParams getDietMatrix
 #'
 #' @return A MizerParams object with the interaction matrix set so that the
 #'   desired diet is achieved.
 #' @family match functions
 #' @export
-matchDiet <- function(params, diet_matrix, min_w_pred = 0) {
+matchDiet <- function(params, diet_matrix,
+                      min_w_pred = 0, max_w_pred = Inf) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
@@ -31,7 +29,10 @@ matchDiet <- function(params, diet_matrix, min_w_pred = 0) {
     no_sp <- nrow(sp)
 
     # Convert the diet matrix to absolute consumption
-    D <- convertDietMatrix(diet_matrix, sp, no_sp)
+    D <- convertDietMatrix(diet_matrix,
+                           min_w_pred = min_w_pred,
+                           max_w_pred = max_w_pred,
+                           sp, no_sp)
 
     # Make the interaction matrix non-interacting
     params <- makeNoninteracting(params)
@@ -39,7 +40,8 @@ matchDiet <- function(params, diet_matrix, min_w_pred = 0) {
     # Get diet matrix when interaction matrix is all 1. This is also the
     # Encounter matrix because we have switched off satiation.
     interaction_matrix(params)[] <- 1
-    E <- getDietMatrix(params, min_w_pred = min_w_pred)[1:no_sp, 1:no_sp]
+    E <- getDietMatrix(params, min_w_pred = min_w_pred,
+                       max_w_pred = max_w_pred)[1:no_sp, 1:no_sp]
     interaction_matrix(params)[] <- 0
 
     # If the encounter matrix has zeros where the Ecopath diet does not, then
@@ -90,14 +92,19 @@ checkDietMatrix <- function(diet_matrix) {
 #' and extracts the part corresponding to species.
 #'
 #' @param diet_matrix The diet matrix to convert
+#' @inheritParams getDietMatrix
 #' @param sp Species parameters data frame
 #' @param no_sp Number of species
 #' @return The converted diet matrix
 #' @keywords internal
-convertDietMatrix <- function(diet_matrix, min_w_pred, sp, no_sp) {
+convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
+    sp <- params@species_params
+    no_sp <- nrow(sp)
     checkDietMatrix(diet_matrix)
     # Convert diet matrix from proportions to absolute consumption
-    Q <- sp$consumption_observed
+    Q <- getConsumption(params,
+                        min_w_pred = min_w_pred,
+                        max_w_pred = max_w_pred)
     dm <- diet_matrix * Q / rowSums(diet_matrix)
     # Keep only the part corresponding to species
     D <- dm[sp$species, sp$species]
