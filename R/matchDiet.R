@@ -91,10 +91,7 @@ checkDietMatrix <- function(diet_matrix) {
 #' This function converts a diet matrix from proportions to absolute consumption
 #' and extracts the part corresponding to species.
 #'
-#' @param diet_matrix The diet matrix to convert
 #' @inheritParams getDietMatrix
-#' @param sp Species parameters data frame
-#' @param no_sp Number of species
 #' @return The converted diet matrix
 #' @keywords internal
 convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
