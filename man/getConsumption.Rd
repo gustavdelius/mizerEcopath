@@ -8,6 +8,12 @@ getConsumption(params, min_w_pred = 0, max_w_pred = Inf)
 }
 \arguments{
 \item{params}{A MizerParams object}
+
+\item{min_w_pred}{The minimum weight of predators to include in the diet
+matrix. Default is 0.}
+
+\item{max_w_pred}{The maximum weight of predators to include in the diet
+matrix. Default is \code{Inf}.}
 }
 \value{
 A named vector of consumption rate for each species

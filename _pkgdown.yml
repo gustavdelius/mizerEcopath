@@ -17,6 +17,8 @@ reference:
   - matchConsumption
   - matchGonadicProportionOnce
   - matchDiet
+  - alignResource
+  - setResourceInteraction
 - title: "Working with Ecopath"
   contents:
   - addEcopathParams
@@ -35,6 +37,7 @@ reference:
   - spectraTab
   - exponentControl
   - fishingControl
+  - matchControl
   - otherControl
   - reproductionControl
 - title: "Calculating rates"
@@ -55,6 +58,7 @@ reference:
   - getM2B
   - getZB
   - getDietMatrix
+  - getResourceEncounterRate
 - title: "Plotting"
   contents:
   - starts_with("plot")

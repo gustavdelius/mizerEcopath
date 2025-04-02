@@ -7,8 +7,6 @@
 convertDietMatrix(diet_matrix, params, min_w_pred, max_w_pred)
 }
 \arguments{
-\item{diet_matrix}{The diet matrix to convert}
-
 \item{params}{A MizerParams object}
 
 \item{min_w_pred}{The minimum weight of predators to include in the diet
@@ -16,10 +14,6 @@ matrix. Default is 0.}
 
 \item{max_w_pred}{The maximum weight of predators to include in the diet
 matrix. Default is \code{Inf}.}
-
-\item{sp}{Species parameters data frame}
-
-\item{no_sp}{Number of species}
 }
 \value{
 The converted diet matrix
