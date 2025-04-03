@@ -16,9 +16,9 @@ to match the fish abundance
 \description{
 This function sets the initial resource abundance density $N_R(w)$ to a power
 law \deqn{N_R(w)=\kappa w^{-\lambda}}, where $lambda$ is taken from
-\code{resource_params(params)$lambda} The coefficient $\kappa=$\code{kappa} is chosen
+\code{resource_params(params)$lambda} The coefficient \code{kappa} is chosen
 such that the resource abundance power law is tangent to the abundance
-density $N_c(w)$ of the fish community in one point. It then truncates the
+density \eqn{N_c(w)} of the fish community in one point. It then truncates the
 resource abundance power law at \code{resource_params(params)$w_pp_cutoff}. The
 function also sets the resource carrying capacity equal to this initial
 resource abundance and updates the resource parameter \code{kappa} in the

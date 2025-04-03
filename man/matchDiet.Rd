@@ -4,13 +4,19 @@
 \alias{matchDiet}
 \title{Match the diet matrix of the model to the Ecopath diet matrix}
 \usage{
-matchDiet(params, diet_matrix, centering = 0, w_prey_cutoff = 1)
+matchDiet(params, diet_matrix, min_w_pred = 0, max_w_pred = Inf)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
 \item{diet_matrix}{The Ecopath diet matrix as produced by
 \code{reduceEcopathDiet()}.}
+
+\item{min_w_pred}{The minimum weight of predators to include in the diet
+matrix. Default is 0.}
+
+\item{max_w_pred}{The maximum weight of predators to include in the diet
+matrix. Default is \code{Inf}.}
 }
 \value{
 A MizerParams object with the interaction matrix set so that the
@@ -22,6 +28,10 @@ matrix matches the Ecopath diet matrix. It then adjusts the external
 encounter and mortality rates so that the steady state is not changed.
 }
 \details{
+If \code{min_w_pred} or \code{max_w_pred} are set, then the diet matrix is assumed to
+represent the flow of biomass into the part of the predator species
+population with sizes in the specified range.
+
 The function will raise a warning for any species that requires a negative
 external mortality rate or negative external encounter rate.
 }
