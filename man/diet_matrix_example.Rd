@@ -8,6 +8,9 @@
 A matrix with species as both row and column names, giving the proportion of each prey
 in each predator’s diet.
 }
+\usage{
+diet_matrix_example
+}
 \description{
 The output of applying \code{reduceEcopathDiet()} to the Celtic Sea Ecopath diet matrix.
 Rows and columns are matched to \code{species_params_example$species}.

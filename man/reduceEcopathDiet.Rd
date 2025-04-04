@@ -25,3 +25,14 @@ using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to 
 Produces a species-by-species diet matrix, including an \code{"other"} category to account
 for diet contributions from Ecopath groups not included in the model.
 }
+\examples{
+
+# Generate a reduced diet matrix
+diet_matrix <- reduceEcopathDiet(
+    species_params = species_params_example,
+    ecopath_diet = ecopath_diet_example
+)
+
+# View first few rows of the result
+head(diet_matrix)
+}

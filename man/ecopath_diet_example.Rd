@@ -7,6 +7,9 @@
 \format{
 A data frame with predator groups as row names and prey groups as columns.
 }
+\usage{
+ecopath_diet_example
+}
 \description{
 A group-level diet composition matrix derived from Lauria et al. (2016),
 used as input to \code{reduceEcopathDiet()}. Columns and rows include juvenile and adult stanzas.

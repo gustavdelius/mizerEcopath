@@ -17,6 +17,15 @@
 #'   give for each predator the proportion of its diet that comes from each prey
 #'   species or from other ecosystem components.
 #' @export
+#' @examples
+#' # Generate a reduced diet matrix
+#' diet_matrix <- reduceEcopathDiet(
+#'     species_params = species_params_example,
+#'     ecopath_diet = ecopath_diet_example
+#' )
+#'
+#' # View first few rows of the result
+#' head(diet_matrix)
 reduceEcopathDiet <- function(species_params, ecopath_diet) {
     ecopath_diet[is.na(ecopath_diet)] <- 0
     sp <- validSpeciesParams(species_params)

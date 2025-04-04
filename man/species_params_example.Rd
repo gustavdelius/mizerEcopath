@@ -16,6 +16,9 @@ A data frame with 12 rows and 18 columns. Key columns include:
 \item{ecopath_groups}{List column mapping Ecopath stanza groups}
 }
 }
+\usage{
+species_params_example
+}
 \description{
 A curated subset of species parameters derived from the Celtic Sea model of Lauria et al. (2016),
 formatted for compatibility with mizer and mizerEcopath. Includes mapped Ecopath groups, life history

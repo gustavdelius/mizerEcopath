@@ -17,7 +17,7 @@
 #' @name species_params_example
 #' @docType data
 #' @keywords datasets
-species_params_example
+"species_params_example"
 
 #' Example Ecopath diet matrix
 #'
@@ -28,7 +28,7 @@ species_params_example
 #' @name ecopath_diet_example
 #' @docType data
 #' @keywords datasets
-ecopath_diet_example
+"ecopath_diet_example"
 
 #' Example reduced diet matrix for mizer
 #'
@@ -40,4 +40,4 @@ ecopath_diet_example
 #' @name diet_matrix_example
 #' @docType data
 #' @keywords datasets
-diet_matrix_example
+"diet_matrix_example"
