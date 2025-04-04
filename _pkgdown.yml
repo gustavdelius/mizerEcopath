@@ -5,6 +5,8 @@ template:
 
 reference:
 - title: "Building model"
+  desc: >
+    Functions to prepare model parameters and control interaction states.
   contents:
   - newAllometricParams
   - isAllometric
@@ -12,6 +14,8 @@ reference:
   - makeNoninteracting
   - setFeedingLevel
 - title: "Calibrating model"
+  desc: >
+    Tools to match model output to empirical observations.
   contents:
   - matchCatch
   - matchConsumption
@@ -20,6 +24,8 @@ reference:
   - alignResource
   - setResourceInteraction
 - title: "Working with Ecopath"
+  desc: >
+    Functions for importing and validating Ecopath data.
   contents:
   - addEcopathParams
   - addEcopathCatchTotal
@@ -27,6 +33,8 @@ reference:
   - validEcopathParams
   - validEcopathCatch
 - title: "Shiny gadget"
+  desc: >
+    Interactive interface for tuning mizer model parameters.
   contents:
   - tuneEcopath
   - catchTab
@@ -41,6 +49,8 @@ reference:
   - otherControl
   - reproductionControl
 - title: "Calculating rates"
+  desc: >
+    Extract rates and other parameters from the model.
   contents:
   - getConsumption
   - getDiffusion
@@ -60,14 +70,20 @@ reference:
   - getDietMatrix
   - getResourceEncounterRate
 - title: "Plotting"
+  desc: >
+    Basic visualisations
   contents:
   - starts_with("plot")
 - title: "Helper functions"
+  desc: >
+    Internal tools to support calibration and simulation.
   contents:
   - prepare_data
   - update_params
   - precompute_weights
 - title: "Obsolete?"
+  desc: >
+    Functions retained for compatibility or reference but not in active use.
   contents:
   - matchEcopath
   - matchExtMortOnce
