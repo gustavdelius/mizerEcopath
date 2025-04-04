@@ -2,8 +2,10 @@
 
 #' Reduce Ecopath diet matrix to mizer species
 #'
-#' Given an Ecopath diet matrix and a dictionary that maps Ecopath groups to
-#' mizer species, this function returns a diet matrix for the mizer species.
+#' Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
+#' using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+#' Produces a species-by-species diet matrix, including an \code{"other"} category to account
+#' for diet contributions from Ecopath groups not included in the model.
 #'
 #' @param species_params A data frame with mizer species parameters
 #' @param ecopath_diet The Ecopath diet matrix, as exported by the Ecopath
