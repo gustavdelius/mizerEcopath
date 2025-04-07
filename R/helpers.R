@@ -13,9 +13,10 @@
 #'
 #' @return A matrix with dimnames `predator` and `prey`, where the row names are
 #'   the species names of the predators and the column names are the species
-#'   names of the prey and an extra column named "other". The matrix entries
-#'   give for each predator the proportion of its diet that comes from each prey
-#'   species or from other ecosystem components.
+#'   names of the prey, an extra column "other" for groups not included in the model.
+#'   The matrix entries give for each predator the proportion of its diet that comes
+#'   from each prey species or from other ecosystem components.
+#'
 #' @export
 #' @examples
 #' # Generate a reduced diet matrix

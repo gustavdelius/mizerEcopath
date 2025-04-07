@@ -91,7 +91,7 @@ reference:
   - matchRespirationOnce
 - title: "Data sets"
   desc: >
-    Example input and output objects for illustrating functions in the mizerEcopath package.
+    Example input and output objects for illustrating functions.
   contents:
     - species_params_example
     - ecopath_diet_example
