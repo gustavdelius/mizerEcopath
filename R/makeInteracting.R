@@ -7,7 +7,8 @@
 #' interaction matrix.
 #'
 #' If predation would exceed total mortality or encounter for a species, a warning is issued
-#' and negative values are truncated to zero.
+#' and negative values are truncated to zero. This can cause the resulting model to
+#' diverge from the steady state.
 #'
 #' Typically used internally by [matchDiet()]
 #'
@@ -39,8 +40,9 @@ makeInteracting <- function(params, interaction) {
         if (any(new_ext_encounter[i, ] < 0) &&
             (min(params@w[new_ext_encounter[i, ] < 0]) <=
              max(params@w[initialN(params)[i, ] > 1e-10]))) {
-            warning("Negative external encounter rate required for ",
-                    params@species_params$species[i])
+            warning("Implied negative external encounter rate for ",
+                    params@species_params$species[i],
+                    ". Setting it to zero. This may alter the steady state.")
         }
     }
     # Don't allow negative encounter rates
@@ -56,8 +58,9 @@ makeInteracting <- function(params, interaction) {
         if (any(new_ext_mort[i, ] < 0) &&
             (min(params@w[new_ext_mort[i, ] < 0]) <=
              max(params@w[initialN(params)[i, ] > 0]))) {
-            warning("Negative external mortality rate required for ",
-                    params@species_params$species[i])
+            warning("Implied negative external mortality rate for ",
+                    params@species_params$species[i],
+                    ". Setting it to zero. This may alter the steady state.")
         }
     }
     # Don't allow negative mortality rates
