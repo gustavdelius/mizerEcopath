@@ -1,11 +1,13 @@
-#' Match the consumption of the model to the Ecopath consumption
+#' Match the model’s total consumption to observed estimates
 #'
-#' This function sets the metabolic respiration rate so that the consumption
-#' matches the species parameter `consumption_observed`, while keeping the same
-#' energy available for growth and reproduction. Thus the function also adjusts
-#' the external encounter rate to compensate for the changed respiration rate.
-#' To do this the function assumes that both the encounter rate and the
-#' metabolic respiration rate are given by power laws with the same exponent
+#' This function sets the metabolic respiration rate so that the total consumption
+#' matches the parameter `consumption_observed` for each species. The function preserves
+#' the energy available for growth and reproduction by increasing external encounter
+#' rates to compensate for changes in metabolic loss.
+#'
+#' Thus the function also adjusts the external encounter rate to compensate for the
+#' changed respiration rate. To do this the function assumes that both the encounter rate
+#' and the metabolic respiration rate are given by power laws with the same exponent
 #' `n`, so it sets the species parameter `p` to the same value as `n`. A warning
 #' is issued if the exponent `p` had to be changed for any species.
 #'
@@ -21,11 +23,9 @@
 #' state spectra are also unchanged.
 #'
 #' @param params A MizerParams object
-#' @param species A vector of species names or indices. If NULL, all species for
-#'   which the species parameter `consumption_observed` is provided are
-#'   affected.
-#'
-#' @return A MizerParams object with adjusted encounter and metabolic
+#' @param species A vector of species names or indices. If NULL,
+#'   applies to all species with a provided `consumption_observed`.
+#'#' @return A `MizerParams` object with adjusted encounter and metabolic
 #'   respiration rates.
 #' @family match functions
 #' @examples
