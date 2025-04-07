@@ -51,6 +51,9 @@ getGonadicProduction <- function(params) {
 #' and [getGonadicProduction()]. This differs from the Ecopath definition of
 #' production, see [getProduction()].
 #'
+#' Used by [matchConsumption()] to calculate how much assimilated energy is left
+#' over after production, in order to estimate the required metabolic loss.
+#'
 #' @param params A MizerParams object
 #' @return A named vector of gonadic production for each species
 #' @export
@@ -131,6 +134,8 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 #' where \eqn{k_i(w)} is the metabolic rate of an individual of species \eqn{i}
 #' and weight \eqn{w} (calculated with \code{\link{getMetabolicRate}}) and
 #' \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
+#'
+#' Used internally by [matchConsumption()] to help scale metabolic loss to match observed consumption.
 #'
 #' @param params A MizerParams object
 #' @return A named vector of respiration for each species
