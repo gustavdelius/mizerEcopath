@@ -1,4 +1,4 @@
-#' Make species interact with given interaction matrix
+#' Enable predator–prey interactions using an interaction matrix
 #'
 #' This function should be called with a non-interacting model (where there is
 #' only external mortality and external encounter) and an interaction matrix.
@@ -6,9 +6,14 @@
 #' amount of the predation encounter and mortality that is created by that
 #' interaction matrix.
 #'
+#' If predation would exceed total mortality or encounter for a species, a warning is issued
+#' and negative values are truncated to zero.
+#'
+#' Typically used internally by [matchDiet()]
+#'
 #' @param params A MizerParams object
-#' @param interaction An interaction matrix where the entry in row i and
-#'   column j determines how strongly species i predates on species j.
+#' @param interaction An interaction  matrix where entry *(i, j)* gives the strength
+#' with which species *i* preys on *j*.
 #' @return The modified MizerParams object
 #' @export
 makeInteracting <- function(params, interaction) {

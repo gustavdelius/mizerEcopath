@@ -1,15 +1,22 @@
-#' Match the diet matrix of the model to the Ecopath diet matrix
+#' Match the diet matrix of the model to an observed diet matrix
 #'
 #' This function adjusts the interaction matrix of the model so that its diet
-#' matrix matches the Ecopath diet matrix. It then adjusts the external
-#' encounter and mortality rates so that the steady state is not changed.
+#' matrix matches the given diet matrix (typically derived using`reduceEcopathDiet()`).
 #'
-#' If `min_w_pred` or `max_w_pred` are set, then the diet matrix is assumed to
-#' represent the flow of biomass into the part of the predator species
-#' population with sizes in the specified range.
+#' This function first converts the input diet matrix from proportions to
+#' absolute consumption using species-specific consumption rates. It then
+#' calculates the interaction strengths required to reproduce this diet and
+#' applies them using `makeInteracting()`. External mortality and encounter
+#' terms are adjusted to preserve the model’s steady state.
 #'
-#' The function will raise a warning for any species that requires a negative
-#' external mortality rate or negative external encounter rate.
+#' If `min_w_pred` or `max_w_pred` are provided, the diet matrix is assumed to
+#' represent consumption by individuals within that size range
+#'
+#' If matching the diet requires interaction strengths that would imply
+#' negative external mortality or encounter rates for any species, warnings
+#' will be issued by `makeInteracting()`. These indicate that the model
+#' assumptions may be biologically unrealistic or that the input diet matrix
+#' is incompatible with other model parameters.
 #'
 #' @param params A MizerParams object
 #' @param diet_matrix The Ecopath diet matrix as produced by
@@ -61,11 +68,13 @@ matchDiet <- function(params, diet_matrix,
 
 #' Check if a diet matrix is valid
 #'
-#' This function performs validation checks on a diet matrix to ensure it meets
-#' the requirements for use in mizer.
+#' Checks that a diet matrix is valid for use in mizer.
+#' Ensures there are no missing values (NA/NaN), and that each predator species
+#' has a non-zero total diet.
 #'
-#' @param diet_matrix The diet matrix to check
-#' @return NULL invisibly. Throws an error if any check fails.
+#' @param diet_matrix A numeric matrix, typically the output of
+#'   `reduceEcopathDiet()`, with predators as rows and prey as columns.
+#' @return Invisibly returns `NULL`. Throws an error if the matrix is invalid.
 #' @keywords internal
 checkDietMatrix <- function(diet_matrix) {
     if (!is(diet_matrix, "matrix")) {
@@ -86,13 +95,25 @@ checkDietMatrix <- function(diet_matrix) {
     invisible(NULL)
 }
 
-#' Convert diet matrix to absolute consumption
+#' Convert a proportional diet matrix to absolute consumption
 #'
-#' This function converts a diet matrix from proportions to absolute consumption
-#' and extracts the part corresponding to species.
+#' This internal helper function converts a diet matrix expressed in proportions
+#' (i.e. each row summing to 1) into a matrix of absolute consumption
+#' (i.e. biomass consumed per year), based on the species' total consumption
+#' rates. It also restricts the matrix to include only the modelled species
+#' (i.e. drops the "other" column and any unmatched rows). The conversion is done
+#' by multiplying each row of the input diet matrix by the total consumption of the
+#' corresponding predator species. This gives the absolute biomass consumed by each
+#' predator from each prey.
+#'
+#' This functions is intended for internal use and is called by `matchDiet()`.
 #'
 #' @inheritParams getDietMatrix
-#' @return The converted diet matrix
+#' @param diet_matrix A numeric matrix where rows correspond to predator species
+#'   and columns to prey species (plus an optional "other" column). Rows must sum
+#'   to 1. Should include all model species as both row and column names.
+#' @return A numeric matrix with dimensions [n_species x n_species], giving
+#'   absolute consumption rates (g/year) for each predator–prey pair.
 #' @keywords internal
 convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
     sp <- params@species_params
