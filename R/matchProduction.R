@@ -1,4 +1,4 @@
-#' Match the production of the model to the Ecopath production
+#' Match the model's production rate to empirical observations/estimates
 #'
 #' This function sets the respiration rate according to the first master
 #' equation of Ecopath, which is: \deqn{Q = P + R + U} where \eqn{Q} is the
@@ -26,10 +26,11 @@
 #' reached without converging.
 #'
 #' @param params A MizerParams object
-#' @param tol The relative tolerance for the match. Default is 0.1.
+#' @param tol The relative tolerance for matching observed production. Default is 0.1.
 #' @param max_iter The maximum number of iterations. Default is 10.
 #'
-#' @return A MizerParams object with the production matched
+#' @return A MizerParams object with the adjusted metabolic and reproductive parameters
+#' to match production.
 #' @family match functions
 #' @export
 matchProduction <- function(params, tol = 0.1, max_iter = 10) {
@@ -61,8 +62,10 @@ matchProduction <- function(params, tol = 0.1, max_iter = 10) {
 }
 
 #' @rdname matchProduction
-#' @param steady Whether to return the model to a steady state after adjusting
-#'   the production. Default is TRUE.
+#' @param steady Logical. If `TRUE` (default), returns the model to steady state
+#'   after parameter adjustment using [steadySingleSpecies()] and [matchBiomasses()].
+#' @return A MizerParams object with updated parameters and optionally a new steady state.
+
 #' @export
 matchProductionOnce <- function(params, steady = TRUE) {
     if (!is(params, "MizerParams")) {
