@@ -1,4 +1,4 @@
-#' Prepare a TMB Objective Function for Optimizing Model Parameters
+#' Prepare a TMB Objective Function for Optimising Model Parameters
 #'
 #' This function returns a list with the data to be passed to the TMB objective
 #' function. The data includes the observed catch data, the model parameters,
@@ -195,12 +195,16 @@ prepare_data <- function(params, species = 1, catch,
 #' segments. In this function we want to
 #' precompute the weights with which we need to add up the density values to
 #' approximate the integral over each bin.
+#'
+#' #' @return A list with vectors `bin_index`, `f_index`, `coeff_fj`, and `coeff_fj1`
+#'   used for efficient linear interpolation of density values over bins.
+
 precompute_weights <- function(w_bin_boundaries, w) {
     # Precompute overlaps and weights
     num_bins <- length(w_bin_boundaries) - 1
     num_w <- length(w)
 
-    # Initialize lists to store precomputed data
+    # Initialise lists to store precomputed data
     bin_index <- c()
     f_index <- c()
     coeff_fj <- c()
@@ -246,6 +250,12 @@ precompute_weights <- function(w_bin_boundaries, w) {
         coeff_fj1 = coeff_fj1
     ))
 }
+
+#' Validate and extract catch data for a single species
+#'
+#' This helper function ensures that the catch data frame contains the required columns,
+#' extracts only the rows for the specified species, and checks that a single gear is used
+#' (current assumption of the code which may subsequently be overhauled).
 
 #' @export
 valid_catch <- function(catch, species) {
