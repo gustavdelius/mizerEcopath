@@ -36,10 +36,10 @@ matchDiet <- function(params, diet_matrix,
     no_sp <- nrow(sp)
 
     # Convert the diet matrix to absolute consumption
-    D <- convertDietMatrix(diet_matrix,
+    D <- convertDietMatrix(diet_matrix = diet_matrix,
+                           params = params,
                            min_w_pred = min_w_pred,
-                           max_w_pred = max_w_pred,
-                           sp, no_sp)
+                           max_w_pred = max_w_pred)
 
     # Make the interaction matrix non-interacting
     params <- makeNoninteracting(params)
