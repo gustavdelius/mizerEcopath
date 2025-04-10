@@ -9,7 +9,7 @@ dietTab <- function(input, output, session, params, logs,
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
-            p <- matchDiet(p, diet)
+            p <- matchDiet(p, diet_matrix = diet)
         }
         plotDietX(p, input$sp, xtrans = input$xtrans)
     })
