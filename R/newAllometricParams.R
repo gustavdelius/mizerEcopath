@@ -74,7 +74,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
     factor <- age_mat(p) / sp$age_mat
     ext_encounter(p) <- sweep(ext_encounter(p), 1, factor, "*")
     # Determine power-law coefficient for encounter rate
-    e0 <- getEncounter(p)[, 1] / w(p)[1] ^ sp$n[1]
+    e0 <- getEGrowth(p)[, 1] / w(p)[1] ^ sp$n[1]
 
     # Set power-law mortality
     # Choose a positive coefficient so that the juvenile biomass density
