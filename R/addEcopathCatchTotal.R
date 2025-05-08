@@ -1,25 +1,47 @@
 #' Sets up gear parameters from Ecopath catch data
 #'
-#' Uses the Catch data frame exported by Ecopath to set up gear parameters.
-#' Currently this sets up only a single gear for the total catch. The
-#' `yield_observed` gear parameter is set to the total catch for each species.
-#' The `catchability` is set to the ratio of the observed yield to the observed
-#' biomass. The selectivity of the gear is set to be sigmoidal with 50% of
-#' fish selected at maturity size and 25% selected at 90% of maturity size
-#' (measured in weight). Fishing is turned on with an initial effort of 1. The
-#' result will therefore not be at steady state yet.
+#' Uses the Catch data frame exported by Ecopath to set up gear parameters for a
+#' simplified "total" gear across all fleets. The `yield_observed` gear parameter
+#' is set to the total catch for each species, and `catchability` is initially set
+#' to the ratio of yield to biomass. This provides a starting point for fishing
+#' pressure, but does not yet ensure steady-state or matched yield.
 #'
-#' The catchability set by this function for each gear will be an
-#' underestimation of the catchability needed to produce the observed yield
-#' because setting it to the ratio of the observed yield to the observed biomass
-#' neglects that some of the biomass will be at sizes that are not fully
-#' selected by the gear. You will need to call `matchCatch()` to adjust the
-#' catchability to match the observed yield.
+#' The selectivity function is specified via the `sel_func` argument:
 #'
-#' @param params A MizerParams object
+#' * If `sel_func = "sigmoid_length"` (default), gear selectivity is a classic
+#'   sigmoidal function based on body length. The 50% selection point is set at
+#'   maturity size (`w_mat`), and 25% selection occurs at 90% of maturity size
+#'   (measured in weight).
+#'
+#' * If `sel_func = "double_sigmoid_length"`, a dome-shaped selectivity curve is
+#'   used. This is the product of two sigmoidal functions: one rising (as above)
+#'   and one falling. The descending limb reaches 50% selectivity at the species'
+#'   maximum length (`Length`) and 25% selectivity at 110% of that length. This
+#'   pattern reflects fishing that avoids very large individuals (e.g. due to
+#'   gear selectivity or behaviour).
+#'
+#' In both cases, fishing is switched on with an initial effort of 1. However, the
+#' result is not guaranteed to be at steady state, and catchability will generally
+#' need further adjustment. You should call `matchCatch()` to refine catchability
+#' and match the observed Ecopath yields.
+#'
+#' @details
+#' The `sel_func` argument specifies the form of the length-based selectivity function:
+#'
+#' * `"sigmoid_length"` (default): Classic sigmoidal selectivity based on length, with 50% selectivity at maturity length (`w_mat`) and 25% at 90% of that length (measured in weight).
+#'
+#' * `"double_sigmoid_length"`: A bell-shaped (dome-shaped) selectivity curve constructed by multiplying two sigmoid functions. The first sigmoid rises to 50% selection at maturity length (`w_mat`) and reaches 25% selection at 90% of that length. The second sigmoid falls, reaching 50% selection at the maximum observed length (`Length`) and 25% at 110% of that length. This mimics fisheries that avoid very large individuals (e.g. due to escape or avoidance behaviour).
+#'
+#' When `sel_func = "double_sigmoid_length"`, the additional columns `l50_right` and `l25_right` are automatically added to the gear parameters, and are calculated from `species_params$Length`.
+
+#'
+#' @param params A [`MizerParams`] object created with species parameters, typically including output from `addEcopathParams()`.
 #' @param ecopath_catch The Ecopath Catch data frame
+#' @param sel_func A string indicating the selectivity function to use. Either `"sigmoid_length"` (default) or `"double_sigmoid_length"`.
+
 #' @return A MizerParams object with gear parameters set up and fishing effort
 #'   switched on.
+#' @seealso [matchCatch()], [gear_params()]
 #' @export
 addEcopathCatchTotal <- function(params, ecopath_catch, sel_func = "sigmoid_length") {
     sp <- params@species_params
