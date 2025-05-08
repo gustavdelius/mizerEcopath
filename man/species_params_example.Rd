@@ -3,7 +3,7 @@
 \docType{data}
 \name{species_params_example}
 \alias{species_params_example}
-\title{Example species parameters for use with mizerEcopath}
+\title{Example species parameters from a few Celtic Sea species.}
 \format{
 A data frame with 12 rows and 18 columns. Key columns include:
 \describe{
@@ -21,7 +21,6 @@ species_params_example
 }
 \description{
 A curated subset of species parameters derived from the Celtic Sea model of Lauria et al. (2016),
-formatted for compatibility with mizer and mizerEcopath. Includes mapped Ecopath groups, life history
-traits, and allometric scaling parameters.
+as well as arbitrary power-law exponents and stanza mapping dictionary.
 }
 \keyword{datasets}
