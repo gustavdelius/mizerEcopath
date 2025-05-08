@@ -2,11 +2,15 @@
 % Please edit documentation in R/matchDiet.R
 \name{convertDietMatrix}
 \alias{convertDietMatrix}
-\title{Convert diet matrix to absolute consumption}
+\title{Convert a proportional diet matrix to absolute consumption}
 \usage{
 convertDietMatrix(diet_matrix, params, min_w_pred, max_w_pred)
 }
 \arguments{
+\item{diet_matrix}{A numeric matrix where rows correspond to predator species
+and columns to prey species (plus an optional "other" column). Rows must sum
+to 1. Should include all model species as both row and column names.}
+
 \item{params}{A MizerParams object}
 
 \item{min_w_pred}{The minimum weight of predators to include in the diet
@@ -16,10 +20,20 @@ matrix. Default is 0.}
 matrix. Default is \code{Inf}.}
 }
 \value{
-The converted diet matrix
+A numeric matrix with dimensions \link{n_species x n_species}, giving
+absolute consumption rates (g/year) for each predator–prey pair.
 }
 \description{
-This function converts a diet matrix from proportions to absolute consumption
-and extracts the part corresponding to species.
+This internal helper function converts a diet matrix expressed in proportions
+(i.e. each row summing to 1) into a matrix of absolute consumption
+(i.e. biomass consumed per year), based on the species' total consumption
+rates. It also restricts the matrix to include only the modelled species
+(i.e. drops the "other" column and any unmatched rows). The conversion is done
+by multiplying each row of the input diet matrix by the total consumption of the
+corresponding predator species. This gives the absolute biomass consumed by each
+predator from each prey.
+}
+\details{
+This functions is intended for internal use and is called by \code{matchDiet()}.
 }
 \keyword{internal}

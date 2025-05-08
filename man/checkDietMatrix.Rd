@@ -7,13 +7,15 @@
 checkDietMatrix(diet_matrix)
 }
 \arguments{
-\item{diet_matrix}{The diet matrix to check}
+\item{diet_matrix}{A numeric matrix, typically the output of
+\code{reduceEcopathDiet()}, with predators as rows and prey as columns.}
 }
 \value{
-NULL invisibly. Throws an error if any check fails.
+Invisibly returns \code{NULL}. Throws an error if the matrix is invalid.
 }
 \description{
-This function performs validation checks on a diet matrix to ensure it meets
-the requirements for use in mizer.
+Checks that a diet matrix is valid for use in mizer.
+Ensures there are no missing values (NA/NaN), and that each predator species
+has a non-zero total diet.
 }
 \keyword{internal}

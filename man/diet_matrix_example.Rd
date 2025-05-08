@@ -12,7 +12,7 @@ in each predator’s diet.
 diet_matrix_example
 }
 \description{
-The output of applying \code{reduceEcopathDiet()} to the Celtic Sea Ecopath diet matrix.
+The output of applying \code{reduceEcopathDiet()} to the example diet matrix.
 Rows and columns are matched to \code{species_params_example$species}.
 }
 \keyword{datasets}
