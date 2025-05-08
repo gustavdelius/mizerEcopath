@@ -1,20 +1,31 @@
 #include <TMB.hpp>
 
-// Helper function: Fishing mortality
+// Helper: double‑sigmoid fishing mortality
 template<class Type>
-vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
-                              vector<Type> l)
+vector<Type> calculate_F_mort(Type  l50_left,   Type ratio_left,
+                              Type  l50_right,  Type ratio_right,
+                              Type  catchability,
+                              const vector<Type> &l)
 {
-    Type c1 = Type(1.0);
-    Type sr = l50 * (c1 - ratio);
-    Type s1 = l50 * log(Type(3.0)) / sr;
-    Type s2 = s1 / l50;
+    const Type one  = Type(1.0);
+    const Type LOG3 = log(Type(3.0));
 
-    vector<Type> F_mort = catchability / (c1 + exp(s1 - s2 * l));
+    /* ---- Rising limb  ---- */
+    Type sr_left = l50_left * (one - ratio_left);        // l50 - l25
+    Type s1_left = l50_left * LOG3 / sr_left;
+    Type s2_left = s1_left / l50_left;
+    vector<Type> sel_left = one / (one + exp(s1_left - s2_left * l));
 
-    // Ensure all elements are finite and >= 0
+    /* ---- Falling limb ----
+    ratio_right  > 1   →  sr_right < 0   →  negative slope */
+    Type sr_right = l50_right * (one - ratio_right);
+    Type s1_right = l50_right * LOG3 / sr_right;
+    Type s2_right = s1_right / l50_right;
+    vector<Type> sel_right = one / (one + exp(s1_right - s2_right * l));
+
+    vector<Type> F_mort = catchability * sel_left.cwiseProduct(sel_right);
+
     TMBAD_ASSERT((F_mort.array().isFinite() && (F_mort.array() >= 0)).all());
-
     return F_mort;
 }
 
@@ -68,10 +79,13 @@ Type objective_function<Type>::operator() ()
     PARAMETER(ratio);        // Ratio between l25 and l50
     PARAMETER(mu_mat);       // Mortality at maturity size
     PARAMETER(catchability); // Catchability
+    PARAMETER(l50_right);     // 50% drop‑off length
+    PARAMETER(ratio_right);   // l25_right / l50_right  ( > 1 )
 
     // **Calculate fishing mortality rate**
-    vector<Type> F_mort = calculate_F_mort(l50, ratio, catchability, l);
-
+    vector<Type> F_mort = calculate_F_mort(l50,       ratio,
+                                           l50_right, ratio_right,
+                                           catchability, l);
     // **Calculate total mortality rate**
     vector<Type> mort = mu_mat * pow(w / w_mat, d) + F_mort;
 
