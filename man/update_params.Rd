@@ -7,23 +7,23 @@
 update_params(params, species = 1, pars, data, w_select)
 }
 \arguments{
-\item{params}{The MizerParams object to update}
+\item{params}{A MizerParams object to update.}
 
-\item{species}{The species to update. By default the first species in the
-model.}
+\item{species}{The species to update (index, name, or logical).}
 
-\item{pars}{A named numeric vector of parameter values}
+\item{pars}{A named numeric vector of parameter values.}
 
-\item{data}{The list with data as passed to the objective function}
+\item{data}{The list of data passed to the objective function.}
 
-\item{w_select}{A logical vector indicating which weight bins were used in
-the likelihood calculation}
+\item{w_select}{A logical vector of weight bins used in the likelihood.}
 }
 \value{
-The updated MizerParams object
+The updated MizerParams object.
 }
 \description{
-This function currently updates the gear selectivity parameters \code{l50} and
-\verb{l25, the catchability, the steepness }U\verb{of the maturity ogive and the coefficient}M` of the power-law mortality rate. It then recalculates the
-steady state of the model and rescales it to match the observed biomass.
+This function currently updates the gear selectivity parameters \code{l50},
+\code{l25}, \code{l50_right}, \code{l25_right}, the catchability, the steepness \code{U} of the
+maturity ogive and the coefficient \code{M} of the power-law mortality rate.
+It then recalculates the steady state of the model and rescales it to match
+the observed biomass.
 }

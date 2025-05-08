@@ -2,7 +2,7 @@
 % Please edit documentation in R/matchCatch.R
 \name{matchCatch}
 \alias{matchCatch}
-\title{Match the observed catch and yield}
+\title{Match observed catch, yield and production with a double‑sigmoid selectivity}
 \usage{
 matchCatch(
   params,
@@ -14,7 +14,7 @@ matchCatch(
 )
 }
 \arguments{
-\item{params}{A MizerParams object}
+\item{params}{A \code{MizerParams} object}
 
 \item{species}{The species for which to match the catch. Optional. By default
 all target species are selected. A vector of species names, or a numeric
@@ -43,21 +43,25 @@ selectivity, catchability and steady-state spectrum for the selected
 species.
 }
 \description{
-This function adjusts various model parameters for the selected species so
-that the model in steady state reproduces the observed catch size
+This function adjusts the gear‐selectivity and mortality parameters for one
+species so that a steady‑state model reproduces the observed catch size
 distribution, the observed yield and the observed production, if available.
 }
 \details{
 Currently this function is implemented only for the case where there is a
 single gear catching each species.
 
-The function sets new values for the following parameters:
-\itemize{
-\item \code{l50}: The size at which the gear selectivity is 50\%.
-\item \code{l25}: The size at which the gear selectivity is 25\%.
-\item \code{catchability}: The catchability of the gear.
-\item \code{mu_mat}: The external mortality at maturity.
-}
+A \emph{double‑sigmoid} (dome‑shaped) selectivity function is used, as in
+\code{mizer::double_sigmoid_length()}.  Four key points define the curve:
+
+\code{l50} – length at 50 \% \emph{ascending} selectivity
+\code{l25} – length at 25 \% \emph{ascending} selectivity (\code{ratio = l25 / l50}, < 1)
+\code{l50_right} – length at 50 \% \emph{descending} selectivity
+\code{l25_right} – length at 25 \% \emph{descending} selectivity
+(\code{ratio_right = l25_right / l50_right}, > 1)
+
+When \code{l50_right == l50} \emph{and} \code{ratio_right == 1}, the curve collapses to the
+ordinary single‑sigmoid.
 
 Only the parameters of the selected species are adjusted. The function then
 recalculates the corresponding rate arrays in the params object. It sets the

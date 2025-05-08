@@ -4,7 +4,7 @@
 \alias{addEcopathCatchTotal}
 \title{Sets up gear parameters from Ecopath catch data}
 \usage{
-addEcopathCatchTotal(params, ecopath_catch)
+addEcopathCatchTotal(params, ecopath_catch, sel_func = "sigmoid_length")
 }
 \arguments{
 \item{params}{A MizerParams object}

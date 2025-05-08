@@ -1,17 +1,23 @@
-#' Match the observed catch and yield
+#' Match observed catch, yield and production with a double‑sigmoid selectivity
 #'
-#' This function adjusts various model parameters for the selected species so
-#' that the model in steady state reproduces the observed catch size
+#' This function adjusts the gear‐selectivity and mortality parameters for one
+#' species so that a steady‑state model reproduces the observed catch size
 #' distribution, the observed yield and the observed production, if available.
 #'
 #' Currently this function is implemented only for the case where there is a
 #' single gear catching each species.
 #'
-#' The function sets new values for the following parameters:
-#' * `l50`: The size at which the gear selectivity is 50%.
-#' * `l25`: The size at which the gear selectivity is 25%.
-#' * `catchability`: The catchability of the gear.
-#' * `mu_mat`: The external mortality at maturity.
+#' A *double‑sigmoid* (dome‑shaped) selectivity function is used, as in
+#' `mizer::double_sigmoid_length()`.  Four key points define the curve:
+#'
+#' `l50` – length at 50 % *ascending* selectivity
+#' `l25` – length at 25 % *ascending* selectivity (`ratio = l25 / l50`, < 1)
+#' `l50_right` – length at 50 % *descending* selectivity
+#' `l25_right` – length at 25 % *descending* selectivity
+#' (`ratio_right = l25_right / l50_right`, > 1)
+#'
+#' When `l50_right == l50` *and* `ratio_right == 1`, the curve collapses to the
+#' ordinary single‑sigmoid.
 #'
 #' Only the parameters of the selected species are adjusted. The function then
 #' recalculates the corresponding rate arrays in the params object. It sets the
@@ -53,7 +59,7 @@
 #' the gradients. These are then passed to the `nlminb` function to minimize the
 #' objective function.
 #'
-#' @param params A MizerParams object
+#' @param params A `MizerParams` object
 #' @param species The species for which to match the catch. Optional. By default
 #'   all target species are selected. A vector of species names, or a numeric
 #'   vector with the species indices, or a logical vector indicating for each
@@ -122,11 +128,22 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         mu_mat <- sps$mu_mat
     }
 
-    # Initial parameter estimates
-    initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                        mu_mat = mu_mat,
-                        # we need non-zero catchability to match catch
-                        catchability = max(gps$catchability, 1e-8))
+    ## ---- Initial parameter estimates ---------------------------------
+    ## These MUST exist in gear_params; if any are NA we stop and tell the user
+    req_cols <- c("l50", "l25", "l50_right", "l25_right")
+    missing  <- req_cols[!req_cols %in% names(gps) | is.na(gps[ , req_cols])]
+        if (length(missing))
+                stop("gear_params is missing required values for: ",
+                                   paste(missing, collapse = ", "))
+
+        initial_params <- c(
+                l50         = gps$l50,
+                ratio       = gps$l25 / gps$l50,                 # < 1
+                l50_right   = gps$l50_right,
+                ratio_right = gps$l25_right / gps$l50_right,     # > 1
+                mu_mat      = mu_mat,
+                catchability = max(gps$catchability, 1e-8)       # tiny floor avoids 0
+            )
 
     # Set parameter bounds
     # Mortality is bounded by the requirement that the juvenile spectrum of
@@ -135,17 +152,33 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
     g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
     mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2,
-                      catchability = 1e-8)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
-                      catchability = Inf)
+    lower_bounds <- c(
+                l50   = 5,
+                ratio = 0.10,
+                l50_right   = 5,
+                ratio_right = 1.01,          # >1 for dome; 1.01 avoids div/0 in C++
+                mu_mat      = 0.2,
+                catchability = 1e-8
+            )
+    upper_bounds <- c(
+                l50   = Inf,
+                ratio = 0.99,
+                l50_right   = Inf,
+                ratio_right = 10,            # generous upper bound
+                mu_mat      = mu_mat_max,
+                catchability = Inf
+            )
 
     map <- list()
     if (!data$use_counts) {
-        map$l50 <- factor(NA)
-        map$ratio <- factor(NA)
-        lower_bounds <- lower_bounds[-(1:2)]
-        upper_bounds <- upper_bounds[-(1:2)]
+                map$l50          <- factor(NA)
+                map$ratio        <- factor(NA)
+                map$l50_right    <- factor(NA)
+                map$ratio_right  <- factor(NA)
+                keep <- !names(lower_bounds) %in%
+                                c("l50", "ratio", "l50_right", "ratio_right")
+                lower_bounds <- lower_bounds[keep]
+                upper_bounds <- upper_bounds[keep]
     }
     if (data$yield_lambda == 0) {
         map$catchability <- factor(NA)

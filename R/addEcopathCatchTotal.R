@@ -21,7 +21,7 @@
 #' @return A MizerParams object with gear parameters set up and fishing effort
 #'   switched on.
 #' @export
-addEcopathCatchTotal <- function(params, ecopath_catch) {
+addEcopathCatchTotal <- function(params, ecopath_catch, sel_func = "sigmoid_length") {
     sp <- params@species_params
     if (!hasName(sp, "ecopath_groups") ||
         !hasName(sp, "biomass_observed")) {
@@ -31,13 +31,20 @@ addEcopathCatchTotal <- function(params, ecopath_catch) {
     gp <- data.frame(
         species = sp$species,
         gear = "total",
-        sel_func = "sigmoid_length",
+        sel_func = sel_func,
         l50 = w2l(sp$w_mat, params),
         l25 = w2l(sp$w_mat, params) * 0.9,
         # catchability and yield_observed will be extracted from Ecopath later
         catchability = 0,
         yield_observed = 0
     )
+
+    # If double sigmoid is requested, add right-hand selectivity
+    if (sel_func == "double_sigmoid_length") {
+        gp$l50_right <- sp$Length
+        gp$l25_right <- sp$Length * 1.1
+    }
+
     # Extract total yield for each species from Ecopath
     for (i in seq_len(nrow(sp))) {
         for (group in sp$ecopath_groups[[i]]) {
