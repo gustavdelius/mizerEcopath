@@ -7,29 +7,51 @@
 addEcopathCatchTotal(params, ecopath_catch, sel_func = "sigmoid_length")
 }
 \arguments{
-\item{params}{A MizerParams object}
+\item{params}{A \code{\link{MizerParams}} object created with species parameters, typically including output from \code{addEcopathParams()}.}
 
 \item{ecopath_catch}{The Ecopath Catch data frame}
+
+\item{sel_func}{A string indicating the selectivity function to use. Either \code{"sigmoid_length"} (default) or \code{"double_sigmoid_length"}.}
 }
 \value{
 A MizerParams object with gear parameters set up and fishing effort
 switched on.
 }
 \description{
-Uses the Catch data frame exported by Ecopath to set up gear parameters.
-Currently this sets up only a single gear for the total catch. The
-\code{yield_observed} gear parameter is set to the total catch for each species.
-The \code{catchability} is set to the ratio of the observed yield to the observed
-biomass. The selectivity of the gear is set to be sigmoidal with 50\% of
-fish selected at maturity size and 25\% selected at 90\% of maturity size
-(measured in weight). Fishing is turned on with an initial effort of 1. The
-result will therefore not be at steady state yet.
+Uses the Catch data frame exported by Ecopath to set up gear parameters for a
+simplified "total" gear across all fleets. The \code{yield_observed} gear parameter
+is set to the total catch for each species, and \code{catchability} is initially set
+to the ratio of yield to biomass. This provides a starting point for fishing
+pressure, but does not yet ensure steady-state or matched yield.
 }
 \details{
-The catchability set by this function for each gear will be an
-underestimation of the catchability needed to produce the observed yield
-because setting it to the ratio of the observed yield to the observed biomass
-neglects that some of the biomass will be at sizes that are not fully
-selected by the gear. You will need to call \code{matchCatch()} to adjust the
-catchability to match the observed yield.
+The selectivity function is specified via the \code{sel_func} argument:
+\itemize{
+\item If \code{sel_func = "sigmoid_length"} (default), gear selectivity is a classic
+sigmoidal function based on body length. The 50\% selection point is set at
+maturity size (\code{w_mat}), and 25\% selection occurs at 90\% of maturity size
+(measured in weight).
+\item If \code{sel_func = "double_sigmoid_length"}, a dome-shaped selectivity curve is
+used. This is the product of two sigmoidal functions: one rising (as above)
+and one falling. The descending limb reaches 50\% selectivity at the species'
+maximum length (\code{Length}) and 25\% selectivity at 110\% of that length. This
+pattern reflects fishing that avoids very large individuals (e.g. due to
+gear selectivity or behaviour).
+}
+
+In both cases, fishing is switched on with an initial effort of 1. However, the
+result is not guaranteed to be at steady state, and catchability will generally
+need further adjustment. You should call \code{matchCatch()} to refine catchability
+and match the observed Ecopath yields.
+
+The \code{sel_func} argument specifies the form of the length-based selectivity function:
+\itemize{
+\item \code{"sigmoid_length"} (default): Classic sigmoidal selectivity based on length, with 50\% selectivity at maturity length (\code{w_mat}) and 25\% at 90\% of that length (measured in weight).
+\item \code{"double_sigmoid_length"}: A bell-shaped (dome-shaped) selectivity curve constructed by multiplying two sigmoid functions. The first sigmoid rises to 50\% selection at maturity length (\code{w_mat}) and reaches 25\% selection at 90\% of that length. The second sigmoid falls, reaching 50\% selection at the maximum observed length (\code{Length}) and 25\% at 110\% of that length. This mimics fisheries that avoid very large individuals (e.g. due to escape or avoidance behaviour).
+}
+
+When \code{sel_func = "double_sigmoid_length"}, the additional columns \code{l50_right} and \code{l25_right} are automatically added to the gear parameters, and are calculated from \code{species_params$Length}.
+}
+\seealso{
+\code{\link[=matchCatch]{matchCatch()}}, \code{\link[=gear_params]{gear_params()}}
 }
