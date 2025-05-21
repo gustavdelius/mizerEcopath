@@ -1,13 +1,59 @@
-#' Fill species parameters from FishBase
+#' Fill Species Traits Using FishBase
 #'
-#' Uses FishBase data to populate traits (a, b, Lmax, w_max, w_mat, age_mat, l_mat).
+#' Populates key life-history traits in a data frame of species using FishBase, via the `rfishbase` package.
 #'
-#' @param species_params A data frame with at least a column for species name and scientific name.
-#' @param scientific_name_col The column name in `species_params` that holds the scientific names.
-#' @param overwrite Logical. If TRUE, replaces existing values. Default is FALSE.
-#' @param verbose Logical. If TRUE, prints messages. Default is TRUE.
-#' @return A `species_params` data frame with missing parameters filled in where possible.
+#' This function is typically used early in model setup, to populate a table of species names with biological parameters needed for Mizer models. It supports cases where only species names and scientific names are initially known.
+#'
+#' @param species_params A data frame containing at least a column with scientific names for each species. Other
+#' columns (e.g. common names or user-defined identifiers) may be included and will be preserved. This is
+#' typically a minimal table created at the start of model construction (e.g., from a species list), not yet a
+#' full `species_params` object.
+#' @param scientific_name_col A string giving the column name in `species_params` that holds the scientific names.
+#'   Defaults to `"Scientific_name"`.
+#' @param overwrite Logical (default = `FALSE`). If `TRUE`, existing values in the data frame are replaced by FishBase values.
+#'   If `FALSE`, only missing values are filled.
+#' @param verbose Logical (default = `TRUE`). If `TRUE`, prints a summary of filled species.
+#'
+#' @return The same data frame, augmented with the following columns where data are available:
+#' \itemize{
+#'   \item \code{a}, \code{b}: Length–weight allometric coefficients
+#'   \item \code{Length}: Maximum length (cm)
+#'   \item \code{w_max}: Maximum weight (calculated from Length, a, and b)
+#'   \item \code{l_mat}: Length at maturity (median)
+#'   \item \code{age_mat}: Age at maturity (median)
+#'   \item \code{w_mat}: Weight at maturity (from l_mat, a, and b)
+#' }
+#'
+#' @details
+#' This is a convenience function that queries FishBase through the `rfishbase` package.
+#' Traits are pulled from the `estimate()`, `maturity()`, and `species()` tables. Maturity traits
+#' are summarised by median within FishBase `SpecCode` groups. Derived weights are calculated from
+#' length–weight relationships.
+#'
+#' Existing columns in the input will only be overwritten if `overwrite = TRUE`.
+#'
+#' @note Requires the `rfishbase` package. Install it with `install.packages("rfishbase")`.
+#'
+#' @seealso [rfishbase::estimate()], [rfishbase::maturity()], [rfishbase::species()]
+#'
+#' @examples
+#' \dontrun{
+#' # Minimal example with only scientific names
+#' species_df <- data.frame(
+#'   Scientific_name = c("Merluccius merluccius", "Scomber scombrus")
+#' )
+#' enriched <- fillDefaultsFromFishBase(species_df)
+#'
+#' # Optional: include user-defined species labels
+#' species_df <- data.frame(
+#'   species = c("Hake", "Mackerel"),
+#'   Scientific_name = c("Merluccius merluccius", "Scomber scombrus")
+#' )
+#' enriched <- fillDefaultsFromFishBase(species_df)
+#' }
+#'
 #' @export
+
 fillDefaultsFromFishBase <- function(species_params,
                                      scientific_name_col = "Scientific_name",
                                      overwrite = FALSE,
