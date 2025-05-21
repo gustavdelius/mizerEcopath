@@ -129,21 +129,36 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     }
 
     ## ---- Initial parameter estimates ---------------------------------
-    ## These MUST exist in gear_params; if any are NA we stop and tell the user
-    req_cols <- c("l50", "l25", "l50_right", "l25_right")
-    missing  <- req_cols[!req_cols %in% names(gps) | is.na(gps[ , req_cols])]
-        if (length(missing))
-                stop("gear_params is missing required values for: ",
-                                   paste(missing, collapse = ", "))
 
-        initial_params <- c(
-                l50         = gps$l50,
-                ratio       = gps$l25 / gps$l50,                 # < 1
-                l50_right   = gps$l50_right,
-                ratio_right = gps$l25_right / gps$l50_right,     # > 1
-                mu_mat      = mu_mat,
-                catchability = max(gps$catchability, 1e-8)       # tiny floor avoids 0
-            )
+    # Determine which columns are required based on selectivity function
+    req_cols <- c("l50", "l25")
+    use_double_sigmoid <- gps$sel_func == "double_sigmoid_length"
+    if (use_double_sigmoid) {
+        req_cols <- c(req_cols, "l50_right", "l25_right")
+    }
+
+    # If using single-sigmoid, manufacture neutral *but valid* values
+    if (!use_double_sigmoid) {
+        gps$l50_right <- gps$l50
+        gps$l25_right <- gps$l50 * 1.10  # Ensure ratio_right > 1
+    }
+
+    # Stop if required values are missing or NA
+    missing <- req_cols[!req_cols %in% names(gps) | is.na(gps[, req_cols])]
+    if (length(missing)) {
+        stop("gear_params is missing required values for: ",
+             paste(missing, collapse = ", "))
+    }
+
+    # Initial parameter vector for the optimiser
+    initial_params <- c(
+        l50          = gps$l50,
+        ratio        = gps$l25 / gps$l50,                 # < 1
+        l50_right    = gps$l50_right,
+        ratio_right  = gps$l25_right / gps$l50_right,     # = 1 if sigmoid_length
+        mu_mat       = mu_mat,
+        catchability = max(gps$catchability, 1e-8)        # avoid zero
+    )
 
     # Set parameter bounds
     # Mortality is bounded by the requirement that the juvenile spectrum of
@@ -169,22 +184,37 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                 catchability = Inf
             )
 
+    # Lock parameters where necessary
     map <- list()
-    if (!data$use_counts) {
-                map$l50          <- factor(NA)
-                map$ratio        <- factor(NA)
-                map$l50_right    <- factor(NA)
-                map$ratio_right  <- factor(NA)
-                keep <- !names(lower_bounds) %in%
-                                c("l50", "ratio", "l50_right", "ratio_right")
-                lower_bounds <- lower_bounds[keep]
-                upper_bounds <- upper_bounds[keep]
+
+    # Lock right-hand sigmoid parameters if using single sigmoid
+    if (!use_double_sigmoid) {
+        map$l50_right   <- factor(NA)
+        map$ratio_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("l50_right", "ratio_right")
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
     }
+
+    # Lock all selectivity parameters if no catch size data
+    if (!data$use_counts) {
+        map$l50         <- factor(NA)
+        map$ratio       <- factor(NA)
+        map$l50_right   <- factor(NA)
+        map$ratio_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("l50", "ratio", "l50_right", "ratio_right")
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
+    }
+
+    # Lock catchability if yield not to be matched
     if (data$yield_lambda == 0) {
         map$catchability <- factor(NA)
-        lower_bounds <- lower_bounds[-4]
-        upper_bounds <- upper_bounds[-4]
+        keep <- names(lower_bounds) != "catchability"
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
     }
+
     # Prepare the objective function.
     obj <- MakeADFun(data = data,
                      parameters = initial_params,
