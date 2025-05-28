@@ -46,11 +46,18 @@ update_params <- function(params, species = 1, pars, data, w_select) {
 
     # Update the gear parameters
     if (data$use_counts) {
-        gps$l50         <- pars["l50"]
-        gps$l25         <- pars["ratio"] * pars["l50"]
-        gps$l50_right   <- pars["l50_right"]
-        gps$l25_right   <- pars["ratio_right"] * pars["l50_right"]
+        gps$l50       <- pars["l50"]
+        gps$l25       <- pars["ratio"] * pars["l50"]
+        gps$l50_right <- pars["l50_right"]
+        gps$l25_right <- pars["ratio_right"] * pars["l50_right"]
+
+        # --- Enforce strict dome shape ---
+        if (gps$sel_func == "double_sigmoid_length") {
+            gps$l50_right <- max(gps$l50_right, gps$l50 + 5)
+            gps$l25_right <- max(gps$l25_right, 1.1 * gps$l50_right)
+        }
     }
+
     if (data$yield_lambda > 0) {
         gps$catchability <- pars["catchability"]
     }

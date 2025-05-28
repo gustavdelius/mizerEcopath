@@ -184,6 +184,14 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         catchability = Inf
     )
 
+    # Enforce a strict dome: prevent collapse to zero
+    # Only applies if using double-sigmoid
+    if (use_double_sigmoid) {
+        # Add small offset to ensure dome shape is preserved
+        lower_bounds["l50_right"] <- gps$l50 + 5
+        lower_bounds["ratio_right"] <- max(lower_bounds["ratio_right"], 1.1)
+    }
+
     if (getOption("mizerEcopath.debug.matchCatch", FALSE)) {
         message("\nDEBUG: Optim bounds for ", species, ":\n")
         print(data.frame(lower = lower_bounds, upper = upper_bounds))
