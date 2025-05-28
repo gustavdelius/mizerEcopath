@@ -61,10 +61,31 @@ addEcopathCatchTotal <- function(params, ecopath_catch, sel_func = "sigmoid_leng
         yield_observed = 0
     )
 
-    # If double sigmoid is requested, add right-hand selectivity
+    # Only add dome-shaped columns if requested
     if (sel_func == "double_sigmoid_length") {
-        gp$l50_right <- sp$Length
-        gp$l25_right <- sp$Length * 1.1
+        # Prefer observed max length if available, otherwise fall back to Lmax
+        ref_len <- if ("max_observed_length" %in% names(sp)) {
+            sp$max_observed_length
+        } else {
+            sp$Length
+        }
+        # 50% drop-off at ref_len; 25% at 110% of it
+        gp$l50_right <- ref_len
+        gp$l25_right <- ref_len * 1.1
+
+        # Catch edge case where dome would flatten (right limb slope ≤ 0)
+        bad <- gp$l25_right <= gp$l50_right
+        if (any(bad)) {
+            warning("addEcopathCatchTotal(): Flattened dome for: ",
+                    paste(gp$species[bad], collapse = ", "),
+                    "; nudging l25_right to avoid zero slope.")
+            gp$l25_right[bad] <- gp$l50_right[bad] * 1.001
+        }
+
+    } else {
+        # For single sigmoid: explicitly omit the dome columns
+        gp$l50_right <- NA
+        gp$l25_right <- NA
     }
 
     # Extract total yield for each species from Ecopath
