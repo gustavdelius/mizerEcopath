@@ -162,15 +162,18 @@ params_ss_mc <- params_ss |>
     matchBiomasses() |>
     matchCatch(catch = landings_total)
 
-# --- Double-sigmoid: prep before matching catch ---
+# --- Double-sigmoid: prep before matching catch and change penalties ---
 params_ds_mc <- params_dome |>
     matchGrowth() |>
     steadySingleSpecies() |>
     matchBiomasses() |>
-    matchCatch(catch = landings_total)
+    matchCatch(
+        catch = landings_total,
+        yield_lambda      = 0.25,   # was 1
+        production_lambda = 0.25    # was 1
+    )
 
 # ------------------- 14. Compare before and after params ---------------
-
 # Single-sigmoid
 gp_ss_before <- gear_params(params_ss)[, c("l25", "l50")]
 gp_ss_after  <- gear_params(params_ss_mc)[, c("l25", "l50")]
