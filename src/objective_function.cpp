@@ -3,7 +3,7 @@
 // Helper: double‑sigmoid fishing mortality
 template<class Type>
 vector<Type> calculate_F_mort(Type  l50_left,   Type ratio_left,
-                              Type  l50_right,  Type ratio_right,
+                              Type  l50_right,  Type r_right,
                               Type  catchability,
                               const vector<Type> &l)
 {
@@ -17,8 +17,8 @@ vector<Type> calculate_F_mort(Type  l50_left,   Type ratio_left,
     vector<Type> sel_left = one / (one + exp(s1_left - s2_left * l));
 
     /* ---- Falling limb ----
-    ratio_right  > 1   →  sr_right < 0   →  negative slope */
-    Type sr_right = l50_right * (one - ratio_right);
+    r_right  > 1   →  sr_right < 0   →  negative slope */
+    Type sr_right = l50_right * (one - r_right);
     Type s1_right = l50_right * LOG3 / sr_right;
     Type s2_right = s1_right / l50_right;
     vector<Type> sel_right = one / (one + exp(s1_right - s2_right * l));
@@ -75,16 +75,20 @@ Type objective_function<Type>::operator() ()
     DATA_SCALAR(production_lambda); // Penalty strength for production deviation
 
     // **Parameter Section**
-    PARAMETER(l50);          // Length at 50% gear selectivity
-    PARAMETER(ratio);        // Ratio between l25 and l50
+    PARAMETER(l50);          // Length at 50% gear selectivity (ascending limb)
+    PARAMETER(ratio);        // Ascending steepness: l25 / l50  (<1)
+    PARAMETER(d50);          // New: distance from l50 up to descending 50% point
     PARAMETER(mu_mat);       // Mortality at maturity size
     PARAMETER(catchability); // Catchability
-    PARAMETER(l50_right);     // 50% drop‑off length
-    PARAMETER(ratio_right);   // l25_right / l50_right  ( > 1 )
+    PARAMETER(r_right);  // Descending steepness: l25_right / l50_right (>1)
+
+    // Reconstruct the actual right‐hand 50% point to guarantee that l50_right > l50 even if the optimiser tries a     negative d50
+    Type l50_right = l50 + CppAD::abs(d50);
+
 
     // **Calculate fishing mortality rate**
     vector<Type> F_mort = calculate_F_mort(l50,       ratio,
-                                           l50_right, ratio_right,
+                                           l50_right, r_right,
                                            catchability, l);
     // **Calculate total mortality rate**
     vector<Type> mort = mu_mat * pow(w / w_mat, d) + F_mort;
@@ -123,7 +127,8 @@ Type objective_function<Type>::operator() ()
 
         // Multinomial negative log-likelihood
         // You might or might not want to divide by counts.sum()—that’s up to you.
-        nll -= dmultinom(counts, probs, true) / counts.sum();
+        // nll -= dmultinom(counts, probs, true) / counts.sum() original version for reference
+        nll -= dmultinom(counts, probs, true);
     }
     // else: skip all calculations involving 'counts'
 

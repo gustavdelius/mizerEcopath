@@ -14,9 +14,9 @@
 #' `l25` – length at 25 % *ascending* selectivity (`ratio = l25 / l50`, < 1)
 #' `l50_right` – length at 50 % *descending* selectivity
 #' `l25_right` – length at 25 % *descending* selectivity
-#' (`ratio_right = l25_right / l50_right`, > 1)
+#' (`r_right = l25_right / l50_right`, > 1)
 #'
-#' When `l50_right == l50` *and* `ratio_right == 1`, the curve collapses to the
+#' When `l50_right == l50` *and* `r_right == 1`, the curve collapses to the
 #' ordinary single‑sigmoid.
 #'
 #' Only the parameters of the selected species are adjusted. The function then
@@ -93,6 +93,10 @@
 #' @export
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                        yield_lambda = 1, production_lambda = 1) {
+    # Accept count or catch as input
+    if (!"count" %in% names(catch) && "catch" %in% names(catch)) {
+        catch$count <- catch$catch
+    }
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
     params <- validParams(params)
@@ -119,8 +123,13 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     sps <- sp[sp_select, ]
     gps <- gp[gp$species == species, ]
 
+    use_double_sigmoid <- identical(gps$sel_func, "double_sigmoid_length")
+
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
+    # ── upper bound on mu_mat so juvenile slope < community spectrum ──
+    g_mat     <- getEReproAndGrowth(params)[sp_select, mat_idx]
+    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
     if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
         # determine external mortality at maturity
         mu_mat <- ext_mort(params)[sp_select, mat_idx]
@@ -128,95 +137,62 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         mu_mat <- sps$mu_mat
     }
 
-    ## ---- Initial parameter estimates ---------------------------------
+    ## ---- New parameterisation: optimise l50, ratio, Δ50, r_right, mu_mat, catchability ----
 
-    # Determine which columns are required based on selectivity function
-    req_cols <- c("l50", "l25")
-    use_double_sigmoid <- gps$sel_func == "double_sigmoid_length"
-    if (use_double_sigmoid) {
-        req_cols <- c(req_cols, "l50_right", "l25_right")
-    }
-
-    # If using single-sigmoid, manufacture neutral *but valid* values
-    if (!use_double_sigmoid) {
-        gps$l50_right <- gps$l50
-        gps$l25_right <- gps$l50 * 1.10  # Ensure ratio_right > 1
-    }
-
-    # Stop if required values are missing or NA
-    missing <- req_cols[!req_cols %in% names(gps) | is.na(gps[, req_cols])]
-    if (length(missing)) {
-        stop("gear_params is missing required values for: ",
-             paste(missing, collapse = ", "))
-    }
-
-    # Initial parameter vector for the optimiser
-    initial_params <- c(
+ # a) Build the initial parameter vector. Δ50 = l50_right - l50  (always > 0)
+    initial_params <- list(
         l50          = gps$l50,
-        ratio        = gps$l25 / gps$l50,                 # < 1
-        l50_right    = gps$l50_right,
-        ratio_right  = gps$l25_right / gps$l50_right,     # = 1 if sigmoid_length
+        ratio        = gps$l25 / gps$l50,
+        d50          = gps$l50_right - gps$l50,
         mu_mat       = mu_mat,
-        catchability = max(gps$catchability, 1e-8)        # avoid zero
+        catchability = pmax(gps$catchability, 1e-8),
+        r_right      = gps$l25_right / gps$l50_right
     )
 
-    # Set parameter bounds
-    # Mortality is bounded by the requirement that the juvenile spectrum of
-    # each species must be less steep than the community spectrum.
-    # With g(w) = g w^n and mu(w) = mu w^{n-1}, the exponent of the juvenile
-    # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
-    g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
-    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
-    lower_bounds <- c(
-        l50          = 5,
-        ratio        = 0.10,
-        l50_right    = gps$l50 * 1.1,   # Ensure dome starts beyond main peak
-        ratio_right  = 1.05,            # Gentle slope downward
-        mu_mat       = 0.2,
-        catchability = 1e-8
-    )
-    upper_bounds <- c(
-        l50          = Inf,
-        ratio        = 0.99,
-        l50_right    = 300,             # High plausible fish length
-        ratio_right  = 10,
-        mu_mat       = mu_mat_max,
-        catchability = Inf
+            # b) One simple, global bounds list
+    default_bounds <- list(
+        l50          = c(5,  Inf),
+        ratio        = c(0.1, 0.8),
+        d50          = c(5,  80),
+        mu_mat       = c(0.2, mu_mat_max),
+        catchability = c(1e-8, Inf),
+        r_right      = c(1.3, 4)
     )
 
-    # Enforce a strict dome: prevent collapse to zero
-    # Only applies if using double-sigmoid
-    if (use_double_sigmoid) {
-        # Add small offset to ensure dome shape is preserved
-        lower_bounds["l50_right"] <- gps$l50 + 5
-        lower_bounds["ratio_right"] <- max(lower_bounds["ratio_right"], 1.1)
-    }
+                # For single‐sigmoid we still *pass* these parameters to TMB,
+                    # but give them a small, finite value in the dome‐shaped code
+                    if (!use_double_sigmoid) {
+                          initial_params["d50"]        <- default_bounds$d50[1]       # 10
+                          initial_params["r_right"]<- default_bounds$r_right[1] # 1.1
+                        }
 
+        lower_bounds <- sapply(default_bounds, `[`, 1)
+        upper_bounds <- sapply(default_bounds, `[`, 2)
     if (getOption("mizerEcopath.debug.matchCatch", FALSE)) {
         message("\nDEBUG: Optim bounds for ", species, ":\n")
         print(data.frame(lower = lower_bounds, upper = upper_bounds))
     }
-
 
     # Lock parameters where necessary
     map <- list()
 
     # Lock right-hand sigmoid parameters if using single sigmoid
     if (!use_double_sigmoid) {
-        map$l50_right   <- factor(NA)
-        map$ratio_right <- factor(NA)
-        keep <- !names(lower_bounds) %in% c("l50_right", "ratio_right")
+        map$d50         <- factor(NA)
+        map$r_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("d50", "r_right")
         lower_bounds <- lower_bounds[keep]
         upper_bounds <- upper_bounds[keep]
     }
+
 
     # Lock all selectivity parameters if no catch size data
     if (!data$use_counts) {
         map$l50         <- factor(NA)
         map$ratio       <- factor(NA)
-        map$l50_right   <- factor(NA)
-        map$ratio_right <- factor(NA)
-        keep <- !names(lower_bounds) %in% c("l50", "ratio", "l50_right", "ratio_right")
+        map$d50         <- factor(NA)
+        map$r_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("l50", "ratio", "d50", "r_right")
         lower_bounds <- lower_bounds[keep]
         upper_bounds <- upper_bounds[keep]
     }
@@ -239,7 +215,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,
                            lower = lower_bounds, upper = upper_bounds,
-                           control = list(trace = 0))
+                           control = list(trace = 1))
 
     # Set model to use the optimal parameters
     w_select <- w(params) %in% data$w

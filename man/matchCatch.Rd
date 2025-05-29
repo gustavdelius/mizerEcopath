@@ -58,9 +58,9 @@ A \emph{double‑sigmoid} (dome‑shaped) selectivity function is used, as in
 \code{l25} – length at 25 \% \emph{ascending} selectivity (\code{ratio = l25 / l50}, < 1)
 \code{l50_right} – length at 50 \% \emph{descending} selectivity
 \code{l25_right} – length at 25 \% \emph{descending} selectivity
-(\code{ratio_right = l25_right / l50_right}, > 1)
+(\code{r_right = l25_right / l50_right}, > 1)
 
-When \code{l50_right == l50} \emph{and} \code{ratio_right == 1}, the curve collapses to the
+When \code{l50_right == l50} \emph{and} \code{r_right == 1}, the curve collapses to the
 ordinary single‑sigmoid.
 
 Only the parameters of the selected species are adjusted. The function then
