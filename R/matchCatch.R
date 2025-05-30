@@ -215,7 +215,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,
                            lower = lower_bounds, upper = upper_bounds,
-                           control = list(trace = 1))
+                           control = list(trace = 0))
 
     # Set model to use the optimal parameters
     w_select <- w(params) %in% data$w
