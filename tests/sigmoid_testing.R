@@ -1,3 +1,9 @@
+#devtools::document()
+#TMB::compile("src/objective_function.cpp")
+#dyn.load(TMB::dynlib("src/objective_function"))
+#devtools::load_all()
+
+
 # --------------------------- 1. Load packages ---------------------------
 library(rfishbase)         # for FishBase look-ups
 library(dplyr)
