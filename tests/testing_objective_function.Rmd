@@ -1,5 +1,5 @@
 ---
-title: Investigating `matchCatch()`; double sigmoids and the objective function"
+title: "Investigating `matchCatch()`; double sigmoids and the objective function"
 output:
   html_document:
     toc: true
@@ -17,6 +17,7 @@ library(mizer)
 library(mizerExperimental)
 library(ggplot2)
 library(RColorBrewer)
+library(here)
 devtools::load_all()
 ```
 
@@ -154,32 +155,6 @@ params_ss <- addEcopathCatchTotal(
 )
 ```
 
-# Plot Original Single‐sigmoid Selectivity
-Visualise the initial logistic (ascending) selectivity curves for each species. These are plotted before any matching is performed.
-
-```{r plot-single-sigmoid}
-gp <- gear_params(params_ss)
-
-plot(NA,
-     xlim = c(0, 1.6 * max(gp$l50, na.rm = TRUE)),
-     ylim = c(0, 1),
-     xlab = "Length (cm)", ylab = "Selectivity",
-     main = "Single‐sigmoid selectivity (gear = 'total')"
-)
-
-i <- 0
-for (sp_row in split(gp, rownames(gp))) {
-  i   <- i + 1
-  l50 <- sp_row$l50
-  l25 <- sp_row$l25
-  k   <- -log(3) / (l25 - l50)
-  L   <- seq(0, 1.6 * l50, length.out = 200)
-  S   <- 1 / (1 + exp(-k * (L - l50)))
-  lines(L, S, col = cols[i], lwd = 2)
-}
-legend("bottomright", legend = gp$species, lwd = 2, col = cols, bty = "n")
-```
-
 # Add Double‐sigmoid (Dome‐shaped) Selectivity Gear
 Next we attach double‐sigmoid selectivity (`double_sigmoid_length`), which combines ascending and descending logistic limbs to produce a dome-shaped curve.
 
@@ -191,40 +166,11 @@ params_dome <- addEcopathCatchTotal(
 )
 ```
 
-# Plot Original Double‐sigmoid Selectivity
-We plot the dome-shaped selectivity for each species. Note that until `matchCatch()` runs, `l50_right` and `l25_right` might be `NA`, so any species without those defined will be skipped.
-
-```{r plot-dome-sigmoid}
-gp2 <- gear_params(params_dome)
-
-plot(NA,
-     xlim = c(0, 1.6 * max(gp2$l50_right, na.rm = TRUE)),
-     ylim = c(0, 1),
-     xlab = "Length (cm)", ylab = "Selectivity",
-     main = "Double‐sigmoid (dome‐shaped) selectivity"
-)
-
-i <- 0
-for (sp_row in split(gp2, rownames(gp2))) {
-  i <- i + 1
-  if (anyNA(sp_row$l50_right)) next  # skip if not yet defined
-
-  kL <- -log(3) / (sp_row$l25 - sp_row$l50)
-  kR <-  log(3) / (sp_row$l25_right - sp_row$l50_right)
-  L  <- seq(0, 1.6 * sp_row$l50_right, length.out = 300)
-  S_left  <- 1 / (1 + exp(-kL * (L - sp_row$l50)))
-  S_right <- 1 / (1 + exp( kR * (L - sp_row$l50_right)))
-  lines(L, S_left * S_right, col = cols[i], lwd = 2)
-}
-legend("bottomright", legend = gp2$species, lwd = 2, col = cols, bty = "n")
-```
-
 # Load Observed Catch Data
 We read in a real catch-at-length dataset and preprocess it to match our `species_test`. This includes grouping by species and length bin, summing counts, and renaming “Horse Mackerel” to “Horse mackerel” for consistency.
 
 ```{r load-catch-data}
-path_to_fmp_data <- "C:/Documents/York academic/Projects/R projects/Mizer_FMP_EwE/Data"
-landings_total <- readRDS(file.path(path_to_fmp_data, "catch_with_observer.rds"))
+landings_total <- readRDS(here("tests", "catch_with_observer.rds"))
 
 landings_total <- landings_total %>%
   mutate(
@@ -298,7 +244,8 @@ plot(NA,
      ylim = c(0, 1),
      xlab = "Length (cm)",
      ylab = "Selectivity",
-     main = "Single-sigmoid: before (dotted) vs after (solid)")
+     main = "Single-sigmoid: before (dotted) vs after (solid)"
+)
 
 i <- 0
 for (sp in rownames(gp_ss_before)) {
@@ -335,7 +282,8 @@ plot(NA,
      ylim = c(0, 1),
      xlab = "Length (cm)",
      ylab = "Selectivity",
-     main = "Double-sigmoid: before (dotted) vs after (solid)")
+     main = "Double-sigmoid: before (dotted) vs after (solid)"
+)
 
 i <- 0
 for (sp in rownames(gp_ds_before)) {
@@ -423,8 +371,11 @@ jitter_grid <- replicate(n_runs, {
   )
 }, simplify = FALSE)
 
+# Choose target species (Hake for the written discussion here, but Blue whiting and Mackerel can be selected instead)
+target_species <- "Hake"  
+
 results <- lapply(jitter_grid, function(jit) {
-  run_matchCatch_with_start(params_ds_mc, species = "Hake",
+  run_matchCatch_with_start(params_ds_mc, species = target_species,
                             catch = landings_total,
                             jitter_factors = jit)
 })
@@ -442,15 +393,43 @@ cat("Finite-objective runs:  ", length(finite_runs), "\n\n")
 if (length(finite_runs) > 0) {
   objective_values <- sapply(finite_runs, `[[`, "objective")
   print(summary(objective_values))
-
-  hist(objective_values,
-       main = "Objective Values Across Valid Starts",
-       xlab = "Negative log-likelihood",
-       col = "skyblue", breaks = 10)
-  abline(v = min(objective_values), col = "red", lwd = 2)
+  
+  # Compute Q₁, Q₃, IQR, and the “upper fence” = Q₃ + 2 × IQR
+  Q1 <- quantile(objective_values, 0.25)
+  Q3 <- quantile(objective_values, 0.75)
+  IQR <- Q3 - Q1
+  upper_fence <- Q3 + 2 * IQR
+  
+  # Determine which runs are outliers
+  is_outlier <- objective_values > upper_fence
+  status     <- ifelse(is_outlier, "Outlier", "Good")
+  
+  # Sort and plot, coloring “Outlier” points red, “Good” points blue
+  sorted_idx  <- order(objective_values)
+  sorted_vals <- objective_values[sorted_idx]
+  sorted_col  <- ifelse(status[sorted_idx] == "Outlier", "red", "blue")
+  
+  plot(seq_along(sorted_vals), sorted_vals,
+       pch = 19, col = sorted_col,
+       xlab = "Run (sorted)",
+       ylab = "Objective value",
+       main = "Sensitivity of matchCatch to starting values (Hake)")
+  
+  # Add line at best fit (minimum objective) and at the upper fence
+  abline(h = min(objective_values), col = "darkgreen", lwd = 2)
+  abline(h = upper_fence, col = "darkorange", lwd = 2, lty = 2)
+  
+  legend("topleft",
+         legend = c("Good run", "Outlier run", "Best fit (min Obj)", "Upper fence = Q₃ + 2×IQR"),
+         col    = c("blue", "red", "darkgreen", "darkorange"),
+         pch    = c(19, 19, NA, NA),
+         lty    = c(NA, NA, 1, 2),
+         lwd    = c(NA, NA, 2, 2),
+         bty    = "n")
 } else {
   cat("No finite-objective runs to summarize.\n")
 }
+
 ```
 
 # Identify Outliers and Compare to Defaults
@@ -497,16 +476,121 @@ if (length(finite_runs) > 0) {
 }
 ```
 
-# Conclusions
+# Hake conclusions
 ### Key Takeaways
 
-- **Robustness**: Out of 30 random starts, most (27–30) converged to nearly identical negative log-likelihoods.
+- **Robustness**: Out of 30 random starts, most (27/30, arguably 29/30) converged to nearly identical negative log-likelihoods.
 - **Outliers**: A few runs produced substantially higher objective values, indicating local minima or parameter combinations outside the reliable domain.
 - **Parameters of Concern**: The outlier runs often had `mu_mat` and/or `catchability` much larger than default—this suggests strong sensitivity to these mortality and catchability inputs.
 - **Recommendations**:
   1. Consider **tightening bounds** on `mu_mat` (≤ 2× default) and `catchability` (≤ 2× default) in `nlminb()`.
   2. Use **multiple random restarts** as a routine check for species with complex likelihood surfaces.
-  3. If convergence issues persist, explore **profile likelihood** around `mu_mat` and `catchability` to assess identifiability.
 
 These results demonstrate that `matchCatch()` is generally reliable within reason, but parameter choices outside of plausible ranges can lead to poor fits.
+
+# Other species (Blue whiting, Mackerel)
+
+Below we re‐run the 30–start sensitivity for Mackerel and Blue whiting, using the IQR‐based upper fence (defined as Q₃ + 2 × IQR) to classify each run as “Good” or “Outlier,” and then plot the sorted objective values with these categories highlighted.
+
+```{r other-species-sensitivity}
+#— Specify which additional species to analyse
+other_species <- c("Mackerel", "Blue whiting")
+
+for (target_species in other_species) {
+  cat("\n\n\n")
+  cat("## Sensitivity Analysis for:", target_species, "\n\n")
+  
+  # 1. Re‐run the 30 random starts for this species
+  results_sp <- lapply(jitter_grid, function(jit) {
+    run_matchCatch_with_start(params_ds_mc,
+                              species = target_species,
+                              catch   = landings_total,
+                              jitter_factors = jit)
+  })
+  finite_runs_sp <- Filter(Negate(is.null), results_sp)
+  
+  # 2. Print how many succeeded
+  cat("Total attempts:        ", length(results_sp), "\n")
+  cat("Finite‐objective runs: ", length(finite_runs_sp), "\n\n")
+  
+  if (length(finite_runs_sp) > 0) {
+    # 3. Extract the objective values
+    objective_values_sp <- sapply(finite_runs_sp, `[[`, "objective")
+    print(summary(objective_values_sp))
+    
+    # 4. Compute IQR and the “upper fence” (Q3 + 2×IQR)
+    Q1_sp        <- quantile(objective_values_sp, 0.25)
+    Q3_sp        <- quantile(objective_values_sp, 0.75)
+    IQR_sp       <- Q3_sp - Q1_sp
+    upper_fence_sp <- Q3_sp + 2 * IQR_sp
+    
+    # 5. Create a “status” for each run: Good vs Outlier (using the upper fence)
+    is_outlier_sp <- objective_values_sp > upper_fence_sp
+    status_sp     <- ifelse(is_outlier_sp, "Outlier", "Good")
+    
+    # 6. Plot sorted objective values, coloring Outliers vs Good
+    sorted_idx_sp  <- order(objective_values_sp)
+    sorted_vals_sp <- objective_values_sp[sorted_idx_sp]
+    sorted_status  <- status_sp[sorted_idx_sp]
+    point_cols     <- ifelse(sorted_status == "Outlier", "red", "blue")
+    
+    plot(seq_along(sorted_vals_sp), sorted_vals_sp,
+         pch = 19, col = point_cols,
+         xlab = "Run (sorted)",
+         ylab = "Objective value",
+         main = paste("Sensitivity of matchCatch to starting values:", 
+                      target_species))
+    # Mark the best (minimum) objective value
+    abline(h = min(objective_values_sp), col = "darkgreen", lwd = 2)
+    # Mark the IQR-based upper fence (Q3 + 2×IQR)
+    abline(h = upper_fence_sp, col = "darkorange", lwd = 2, lty = 2)
+    
+    legend("topleft",
+           legend = c("Good run", "Outlier run", "Best fit (min Obj)", "Upper fence = Q3 + 2×IQR"),
+           col    = c("blue", "red", "darkgreen", "darkorange"),
+           pch    = c(19, 19, NA, NA),
+           lty    = c(NA, NA, 1, 2),
+           lwd    = c(NA, NA, 2, 2),
+           bty    = "n")
+    
+    # 7. Print default (unperturbed) values for this species
+    sp_row  <- species_params(params_ds_mc) %>% filter(species == target_species)
+    gp_row  <- gear_params(params_ds_mc)   %>% filter(species == target_species)
+    default_vals_sp <- list(
+      l50          = gp_row$l50,
+      ratio        = gp_row$l25 / gp_row$l50,
+      d50          = gp_row$l50_right - gp_row$l50,
+      mu_mat       = ifelse(
+                        is.na(sp_row$mu_mat),
+                        ext_mort(params_ds_mc)[
+                          which.min(abs(w(params_ds_mc) - sp_row$w_mat))
+                        ],
+                        sp_row$mu_mat
+                      ),
+      catchability = gp_row$catchability,
+      r_right      = gp_row$l25_right / gp_row$l50_right
+    )
+    cat("\n--- Default (unperturbed) parameter values for", target_species, "---\n")
+    print(default_vals_sp)
+    
+    # 8. Identify which runs are outliers (objective > upper_fence_sp) and print their jittered starts
+    outlier_indices_sp <- which(objective_values_sp > upper_fence_sp)
+    if (length(outlier_indices_sp) == 0) {
+      cat("\nNo outlier runs detected for", target_species, "\n")
+    } else {
+      cat("\n--- Outlier runs for", target_species,
+          "(objective > Q3 + 2×IQR =", round(upper_fence_sp), ") ---\n")
+      for (i in outlier_indices_sp) {
+        cat("\n⚠️  Outlier run", i,
+            " - Objective =", round(objective_values_sp[i]), "\n")
+        cat("Jittered starting values:\n")
+        print(jitter_grid[[i]])
+      }
+    }
+  } else {
+    cat("No finite‐objective runs to summarize for", target_species, "\n")
+  }
+}
+
+```
 
