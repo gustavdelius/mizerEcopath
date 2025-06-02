@@ -259,3 +259,126 @@ for (sp in rownames(gp_ds_before)) {
 # Clean species names for legend
 legend_labels <- gsub(", total", "", rownames(gp_ds_before))
 legend("bottomright", legend = legend_labels, col = cols, lwd = 2, bty = "n")
+
+# -------------- 17. Sensitivity to starting values (revised) --------------
+
+run_matchCatch_with_start <- function(params, species, catch, jitter_factors) {
+    sp_row <- species_params(params) %>% filter(species == !!species)
+    gp_row <- gear_params(params) %>% filter(species == !!species)
+
+    par0 <- list(
+        l50          = gp_row$l50 * jitter_factors["l50"],
+        ratio        = (gp_row$l25 / gp_row$l50) * jitter_factors["ratio"],
+        d50          = (gp_row$l50_right - gp_row$l50) * jitter_factors["d50"],
+        mu_mat       = ifelse(is.na(sp_row$mu_mat),
+                              ext_mort(params)[sp_row$species == species, which.min(abs(w(params) - sp_row$w_mat))],
+                              sp_row$mu_mat * jitter_factors["mu_mat"]),
+        catchability = pmax(gp_row$catchability * jitter_factors["catchability"], 1e-8),
+        r_right      = (gp_row$l25_right / gp_row$l50_right) * jitter_factors["r_right"]
+    )
+
+    # Replace any non-finite/NA starting value with 1 just to avoid an immediate crash
+    par0 <- lapply(par0, function(x) ifelse(is.finite(x), x, 1))
+
+    # Prepare the TMB data as in matchCatch()
+    data_obj <- prepare_data(params, species = species, catch = catch,
+                             yield_lambda = 0.25, production_lambda = 0.25)
+    obj <- TMB::MakeADFun(data = data_obj,
+                          parameters = par0,
+                          DLL = "mizerEcopath",
+                          silent = TRUE)
+
+    # Run optimizer inside try() so we catch R-level errors
+    opt <- try(
+        nlminb(start = obj$par, objective = obj$fn, gradient = obj$gr,
+               lower = rep(-Inf, length(obj$par)),
+               upper = rep( Inf, length(obj$par))),
+        silent = TRUE
+    )
+    if (inherits(opt, "try-error")) {
+        return(NULL)  # a true R error, so we can’t evaluate at all
+    }
+    # If opt$objective is NaN or Inf, that means we started outside the valid domain
+    if (!is.finite(opt$objective)) {
+        return(NULL)
+    }
+    list(opt = opt, par = opt$par, objective = opt$objective)
+}
+
+set.seed(42)
+n_runs <- 30
+
+# (Example “broad” jitter — we’ll fix these ranges next)
+jitter_grid <- replicate(n_runs, {
+    c(l50          = runif(1, 0.8, 1.2),
+      ratio        = runif(1, 0.8, 1.2),
+      d50          = runif(1, 0.8, 1.2),
+      mu_mat       = runif(1, 0.2, 2),
+      catchability = runif(1, 0.2, 2),
+      r_right      = runif(1, 0.8, 1.2))
+}, simplify = FALSE)
+
+# Run all 30 attempts
+results <- lapply(jitter_grid, function(jit) {
+    run_matchCatch_with_start(params_ds_mc, species = "Hake",
+                              catch = landings_total,
+                              jitter_factors = jit)
+})
+
+# Filter only the truly finite–objective runs
+finite_runs <- Filter(Negate(is.null), results)
+
+cat("Total attempts:         ", length(results), "\n")
+cat("Finite-objective runs:  ", length(finite_runs), "\n\n")
+
+if (length(finite_runs) > 0) {
+    objective_values <- sapply(finite_runs, function(x) x$objective)
+    print(summary(objective_values))
+    hist(objective_values,
+         main = "Objective values for truly valid starts",
+         xlab = "Negative log‐likelihood",
+         col = "skyblue", breaks = 10)
+    abline(v = min(objective_values), col = "red", lwd = 2)
+} else {
+    cat("No finite-objective runs to summarize.\n")
+
+    # --------------------- Inspect outlier starting points ---------------------
+
+    # Print default parameter values from unperturbed model
+    sp_row <- species_params(params_ds_mc) %>% filter(species == "Hake")
+    gp_row <- gear_params(params_ds_mc) %>% filter(species == "Hake")
+
+    default_vals <- list(
+        l50          = gp_row$l50,
+        ratio        = gp_row$l25 / gp_row$l50,
+        d50          = gp_row$l50_right - gp_row$l50,
+        mu_mat       = ifelse(is.na(sp_row$mu_mat),
+                              ext_mort(params_ds_mc)[sp_row$species == "Hake", which.min(abs(w(params_ds_mc) - sp_row$w_mat))],
+                              sp_row$mu_mat),
+        catchability = gp_row$catchability,
+        r_right      = gp_row$l25_right / gp_row$l50_right
+    )
+
+    cat("\n--- Default parameter values (unperturbed) ---\n")
+    print(default_vals)
+
+    # Determine IQR and threshold for 'outlier' objective values
+    q1 <- quantile(objective_values, 0.25)
+    q3 <- quantile(objective_values, 0.75)
+    iqr <- q3 - q1
+    threshold <- q3 + 2 * iqr
+
+    cat("\n--- Outlier threshold (objective > ", round(threshold), ") ---\n", sep = "")
+    outlier_indices <- which(objective_values > threshold)
+
+    if (length(outlier_indices) == 0) {
+        cat("No outlier runs found.\n")
+    } else {
+        for (i in outlier_indices) {
+            cat("\n⚠️  Outlier run", i, " - Objective =", round(objective_values[i]), "\n")
+            cat("Jittered starting values:\n")
+            print(jitter_grid[[i]])
+        }
+    }
+
+}
