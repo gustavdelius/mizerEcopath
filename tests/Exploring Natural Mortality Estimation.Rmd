@@ -1,15 +1,15 @@
 ---
 title: "Exploring Natural Mortality Estimation"
 output:
-  pdf_document:
-    toc: true
-    toc_depth: '2'
   html_document:
     toc: true
     toc_depth: 2
     number_sections: true
     theme: united
     highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: '2'
 ---
 
 ```{r setup, include=FALSE}
@@ -166,7 +166,11 @@ params_dome <- addEcopathCatchTotal(
 
 # Combined Procedure: Load Observed Catch, Run Matching & Compare
 
-Below we load the observed catch-at-length data, preprocess it, then run `matchCatch()` to fit both the single‐sigmoid and double‐sigmoid models
+We now load observed catch-at-length data, which serves as the empirical benchmark for estimating selectivity and natural mortality parameters. Two models are calibrated:
+
+A single-sigmoid selectivity case (logistic curve), and a double-sigmoid (dome-shaped) case, allowing for decreasing vulnerability at large sizes — more biologically realistic for some gears or species.
+
+The matchCatch() function then fits model-predicted catch length frequencies to these observed data, balancing production, yield, and catch constraints. These initial calibrations provide both a baseline for comparison and a foundation for sensitivity analysis.
 
 ```{r match-catch-procedure}
 # Load Observed Catch Data
@@ -204,6 +208,17 @@ params_ds_mc <- params_dome %>%
   )
 ```
 
+# sensitivity-grid-deterministic
+To investigate the robustness of parameter estimation, we perform a structured deterministic grid search over six key starting parameters:
+
+Selectivity shape - l50, d50, dome width (ratio), and right-hand steepness of the dome (r_right), catchability, and natural mortality at maturity (mu_mat).
+
+Each parameter is perturbed using 3 multiplier levels, producing a full factorial grid of 3^6 = 729 runs. For each run, matchCatch() is called using the perturbed starting values.
+
+The goal is to identify:
+Whether results converge consistently across starting values.
+Which parameters or combinations drive optimiser failure or instability.
+Whether the objective surface has a single global minimum or contains ridges and plateaus.
 
 ```{r sensitivity-grid-deterministic, warning=FALSE, message=FALSE}
 # ————————————————————————————————
@@ -335,9 +350,16 @@ if (length(finite_runs) > 0) {
 }
 ```
 
-This section helps diagnose which starting parameters are associated with optimisation failures or poor fits.
-By comparing the values of input multipliers between "good" and "outlier" runs, we can identify what ranges of input values (e.g. high natural mortality or extreme selectivity ratios) tend to lead to problems.
-This guides refinement of parameter bounds and may reveal whether the optimiser struggles to disentangle certain effects — especially relevant for natural mortality estimation.
+# inspect-outlier-properties
+Once all grid runs are completed, we assess which parameter combinations lead to poor fits. We define "outlier" runs as those with objective values above the upper fence (Q3 + 2 × IQR), and visualise how these outliers are distributed across the parameter multipliers.
+
+This helps answer:
+
+Which parameters (or combinations) are associated with failure to converge or poor likelihood values?
+
+Are some parameters well-tolerated across ranges, while others cause breakdowns?
+
+Do any axes in parameter space appear especially sensitive or problematic?
 
 ```{r inspect-outlier-properties}
 # 1. Extract objective values and classify outliers
@@ -376,6 +398,18 @@ ggplot(plot_df, aes(x = factor(multiplier), fill = outlier)) +
   theme_minimal(base_size = 12)
 
 ```
+# profile-mu-mat
+We next conduct a 1D profile likelihood analysis for mu_mat, the external natural mortality rate at maturity.
+
+Keeping all other parameters fixed at plausible defaults, we vary mu_mat over a defined range and evaluate the objective function at each value.
+
+This plot provides insight into:
+
+Whether natural mortality is  identifiable from catch-at-length data alone
+
+Whether the likelihood is flat (indicating structural non-identifiability) or sharply peaked
+
+Where the model finds its best fit, and how sensitive it is to small changes in mu_mat
 
 ```{r profile-mu-mat}
 # Profile the objective function over mu_mat, holding other parameters fixed
@@ -460,6 +494,25 @@ ggplot(mu_profile_results, aes(x = mu_value, y = objective)) +
        y = "Negative log-likelihood") +
   theme_minimal()
 ```
+
+# profile-mu-mat-by-ratio-sorted
+To explore parameter confounding, we expand the profile into two dimensions: mu_mat × ratio, where ratio controls the width and severity of the dome in the double-sigmoid gear.
+
+For each combination in the 2D grid:
+
+All other parameters are held constant.
+
+matchCatch() is re-evaluated and the objective value recorded.
+
+This panel-style plot reveals:
+
+Whether there is a ridge (i.e., a trade-off) between mu_mat and dome width
+
+Whether the model compensates for high natural mortality with steep domes, or vice versa
+
+Regions of parameter space that produce equally good fits, despite differing biological implications
+
+This is helpful for diagnosing unidentifiable parameter combinations.
 
 ```{r profile-mu-mat-by-ratio-sorted, warning=FALSE, message=FALSE}
 # ------------------------------------------------------------------------------
@@ -573,3 +626,4 @@ ggplot(plot_df, aes(x = sorted_index, y = objective, colour = status)) +
   theme(legend.position = "bottom")
 
 ```
+NEED TO CONSIDER HOW TO SPECIFY VALID RATIO OPTIONS BETTER
