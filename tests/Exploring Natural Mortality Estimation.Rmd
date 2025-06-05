@@ -1,0 +1,575 @@
+---
+title: "Exploring Natural Mortality Estimation"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: '2'
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme: united
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Load Packages
+
+Below we load all required libraries and the package under development (`mizerEcopath`).
+
+```{r load-packages}
+# devtools::document()
+# TMB::compile("src/objective_function.cpp")
+# dyn.load(TMB::dynlib("src/objective_function"))
+# devtools::load_all()    # loads mizerEcopath
+library(rfishbase)         # for FishBase look-ups
+library(dplyr)
+library(here)
+library(mizer)
+library(mizerExperimental)
+library(ggplot2)
+library(tidyr)
+library(rlang) 
+library(RColorBrewer)
+devtools::load_all()
+```
+
+# Pick Species
+
+We define the set of species to test, assign plotting colours, and create a lookup table of common vs. scientific names.
+
+```{r pick-species}
+# Select species for testing
+species_test <- c("Hake", "Mackerel", "Blue whiting")
+
+# Assign colours based on number of species
+n_species <- length(species_test)
+cols <- if (n_species < 3) {
+  # Use base colours if 1 or 2 species
+  c("firebrick", "steelblue", "darkgreen")[1:n_species]
+} else {
+  RColorBrewer::brewer.pal(n = n_species, name = "Dark2")
+}
+
+# Full lookup table with common and scientific names
+species_map_all <- data.frame(
+  species         = c("Hake", "Mackerel", "Blue whiting"),
+  Scientific_name = c("Merluccius merluccius",
+                      "Scomber scombrus",
+                      "Micromesistius poutassou"),
+  stringsAsFactors = FALSE
+)
+
+# Filter just the species you want to test
+species_map <- species_map_all %>%
+  filter(species %in% species_test)
+```
+
+# Pull FishBase Defaults
+
+We call `fillDefaultsFromFishBase()` to retrieve parameters (e.g., `w_max`, `w_mat`, `a`, `b`, `age_mat`) from FishBase for each species, then set additional Mizer-specific defaults.
+
+```{r fishbase-defaults}
+fb <- fillDefaultsFromFishBase(species_map, overwrite = FALSE, verbose = FALSE)
+
+sp <- fb %>%
+  select(species, w_max, w_mat, a, b, age_mat, Length) %>%
+  mutate(
+    n = 0.7,
+    p = 0.7,
+    d = -0.3,
+    alpha = 0.8
+  )
+```
+
+# Minimal Ecopath “Basic Estimates” Table
+
+We create a minimal Ecopath table with biomass, consumption, and production rates for our test species. In practice, these values would come from a full Ecopath model or published source.
+
+```{r ecopath-table}
+ecopath_basic_all <- data.frame(
+  `...1`                             = 1:3,
+  `Group name`                       = c("Blue whiting", "Hake", "Mackerel"),
+  `Biomass (t/km²)`                  = c(0.444, 0.260, 15.653),
+  `Consumption / biomass (/year)`    = c(6.666, 3.529, 1.730),
+  `Production / consumption (/year)` = c(0.165, 0.312, 0.376),
+  check.names = FALSE                # keep the Unicode ² intact
+)
+
+ecopath_basic <- ecopath_basic_all |>
+  filter(`Group name` %in% species_test)
+
+```
+
+# Map Model Species to Ecopath Groups
+
+We construct a named list mapping Mizer species names to Ecopath group names. In this simple example they coincide.
+
+```{r map-species-to-groups}
+species_to_groups <- as.list(fb$species)
+names(species_to_groups) <- fb$species
+```
+
+# Prepare `species_params` & Add Ecopath Info
+
+We finalise the species parameter table by computing weight-at-maturity from FishBase and then injecting Ecopath biomass, consumption, and production.
+
+```{r prepare-species-params}
+sp <- sp %>%
+  mutate(
+    w_max = a * Length^b,
+    w_mat = w_mat,
+    w_repro_max = w_max,
+    n     = 0.7,
+    p     = 0.7,
+    alpha = 0.8
+  )
+
+sp <- addEcopathParams(sp, ecopath_basic, species_to_groups)
+```
+
+# Build a Non‐interacting Allometric Model
+
+Here we create a new Mizer parameter object (`params`) with no trophic interactions. This will serve as the baseline before adding catch and selectivity.
+
+```{r build-base-model}
+params <- newAllometricParams(sp, no_w = 200)   # steady state
+```
+
+# Add Hand‐made Total Catch Data
+
+We define a simple data frame of total catch (tonnes per km² per year) for each species. In a full application, this would come from observed landings or surveys.
+
+```{r add-catch-data}
+catch_df <- data.frame(
+  `Group name`                = sp$species,
+  `TotalCatch (t/km²/year)`   = c(0.3, 0.1, 0.5),
+  check.names = FALSE
+)
+
+```
+
+# Add Double‐sigmoid (Dome‐shaped) Selectivity Gear
+
+We attach double‐sigmoid selectivity (`double_sigmoid_length`), which combines ascending and descending logistic limbs to produce a dome-shaped curve.
+
+```{r dome-sigmoid-gear}
+params_dome <- addEcopathCatchTotal(
+  params,
+  catch_df,
+  sel_func = "double_sigmoid_length"
+)
+```
+
+# Combined Procedure: Load Observed Catch, Run Matching & Compare
+
+Below we load the observed catch-at-length data, preprocess it, then run `matchCatch()` to fit both the single‐sigmoid and double‐sigmoid models
+
+```{r match-catch-procedure}
+# Load Observed Catch Data
+landings_total <- readRDS(here("tests", "catch_with_observer.rds"))
+
+landings_total <- landings_total %>%
+  mutate(
+    dl = 1,
+    gear = ifelse(gear == "commercial", "total", gear),
+    species = ifelse(species == "Horse Mackerel", "Horse mackerel", species)
+  ) %>%
+  filter(gear == "total") %>%
+  group_by(species, length) %>%
+  summarise(dl = first(dl), count = sum(catch), .groups = "drop") %>%
+  filter(species %in% species_test) %>%
+  arrange(species, length)
+
+# Single‐sigmoid: match catch, yield, production
+params_ss <- addEcopathCatchTotal(params, catch_df, sel_func = "sigmoid_length")
+params_ss_mc <- params_ss %>%
+  matchGrowth() %>%
+  steadySingleSpecies() %>%
+  matchBiomasses() %>%
+  matchCatch(catch = landings_total)
+
+# Double‐sigmoid: match catch, yield, production (with lower penalties)
+params_ds_mc <- params_dome %>%
+  matchGrowth() %>%
+  steadySingleSpecies() %>%
+  matchBiomasses() %>%
+  matchCatch(
+    catch = landings_total,
+    yield_lambda      = 0.25,
+    production_lambda = 0.25
+  )
+```
+
+
+```{r sensitivity-grid-deterministic, warning=FALSE, message=FALSE}
+# ————————————————————————————————
+# 1. Define function to run matchCatch from given starts
+# ————————————————————————————————
+run_matchCatch_with_start <- function(params, species, catch, start_vals) {
+  sp_row <- species_params(params) %>% filter(species == !!species)
+  gp_row <- gear_params(params)   %>% filter(species == !!species)
+
+  par0 <- list(
+    l50          = gp_row$l50        * start_vals["l50_mult"],
+    ratio        = (gp_row$l25 / gp_row$l50) * start_vals["ratio_mult"],
+    d50          = (gp_row$l50_right - gp_row$l50) * start_vals["d50_mult"],
+    mu_mat       = ifelse(is.na(sp_row$mu_mat),
+                          ext_mort(params)[sp_row$species == species, which.min(abs(w(params) - sp_row$w_mat))],
+                          sp_row$mu_mat) * start_vals["mu_mat_mult"],
+    catchability = pmax(gp_row$catchability * start_vals["catchability_mult"], 1e-8),
+    r_right      = (gp_row$l25_right / gp_row$l50_right) * start_vals["r_right_mult"]
+  )
+
+  par0 <- lapply(par0, function(x) ifelse(is.finite(x), x, 1))
+
+  obj <- try(TMB::MakeADFun(
+    data       = prepare_data(params, species = species, catch = catch,
+                              yield_lambda = 0.25, production_lambda = 0.25),
+    parameters = par0,
+    DLL        = "mizerEcopath",
+    silent     = TRUE
+  ), silent = TRUE)
+
+  if (inherits(obj, "try-error")) return(NULL)
+
+  opt <- try(nlminb(start = obj$par, objective = obj$fn, gradient = obj$gr), silent = TRUE)
+
+  if (!inherits(opt, "try-error") && is.finite(opt$objective)) {
+    return(list(opt = opt, par = opt$par, objective = opt$objective))
+  }
+
+  return(NULL)
+}
+
+# ————————————————————————————————
+# 2. Prepare data & base parameters
+# ————————————————————————————————
+# Choose the species to analyse here
+target_species <- "Hake"
+
+# 'params_ds_mc' and 'landings_total' should exist from previous chunks:
+#   params_ds_mc <- params_dome %>% matchGrowth() %>% steadySingleSpecies() %>% matchBiomasses() %>% matchCatch(...)
+#   landings_total <- readRDS(...) %>% preprocess(...)
+# We assume they have been created already.
+
+
+# ————————————————————————————————
+# 3. Build a deterministic “multiplier grid”
+# ————————————————————————————————
+# We choose 3 equally‐spaced multipliers for each parameter:
+#   * For gear‐related: 0.8, 1.0, 1.2
+#   * For mu_mat and catchability: 0.5, 1.0, 2.0
+grid_df <- expand.grid(
+  l50_mult          = c(0.8, 1.0, 1.2),
+  ratio_mult        = c(0.8, 1.0, 1.2),
+  d50_mult          = c(0.8, 1.0, 1.2),
+  mu_mat_mult       = c(0.5, 1.0, 2.0),
+  catchability_mult = c(0.5, 1.0, 2.0),
+  r_right_mult      = c(0.8, 1.0, 1.2),
+  stringsAsFactors  = FALSE
+)
+# This yields 3^6 = 729 deterministic starting combinations.
+
+# ————————————————————————————————
+# 4. Loop over the grid and collect results
+# ————————————————————————————————
+results_det <- lapply(seq_len(nrow(grid_df)), function(i) {
+  start_vals <- as.numeric(grid_df[i, ])
+  names(start_vals) <- names(grid_df)
+  run_matchCatch_with_start(
+    params        = params_ds_mc,
+    species       = target_species,
+    catch         = landings_total,
+    start_vals    = start_vals
+  )
+})
+
+# ————————————————————————————————
+# 5. Summarise & plot convergence diagnostics
+# ————————————————————————————————
+finite_runs <- Filter(Negate(is.null), results_det)
+cat("Total grid points:           ", nrow(grid_df), "\n")
+cat("Successful (finite‐objective) runs:", length(finite_runs), "\n\n")
+
+if (length(finite_runs) > 0) {
+  # Extract negative log‐likelihoods
+  obj_vals <- sapply(finite_runs, `[[`, "objective")
+
+  # Compute Q₁, Q₃, IQR, and “upper fence” = Q₃ + 2 × IQR
+  Q1          <- quantile(obj_vals, 0.25)
+  Q3          <- quantile(obj_vals, 0.75)
+  IQR_val     <- Q3 - Q1
+  upper_fence <- Q3 + 2 * IQR_val
+
+  # Label runs as “Outlier” if objective > upper fence
+  is_outlier <- obj_vals > upper_fence
+  status     <- ifelse(is_outlier, "Outlier", "Good")
+
+  # Sort by objective for plotting
+  sorted_idx  <- order(obj_vals)
+  sorted_vals <- obj_vals[sorted_idx]
+  sorted_col  <- ifelse(status[sorted_idx] == "Outlier", "red", "blue")
+
+  plot(seq_along(sorted_vals), sorted_vals,
+       pch = 19, col = sorted_col,
+       xlab = "Grid point (sorted)", 
+       ylab = "Negative log-likelihood",
+       main = paste0("Sensitivity of matchCatch to Starting Values (", 
+                     target_species, ")"))
+  abline(h = min(obj_vals), col = "darkgreen", lwd = 2)
+  abline(h = upper_fence, col = "darkorange", lwd = 2, lty = 2)
+
+  legend("topleft",
+         legend = c("Good run", "Outlier run", "Best fit (min Obj)", "Upper fence = Q3 + 2×IQR"),
+         col    = c("blue", "red", "darkgreen", "darkorange"),
+         pch    = c(19, 19, NA, NA),
+         lty    = c(NA, NA, 1, 2),
+         lwd    = c(NA, NA, 2, 2),
+         bty    = "n")
+} else {
+  cat("No finite‐objective runs to summarise.\n")
+}
+```
+
+This section helps diagnose which starting parameters are associated with optimisation failures or poor fits.
+By comparing the values of input multipliers between "good" and "outlier" runs, we can identify what ranges of input values (e.g. high natural mortality or extreme selectivity ratios) tend to lead to problems.
+This guides refinement of parameter bounds and may reveal whether the optimiser struggles to disentangle certain effects — especially relevant for natural mortality estimation.
+
+```{r inspect-outlier-properties}
+# 1. Extract objective values and classify outliers
+obj_vals <- sapply(finite_runs, `[[`, "objective")
+Q1 <- quantile(obj_vals, 0.25)
+Q3 <- quantile(obj_vals, 0.75)
+IQR_val <- Q3 - Q1
+upper_fence <- Q3 + 2 * IQR_val
+is_outlier <- obj_vals > upper_fence
+
+# 2. Match result indices back to original grid
+finite_indices <- which(!sapply(results_det, is.null))
+non_outlier_grid_indices <- finite_indices[!is_outlier]
+outlier_grid_indices     <- finite_indices[is_outlier]
+
+# 3. Create tidy dataframe of starting values and outcome
+param_df <- grid_df[c(non_outlier_grid_indices, outlier_grid_indices), ]
+param_df$objective <- obj_vals
+param_df$outlier   <- rep(c("Good", "Outlier"),
+                          times = c(length(non_outlier_grid_indices), length(outlier_grid_indices)))
+
+# 4. Pivot to long format for plotting
+library(tidyr)
+plot_df <- param_df %>%
+  pivot_longer(cols = ends_with("_mult"), names_to = "parameter", values_to = "multiplier")
+
+# 5. Plot: Faceted bar plots (accurate discrete counts)
+ggplot(plot_df, aes(x = factor(multiplier), fill = outlier)) +
+  geom_bar(position = "dodge") +
+  facet_wrap(~parameter, scales = "free", ncol = 3) +
+  scale_fill_manual(values = c("Good" = "skyblue", "Outlier" = "red")) +
+  labs(title = "Starting Parameter Distributions by Run Type",
+       x = "Multiplier",
+       y = "Count",
+       fill = "Run type") +
+  theme_minimal(base_size = 12)
+
+```
+
+```{r profile-mu-mat}
+# Profile the objective function over mu_mat, holding other parameters fixed
+
+# Choose target species
+target_species <- "Hake"
+
+# Set a grid of multipliers to apply to default mu_mat
+mu_profile_grid <- seq(0.05, 0.4, length.out = 25)
+
+# Use the "best known" default parameters from params_ds_mc
+sp_row <- species_params(params_ds_mc) %>% filter(species == target_species)
+gp_row <- gear_params(params_ds_mc)   %>% filter(species == target_species)
+
+# Extract the base values (not multipliers)
+default_pars <- list(
+  l50          = gp_row$l50,
+  ratio        = gp_row$l25 / gp_row$l50,
+  d50          = gp_row$l50_right - gp_row$l50,
+  catchability = gp_row$catchability,
+  r_right      = gp_row$l25_right / gp_row$l50_right
+)
+
+# Set up results
+mu_profile_results <- data.frame(mu_mult = mu_profile_grid,
+                                 mu_value = NA,
+                                 objective = NA)
+
+# Loop through grid
+for (i in seq_along(mu_profile_grid)) {
+  mu_mult <- mu_profile_grid[i]
+
+  # Calculate mu_mat value
+  mu_val <- ifelse(is.na(sp_row$mu_mat),
+                   ext_mort(params_ds_mc)[target_species, which.min(abs(w(params_ds_mc) - sp_row$w_mat))],
+                   sp_row$mu_mat) * mu_mult
+
+  # Create par0 using fixed defaults for others
+  par0 <- list(
+    l50          = default_pars$l50,
+    ratio        = default_pars$ratio,
+    d50          = default_pars$d50,
+    mu_mat       = mu_val,
+    catchability = pmax(default_pars$catchability, 1e-8),
+    r_right      = default_pars$r_right
+  )
+
+  # Ensure finite
+  par0 <- lapply(par0, function(x) ifelse(is.finite(x), x, 1))
+
+  # Prepare objective
+  data_obj <- prepare_data(params_ds_mc,
+                           species = target_species,
+                           catch = landings_total,
+                           yield_lambda = 0.25,
+                           production_lambda = 0.25)
+  obj <- TMB::MakeADFun(data = data_obj,
+                        parameters = par0,
+                        DLL = "mizerEcopath",
+                        silent = TRUE)
+
+  opt <- try(nlminb(start = obj$par,
+                    objective = obj$fn,
+                    gradient  = obj$gr,
+                    lower = rep(-Inf, length(obj$par)),
+                    upper = rep( Inf, length(obj$par))),
+             silent = TRUE)
+
+  if (!inherits(opt, "try-error") && is.finite(opt$objective)) {
+    mu_profile_results$mu_value[i]   <- mu_val
+    mu_profile_results$objective[i]  <- opt$objective
+  }
+}
+
+# Plot the profile
+library(ggplot2)
+ggplot(mu_profile_results, aes(x = mu_value, y = objective)) +
+  geom_line(col = "steelblue", lwd = 1.2) +
+  geom_point(col = "steelblue", size = 2) +
+  labs(title = paste0("Objective Profile over mu_mat (", target_species, ")"),
+       x = "mu_mat (external mortality at maturity)",
+       y = "Negative log-likelihood") +
+  theme_minimal()
+```
+
+```{r profile-mu-mat-by-ratio-sorted, warning=FALSE, message=FALSE}
+# ------------------------------------------------------------------------------
+# Profile objective over mu_mat × ratio — matchCatch sensitivity panel-style plot
+# This chunk mimics the earlier "starting value sensitivity" plot but uses a 2D
+# grid across natural mortality and selectivity ratio.
+# ------------------------------------------------------------------------------
+
+# Setup grid
+ratio_vals <- c(0.6, 0.8, 1.0, 1.2, 1.4, 1.6)
+mu_vals    <- seq(0.005, 0.03, length.out = 25)
+
+# Extract reference parameters
+sp_row <- species_params(params_ds_mc) %>% filter(species == target_species)
+gp_row <- gear_params(params_ds_mc)   %>% filter(species == target_species)
+
+default_pars <- list(
+  l50          = gp_row$l50,
+  d50          = gp_row$l50_right - gp_row$l50,
+  catchability = gp_row$catchability,
+  r_right      = gp_row$l25_right / gp_row$l50_right
+)
+
+base_mu <- ifelse(is.na(sp_row$mu_mat),
+                  ext_mort(params_ds_mc)[target_species, which.min(abs(w(params_ds_mc) - sp_row$w_mat))],
+                  sp_row$mu_mat)
+
+# Build grid
+prof_df <- expand.grid(mu_mult = mu_vals, ratio_mult = ratio_vals)
+prof_df$mu_val    <- base_mu * prof_df$mu_mult
+prof_df$objective <- NA_real_
+
+# Evaluate
+for (i in seq_len(nrow(prof_df))) {
+  row <- prof_df[i, ]
+  par0 <- list(
+    l50          = default_pars$l50,
+    ratio        = row$ratio_mult,
+    d50          = default_pars$d50,
+    mu_mat       = row$mu_val,
+    catchability = default_pars$catchability,
+    r_right      = default_pars$r_right
+  )
+  par0 <- lapply(par0, function(x) ifelse(is.finite(x), x, 1))
+
+try_result <- try({
+  obj <- TMB::MakeADFun(
+    data       = prepare_data(params_ds_mc, species = target_species, catch = landings_total,
+                              yield_lambda = 0.25, production_lambda = 0.25),
+    parameters = par0,
+    DLL        = "mizerEcopath",
+    silent     = TRUE
+  )
+  
+  if (!is.finite(obj$fn(obj$par))) stop("Non-finite objective")
+  
+  opt <- nlminb(start = obj$par, objective = obj$fn, gradient = obj$gr)
+  
+  if (is.finite(opt$objective)) {
+    prof_df$objective[i] <- opt$objective
+  }
+}, silent = TRUE)
+
+}
+
+# Classify outliers per ratio group
+prof_valid <- prof_df %>%
+  filter(!is.na(objective)) %>%
+  mutate(ratio_mult = factor(ratio_mult, levels = ratio_vals))
+
+get_sorted_status <- function(sub_df) {
+  objs <- sub_df$objective
+  Q1 <- quantile(objs, 0.25)
+  Q3 <- quantile(objs, 0.75)
+  IQR_val <- Q3 - Q1
+  upper_fence <- Q3 + 2 * IQR_val
+  best_val <- min(objs)
+  status <- ifelse(objs > upper_fence, "Outlier", "Good")
+  sorted_idx <- order(objs)
+
+  data.frame(
+    ratio_mult   = sub_df$ratio_mult[1],
+    sorted_index = seq_along(sorted_idx),
+    objective    = objs[sorted_idx],
+    status       = status[sorted_idx],
+    best_val     = best_val,
+    upper_fence  = upper_fence
+  )
+}
+
+plot_df <- prof_valid %>%
+  group_by(ratio_mult) %>%
+  group_map(~ get_sorted_status(.x), .keep = TRUE) %>%
+  bind_rows()
+
+# Plot like matchCatch diagnostic
+ggplot(plot_df, aes(x = sorted_index, y = objective, colour = status)) +
+  geom_point(size = 1.5) +
+  facet_wrap(~ ratio_mult, scales = "free_y", ncol = 3) +
+  geom_hline(aes(yintercept = best_val), colour = "darkgreen", linetype = "solid", size = 0.8) +
+  geom_hline(aes(yintercept = upper_fence), colour = "darkorange", linetype = "dashed", size = 0.8) +
+  scale_colour_manual(values = c("Good" = "blue", "Outlier" = "red")) +
+  labs(
+    title = paste0("Sensitivity of matchCatch to mu_mat × ratio (", target_species, ")"),
+    subtitle = "Outliers above Q3 + 2×IQR per panel",
+    x = "Run (sorted within ratio_mult)",
+    y = "Negative log-likelihood",
+    colour = "Run type"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+
+```
