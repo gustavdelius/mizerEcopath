@@ -1,0 +1,209 @@
+---
+title: "Learning how to use the package"
+author: "James EV Rimmer"
+date: "2025-06-17"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7)
+```
+
+This tutorial walks you through the construction of a multispecies size-spectrum model using the mizerEcopath R package — an extension of the base mizer framework that integrates empirical observations from (for example) existing Ecopath models.
+
+The workflow follows a reproducible pipeline grounded in ecological theory and empirical observations. Each step builds on published parameter values (e.g. biomass, production, consumption, catch), and enforces internal consistency among growth, feeding, and mortality rates. Key improvements over base mizer include:
+
+Automated life-history parameter filling from FishBase,
+
+Empirical anchoring using Ecopath biomass, consumption, and production rates.
+
+Improved fishing selectivity representation, including double-sigmoid dome-shaped curves.
+
+Support for optimisation via TMB, ensuring catch, biomass, and trophic flow constraints can be met simultaneously.
+
+Throughout, you'll find commentary blocks that explain not just how to use the tools, but why the workflow is structured this way — including references to the companion manuscript that documents the methods and rationale in detail.
+
+If you're already familiar with base mizer, look out for notes that highlight what has changed, why, and how mizerEcopath makes model setup more transparent and efficient.
+
+# 1 Load packages and (re)compile the TMB objective
+
+Below we load all required libraries and the package under development (`mizerEcopath`).
+
+```{r load-packages}
+# Below only for when updating the package
+# devtools::document()
+# TMB::compile("src/objective_function.cpp")
+# dyn.load(TMB::dynlib("src/objective_function"))
+
+# Normal libraries plus development version of mizerEcopath
+devtools::load_all()    
+library(rfishbase)         
+library(dplyr)
+library(here)
+library(mizer)
+library(mizerExperimental)
+library(ggplot2)
+```
+
+The need to compile a C++ objective is new – it enables machine optimisation of selectivity parameters.
+
+# 2 Select example species and pull FishBase defaults
+
+This section uses the function fillDefaultsFromFishBase(), which streamlines the process of assembling species_params by retrieving common life-history traits from FishBase. In a base mizer workflow, the user is typically responsible for manually specifying maximum weight (w_max), maturity size (w_mat), weight–length parameters (a, b), and sometimes age at maturity — often with inconsistent sources or assumptions. Here, we automate that process using a simple species mapping table.
+
+This function pulls:
+
+Maximum length and weight, weight–length relationship parameters (a and b), and (if available) age at maturity and maturity length.
+
+In this example, we define three commercial species: Hake, Mackerel, and Blue Whiting. For each, we specify the scientific name to ensure the API queries are unambiguous. This helps avoid conflicts where common names may map to multiple taxa.
+
+Note:
+
+The overwrite argument controls whether existing values in your table (e.g. w_max) are replaced if FishBase has a different one. The verbose argument will print details about what was (or wasn’t) filled.
+
+After fetching the defaults, we manually add three allometric exponents. The result is a clean, populated species parameter data frame — ready to be passed into the next stage.
+
+```{r}
+species <- c("Hake", "Mackerel", "Blue whiting")
+map <- data.frame(species,
+                  Scientific_name = c("Merluccius merluccius",
+                                      "Scomber scombrus",
+                                      "Micromesistius poutassou"))
+
+sp <- fillDefaultsFromFishBase(map, overwrite = FALSE, verbose = FALSE) %>%
+  select(species, w_max, w_mat, a, b, age_mat, Length) %>%       
+  mutate(n = 0.7, p = 0.7,             
+         d = n - 1,                    
+         alpha = 0.8)
+```
+
+# 3 Coupling Ecopath Observations & Constructing an Allometric Baseline
+
+This section integrates observed values from an Ecopath model and constructs a steady-state size-spectrum model using newAllometricParams(). This step is central to how mizerEcopath extends the base Mizer workflow.
+
+Goal:
+We want to move from biologically plausible species parameters (fetched from FishBase) to a full size-spectrum model that:
+
+Anchors species biomass and trophic flows in observed Ecopath values, and ensures each species' growth and mortality are internally consistent.
+
+Step 1: Add Ecopath “Basic Estimates”
+We start by importing three key estimates from an Ecopath model:
+
+Biomass (B) in tonnes per km²
+
+Consumption per biomass (Q/B) — how fast individuals eat relative to body mass
+
+Production per consumption (P/Q) — a measure of growth/reproduction efficiency
+
+These are passed to the function addEcopathParams():
+
+It maps Ecopath “groups” to Mizer species (in our case, a 1:1 mapping),
+
+It computes P/B (production per unit of biomass) internally from these estimates. It stores these values in new columns in the species_params data frame:
+biomass_observed, consumption_observed, production_observed, and ecopath_groups.
+
+Note: This is not the same as matching full interspecific interactions — we’re importing only the species-level energetics, not predator-prey links.
+
+Step 2: Construct an allometric Model from These Parameters
+With those Ecopath constraints in place, we now use newAllometricParams() to build a steady-state MizerParams object. This replaces the base Mizer function newMultispeciesParams() (see mizer docs) and includes several important enhancements:
+
+The function matches:
+
+Growth trajectories to reach maturity at the correct age, total biomass to biomass_observed, and a steady state without needing a resource spectrum. 
+
+```{r}
+ecopath_basic_all <- data.frame(
+  `...1`                             = 1:3,
+  `Group name`                       = c("Blue whiting", "Hake", "Mackerel"),
+  `Biomass (t/km²)`                  = c(0.444, 0.260, 15.653),
+  `Consumption / biomass (/year)`    = c(6.666, 3.529, 1.730),
+  `Production / consumption (/year)` = c(0.165, 0.312, 0.376),
+  check.names = FALSE                # keep the Unicode ² intact
+)
+
+basic <- ecopath_basic_all |>
+  filter(`Group name` %in% species)
+
+sp <- addEcopathParams(sp, basic,
+                       setNames(species, species))
+
+params <- newAllometricParams(sp, no_w = 200)
+```
+
+# 4 Add total catch and gear selectivity
+
+This section introduces fishing into the model by incorporating observed catch data and specifying gear selectivity functions. 
+
+The catch data frame used here contains the total landings for each species in tonnes per square kilometre per year. This is consistent with the units used in the Ecopath biomass and production estimates and allows the model to link observed removals to the underlying size-spectrum dynamics. The column "Group name" must match the species names used earlier, while "TotalCatch (t/km²/year)" specifies the annual catch.
+
+The addEcopathCatchTotal() function adds these observed catch values to the model and assigns a selectivity function that determines how fishing mortality varies with body size. Two selectivity functions are illustrated here. The first, "sigmoid_length", assumes that the probability of capture increases smoothly with body length, following an S-shaped curve. This is typical for towed gears like trawls where selectivity increases as fish become large enough to be retained by the net. The second, "double_sigmoid_length", represents dome-shaped selectivity. This form increases with length to a peak and then decreases for larger individuals, which may actively avoid capture or escape through gear limitations. This is relevant for species that are targeted at intermediate sizes or where management or behavioural processes reduce exploitation of the largest fish. For example, a slower towing speed of gear might allow larger, more powerful/faster individuals to swim out of the net. 
+
+By using addEcopathCatchTotal(), the catch values and selectivity assumptions are added to the model in a consistent and automated way. Internally, the function stores the observed catch as a constraint that can later be matched using the package’s optimisation routines (see section 5). This replaces the more manual process in base Mizer of defining gear selectivity parameters and matching the observations by eye, which is a slow, subjective process, and becomes more challenging for gears with more parameter options (i.e., double vs single sigmoid selectivity).
+
+After this step, two parameter sets are created: one assuming logistic (single-sigmoid) selectivity, and one assuming dome-shaped (double-sigmoid) selectivity. These can be explored further in the next section by visualising the resulting selectivity patterns and assessing their implications for fishing mortality.
+
+```{r}
+catch <- data.frame(`Group name`               = species,
+                    `TotalCatch (t/km²/year)` = c(0.3, 0.1, 0.5),
+                    check.names = FALSE)
+
+params_ss <- addEcopathCatchTotal(params, catch,
+                                  sel_func = "sigmoid_length")
+
+params_ds <- addEcopathCatchTotal(params, catch,
+                                  sel_func = "double_sigmoid_length")
+```
+
+# 5 Match observed catches
+
+This step uses a chained sequence of functions to bring the model into alignment with empirical observations. In base Mizer, this process is largely manual, involving hand-tuned selectivity, fishing effort, and adjustments to parameters until simulated catches and biomass appear reasonable. The mizerEcopath approach instead provides a structured and automated sequence to match catch, growth, and abundance to observed values.
+
+We begin with a parameter object params_ds that includes dome-shaped (double-sigmoid) selectivity (as set in the previous step). The goal now is to refine this model so it accurately reproduces observed catch, production, and standing biomass.
+
+```{r}
+# Load Observed Catch Data and filter
+landings_total <- readRDS(here("tests", "catch_with_observer.rds")) %>%
+  filter(gear %in% c("commercial", "total")) %>%
+  mutate(
+    gear = ifelse(gear == "commercial", "total", gear),
+    species = recode(species, "Horse Mackerel" = "Horse mackerel"),
+    dl = 1
+  ) %>%
+  filter(gear == "total", species %in% !!species) %>%
+  group_by(species, length) %>%
+  summarise(
+    dl = first(dl),
+    count = sum(catch),
+    .groups = "drop"
+  ) %>%
+  arrange(species, length)
+
+
+params_ds_mc <- params_ds %>%
+  matchGrowth() %>%
+  steadySingleSpecies() %>%
+  matchBiomasses() %>%
+  matchCatch(
+    catch = landings_total,
+    yield_lambda      = 1,
+    production_lambda = 1
+  ) %>%
+  matchConsumption()
+
+# Create a backup of the calibrated model
+p_backup <- p
+```
+
+This block applies five  functions in sequence (though they can be called separately):
+
+matchGrowth() adjusts core biological parameters — search volume, maximum consumption, metabolic rate, and external encounter rate — all by the same factor, to ensure that individuals can reach their maturity size by their maturity age. This enforces plausible life-history trajectories grounded in species traits.
+
+steadySingleSpecies() then recalculates steady-state abundances assuming no interspecific interactions, based on the updated growth and mortality rates. This helps establish a self-consistent initial size structure.
+
+matchBiomasses() rescales each species’ abundance distribution to match observed standing biomasses, using the biomass_observed column added earlier. This ensures that modelled population sizes reflect empirical estimates before the influence of fishing or optimisation is introduced.
+
+matchCatch() performs optimisation to estimate the parameters of the dome-shaped selectivity curve (e.g. the ascending and descending slopes) so that modelled annual catch matches observed yield. It uses a likelihood-based objective function — implemented in C++ via TMB — that incorporates the observed catch size spectrum (if provided), and optionally penalises deviations in yield and production. Crucially, it keeps species biomass fixed, optimising only the selectivity and catchability.
+
+matchConsumption() then adjusts the model’s metabolic respiration rates so that the total consumption per species aligns with empirical Q values from Ecopath. To do this without changing the energy available for growth and reproduction, it increases external encounter rates in parallel. This step assumes the same scaling exponent (n) applies to both consumption and respiration. If not already set, it updates p to match n. This step finalises the energetic realism of the model.
+
+Together, this chain of steps brings the model into close alignment with key empirical indicators — growth, biomass, catch, and consumption — without requiring hand-tuning or arbitrary parameter selection. The result is a calibrated and ecologically plausible size-spectrum model grounded in observation.
