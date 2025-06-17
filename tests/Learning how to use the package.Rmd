@@ -21,9 +21,9 @@ Improved fishing selectivity representation, including double-sigmoid dome-shape
 
 Support for optimisation via TMB, ensuring catch, biomass, and trophic flow constraints can be met simultaneously.
 
-Throughout, you'll find commentary blocks that explain not just how to use the tools, but why the workflow is structured this way — including references to the companion manuscript that documents the methods and rationale in detail.
+Throughout (possibly not yet implemented), you'll find commentary blocks that explain not just how to use the tools, but why the workflow is structured this way. This will later reference the companion manuscript.
 
-If you're already familiar with base mizer, look out for notes that highlight what has changed, why, and how mizerEcopath makes model setup more transparent and efficient.
+Look out for notes that highlight what has changed and why relative to base mizer.
 
 # 1 Load packages and (re)compile the TMB objective
 
