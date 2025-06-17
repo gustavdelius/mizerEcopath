@@ -102,7 +102,7 @@ It maps Ecopath “groups” to Mizer species (in our case, a 1:1 mapping),
 It computes P/B (production per unit of biomass) internally from these estimates. It stores these values in new columns in the species_params data frame:
 biomass_observed, consumption_observed, production_observed, and ecopath_groups.
 
-Note: This is not the same as matching full interspecific interactions — we’re importing only the species-level energetics, not predator-prey links.
+Note: This is not the same as matching full interspecific interactions — we’re importing only the overall species-level empirical rates, not species to species rates which are properties which only emerge once diets and predation kernels are specified. 
 
 Step 2: Construct an allometric Model from These Parameters
 With those Ecopath constraints in place, we now use newAllometricParams() to build a steady-state MizerParams object. This replaces the base Mizer function newMultispeciesParams() (see mizer docs) and includes several important enhancements:
@@ -204,6 +204,6 @@ matchBiomasses() rescales each species’ abundance distribution to match observ
 
 matchCatch() performs optimisation to estimate the parameters of the dome-shaped selectivity curve (e.g. the ascending and descending slopes) so that modelled annual catch matches observed yield. It uses a likelihood-based objective function — implemented in C++ via TMB — that incorporates the observed catch size spectrum (if provided), and optionally penalises deviations in yield and production. Crucially, it keeps species biomass fixed, optimising only the selectivity and catchability.
 
-matchConsumption() then adjusts the model’s metabolic respiration rates so that the total consumption per species aligns with empirical Q values from Ecopath. To do this without changing the energy available for growth and reproduction, it increases external encounter rates in parallel. This step assumes the same scaling exponent (n) applies to both consumption and respiration. If not already set, it updates p to match n. This step finalises the energetic realism of the model.
+matchConsumption() then adjusts the model’s metabolic respiration rates so that the total consumption per species aligns with empirical Q values from Ecopath. To do this without changing the energy available for growth and reproduction, it increases external encounter rates in parallel. This step assumes the same scaling exponent (n) applies to both consumption and respiration. If not already set, it updates p to match n. 
 
 Together, this chain of steps brings the model into close alignment with key empirical indicators — growth, biomass, catch, and consumption — without requiring hand-tuning or arbitrary parameter selection. The result is a calibrated and ecologically plausible size-spectrum model grounded in observation.
