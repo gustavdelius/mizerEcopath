@@ -207,3 +207,71 @@ matchCatch() performs optimisation to estimate the parameters of the dome-shaped
 matchConsumption() then adjusts the model’s metabolic respiration rates so that the total consumption per species aligns with empirical Q values from Ecopath. To do this without changing the energy available for growth and reproduction, it increases external encounter rates in parallel. This step assumes the same scaling exponent (n) applies to both consumption and respiration. If not already set, it updates p to match n. 
 
 Together, this chain of steps brings the model into close alignment with key empirical indicators — growth, biomass, catch, and consumption — without requiring hand-tuning or arbitrary parameter selection. The result is a calibrated and ecologically plausible size-spectrum model grounded in observation.
+
+# 6 Prepare the diet matrix
+
+The Ecopath diet table specifies what proportion of each predator’s diet is derived from every prey group. mizerEcopath translates that table into a size-resolved predator-prey preference matrix using reduceEcopathDiet(). For now, the matrix is just stored for use once interactions are switched on.
+
+```{r}
+# Read the Ecopath diet proportions for the three-species toy example
+ecopath_diet <- read.csv(here("tests", "Ecopath-Diet composition.csv"))
+
+# Reduce the Ecopath diet to the model species and store as a matrix
+dm <- reduceEcopathDiet(sp, ecopath_diet)
+
+```
+
+# 7 Add empirical predation-kernel parameters 
+
+Size-based predation kernels describe the preferred predator–prey mass ratios. If you have stomach-contents fits, these can replace default power-law assumptions. We align the fits with the order of species in the model, then write the kernel parameters into species_params.
+
+```{r}
+fits <- readRDS(here("tests", "stomach_data_fit.rds"))   
+
+fits3 <- map %>%
+  left_join(fits, by = c("Scientific_name" = "species")) %>%
+  select(species, alpha, ll, ul, lr, ur)
+
+
+# ----- write kernel parameters -----
+sp$pred_kernel_type <- "power_law"
+lambda <- 2
+sp$kernel_exp <- fits3$alpha + 4/3 - lambda
+sp$kernel_l_l  <- fits3$ll
+sp$kernel_u_l  <- fits3$ul
+sp$kernel_l_r  <- fits3$lr
+sp$kernel_u_r  <- fits3$ur
+
+
+params_ds_mc@species_params <- sp # update params object
+```
+
+# 8 Tune catches and diets together with tuneEcopath()
+
+tuneEcopath() is an interactive (Shiny) tool that permits calibration to ensure that the model matches with observations. Here we show the non-interactive call so the tutorial can knit automatically. If Jess runs the call without interactive = FALSE, the gadget will open for manual tweaking.
+
+```{r}
+# Rename columns in the landings data so they are recognised by tuneEcopath() (this might be something worth improving later)
+landings_total <- landings_total %>%
+  mutate(
+    catch = count,
+    gear = "total"
+  )
+
+p_tuned <- tuneEcopath(params_ds_mc,
+  catch         = landings_total,   # size-resolved landings
+  diet          = dm,
+)
+```
+
+# 9 Enable predator–prey interactions
+Up to now the spectra were calculated with no inter-species feeding.
+matchDiet() activates the interaction matrix and re-scales encounter rates so that realised diets match the Ecopath proportions as closely as possible.
+
+```{r}
+# Activate interactions using the reduced diet matrix
+p_interacting <- matchDiet(p_tuned, dm)
+```
+
+We now have a minimal interacting model. We would next want to consider how to tune reproduction - e.g., to time series. 
+
