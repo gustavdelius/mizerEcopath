@@ -178,7 +178,7 @@ landings_total <- readRDS(here("tests", "catch_with_observer.rds")) %>%
   ) %>%
   arrange(species, length)
 
-
+# Working with the double-sigmoid selectivity model
 params_ds_mc <- params_ds %>%
   matchGrowth() %>%
   steadySingleSpecies() %>%
