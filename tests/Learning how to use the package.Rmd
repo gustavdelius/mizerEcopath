@@ -191,7 +191,7 @@ params_ds_mc <- params_ds %>%
   matchConsumption()
 
 # Create a backup of the calibrated model
-p_backup <- p
+p_backup <- params_ds_mc
 ```
 
 This block applies five  functions in sequence (though they can be called separately):
