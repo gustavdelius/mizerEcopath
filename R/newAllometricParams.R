@@ -7,9 +7,9 @@
 #' The metabolic respiration rate, the feeding level and the reproduction level
 #' are set to zero.
 #'
-#' If the exponent `n` of the power-law encounter rate is not provided as a
-#' species parameter, it is set to 0.7. If the exponent `d` of the power-law
-#' mortality rate is not provided, it is set to `n - 1`.
+#' If the exponent n of the power-law encounter rate is not provided as a species
+#' parameter, it is set to 0.7. The exponent d of the power-law mortality rate is
+#' *always* imposed as n - 1, regardless of any supplied value.
 #'
 #' If the species parameter `alpha`, which gives the proportion of the consumption
 #' that is assimilated, is not provided, it is set to 0.8, the default value
@@ -17,8 +17,9 @@
 #'
 #' The coefficient of the power-law encounter rate for each species is chosen so
 #' that the species grows to maturity size by its maturity age. The coefficient
-#' of the power-law mortality rate is chosen so that the juvenile biomass
-#' density has a slightly negative slope (of 0.5).
+#' of the power-law mortality rate is computed from the growth rate (using
+#' `getEGrowth()`), and is chosen so that the#' juvenile biomass density has a
+#' slightly negative slope.
 #'
 #' The species uses `matchGrowth()` to adjust the encounter rate coefficient to
 #' produce the desired growth rate. It uses `matchBiomasses()` to match the
@@ -37,7 +38,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
 
     # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
-    sp <- set_species_param_default(sp, "d", sp$n - 1)
+    sp$d <- sp$n - 1
 
     # Set default assimilation efficiency
     sp <- set_species_param_default(sp, "alpha", 0.8)
@@ -74,7 +75,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
     factor <- age_mat(p) / sp$age_mat
     ext_encounter(p) <- sweep(ext_encounter(p), 1, factor, "*")
     # Determine power-law coefficient for encounter rate
-    e0 <- getEncounter(p)[, 1] / w(p)[1] ^ sp$n[1]
+    e0 <- getEGrowth(p)[, 1] / w(p)[1] ^ sp$n[1]
 
     # Set power-law mortality
     # Choose a positive coefficient so that the juvenile biomass density
