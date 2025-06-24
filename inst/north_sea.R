@@ -63,7 +63,7 @@ comment(sp$age_mat) <- "Median of `tm` over all observations on the 'maturity' t
 comment(sp$w_mat) <- "Calculated from `l_mat` using weight-length parameters `a` and `b`."
 
 # Add gonadic proportion
-sp$gonad_proportion <- 0.2
+# sp$gonad_proportion <- 0.2
 
 ## Add Ecopath species parameters ----
 
@@ -107,10 +107,12 @@ p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
 p <- matchCatch(p, catch = catch)
 ## Match consumption ----
 p <- matchConsumption(p)
-# Fix the species with unrealistic reproductive efficiency
-p <- tuneEcopath(p, catch = catch)
 
 
 ## Aggregate ecopath diet matrix ----
 ecopath_diet <- read.csv("inst/extdata/North Sea-Diet composition.csv")
 dm <- reduceEcopathDiet(sp, ecopath_diet)
+
+
+# Fix the species with unrealistic reproductive efficiency
+p <- tuneEcopath(p, catch = catch, diet = dm)
