@@ -1,17 +1,26 @@
-#' Match the observed catch and yield
+#' Match observed catch, yield and production
 #'
-#' This function adjusts various model parameters for the selected species so
-#' that the model in steady state reproduces the observed catch size
-#' distribution, the observed yield and the observed production, if available.
+#' This function adjusts the gear‐selectivity, catchability and mortality for
+#' the selected species so that a steady‑state model reproduces the observed
+#' catch size distribution, the observed yield and the observed production, if
+#' available.
 #'
 #' Currently this function is implemented only for the case where there is a
 #' single gear catching each species.
 #'
-#' The function sets new values for the following parameters:
-#' * `l50`: The size at which the gear selectivity is 50%.
-#' * `l25`: The size at which the gear selectivity is 25%.
+#' The function estimates optimal values for the following parameters:
 #' * `catchability`: The catchability of the gear.
 #' * `mu_mat`: The external mortality at maturity.
+#' * `l25`: The size at which the gear selectivity first reaches 25%.
+#' * `l50`: The size at which the gear selectivity first reaches 50%.
+#'
+#' If a *double‑sigmoid* selectivity function is used where selectivity drops
+#' of again at large sizes, as in
+#' `mizer::double_sigmoid_length()`, then also the parameters for the right
+#' sigmoid are estimated:
+#'
+#' * `l50_right` – length at 50 % *descending* selectivity
+#' * `l25_right` – length at 25 % *descending* selectivity
 #'
 #' Only the parameters of the selected species are adjusted. The function then
 #' recalculates the corresponding rate arrays in the params object. It sets the
@@ -87,6 +96,10 @@
 #' @export
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                        yield_lambda = 1, production_lambda = 1) {
+    # Accept count or catch as input
+    if (!"count" %in% names(catch) && "catch" %in% names(catch)) {
+        catch$count <- catch$catch
+    }
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
     params <- validParams(params)
@@ -113,8 +126,13 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     sps <- sp[sp_select, ]
     gps <- gp[gp$species == species, ]
 
+    use_double_sigmoid <- identical(gps$sel_func, "double_sigmoid_length")
+
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
+    # ── upper bound on mu_mat so juvenile slope < community spectrum ──
+    g_mat     <- getEReproAndGrowth(params)[sp_select, mat_idx]
+    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
     if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
         # determine external mortality at maturity
         mu_mat <- ext_mort(params)[sp_select, mat_idx]
@@ -122,36 +140,75 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         mu_mat <- sps$mu_mat
     }
 
-    # Initial parameter estimates
-    initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                        mu_mat = mu_mat,
-                        # we need non-zero catchability to match catch
-                        catchability = max(gps$catchability, 1e-8))
+    ## ---- New parameterisation: optimise l50, ratio, Δ50, r_right, mu_mat, catchability ----
 
-    # Set parameter bounds
-    # Mortality is bounded by the requirement that the juvenile spectrum of
-    # each species must be less steep than the community spectrum.
-    # With g(w) = g w^n and mu(w) = mu w^{n-1}, the exponent of the juvenile
-    # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
-    g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
-    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2,
-                      catchability = 1e-8)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
-                      catchability = Inf)
+    # a) Build the initial parameter vector. Δ50 = l50_right - l50  (always > 0)
+    initial_params <- list(
+        l50          = gps$l50,
+        ratio        = gps$l25 / gps$l50,
+        r_right      = gps$l25_right / gps$l50_right,
+        d50          = gps$l50_right - gps$l50,
+        mu_mat       = mu_mat,
+        # We need non-zero catchability
+        catchability = pmax(gps$catchability, 1e-8)
+    )
 
+    # b) One simple, global bounds list
+    default_bounds <- list(
+        l50          = c(5,  Inf),
+        ratio        = c(0.1, 0.8),
+        d50          = c(5,  Inf),
+        mu_mat       = c(0.2, mu_mat_max),
+        catchability = c(1e-8, Inf),
+        r_right      = c(1.3, 4)
+    )
+
+    # For single‐sigmoid we still *pass* these parameters to TMB,
+    # but give them a small, finite value in the dome‐shaped code
+    if (!use_double_sigmoid) {
+        initial_params["d50"] <- default_bounds$d50[1]       # 10
+        initial_params["r_right"] <- default_bounds$r_right[1] # 1.1
+    }
+
+    lower_bounds <- sapply(default_bounds, `[`, 1)
+    upper_bounds <- sapply(default_bounds, `[`, 2)
+
+    if (getOption("mizerEcopath.debug.matchCatch", FALSE)) {
+        message("\nDEBUG: Optim bounds for ", species, ":\n")
+        print(data.frame(lower = lower_bounds, upper = upper_bounds))
+    }
+
+    # Lock parameters where necessary
     map <- list()
+
+    # Lock right-hand sigmoid parameters if using single sigmoid
+    if (!use_double_sigmoid) {
+        map$d50 <- factor(NA)
+        map$r_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("d50", "r_right")
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
+    }
+
+    # Lock all selectivity parameters if no catch size data
     if (!data$use_counts) {
         map$l50 <- factor(NA)
         map$ratio <- factor(NA)
-        lower_bounds <- lower_bounds[-(1:2)]
-        upper_bounds <- upper_bounds[-(1:2)]
+        map$d50 <- factor(NA)
+        map$r_right <- factor(NA)
+        keep <- !names(lower_bounds) %in% c("l50", "ratio", "d50", "r_right")
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
     }
+
+    # Lock catchability if yield not to be matched
     if (data$yield_lambda == 0) {
         map$catchability <- factor(NA)
-        lower_bounds <- lower_bounds[-4]
-        upper_bounds <- upper_bounds[-4]
+        keep <- names(lower_bounds) != "catchability"
+        lower_bounds <- lower_bounds[keep]
+        upper_bounds <- upper_bounds[keep]
     }
+
     # Prepare the objective function.
     obj <- MakeADFun(data = data,
                      parameters = initial_params,
