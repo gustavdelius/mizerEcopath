@@ -2,15 +2,15 @@
 % Please edit documentation in R/makeInteracting.R
 \name{makeInteracting}
 \alias{makeInteracting}
-\title{Make species interact with given interaction matrix}
+\title{Enable predator–prey interactions using an interaction matrix}
 \usage{
 makeInteracting(params, interaction)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{interaction}{An interaction matrix where the entry in row i and
-column j determines how strongly species i predates on species j.}
+\item{interaction}{An interaction  matrix where entry \emph{(i, j)} gives the strength
+with which species \emph{i} preys on \emph{j}.}
 }
 \value{
 The modified MizerParams object
@@ -21,4 +21,11 @@ only external mortality and external encounter) and an interaction matrix.
 The external encounter and mortality rates will then be decreased by the
 amount of the predation encounter and mortality that is created by that
 interaction matrix.
+}
+\details{
+If predation would exceed total mortality or encounter for a species, a warning is issued
+and negative values are truncated to zero. This can cause the resulting model to
+diverge from the steady state.
+
+Typically used internally by \code{\link[=matchDiet]{matchDiet()}}
 }

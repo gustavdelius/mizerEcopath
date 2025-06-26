@@ -3,6 +3,7 @@
 export(addEcopathCatchTotal)
 export(addEcopathParams)
 export(alignResource)
+export(fillDefaultsFromFishBase)
 export(getConsumption)
 export(getDietMatrix)
 export(getDiffusion)

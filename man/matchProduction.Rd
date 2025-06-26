@@ -4,7 +4,7 @@
 \alias{matchProduction}
 \alias{matchProductionOnce}
 \alias{isProductionMatched}
-\title{Match the production of the model to the Ecopath production}
+\title{Match the model's production rate to empirical observations/estimates}
 \usage{
 matchProduction(params, tol = 0.1, max_iter = 10)
 
@@ -15,15 +15,18 @@ isProductionMatched(params, tol = 0.1)
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{tol}{The relative tolerance for the match. Default is 0.1.}
+\item{tol}{The relative tolerance for matching observed production. Default is 0.1.}
 
 \item{max_iter}{The maximum number of iterations. Default is 10.}
 
-\item{steady}{Whether to return the model to a steady state after adjusting
-the production. Default is TRUE.}
+\item{steady}{Logical. If \code{TRUE} (default), returns the model to steady state
+after parameter adjustment using \code{\link[=steadySingleSpecies]{steadySingleSpecies()}} and \code{\link[=matchBiomasses]{matchBiomasses()}}.}
 }
 \value{
-A MizerParams object with the production matched
+A MizerParams object with the adjusted metabolic and reproductive parameters
+to match production.
+
+A MizerParams object with updated parameters and optionally a new steady state.
 }
 \description{
 This function sets the respiration rate according to the first master

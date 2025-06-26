@@ -17,3 +17,7 @@ segments. In this function we want to
 precompute the weights with which we need to add up the density values to
 approximate the integral over each bin.
 }
+\details{
+#' @return A list with vectors \code{bin_index}, \code{f_index}, \code{coeff_fj}, and \code{coeff_fj1}
+used for efficient linear interpolation of density values over bins.
+}

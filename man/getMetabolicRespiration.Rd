@@ -23,6 +23,8 @@ The respiration rate \eqn{K_i} is calculated as
 where \eqn{k_i(w)} is the metabolic rate of an individual of species \eqn{i}
 and weight \eqn{w} (calculated with \code{\link{getMetabolicRate}}) and
 \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
+
+Used internally by \code{\link[=matchConsumption]{matchConsumption()}} to help scale metabolic loss to match observed consumption.
 }
 \examples{
 getMetabolicRespiration(NS_params)

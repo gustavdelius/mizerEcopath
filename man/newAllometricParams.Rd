@@ -23,9 +23,9 @@ The metabolic respiration rate, the feeding level and the reproduction level
 are set to zero.
 }
 \details{
-If the exponent \code{n} of the power-law encounter rate is not provided as a
-species parameter, it is set to 0.7. If the exponent \code{d} of the power-law
-mortality rate is not provided, it is set to \code{n - 1}.
+If the exponent n of the power-law encounter rate is not provided as a species
+parameter, it is set to 0.7. The exponent d of the power-law mortality rate is
+\emph{always} imposed as n - 1, regardless of any supplied value.
 
 If the species parameter \code{alpha}, which gives the proportion of the consumption
 that is assimilated, is not provided, it is set to 0.8, the default value
@@ -33,8 +33,8 @@ used by Ecopath.
 
 The coefficient of the power-law encounter rate for each species is chosen so
 that the species grows to maturity size by its maturity age. The coefficient
-of the power-law mortality rate is chosen so that the juvenile biomass
-density has a slightly negative slope (of 0.5).
+of the power-law mortality rate is computed from the growth rate and is chosen so that the juvenile biomass density has a
+slope of -0.2.
 
 The species uses \code{matchGrowth()} to adjust the encounter rate coefficient to
 produce the desired growth rate. It uses \code{matchBiomasses()} to match the

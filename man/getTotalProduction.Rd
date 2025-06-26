@@ -19,6 +19,10 @@ production, which can be obtained individually with \code{\link[=getSomaticProdu
 and \code{\link[=getGonadicProduction]{getGonadicProduction()}}. This differs from the Ecopath definition of
 production, see \code{\link[=getProduction]{getProduction()}}.
 }
+\details{
+Used by \code{\link[=matchConsumption]{matchConsumption()}} to calculate how much assimilated energy is left
+over after production, in order to estimate the required metabolic loss.
+}
 \examples{
 getTotalProduction(NS_params)
 }

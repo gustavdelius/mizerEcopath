@@ -2,7 +2,7 @@
 % Please edit documentation in R/matchDiet.R
 \name{matchDiet}
 \alias{matchDiet}
-\title{Match the diet matrix of the model to the Ecopath diet matrix}
+\title{Match the diet matrix of the model to an observed diet matrix}
 \usage{
 matchDiet(params, diet_matrix, min_w_pred = 0, max_w_pred = Inf)
 }
@@ -24,16 +24,23 @@ desired diet is achieved.
 }
 \description{
 This function adjusts the interaction matrix of the model so that its diet
-matrix matches the Ecopath diet matrix. It then adjusts the external
-encounter and mortality rates so that the steady state is not changed.
+matrix matches the given diet matrix (typically derived using\code{reduceEcopathDiet()}).
 }
 \details{
-If \code{min_w_pred} or \code{max_w_pred} are set, then the diet matrix is assumed to
-represent the flow of biomass into the part of the predator species
-population with sizes in the specified range.
+This function first converts the input diet matrix from proportions to
+absolute consumption using species-specific consumption rates. It then
+calculates the interaction strengths required to reproduce this diet and
+applies them using \code{makeInteracting()}. External mortality and encounter
+terms are adjusted to preserve the model’s steady state.
 
-The function will raise a warning for any species that requires a negative
-external mortality rate or negative external encounter rate.
+If \code{min_w_pred} or \code{max_w_pred} are provided, the diet matrix is assumed to
+represent consumption by individuals within that size range
+
+If matching the diet requires interaction strengths that would imply
+negative external mortality or encounter rates for any species, warnings
+will be issued by \code{makeInteracting()}. These indicate that the model
+assumptions may be biologically unrealistic or that the input diet matrix
+is incompatible with other model parameters.
 }
 \seealso{
 Other match functions: 

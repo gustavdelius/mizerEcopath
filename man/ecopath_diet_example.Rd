@@ -3,7 +3,7 @@
 \docType{data}
 \name{ecopath_diet_example}
 \alias{ecopath_diet_example}
-\title{Example Ecopath diet matrix}
+\title{Ecopath diet matrix from Lauria et al. (2016)}
 \format{
 A data frame with predator groups as row names and prey groups as columns.
 }

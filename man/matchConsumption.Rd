@@ -2,32 +2,31 @@
 % Please edit documentation in R/matchConsumption.R
 \name{matchConsumption}
 \alias{matchConsumption}
-\title{Match the consumption of the model to the Ecopath consumption}
+\title{Match the model’s total consumption to observed estimates}
 \usage{
 matchConsumption(params, species = NULL)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{species}{A vector of species names or indices. If NULL, all species for
-which the species parameter \code{consumption_observed} is provided are
-affected.}
-}
-\value{
-A MizerParams object with adjusted encounter and metabolic
-respiration rates.
+\item{species}{A vector of species names or indices. If NULL,
+applies to all species with a provided \code{consumption_observed}.
+#' @return A \code{MizerParams} object with adjusted encounter and metabolic
+respiration rates.}
 }
 \description{
-This function sets the metabolic respiration rate so that the consumption
-matches the species parameter \code{consumption_observed}, while keeping the same
-energy available for growth and reproduction. Thus the function also adjusts
-the external encounter rate to compensate for the changed respiration rate.
-To do this the function assumes that both the encounter rate and the
-metabolic respiration rate are given by power laws with the same exponent
-\code{n}, so it sets the species parameter \code{p} to the same value as \code{n}. A warning
-is issued if the exponent \code{p} had to be changed for any species.
+This function sets the metabolic respiration rate so that the total consumption
+matches the parameter \code{consumption_observed} for each species. The function preserves
+the energy available for growth and reproduction by increasing external encounter
+rates to compensate for changes in metabolic loss.
 }
 \details{
+Thus the function also adjusts the external encounter rate to compensate for the
+changed respiration rate. To do this the function assumes that both the encounter rate
+and the metabolic respiration rate are given by power laws with the same exponent
+\code{n}, so it sets the species parameter \code{p} to the same value as \code{n}. A warning
+is issued if the exponent \code{p} had to be changed for any species.
+
 Any of the selected species for which \code{consumption_observed} is NA will be
 quietly ignored.
 

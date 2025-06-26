@@ -2,7 +2,7 @@
 % Please edit documentation in R/prepare_data.R
 \name{prepare_data}
 \alias{prepare_data}
-\title{Prepare a TMB Objective Function for Optimizing Model Parameters}
+\title{Prepare a TMB Objective Function for Optimising Model Parameters}
 \usage{
 prepare_data(
   params,
