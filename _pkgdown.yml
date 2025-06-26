@@ -25,13 +25,14 @@ reference:
   - setResourceInteraction
 - title: "Working with Ecopath"
   desc: >
-    Functions for importing and validating Ecopath data.
+    Functions for importing and validating data.
   contents:
   - addEcopathParams
   - addEcopathCatchTotal
   - reduceEcopathDiet
   - validEcopathParams
   - validEcopathCatch
+  - fillDefaultsFromFishBase
 - title: "Shiny gadget"
   desc: >
     Interactive interface for tuning mizer model parameters.
@@ -81,6 +82,7 @@ reference:
   - prepare_data
   - update_params
   - precompute_weights
+  - valid_catch
 - title: "Obsolete?"
   desc: >
     Functions retained for compatibility or reference but not in active use.
