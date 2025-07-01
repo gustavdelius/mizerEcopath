@@ -472,6 +472,8 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
 tuneParams_match <- function(p, catch, params, params_old, logs, session, input) {
 
     tryCatch({
+        message('Calling mizer::matchBiomasses()')
+        p <- mizer::matchBiomasses(p)
         p <- matchGrowth(p, species = input$sp, keep = "biomass")
         p <- matchCatch(p, species = input$sp, catch = catch,
                         production_lambda = 10^input$production_lambda,
