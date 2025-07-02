@@ -58,6 +58,7 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
         p@initial_n <- p_old@initial_n
 
         p <- steadySingleSpecies(p)
+        p <- matchBiomasses(p)
         p <- setBevertonHolt(p, reproduction_level = 0)
 
         # Update the reactive params object
