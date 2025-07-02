@@ -64,8 +64,7 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # Set the resource capacity so that the the steady-state resource
     # abundance stays the same
     params <- setResource(params,
-                          resource_level = resource_level,
-                          resource_dynamics = resource_dynamics)
+                          resource_level = resource_level)
 
     return(params)
 }
