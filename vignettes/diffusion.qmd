@@ -318,7 +318,7 @@ solve_ode_double_sweep <- function(U, L, D, n0, N) {
 }
 ```
 
-# North Sea Cod example {#sec-diffusion-example}
+# North Sea Cod example {#sec-diffusion-NS}
 
 We will now implement this in an example. We start with the North Sea Cod.
 

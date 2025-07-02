@@ -1,0 +1,9 @@
+pandoc: '3.4'
+pkgdown: 2.1.3
+pkgdown_sha: ~
+articles:
+  diffusion: diffusion.html
+  ecopath_to_mizer: ecopath_to_mizer.html
+  mizerEcopath: mizerEcopath.html
+  todo: todo.html
+last_built: 2025-07-02T06:47Z
