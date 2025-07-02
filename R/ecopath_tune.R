@@ -457,8 +457,6 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
             file.remove(logs$files)
             p <- params()
             p <- finalise_params(p)
-            p <- setBevertonHolt(p, R_max = Inf)
-            p <- setBevertonHolt(p, reproduction_level = 0)
             stopApp(p)
         })
 
