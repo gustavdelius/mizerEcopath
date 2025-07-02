@@ -4,10 +4,15 @@
 \alias{setResourceInteraction}
 \title{Set resource interaction to absorb external encounter rate}
 \usage{
-setResourceInteraction(params)
+setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
 }
 \arguments{
 \item{params}{A mizer params object}
+
+\item{resource_dynamics}{Optional. Name of the function that determines the
+resource dynamics by calculating the resource spectrum at the next time
+step from the current state. If not provided, the function will
+use \code{resource_semichemostat()}.}
 }
 \value{
 The modified mizer params object with increased \code{interaction_resource}
@@ -15,9 +20,10 @@ species parameters and correspondingly decreased external encounter rate.
 }
 \description{
 This function sets the resource interaction for each species to absorb as
-much of the external encounter rate as possible. It adjusts the resource
-capacity so that the resource can sustain the extra encounter without
-changing the current resource abundance or the resource level.
+much of the external encounter rate as possible. It sets the resource
+dynamics and adjusts the resource capacity so that the resource can sustain
+the extra encounter without changing the current resource abundance or the
+resource level.
 }
 \details{
 If the initial abundances were at steady state, then they will remain at
