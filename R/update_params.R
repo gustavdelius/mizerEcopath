@@ -10,11 +10,9 @@
 #'   model.
 #' @param pars A named numeric vector of parameter values
 #' @param data The list with data as passed to the objective function
-#' @param w_select A logical vector indicating which weight bins were used in
-#'   the likelihood calculation
 #' @return The updated MizerParams object
 #' @export
-update_params <- function(params, species = 1, pars, data, w_select) {
+update_params <- function(params, species = 1, pars, data) {
     params <- validParams(params)
     sp <- species_params(params)
 
@@ -63,10 +61,8 @@ update_params <- function(params, species = 1, pars, data, w_select) {
     # Calculate the new steady state ----
     params <- steadySingleSpecies(params)
     # Rescale it to get the observed biomass
-    total <- sum(params@initial_n[sp_select, w_select] *
-                     params@w[w_select] * params@dw[w_select])
-    factor <- data$biomass / total
-    params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * factor
+    params <- matchBiomasses(params)
+    # Set the reproduction level to zero
     params <- setBevertonHolt(params, reproduction_level = 0)
 
     return(params)

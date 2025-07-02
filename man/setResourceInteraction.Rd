@@ -4,15 +4,12 @@
 \alias{setResourceInteraction}
 \title{Set resource interaction to absorb external encounter rate}
 \usage{
-setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
+setResourceInteraction(params, resource_dynamics = NULL)
 }
 \arguments{
 \item{params}{A mizer params object}
 
-\item{resource_dynamics}{Optional. Name of the function that determines the
-resource dynamics by calculating the resource spectrum at the next time
-step from the current state. If not provided, the function will
-use \code{resource_semichemostat()}.}
+\item{resource_dynamics}{Optional. Character string specifying the resource dynamics to use. If NULL (default), does not change the current resource dynamics.}
 }
 \value{
 The modified mizer params object with increased \code{interaction_resource}
@@ -20,14 +17,26 @@ species parameters and correspondingly decreased external encounter rate.
 }
 \description{
 This function sets the resource interaction for each species to absorb as
-much of the external encounter rate as possible. It sets the resource
-dynamics and adjusts the resource capacity so that the resource can sustain
-the extra encounter without changing the current resource abundance or the
-resource level.
+much of the external encounter rate as possible. It adjusts the resource
+capacity so that the resource can sustain the extra encounter without
+changing the current resource abundance or the resource level.
 }
 \details{
 If the initial abundances were at steady state, then they will remain at
 steady state. This is because the total encounter rate is not modified by
 this function and because the extra mortality on the resource is exactly
 balanced by the changed resource capacity.
+
+Optionally, you can specify the resource dynamics to use (e.g.,
+"resource_semichemostat" or "resource_constant") by setting the
+resource_dynamics argument. This allows you to switch between dynamic and
+constant resource regimes directly through this function. For example:
+params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
+will set the resource dynamics to semichemostat.
+
+Note: The function ensures that the resource level passed to setResource()
+is strictly between 0 and 1, as required by mizer. If any value of
+resource_level is greater than or equal to 1, it is set to just below 1
+(0.99999999). If any value is less than or equal to 0, it is set to a small
+positive value (1e-8). This prevents errors and ensures biological realism.
 }

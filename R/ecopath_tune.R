@@ -455,7 +455,9 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
         # return with the latest params object
         observeEvent(input$done, {
             file.remove(logs$files)
-            stopApp(finalise_params(params()))
+            p <- params()
+            p <- finalise_params(p)
+            stopApp(p)
         })
 
     } #the server
@@ -472,11 +474,30 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
 tuneParams_match <- function(p, catch, params, params_old, logs, session, input) {
 
     tryCatch({
+        # We are adding debugging code that will alert us if biomasses
+        # are not preserved during the matching process.
+        # TODO: remove this code once we are sure that it works
+        pb <- matchBiomasses(p)
+        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            stop("Biomass has changed before matchGrowth")
+        }
         p <- matchGrowth(p, species = input$sp, keep = "biomass")
+        pb <- matchBiomasses(p)
+        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            stop("Biomass has changed after matchGrowth")
+        }
         p <- matchCatch(p, species = input$sp, catch = catch,
                         production_lambda = 10^input$production_lambda,
                         yield_lambda = 10^input$yield_lambda)
+        pb <- matchBiomasses(p)
+        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            stop("Biomass has changed after matchCatch")
+        }
         p <- matchConsumption(p, species = input$sp)
+        pb <- matchBiomasses(p)
+        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            stop("Biomass has changed after matchConsumption")
+        }
 
         # Update the reactive params objects
         params_old(p)
