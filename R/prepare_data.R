@@ -75,12 +75,10 @@ prepare_data <- function(params, species = 1, catch,
         # Add empty bins at either end. This will have an effect only when the
         # catch data is very poor and would be matched by curves that are still
         # large at the end of the observation interval.
-        if (min(catch$length) > 2) {
-            observed_bins <- rbind(observed_bins,
-                                   data.frame(bin_start = 1,
-                                              bin_end = min(catch$length),
-                                              count = 0))
-        }
+        observed_bins <- rbind(observed_bins,
+                               data.frame(bin_start = sps$w_min,
+                                          bin_end = min(catch$length),
+                                          count = 0))
         max_idx <- which.max(catch$length)
         max_length <- catch$length[max_idx] + catch$dl[max_idx]
         observed_bins <- rbind(observed_bins,
