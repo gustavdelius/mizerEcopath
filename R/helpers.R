@@ -1,72 +1,81 @@
-
-
 #' Reduce Ecopath diet matrix to mizer species
 #'
 #' Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
-#' using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+#' using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 #' Produces a species-by-species diet matrix, including an \code{"other"} category to account
+#' for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
+#' are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+#' is then normalised to proportions.
+#'
+#' This produces a species-by-species diet matrix, including an \code{"other"} category to account
 #' for diet contributions from Ecopath groups not included in the model.
 #'
-#' @param species_params A data frame with mizer species parameters
-#' @param ecopath_diet The Ecopath diet matrix, as exported by the Ecopath
-#'   software.
+#' This function assumes that the supplied Ecopath diet matrix contains proportions (not absolute rates).
+#'
+#' @param species_params A data frame with mizer species parameters.
+#' @param ecopath_diet The Ecopath diet matrix, as exported by the Ecopath software.
+#'   Rows correspond to prey groups, columns to predator groups.
+#' @param ecopath_params The  basic parameters data frame, containing at least biomass and
+#' consumption/biomass for each group.
 #'
 #' @return A matrix with dimnames `predator` and `prey`, where the row names are
 #'   the species names of the predators and the column names are the species
-#'   names of the prey, an extra column "other" for groups not included in the model.
-#'   The matrix entries give for each predator the proportion of its diet that comes
-#'   from each prey species or from other ecosystem components.
+#'   names of the prey, plus an extra column "other" for groups not included in the model.
+#'   The matrix entries give, for each predator, the proportion of its total consumption
+#'   that comes from each prey species or from other ecosystem components.
 #'
 #' @export
+#'
 #' @examples
 #' # Generate a reduced diet matrix
 #' diet_matrix <- reduceEcopathDiet(
 #'     species_params = species_params_example,
-#'     ecopath_diet = ecopath_diet_example
+#'     ecopath_diet = ecopath_diet_example,
+#'     ecopath_params = ecopath_params_example
 #' )
 #'
 #' # View first few rows of the result
 #' head(diet_matrix)
-reduceEcopathDiet <- function(species_params, ecopath_diet) {
+#'
+reduceEcopathDiet <- function(species_params, ecopath_diet, ecopath_params)
+{
     ecopath_diet[is.na(ecopath_diet)] <- 0
     sp <- validSpeciesParams(species_params)
     species <- sp$species
     no_sp <- length(species)
-    # The second column of ecopath diet matrix has the group names.
     ecopath_groups <- ecopath_diet[, 2]
-    # Keep only the columns that correspond to predators
     ecopath_diet_reduced <- ecopath_diet[, 3:ncol(ecopath_diet)]
-    # Get the indices of the predators from the column names
-    # Just need to strip off the leading X introduced by read.csv
-    preds <- sapply(names(ecopath_diet_reduced),
-                    function(x) substr(x, 2, nchar(x)))
+    ecopath_params <- validEcopathParams(
+        ecopath_params,
+        species_to_groups = setNames(sp$ecopath_groups, sp$species)
+    )
+    # Compute absolute consumption Q = B * (Q/B) for each stanza
+    Q <- with(ecopath_params,
+              `Biomass (t/km²)` * `Consumption / biomass (/year)`)
+    names(Q) <- ecopath_params$`Group name`
+    preds <- sapply(names(ecopath_diet_reduced), function(x) substr(x,
+                                                                    2, nchar(x)))
     preds <- as.integer(preds)
-    # Note that the rows are the prey and the columns are the predators
     rownames(ecopath_diet_reduced) <- ecopath_groups
     colnames(ecopath_diet_reduced) <- ecopath_groups[preds]
-    # Keep only predators that correspond to our species
     selected_groups <- unlist(sp$ecopath_groups)
     ignored_groups <- setdiff(ecopath_groups, selected_groups)
     ecopath_diet_reduced <- ecopath_diet_reduced[, selected_groups]
-    # Create mizer diet matrix
-    dm <- array(0, dim = c(no_sp, no_sp + 1),
-                dimnames = list(predator = species,
-                                prey = c(species, "other")))
+    dm <- array(0, dim = c(no_sp, no_sp + 1), dimnames = list(predator = species,
+                                                              prey = c(species, "other")))
     for (i in seq_along(species)) {
         for (pred_group in sp$ecopath_groups[[i]]) {
             for (j in seq_along(species)) {
                 for (prey_group in sp$ecopath_groups[[j]]) {
                     dm[i, j] <- dm[i, j] +
-                        ecopath_diet_reduced[prey_group, pred_group]
+                        Q[pred_group] * ecopath_diet_reduced[prey_group, pred_group]
                 }
             }
-            # Add consumption from all other groups
             dm[i, "other"] <- dm[i, "other"] +
-                sum(ecopath_diet_reduced[ignored_groups, pred_group])
+                Q[pred_group] * sum(ecopath_diet_reduced[ignored_groups, pred_group])
         }
     }
-    # Convert to proportions
-    dm <- dm / rowSums(dm)
+    dm <- dm/rowSums(dm)
     return(dm)
 }
 
