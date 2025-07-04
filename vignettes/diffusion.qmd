@@ -90,7 +90,7 @@ $$
 d(w) = g(w)w\frac{1}{1-f_c/f}\frac{\alpha}{\beta}\exp\left(\frac{(2\lambda - 3)\sigma^2}{2}\right).
 $$
 
-To get a feel for the typical magnitude of the factor let's consider concrete values $(1-f_c/f)=0.6$, $\alpha = 0.8$, $\beta = 100$, $\sigma = 1$ and $\lambda = 2$. Then $d(w) \approx 0.02 g(w)w$. However we see that the value of $d(w)$ is strongly influenced by the width of the feeding kernel. If we choose $\sigma = 2$ then $d(w)\approx0.1g(w)w$. This increase in the diffusion rate with increasin $\sigma$ may explains the result from [@datta2010a] that the stability of the system increases with increasing $\sigma$.
+To get a feel for the typical magnitude of the factor let's consider concrete values $(1-f_c/f)=0.6$, $\alpha = 0.8$, $\beta = 100$, $\sigma = 1$ and $\lambda = 2$. Then $d(w) \approx 0.02 g(w)w$. However we see that the value of $d(w)$ is strongly influenced by the width of the feeding kernel. If we choose $\sigma = 2$ then $d(w)\approx0.1g(w)w$. This increase in the diffusion rate with increasing $\sigma$ may explains the result from [@datta2010a] that the stability of the system increases with increasing $\sigma$.
 
 # Effect on juvenile slope {#sec-diffusion-juvenile}
 
@@ -143,9 +143,9 @@ a &= -n+\frac1{d_0}\left(g_0-d_0/2-\sqrt{(g_0-d_0/2)^2+2d_0\mu_0}\right)\\
 \end{split}
 $$
 
-We see that when $\mu_0=g_0$ then the first correction term to the juvenile slope vanishes. The largest increase in slope (i.e., the least negative slope) is achieved when $\mu_0/g_0=1/2$. In that case the slope without diffusion is $-1.25$ (assuming \$n=0.75). The correction term then is $1/8 d_0/g_0$. We had already seen in the previous section that $d_0/g_0$ is typically very small, so the change in slope is also very small.
+We see that when $\mu_0=g_0$ then the first correction term to the juvenile slope vanishes. The largest increase in slope (i.e., the least negative slope) is achieved when $\mu_0/g_0=1/2$. In that case the slope without diffusion is $-1.25$ (assuming $n=0.75$). The correction term then is $d_0/(8g_0)$. We had already seen in the previous section that $d_0/g_0$ is typically very small, so the change in slope is also very small.
 
-Using the example value of $d_0/g_0=0.002$ and $n=0.75$ we get a slope correction of $0.00025$ from $-1.25$ to $-1.24975$. Using the value $d_0/g_0=0.1$ we get a larger slope correction of $0.0125$ from $-1.25$ to $-1.2375$. While this still seems irrelevant, we have to remember that we are looking at a power law exponent and that small changes in the exponent can have a large effect on the value of the power law. If, for example, we have a fixed abundance of eggs of size 0.001g and then look at the resulting density of fish of 1000g, then the diffusion correction increases that by a factor of $(10^6)^{0.0125}\approx 1.19$, an increase by 19\\%.
+Using the example value of $d_0/g_0=0.002$ and $n=0.75$ we get a slope correction of $0.00025$ from $-1.25$ to $-1.24975$. Using the value $d_0/g_0=0.1$ we get a larger slope correction of $0.0125$ from $-1.25$ to $-1.2375$. While this still seems irrelevant, we have to remember that we are looking at a power law exponent and that small changes in the exponent can have a large effect on the value of the power law. If, for example, we have a fixed abundance of eggs of size 0.001g and then look at the resulting density of fish of 1000g, then the diffusion correction increases that by a factor of $(10^6)^{0.0125}\approx 1.19$, an increase by $19\%$.
 
 When $\mu_0/g_0>1$ then the diffusion correction is negative, i.e., the juvenile slope becomes more negative due to diffusion, meaning fewer large fish.
 
@@ -168,7 +168,7 @@ We should then also work with the abundance density as a function of $x$. Let's 
 $$
 n(x)dx = N(w)dw
 $$
-Because $dx = dw / w$ this means $N(w)=n(w)/w$. 
+Because $dx = dw / w$ this means $N(w)=n(x)/w$. 
 
 By the chain rule we have
 $$
@@ -223,6 +223,8 @@ n(x_0)=n_0,~~~~n(x_{max})=0.
 $$
 where $x_{max}$ is some size that fish can never reach.
 
+## Second-order finite-difference scheme
+
 We solve this with a second-order finite-difference scheme, using our equally-spaced grid with spacing $h$:
 $x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
 $$
@@ -234,7 +236,7 @@ U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
 $$ {#eq-UDL}
 with
 $$
-U_i=a_i-\frac{h}{2}b_i, \qquad L_i=a_i-\frac{h}{2}b_i \qquad \text{ and }~~~D_i = -2a_i-h^2c_i
+U_i=a_i-\frac{h}{2}b_i, \qquad L_i=a_i+\frac{h}{2}b_i \qquad \text{ and }~~~D_i = -2a_i-h^2c_i
 $$
 for $i=1,\dots,N$. 
 This can be solved by making the Ansatz
@@ -318,12 +320,118 @@ solve_ode_double_sweep <- function(U, L, D, n0, N) {
 }
 ```
 
+## Upwind difference scheme
+
+To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation
+$$
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n=0.
+$$
+We use our equally-spaced grid with spacing $h$:
+$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
+$$
+\begin{split}
+\left(\tilde{g}n\right)'(x_i)&\approx\frac{\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}}{h},\\
+\left(\tilde{d}n\right)''(x_i)&=\frac{\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}}{h^2}.
+\end{split}
+$$
+Substituting this into the ODE and multiplying by $h^2$ gives us the linear system
+$$
+\frac{1}{2}\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
+$$
+which we can rewrite as
+$$
+U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
+$$ {#eq-UDL}
+with
+$$
+U_i=\frac{\tilde{d}_{i+1}}{2}, \qquad L_i=\frac{\tilde{d}_{i-1}}{2}+h\,\tilde{g}_{i-1} \qquad \text{ and }~~~D_i = -\tilde{d}_i - h\,\tilde{g}_i-h^2\mu_i
+$$
+for $i=1,\dots,N$. 
+This can be solved by making the Ansatz
+$$
+n_{i-1}=\alpha_in_i+\beta_i
+$$ {#eq-alphabeta}
+for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
+$$
+U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
+$$ {#eq-UDL2}
+Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
+$$
+\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
+$$ {#eq-UDL3}
+We can satisfy this by making the expressions in the square brackets vanish, which gives us
+$$
+\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
+$$ {#eq-alphabetarecursion}
+Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
+We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
+Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
+
+This scheme is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. These stability conditions are automatically satisfied if $\tilde{d},\tilde{g}$ and $\mu$ are all positive. 
+
+We implement this in the function `solve_steady_state_upwind` as follows:
+
+```{r}
+solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
+    # Number of interior points
+    N <- length(dtilde) - 2
+    
+    # Calculate finite difference scheme coefficients
+    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
+    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
+    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
+    
+    # Check stability conditions
+    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
+        warning("Stability conditions not met.")
+    }
+    if (any(U + L > -D)) {
+        warning("Stability condition U + L <= -D not met.")
+    }
+    
+    # Solve using double sweep method
+    n <- solve_ode_double_sweep(U, L, D, n0, N)
+    
+    return(n)
+}
+
+# Helper function for double sweep method
+solve_ode_double_sweep <- function(U, L, D, n0, N) {
+    # Initialize arrays for alpha and beta coefficients
+    alpha <- numeric(N + 1)
+    beta <- numeric(N + 1)
+    n <- numeric(N + 1)
+    
+    # Initial conditions
+    alpha[1] <- 0
+    beta[1] <- n0
+    
+    # Forward sweep - calculate alpha and beta coefficients
+    for (i in 1:N) {
+        denom <- alpha[i] * L[i] + D[i]
+        alpha[i + 1] <- -U[i] / denom
+        beta[i + 1] <- -(beta[i] * L[i]) / denom
+    }
+    
+    # Backward sweep - calculate n values
+    n[N + 1] <- 0  # Boundary condition at x_max
+    
+    # Work backwards to get remaining n values
+    for (i in N:1) {
+        n[i] <- alpha[i + 1] * n[i + 1] + beta[i + 1]
+    }
+    
+    return(n)
+}
+```
+
+
 # North Sea Cod example {#sec-diffusion-NS}
 
 We will now implement this in an example. We start with the North Sea Cod.
 
 ```{r}
-species <- "Cod"
+species <- "Herring"
 sps <- species_params(params)[species, ]
 n <- sps$n
 m <- sps$m
@@ -335,6 +443,30 @@ g <- getEGrowth(params)[species, ]
 # At small size we have $g(w) = g_0 w^n$, hence $g_0 = g(w)/w^n$
 g_0 <- g[1] / w[1]^n
 ```
+
+We choose diffusion rate to be a power law with exponent $n+1$ which at small size satisfies $d(w) = 0.1 g(w) w$, see the example at the end of @sec-diffusion-example.
+
+```{r}
+d_0 <- 0.1 * g_0
+d <- d_0 * w^(n + 1)
+dtilde <- d / w^2
+gtilde <- g / w - 0.5 * dtilde
+```
+
+We can now solve the ODE.
+```{r}
+n0 <- initialN(params)[species, 1] * w[1]
+Nx <- solve_steady_state_upwind(dtilde, gtilde, mu, n0, h)
+```
+We can now plot the result.
+```{r}
+N <- length(Nx)
+plot(x[2:(N+1)], log(Nx), type = "l", xlab = "log weight", ylab = "log abundance density")
+lines(x[2:N+1], log(initialN(params)[species, 2:N+1]*w[2:N+1]), col = "red", lty = 2)
+```
+
+
+## Second order finite-difference scheme
 To calculate the derivative of the growth rate we go back to the expression for the growth rate and calculate the derivatives of the terms in the expression. For simplicity we set metabolic loss to zero.
 $$
 g(w)=g_0w^n(1-\psi(w))
@@ -343,7 +475,7 @@ where $\psi(w)$ is the proportion of available energy that is invested into repr
 $$
 \psi(w) = \left(1+\left(\frac{w}{w_{mat}}\right)^{U}\right)^{-1}\left(\frac{w}{w_{repro\_max}}\right)^{m-n}
 $$
-For the derivative we get after some simplification (see https://chatgpt.com/share/678776f5-bf00-8007-9549-f1d186829235),
+For the derivative we get after some simplification (see [ChatGPT chat](https://chatgpt.com/share/678776f5-bf00-8007-9549-f1d186829235),
 $$
 \frac{d}{dw}g(w) = g_0 w^{n-1} \left( n - \frac{\left(m + (m - U)\left(\frac{w}{w_{\text{mat}}}\right)^U\right) \left(\frac{w}{w_{\text{repro\_max}}}\right)^{m-n}}{\left(1 + \left(\frac{w}{w_{\text{mat}}}\right)^U\right)^2} \right)
 $$
@@ -355,21 +487,10 @@ dgdw <-
   (1 + (w / w_mat)^U)^2)
 ```
 
-
-We choose diffusion rate to be a power law with exponent $n+1$ which at small size satisfies $d(w) = 0.1 g(w) w$, see the example at the end of @sec-diffusion-example.
-
-```{r}
-d_0 <- 0.1 * g_0
-d <- d_0 * w^(n + 1)
-dprime <- (n + 1) * d_0 * w^(n)
-```
-
 Now we calculate the parameters for the numerical scheme.
 ```{r}
-dtilde <- d / w^2
 dtildeprime <- (n - 1) * d_0 * w^(n - 2)
 dtildepp <- (n - 2) * (n - 1) * d_0 * w^(n - 3)
-gtilde <- g / w - 0.5 * dtilde
 gtildeprime <- dgdw - g / w - 0.5 * dtildeprime
 
 a <- 0.5 * dtilde
