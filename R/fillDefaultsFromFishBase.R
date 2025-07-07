@@ -2,7 +2,7 @@
 #'
 #' Populates key life-history traits in a data frame of species using FishBase, via the `rfishbase` package.
 #'
-#' This function is typically used early in model setup, to populate a table of species names with biological parameters needed for Mizer models. It supports cases where only species names and scientific names are initially known.
+#' This function is typically used early in model setup, to populate a table of species names with biological parameters needed for mizer models. It supports cases where only species names and scientific names are initially known.
 #'
 #' @param species_params A data frame containing at least a column with scientific names for each species. Other
 #' columns (e.g. common names or user-defined identifiers) may be included and will be preserved. This is
@@ -22,6 +22,7 @@
 #'   \item \code{l_mat}: Length at maturity (median)
 #'   \item \code{age_mat}: Age at maturity (median)
 #'   \item \code{w_mat}: Weight at maturity (from l_mat, a, and b)
+#'   item \code{t0}: Hypothetical age at length zero (von Bertalanffy growth, median)
 #' }
 #'
 #' @details
@@ -90,6 +91,12 @@ fillDefaultsFromFishBase <- function(species_params,
             .groups = "drop"
         )
 
+    # Summarise t0 (von Bert growth) by species
+    vbg_med <- rfishbase::popgrowth(sci_names, fields = c("SpecCode", "to")) |>
+        dplyr::filter(!is.na(to)) |>
+        dplyr::group_by(SpecCode) |>
+        dplyr::summarise(t0 = median(to, na.rm = TRUE), .groups = "drop")
+
     # Merge all FishBase traits by SpecCode
     fish_traits <- length_weight |>
         dplyr::inner_join(species_info, by = "SpecCode") |>
@@ -97,7 +104,8 @@ fillDefaultsFromFishBase <- function(species_params,
         dplyr::mutate(
             w_max = a * Length^b,
             w_mat = a * l_mat^b
-        )
+        ) |>
+    dplyr::left_join(vbg_med, by = "SpecCode")
 
     # Join FishBase traits into main species_params
     species_params <- dplyr::left_join(
@@ -108,7 +116,7 @@ fillDefaultsFromFishBase <- function(species_params,
     )
 
     # Fill columns conditionally
-    cols <- c("a", "b", "Length", "l_mat", "age_mat", "w_max", "w_mat")
+    cols <- c("a", "b", "Length", "l_mat", "age_mat", "w_max", "w_mat", "t0")
     for (col in cols) {
         filled <- paste0(col, ".fb")
         if (filled %in% names(species_params)) {
