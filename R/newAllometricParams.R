@@ -21,12 +21,12 @@
 #' `age_mat`.  The mortality-rate coefficient is then derived from that growth
 #' rate and set so that the juvenile biomass spectrum has a slope of –0.2.
 #'
-#' The species uses `matchBiomasses()` to match the biomass to the observations
-#' and `steadySingleSpecies()` to bring each species to steady state.
+#' The function uses `matchBiomasses()` to match the biomass to the observations
+#' and `steadySingleSpecies()` to bring each species to steady state. It then
+#' calls `setBevertonHolt()` to set the reproduction level to zero
 #'
 #' Because the model does not make use of the resource spectrum, the resource
 #' dynamics is switched off.
-
 #'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
