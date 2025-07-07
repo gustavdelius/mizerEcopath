@@ -27,18 +27,18 @@ steadySingleSpeciesDiffusion <-
     function(params, species = NULL, d_over_g = 0.15,
              keep = c("egg", "biomass", "number")) {
     species <- valid_species_arg(params, species)
-    keep <- match.arg(keep)
 
+    # Prepare to keep biomass or number in case it was requested
+    keep <- match.arg(keep)
     biomass <- getBiomass(params)
     number <- getN(params)
-    w <- w(params)
 
-    # Use growth and mortality from current abundances
+    # Get the growth and mortality rates used for the steady state calculation
+    w <- w(params)
     growth_all <- getEGrowth(params)
     mort_all <- getMort(params)
 
     # Loop through all species and calculate their steady state abundances
-    # using the current growth and mortality rates
     for (sp in species) {
         growth <- growth_all[sp, ]
         mort <- mort_all[sp, ]
