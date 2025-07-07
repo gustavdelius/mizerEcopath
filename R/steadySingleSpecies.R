@@ -31,6 +31,7 @@ steadySingleSpeciesDiffusion <-
 
     biomass <- getBiomass(params)
     number <- getN(params)
+    w <- w(params)
 
     # Use growth and mortality from current abundances
     growth_all <- getEGrowth(params)
@@ -41,26 +42,24 @@ steadySingleSpeciesDiffusion <-
     for (sp in species) {
         growth <- growth_all[sp, ]
         mort <- mort_all[sp, ]
+        n <- params@species_params[sp, "n"]
 
         w_min_idx <- params@w_min_idx[sp]
-        w_max_idx <- sum(params@w <= params@species_params[sp, "w_max"])
-        idx <- w_min_idx:(w_max_idx - 1)
+        w_max_idx <- sum(w <= params@species_params[sp, "w_max"])
+        idx <- w_min_idx:w_max_idx
 
         # Check that species can grow to maturity at least
-        w_mat_idx <- sum(params@w <= params@species_params[sp, "w_mat"])
+        w_mat_idx <- sum(w <= params@species_params[sp, "w_mat"])
         if (any(growth[w_min_idx:w_mat_idx] == 0)) {
             stop(sp, " cannot grow to maturity")
         }
 
         # Keep egg density constant
-        n0 <- params@initial_n[sp, w_min_idx]
+        N0 <- params@initial_n[sp, w_min_idx]
         # Steady state solution of the upwind-difference scheme used in project
-        solve_ode <-
-            solve_ode_steady_state(growth[idx], mort[idx], n0, d_over_g)
-        params@initial_n[sp, ] <- 0
-        params@initial_n[sp, w_min_idx:w_max_idx] <-
-            n0 * c(1, cumprod(growth[idx] /
-                                  ((growth + mort * params@dw)[idx + 1])))
+        sol <- solve_ode_steady_state(growth[idx], mort[idx],
+                                      d_over_g, N0, w[idx], n)
+        params@initial_n[sp, idx] <- sol
     }
 
     if (any(is.infinite(params@initial_n))) {
@@ -84,16 +83,23 @@ steadySingleSpeciesDiffusion <-
     }
 
 # Helper function to solve steady state ODE
-solve_ode_steady_state <- function(growth, mort, d_over_g, n0, w, N0, h) {
-    N <- length(growth) - 1  # Number of internal points
-    if (length(mort) != N + 1 || length(growth) != N + 1) {
+solve_ode_steady_state <- function(growth, mort, d_over_g, N0, w, n) {
+    N <- length(w) - 2  # Number of internal points
+    if (length(mort) != N + 2 || length(growth) != N + 2) {
         stop("Growth and mortality vectors must have the same length.")
     }
+    h <- w[2] - w[1]  # Size step
+
+    # Determine diffusion rate so that at offspring size we have
+    # d(w)=d_over_g * g(w) * w
     g_0 <- growth[1] / w[1]^n
     d_0 <- d_over_g * g_0
-    d <- d_0 * w^(n + 1)
-    dtilde <- d / w^2
-    gtilde <- g / w - 0.5 * dtilde
+    diffusion <- d_0 * w^(n + 1)
+
+    # Rescalings to convert from w to x = log(w/w_0)
+    n0 <- N0 * w[1]  # Initial condition for the ODE
+    dtilde <- diffusion / w^2
+    gtilde <- growth / w - 0.5 * dtilde
 
     # Coefficients for the tridiagonal matrix
     U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
@@ -101,7 +107,11 @@ solve_ode_steady_state <- function(growth, mort, d_over_g, n0, w, N0, h) {
     D <- (-dtilde - h * gtilde - h^2 * mort)[2:(N+1)]  # Main diagonal
 
     # Solve using double sweep method
-    return(solve_ode_double_sweep(U, L, D, N0))
+    sol <- solve_ode_double_sweep(U, L, D, n0)
+    # Convert back to original size space
+    sol <- sol / w
+
+    return(sol)
 }
 
 # Helper function for double sweep method
