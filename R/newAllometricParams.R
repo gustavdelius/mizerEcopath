@@ -7,9 +7,9 @@
 #' The metabolic respiration rate, the feeding level and the reproduction level
 #' are set to zero.
 #'
-#' If the exponent *n* of the power-law encounter rate is not provided as a
-#' species parameter, it is set to 0.7.  The exponent *d* of the power-law
-#' mortality rate is always imposed as *n – 1*, regardless of any supplied
+#' If the exponent `n` of the power-law encounter rate is not provided as a
+#' species parameter, it is set to 0.7.  The exponent `d` of the power-law
+#' mortality rate is always imposed as `n – 1`, regardless of any supplied
 #' value.
 #'
 #' If the species parameter `alpha`, which gives the proportion of the
@@ -17,16 +17,16 @@
 #' default value used by Ecopath.
 #'
 #' The encounter rate coefficient for each species is chosen so that the
-#' species reaches its maximum weight `w_max` by the age at maturity
+#' species reaches its maturity weight `w_mat` by the age at maturity
 #' `age_mat`.  The mortality-rate coefficient is then derived from that growth
-#' rate and set so that the juvenile biomass spectrum has a slope of about
-#' –0.2.
+#' rate and set so that the juvenile biomass spectrum has a slope of –0.2.
 #'
-#' After the encounter and mortality rates are established, the function calls
-#' `steadySingleSpecies()` to bring each species to steady state.
+#' The species uses `matchBiomasses()` to match the biomass to the observations
+#' and `steadySingleSpecies()` to bring each species to steady state.
 #'
 #' Because the model does not make use of the resource spectrum, the resource
 #' dynamics is switched off.
+
 #'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
