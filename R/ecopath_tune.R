@@ -82,6 +82,7 @@
 #' @export
 tuneEcopath <- function(params, catch = NULL, diet = NULL,
                         controls = c("match",
+                                     "diffusion",
                                      "fishing",
                                      "reproduction",
                                      "other",
