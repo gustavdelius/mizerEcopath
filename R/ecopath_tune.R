@@ -64,6 +64,10 @@
 #'   below.
 #' @param tabs A character vector of names of the tabs that should be displayed
 #'   in the main section. See "Customisation" below.
+#' @param match A character vector. Determines which quantities should be
+#'   matched to observations each time the "steady" button is pressed. Possible
+#'   entries are `"growth"` (using [matchGrowth()]), `"catch"` (using
+#'   [matchCatch()]) and `"consumption"` (using [matchConsumption()]).
 #' @param preserve Specifies whether the `reproduction_level` should be
 #'   preserved or the maximum reproduction rate `R_max` or the reproductive
 #'   efficiency `erepro` (Default). See [setBevertonHolt()] for an explanation
@@ -88,6 +92,7 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                                  "Repro",
                                  "Diet",
                                  "Death"),
+                        match = c("none"),
                         preserve = c("erepro", "reproduction_level", "R_max"),
                         return_app = FALSE,
                         ...) {
@@ -197,6 +202,18 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                     data.step = 5,
                     data.intro = "Each time you change a parameter, the spectrum of the selected species is immediately recalculated. However, to match to Ecopath you need to press the 'Match' button or hit 'm' on the keyboard. Do this frequently, before changing the parameters too much. Otherwise there is the risk that the steady state can not be found any more. You can go backwards and forwards among the previously calculated steady states with the 'Undo All', 'Undo' and 'Redo' buttons.",
                     data.position = "right"
+                ),
+
+                introBox(
+                    prompter::add_prompt(
+                        checkboxGroupInput("match", "Match:",
+                                           choices = c("growth", "catch", "consumption"),
+                                           selected = match,
+                                           inline = TRUE),
+                        message = "Choose quantities to match to observations automatically"),
+                    data.step = 6,
+                    data.position = "right",
+                    data.intro = "Here you can specify that each time you hit the 'match' button the selected quantities are matched to their observed values. This does of course not mean that a perfect match will be achieved in the steady state. But usually each time you hit the 'steady' button the match will improve."
                 ),
 
                 introBox(
@@ -481,22 +498,28 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
         if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
             stop("Biomass has changed before matchGrowth")
         }
-        p <- matchGrowth(p, species = input$sp, keep = "biomass")
-        pb <- matchBiomasses(p)
-        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
-            stop("Biomass has changed after matchGrowth")
+        if ("growth" %in% input$match) {
+            p <- matchGrowth(p, species = input$sp, keep = "biomass")
+            pb <- matchBiomasses(p)
+            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+                stop("Biomass has changed after matchGrowth")
+            }
         }
-        p <- matchCatch(p, species = input$sp, catch = catch,
-                        production_lambda = 10^input$production_lambda,
-                        yield_lambda = 10^input$yield_lambda)
-        pb <- matchBiomasses(p)
-        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
-            stop("Biomass has changed after matchCatch")
+        if ("catch" %in% input$match) {
+            p <- matchCatch(p, species = input$sp, catch = catch,
+                            production_lambda = 10^input$production_lambda,
+                            yield_lambda = 10^input$yield_lambda)
+            pb <- matchBiomasses(p)
+            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+                stop("Biomass has changed after matchCatch")
+            }
         }
-        p <- matchConsumption(p, species = input$sp)
-        pb <- matchBiomasses(p)
-        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
-            stop("Biomass has changed after matchConsumption")
+        if ("consumption" %in% input$match) {
+            p <- matchConsumption(p, species = input$sp)
+            pb <- matchBiomasses(p)
+            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+                stop("Biomass has changed after matchConsumption")
+            }
         }
 
         # Update the reactive params objects
