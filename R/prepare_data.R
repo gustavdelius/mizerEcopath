@@ -116,12 +116,23 @@ prepare_data <- function(params, species = 1, catch,
 
     w <- w(params)
     w_select <- w >= w_min & w <= w_max
-    w <- w[w >= w_min & w <= w_max]
+    w <- w[w_select]
     dw <- dw(params)[w_select]
     l <- (w / sps$a) ^ (1 / sps$b)
 
     N <- initialN(params)[sp_select, w_select]
-    biomass <- sum(N * w * dw)
+
+    # Calculate biomass above cutoff
+    biomass_cutoff <- sps$biomass_cutoff
+    # Determine the C++ array index for the first weight bin to
+    # be included in the biomass calculation.
+    if (is.null(biomass_cutoff) || is.na(biomass_cutoff)) {
+        biomass_cutoff_idx <- 0
+    } else {
+        biomass_cutoff_idx <- sum(w < biomass_cutoff)
+    }
+    # The cutoff index for R is one more than the C++ index
+    biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
 
     growth <- getEGrowth(params)[sp_select, w_select]
 
@@ -173,6 +184,7 @@ prepare_data <- function(params, species = 1, catch,
         yield = yield,
         production = production,
         biomass = biomass,
+        biomass_cutoff_idx = biomass_cutoff_idx,
         growth = growth,
         w_mat = w_mat,
         d = sps$d,

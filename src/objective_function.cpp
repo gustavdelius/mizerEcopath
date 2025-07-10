@@ -21,7 +21,7 @@ vector<Type> calculate_F_mort(Type l50, Type ratio, Type catchability,
 // Helper function: Steady-state numbers-at-size
 template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
-                         Type biomass, vector<Type> w, vector<Type> dw)
+                         vector<Type> dw)
 {
     int size = dw.size();
     vector<Type> N(size);
@@ -57,6 +57,7 @@ Type objective_function<Type>::operator() ()
     DATA_SCALAR(yield);             // Observed yield
     DATA_SCALAR(production);        // Observed production
     DATA_SCALAR(biomass);           // Observed biomass
+    DATA_INTEGER(biomass_cutoff_idx);  // Index for biomass cutoff weight
     DATA_VECTOR(growth);            // Growth rate
     DATA_SCALAR(w_mat);             // Maturity size (weight)
     DATA_SCALAR(d);                 // Exponent for mortality power-law
@@ -77,11 +78,13 @@ Type objective_function<Type>::operator() ()
 
     // **Calculate steady-state number density**
     //   This is unscaled (N is not matched to 'biomass' yet).
-    vector<Type> N = calculate_N(mort, growth, biomass, w, dw);
+    vector<Type> N = calculate_N(mort, growth, dw);
 
     // Rescale to match observed biomass
-    vector<Type> biomass_in_bins = N * w * dw;
-    Type unscaled_biomass = biomass_in_bins.sum();
+    Type unscaled_biomass = 0;
+    for (int i = biomass_cutoff_idx; i < N.size(); ++i) {
+        unscaled_biomass += N(i) * w(i) * dw(i);
+    }
     N *= (biomass / unscaled_biomass);  // Now total biomass matches 'biomass'.
 
     // **Calculate catch density**
