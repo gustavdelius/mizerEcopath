@@ -17,7 +17,7 @@ fishingControl <- function(input, output, session, params, params_old,
         # The following line makes sure this observer gets triggered by
         # any of the inputs
         l <- input$l50 + input$ldiff + input$l50_right + input$ldiff_right +
-            input$knife_edge_size
+            input$knife_edge_size + input$catchability
 
         if (!identical(sp, flags$sp_old_fishing)) {
             flags$sp_old_fishing <- sp
