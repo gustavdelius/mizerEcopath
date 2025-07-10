@@ -66,8 +66,8 @@
 #'   in the main section. See "Customisation" below.
 #' @param match A character vector. Determines which quantities should be
 #'   matched to observations each time the "steady" button is pressed. Possible
-#'   entries are `"growth"` (using [matchGrowth()]), `"catch"` (using
-#'   [matchCatch()]) and `"consumption"` (using [matchConsumption()]).
+#'   entries are `"growth"` (using [matchGrowth()]), `"yield"` (using
+#'   [matchYield()]) and `"consumption"` (using [matchConsumption()]).
 #' @param preserve Specifies whether the `reproduction_level` should be
 #'   preserved or the maximum reproduction rate `R_max` or the reproductive
 #'   efficiency `erepro` (Default). See [setBevertonHolt()] for an explanation
@@ -81,8 +81,7 @@
 #' @import shinyBS
 #' @export
 tuneEcopath <- function(params, catch = NULL, diet = NULL,
-                        controls = c("match",
-                                     "diffusion",
+                        controls = c("diffusion",
                                      "fishing",
                                      "reproduction",
                                      "other",
@@ -93,7 +92,7 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                                  "Repro",
                                  "Diet",
                                  "Death"),
-                        match = c("none"),
+                        match = c("growth", "yield", "consumption"),
                         preserve = c("erepro", "reproduction_level", "R_max"),
                         return_app = FALSE,
                         ...) {
@@ -208,7 +207,7 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                 introBox(
                     prompter::add_prompt(
                         checkboxGroupInput("match", "Match:",
-                                           choices = c("growth", "catch", "consumption"),
+                                           choices = c("growth", "yield", "consumption"),
                                            selected = match,
                                            inline = TRUE),
                         message = "Choose quantities to match to observations automatically"),
@@ -513,6 +512,13 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
             pb <- matchBiomasses(p)
             if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
                 stop("Biomass has changed after matchCatch")
+            }
+        }
+        if ("yield" %in% input$match) {
+            p <- matchYield(p, keep = "biomass")
+            pb <- matchBiomasses(p)
+            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+                stop("Biomass has changed after matchYield")
             }
         }
         if ("consumption" %in% input$match) {
