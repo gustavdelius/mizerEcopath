@@ -236,6 +236,8 @@ n(x_0)=n_0,~~~~n(x_{max})=0.
 $$ {#eq-bc}
 where $x_{max}$ is some size that fish can never reach.
 
+## Upwind difference scheme
+
 We use our equally-spaced grid with spacing $h$:
 $x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. Here $N$ is the number of internal grid points. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
 $$
@@ -257,30 +259,7 @@ with
 $$
 U_i=\frac{\tilde{d}_{i+1}}{2}, \qquad L_i=\frac{\tilde{d}_{i-1}}{2}+h\,\tilde{g}_{i-1} \qquad \text{ and }~~~D_i = -\tilde{d}_i - h\,\tilde{g}_i-h^2\mu_i
 $$ {#eq-UDL2}
-for $i=1,\dots,N$. 
-This can be solved by making the Ansatz
-$$
-n_{i-1}=\alpha_in_i+\beta_i
-$$ {#eq-alphabeta}
-for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
-$$
-U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
-$$ {#eq-UDL2}
-Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
-$$
-\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
-$$ {#eq-UDL3}
-We can satisfy this by making the expressions in the square brackets vanish, which gives us
-$$
-\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
-$$ {#eq-alphabetarecursion}
-Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
-We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
-Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
-
-This scheme is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. These conditions on the signs are automatically satisfied if $\tilde{d},\tilde{g}$ and $\mu$ are all positive. The condition $U_i+L_i\leq -D_i$ is more subtle.
-
-We implement this method in the function `solve_steady_state_upwind` as follows:
+for $i=1,\dots,N$. We implement this method in the function `solve_steady_state_upwind` as follows:
 
 ```{r}
 solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
@@ -303,7 +282,31 @@ solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
     # Solve using double sweep method
     return(solve_ode_double_sweep(U, L, D, n0))
 }
+```
 
+## Double-sweep method
+
+Here we derive the double-sweep method (also known as Thomas' method) for solving a tri-diagonal linear system by making the Ansatz
+$$
+n_{i-1}=\alpha_in_i+\beta_i
+$$ {#eq-alphabeta}
+for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
+$$
+U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
+$$ {#eq-UDL2}
+Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
+$$
+\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
+$$ {#eq-UDL3}
+We can satisfy this by making the expressions in the square brackets vanish, which gives us
+$$
+\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
+$$ {#eq-alphabetarecursion}
+Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
+We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
+Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
+
+```{r}
 # Helper function for double sweep method
 solve_ode_double_sweep <- function(U, L, D, n0) {
     N <- length(D)  # Number of internal points
@@ -341,6 +344,59 @@ solve_ode_double_sweep <- function(U, L, D, n0) {
     return(solution)
 }
 ```
+
+
+### Stability
+
+The double-sweep method is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. These conditions on the signs are automatically satisfied if $\tilde{d},\tilde{g}$ and $\mu$ are all positive, which is true as long as
+$$
+d(w)<2wg(w).
+$$
+The condition $U_i+L_i\leq -D_i$ is more subtle:
+$$
+\begin{split}
+U_i + L_i + D_i &= \frac{\tilde{d}_{i+1}}{2} + \frac{\tilde{d}_{i-1}}{2} + h\,\tilde{g}_{i-1} - \tilde{d}_i - h\,\tilde{g}_i - h^2\mu_i\\
+&= h^2\left(\frac12\frac{\tilde{d}_{i+1} -2\tilde{d}_i + \tilde{d}_{i-1}}{h^2}
++\frac{\tilde{g}_{i-1} - \tilde{g}_i}{h}- \mu_i\right)\\
+&\approx h^2\left(\frac12 \tilde{d}'' - \tilde{g}' - \mu \right)(x_i)\leq 0.
+\end{split}
+$$
+
+This could become particularly problematic in places where $g'$ is negative. 
+
+### Without diffusion
+
+When the diffusion rate is zero, the double-sweep method reduces to the method we are currently using. In that case
+$$
+U_i=0,\qquad L_i=h\tilde{g}_{i-1}, \qquad D_i=-h\,\tilde{g}_i-h^2\mu_i
+$$
+and thus
+$$
+\alpha_{i+1} = -\frac{U_i}{D_i} = 0, \qquad \beta_{i+1} = -\frac{\beta_i L_i}{D_i}
+= \beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+$$
+This gives
+$$
+n_i=\beta_{i+1}=\beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=n_{i-1}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+$$
+For the number density as a function of $w$ this gives
+$$
+\begin{split}
+N_i=\frac{n_i}{w_i} &= \frac{n_{i-1}}{w_{i}}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i}}\frac{g_{i-1}/w_{i-1}}{g_i/w_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i-1}}\frac{g_{i-1}}{g_i+hw_i\mu_i }\\
+&=N_{i-1}\frac{g_{i-1}}{g_i+\Delta w_i\mu_i}+O(h^2)
+\end{split}
+$$
+where we used that
+$$
+\Delta w_i=w_{i+1}-w_i = w_i\left(\exp(h)-1\right)= hw_i+O(h^2).
+$$
+
+This is the same as the scheme we are currently using for calculating the steady state.
+
+
 
 
 # Example {#sec-diffusion-NS}
