@@ -515,7 +515,7 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
             }
         }
         if ("yield" %in% input$match) {
-            p <- matchYield(p, keep = "biomass")
+            p <- matchYield(p, species = input$sp, keep = "biomass")
             pb <- matchBiomasses(p)
             if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
                 stop("Biomass has changed after matchYield")
