@@ -127,9 +127,9 @@ prepare_data <- function(params, species = 1, catch,
     # Determine the C++ array index for the first weight bin to
     # be included in the biomass calculation.
     if (is.null(biomass_cutoff) || is.na(biomass_cutoff)) {
-        biomass_cutoff_idx <- 0
+        biomass_cutoff_idx <- as.integer(0)
     } else {
-        biomass_cutoff_idx <- sum(w < biomass_cutoff)
+        biomass_cutoff_idx <- as.integer(sum(w < biomass_cutoff))
     }
     # The cutoff index for R is one more than the C++ index
     biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])

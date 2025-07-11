@@ -495,13 +495,15 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
         # are not preserved during the matching process.
         # TODO: remove this code once we are sure that it works
         pb <- matchBiomasses(p)
-        if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+        if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
+                              getBiomass(pb, use_cutoff = TRUE)))) {
             stop("Biomass has changed before matchGrowth")
         }
         if ("growth" %in% input$match) {
             p <- matchGrowth(p, species = input$sp, keep = "biomass")
             pb <- matchBiomasses(p)
-            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
+                                  getBiomass(pb, use_cutoff = TRUE)))) {
                 stop("Biomass has changed after matchGrowth")
             }
         }
@@ -510,21 +512,24 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
                             production_lambda = 10^input$production_lambda,
                             yield_lambda = 10^input$yield_lambda)
             pb <- matchBiomasses(p)
-            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
+                                  getBiomass(pb, use_cutoff = TRUE)))) {
                 stop("Biomass has changed after matchCatch")
             }
         }
         if ("yield" %in% input$match) {
             p <- matchYield(p, species = input$sp, keep = "biomass")
             pb <- matchBiomasses(p)
-            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
+                                  getBiomass(pb, use_cutoff = TRUE)))) {
                 stop("Biomass has changed after matchYield")
             }
         }
         if ("consumption" %in% input$match) {
             p <- matchConsumption(p, species = input$sp)
             pb <- matchBiomasses(p)
-            if (!isTRUE(all.equal(getBiomass(p), getBiomass(pb)))) {
+            if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
+                                  getBiomass(pb, use_cutoff = TRUE)))) {
                 stop("Biomass has changed after matchConsumption")
             }
         }

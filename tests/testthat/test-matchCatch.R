@@ -34,9 +34,9 @@ test_that("matchCatch can handle multiple species", {
 
 test_that("matchCatch preserves biomass for the adjusted species", {
     # The documentation suggests biomass remains unchanged for the adjusted species
-    biomass_before <- getBiomass(celtic_params)
+    biomass_before <- getBiomass(celtic_params, use_cutoff = TRUE)
     result <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch)
-    biomass_after <- getBiomass(result)
+    biomass_after <- getBiomass(result, use_cutoff = TRUE)
 
     # Check that biomass difference is small for Hake
     expect_equal(biomass_before["Hake"], biomass_after["Hake"], tolerance = 1e-3)
