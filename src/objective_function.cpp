@@ -149,8 +149,10 @@ Type objective_function<Type>::operator() ()
     REPORT(mort);
 
     // Check final biomass again
-    biomass_in_bins = N * w * dw;
-    Type total_biomass = biomass_in_bins.sum();
+    Type total_biomass = 0;
+    for (int i = biomass_cutoff_idx; i < N.size(); ++i) {
+        total_biomass += N(i) * w(i) * dw(i);
+    }
     REPORT(total_biomass);
 
     return nll;
