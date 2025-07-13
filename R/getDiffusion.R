@@ -83,7 +83,8 @@ getDiffusion <- function(params, n = initialN(params),
         stop("Fourier transform method not implemented for diffusion rate.")
     }
 
-    diffusion <- (1 - getFeedingLevel(params)) *
+    diffusion <- (1 - getFeedingLevel(params, n = n, n_pp = n_pp,
+                                      n_other = n_other, t = t)) *
         (params@species_params$alpha)^order * encounter
     return(diffusion)
 }
