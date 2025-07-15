@@ -13,7 +13,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r}
+#| message: false
+#| warning: false
 library(mizerEcopath)
 library(ggplot2)
 params <- NS_params
@@ -53,8 +55,10 @@ $$ {#eq-phi}
 
 For juveniles $\psi(w)=0$ and hence the integral in the expression @eq-gw for the growth rate becomes
 $$
-I_g:=\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p =
-\alpha\int w_p^{1-\lambda}\exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right)dw_p.
+\begin{split}
+I_g&:=\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p\\
+&=\alpha\int w_p^{1-\lambda}\exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right)dw_p.
+\end{split}
 $$ {#eq-Ig}
 This integral can be evaluated most easily by changing integration variable to $x=\log(w_p/w_0)$for an arbitrary reference weight $w_0$ and then recognising the resulting integral
 $$
@@ -394,10 +398,113 @@ $$
 \Delta w_i=w_{i+1}-w_i = w_i\left(\exp(h)-1\right)= hw_i+O(h^2).
 $$
 
-This is the same as the scheme we are currently using for calculating the steady state.
+This is the same as the scheme we are currently using for calculating the steady state. Note that this scheme is also unstable if $g'_\mu<0$ because then $g_{i-1}/(g_i+\Delta w_i\mu_i)>1$.
 
+## More stable scheme
 
+We rewrite the diffusion term
+$$
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) + \frac12 \frac{\partial}{\partial x}\left(\left(\frac{\partial}{\partial x}\tilde{d}\right)n\right)
+$$
+The first term is a more standard diffusion term and can be treated with a second-order scheme.
+$$
+\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) \approx \frac1{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right),
+$$
+where $\tilde{d}_{i+1/2}$ and $\tilde{d}_{i-1/2}$ are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use
+$$
+\tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
+$$
+but this can be replaced by a more sophisticated scheme if desired.
 
+The second term can be combined with the growth term if we introduce 
+$$
+\hat{g}=\tilde{g}-\frac12 \frac{\partial}{\partial x}\tilde{d}.
+$$
+Unless we want to use our explicit knowledge of $\tilde{d}'$ we can approximate
+$$
+\hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
+$$
+
+For the growth term we use an upwind difference scheme, depending on the sign of $\hat{g}$:
+- If $\hat{g}_i \geq 0$, we use
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i}n_{i}-\hat{g}_{i-1}n_{i-1}}{h}.
+$$
+- If $\hat{g}_i < 0$, we use
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i+1}n_{i+1}-\hat{g}_{i}n_{i}}{h}.
+$$
+A concise way to write this is
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{|\hat{g}_i|n_i-
+\hat{g}^+_{i+1}n_{i+1}
+-\hat{g}^-_{i-1}n_{i-1}}{h}
+$$
+where
+$$
+\hat{g}^\pm = |\hat{g}|\pm \hat{g}
+$$
+are either positive or zero, depending on the sign of $\hat{g}$.
+
+This gives us the linear system
+$$
+\begin{split}
+\frac{1}{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right) - \frac{|\hat{g}_i|n_i-\hat{g}^+_{i+1}n_{i+1}-\hat{g}^-_{i-1}n_{i-1}}{h} - \mu_i n_i &= 0.
+\end{split}
+$$
+Collecting terms gives us
+$$
+L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
+$$
+with
+$$
+\begin{split}
+D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{|\hat{g}_i|}{h}+\mu_i\right),\\
+L_i&=\frac{\tilde{d}_{i-1/2}}{2h^2}+\frac{\hat{g}^-_{i-1}}{h},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2h^2}+\frac{\hat{g}^+_{i+1}}{h}.
+\end{split}
+$$
+Now we automatically have $L_i>0, U_i>0$ and $D_i<0$. The condition $U_i+L_i\leq -D_i$ is satisfied if
+$$
+\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{\hat{g}^+_{i+1}+\hat{g}^-_{i-1}}{h}\leq \frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{|\hat{g}_i|}{h}+\mu_i,
+$$
+which simplifies to $0\leq \mu_i$, which is always satisfied.
+
+```{r}
+stable_steady <- function(dtilde, gtilde, mu, n0, h) {
+    # We have to be careful when translating from maths to code because
+    # in the maths we indexed our grid points from 0 to N+1, where $N$ is
+    # the number of interior points, but in R we index from 1 to N+2.
+    # So for example \tilde{d}_i in the maths corresponds to dtilde[i+1] in R.
+    
+    # Number of interior points
+    N <- length(dtilde) - 2
+    
+    # Calculate finite difference scheme coefficients
+    # We calculate the midpoint values for diffusion
+    # \tilde{d}_{i+1/2} = (\tilde{d}_i + \tilde{d}_{i+1}) / 2
+    # where \tilde{d}_{i} = dtilde[i+1] = for i=0,...,N+1
+    # dtilde_half[i] = \tilde{d}_{i+1/2} for i=1,...,N+1
+    dtilde_half <- (dtilde[2:(N+1)] + dtilde[3:(N+2)]) / 2
+    # Calculate the adjusted growth rate
+    # \hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2} - \tilde{d}_{i-1/2}}{h}
+    # \tilde{g}_i = gtilde[i+1] = for i=0,...,N+1
+    ghat <- gtilde - (dtilde_half[3:(N+2)] - dtilde_half[1:N]) / (2 * h)  # Adjusted growth rate
+    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
+    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
+    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
+    
+    # Check stability conditions
+    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
+        warning("Stability conditions not met.")
+    }
+    if (any(U + L > -D)) {
+        warning("Stability condition U + L <= -D not met.")
+    }
+    
+    # Solve using double sweep method
+    return(solve_ode_double_sweep(U, L, D, n0))
+}
+```
 
 # Example {#sec-diffusion-NS}
 
