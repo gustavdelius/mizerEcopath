@@ -1,0 +1,286 @@
+---
+title: "North Sea 3 Species Model"
+format: pdf
+editor: visual
+---
+
+# Introduction
+
+Creating a simplified 3 species North Sea model.
+
+## Choosing Species
+
+In this example the species modelled include Saithe (*Pollachius virens)*, Herring (*Clupea harengus*), and Dab (*Limanda limanda*), in an attempt to create model a simple model with the selected species occupying a variety of niches (ie: one large piscivorous fish (saithe), one small pelagic fish (herring), and one benthic fish species (dab)).
+
+## Loading in Repository and Libraries
+
+```{r}
+#| warning: false
+#| message: false
+#| results: 'hide'
+# Packages
+remotes::install_github("sizespectrum/mizer", ref = "diffusion")
+
+library(rfishbase)
+library(remotes)
+library(mizerEcopath)
+library(dplyr)
+library(tidyr)
+library(here)
+library(readr)
+```
+
+## Load in Data
+
+Load in the accompanying csv and rds files within the mizerEcopath repostiory into R objects. This data includes species parameters data diet data and fising data taken from ecopath and fishing data taken from STECF.
+
+Some of the data formatting alterations are made in the following code to ensure that they are compatible with the desired MizerEcopath functions.
+
+```{r}
+#| warning: false
+#| message: false
+#| results: 'hide'
+#Load in ecopath parameters
+ecopath_params <- read.csv(here("inst","extdata","North Sea-Basic estimates.csv"))
+#
+ecopath_diet <- read.csv(here("inst","extdata","North Sea-Diet composition.csv"))
+#
+landings <- readRDS(here("inst","extdata","ns_catch.rds"))
+landings <- landings[landings$gear == "total", ] #select total gear only
+#fix for herring data with 0.5 lengths
+landings <- landings %>%
+  mutate(length = floor(length)) %>%           # Round up lengths
+  group_by(species, gear, length, Scientific_name, English_name) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
+landings$count <- landings$catch
+landings$dl<-1
+
+#Ecopath catch data
+catch <- read.csv(here("inst","extdata","North Sea-Landings.csv"))
+colnames(catch)[2] <- "Group.name"
+catch <- left_join(ecopath_params, catch, by = c("Group.name" = "Group.name")) |>
+    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km..) |>
+    select(Group.name, TotalCatch..t.km..year.)
+
+#Fishbase growth parameters, growth parameters are chosen by list of studies provided by fish base, study from which species growth parameters are taken were selected by availability of data, and location proximity to the North Sea. a and b values are taken from the Bayesian length-weight ratio model estimated tab in fishbase for each species.
+life_histories<-read_csv(here("inst","extdata","North Sea 3 spp params.csv"))
+life_histories<-life_histories[c(1,4:5),]
+```
+
+# Option: Skip Ahead
+
+If you would like to skip the model building process and simply look at the 3 species model in tune params or the species params object feel free to load in the object and final model using the code below.
+
+```{r}
+#final species params data frame
+sp<-readRDS(here("inst","extdata","ns_3_spp_params.rds"))
+
+#landings data for tune params
+landings <- readRDS(here("inst","extdata","ns_catch.rds"))
+landings <- landings[landings$gear == "total", ] #select total gear only
+landings <- landings %>%
+  mutate(length = floor(length)) %>%           # Round up lengths
+  group_by(species, gear, length, Scientific_name, English_name) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
+landings$count <- landings$catch
+landings$dl<-1
+
+#diet matrix for tune params
+dm<-readRDS(here("inst","extdata","ns_3_spp_model_adjusted_diet_matrix.rds"))
+
+
+#run tuneEcopath
+#insert_model_name <- tuneEcopath(
+#    insert_model_name, 
+#    catch = landings, 
+#    diet = dm,
+#    preserve = c("reproduction_level")
+#)
+```
+
+# Species Parameters
+
+## Creating the Species Parameter Data Frame
+
+First we set up a data frame with the species common name as well as their latin name. We then fill this with data from the life_histories csv loaded above. The species parameters added to the data frame include asymptotic maximum weight (w_inf), Von Bertalanffy's K parameter (k_vb), maximum weight (w_max), maturity weight (w_mat), Bayesian length-weight parameters (a and b), theoretical age zero (t0), exponent of search rate (n), exponent of consumption (p) , exponent of mortaltiy (d), assimilation efficiency (alpha), Length, and maturity age (age_mat). #add more information here, about where parameters have been taken from etc.
+
+The parameter value estimates of n, p and d are a result of metabolic and ecological theory \[see the online [mizer course](https://mizer.course.nov22.sizespectrum.org/understand/predation-growth-and-mortality.html) for more information\]. The parameter value estimate for alpha comes from the theory that 80% of assimilated food energy becomes biomass (Winberg, 1956) and is the default estimate in many ecopath models \[for more information see the Ecopath [UserGuide](https://www.researchgate.net/publication/267193103_Ecopath_with_Ecosim_A_User's_Guide)\].
+
+These parameters are by default set to:
+
+-   n: 0.7
+
+-   p: 0.7
+
+-   d: -0.3
+
+-   alpha: 0.8
+
+```{r}
+## Create data frame with species names to add species parameters to
+species_to_latin <- c(
+    "Herring" = "Clupea harengus",
+    "Dab"     = "Limanda limanda",
+    "Saithe"  = "Pollachius virens"
+)
+species_map <- data.frame(species = names(species_to_latin),
+                 latin_name = species_to_latin)
+
+# Select and rename parameters
+sp <- life_histories %>%
+    # add computed columns first
+    mutate(
+        SciName = Species,                # keep scientific name
+        t0      = ifelse(is.na(t0), 0, t0),
+        w_mat   = a * (l_mat ^ b),       # weight at maturity
+        w_max   = 1.2 * w_inf,           # for plotting
+        n       = 0.7,
+        p       = 0.7,
+        d       = n - 1,
+        alpha   = 0.8
+    ) %>%
+    # join common names
+    left_join(
+        species_map,
+        by = c("SciName" = "latin_name")
+    ) %>%
+    # overwrite species with common name
+    mutate(species = species) %>%
+    # keep desired columns
+    transmute(
+        species,     # common name 
+        SciName,     # scientific name 
+        w_inf,
+        k_vb,
+        w_max,
+        w_mat,
+        a, b, t0,
+        n, p, d, alpha
+    )
+
+# Create Length column from w_max
+sp <- sp %>%
+    mutate(
+        Length = (w_max / a)^(1 / b)
+    )
+# Get age_mat using age_mat_vB (not in all versions of mizer)
+sp$age_mat <- mizer:::age_mat_vB(sp)
+```
+
+## Dictionary Between Species and Ecopath Groups
+
+Add the Ecopath species parameters including biomass (B) in tonnes per km², consumption per biomass (Q/B), and production per consumption (P/Q). These are passed to the function \[addEcopathParams()\] (add link to help page) which computes production per unit of biomass (P/B) internally from these estimates and stores these values in new columns in the species params data frame. These folowing columns are added to the species parameters dataframe: biomass_observed, consumption_observed, production_observed, and ecopath_groups.
+
+*Note: This is not the same as matching full interspecific interactions — we’re importing only the overall species-level empirical rates, not species to species rates which are properties which only emerge once diets and predation kernels are specified.*
+
+```{r}
+#Create a dictionary between ecopath data frame and sp
+species_to_groups <- list(
+    "Herring" = c("Herring (juvenile 0, 1)", "Herring (adult)"),
+    "Dab"     = "Dab",
+    "Saithe"  = c("Juvenile Saithe (0-3, 0-40cm)", "Saithe (adult)")
+)
+#utilise addEcopathParams function to add biomass, production, and consumption 
+sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
+#create a backup before the next step
+sp_backup <- sp
+```
+
+## Update w_max based on observed sizes in the landings data
+
+This ensures no size classes are omitted due to larger observed sizes than those in FishBase.
+
+```{r}
+sp <- landings %>%
+  group_by(species) %>%
+  summarise(max_observed_length = max(length + dl, na.rm = TRUE))%>%
+  right_join(sp, by = "species") %>%
+  mutate(
+    max_observed_length = coalesce(max_observed_length, Length),
+    max_observed_weight = a * max_observed_length^b,
+    new_w_max = 1.2 * max_observed_weight,
+    w_max = if_else(new_w_max > w_max, new_w_max, w_max),
+    w_repro_max = w_max
+  ) %>%
+  select(-new_w_max)
+
+#saveRDS(sp,"inst/extdata/ns_3_spp_params.rds")
+```
+
+# Initial Model
+
+## Create Model
+
+Use newAllometric Params to create a model
+
+```{r}
+p <- newAllometricParams(sp, no_w = 200)
+```
+
+## Add Total Fishing Mortality
+
+```{r}
+p <- addEcopathCatchTotal(p, catch)
+```
+
+## Adjust Diet Matrix
+
+```{r}
+dm <- reduceEcopathDiet(sp, ecopath_diet, ecopath_params)
+#saveRDS(dm, "inst/extdata/ns_3_spp_model_adjusted_diet_matrix.rds")
+```
+
+## Match Model to Observations
+
+```{r}
+p <- p |> matchGrowth() |>steadySingleSpecies() |>matchBiomasses()
+p <- p |> matchCatch(catch = landings, yield_lambda = 1) 
+#odd warning at match catch
+p <- p |>matchConsumption()
+
+ns_3_spp_model_initial <- p
+#use_data(ns_3_spp_model_initial)
+```
+
+## Manual Tuning
+
+```{r}
+#| eval: false
+## 5.1 Tuning the model with old Mizer Ecopath so that matchCatch function is active
+p_tuned <- tuneEcopath(
+    p, 
+    catch = landings, 
+    diet = dm,
+    preserve = c("reproduction_level")
+)
+#ns_3_spp_model_trial<-p_tuned
+#use_data(ns_3_spp_model_trial)
+
+```
+
+```{r}
+p_tuned<-ns_3_spp_model_trial
+```
+
+## Tune with Diffusion
+
+```{r}
+#| eval: false
+#run new version mizerEcopath with diffusion
+#remotes::install_github("sizespectrum/mizer", ref="diffusion", force=TRUE)
+#remotes::install_github("gustavdelius/mizerEcopath", ref = "diffusion_control", force=TRUE)
+
+#Tune model with diffusion activated
+p_tuned1 <- tuneEcopath(
+    p_tuned, 
+    catch = landings, 
+    diet = dm,
+    preserve = c("reproduction_level")
+)
+#ns_3_spp_model_final<-p_tuned1
+#use_data(ns_3_spp_model_final)
+```
+
+```{r}
+p_tuned1<-ns_3_spp_model_final
+```

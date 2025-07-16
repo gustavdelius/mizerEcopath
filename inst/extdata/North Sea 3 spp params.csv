@@ -1,0 +1,6 @@
+﻿Species,Fishbase Link,Ref #,Sex,l_inf,k_vb,t0,w_inf,l_mat,M,phi_prime,Locality,Territory,Temp,a,b
+Pollachius virens,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=183&vautoctr=9422&cap=n,74354,Unsexed,101,0.196,,20000,69,,3.3,"Faroe Bank, 60°55´N; 8°40´W",Faeroe Is.,,0.00661,3.07
+Sprattus sprattus,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=43&vautoctr=2492&cap=n,796 & 851,Unsexed,13,0.7,,16,10,,2.07,North Sea,UK,9,0.0055,3.1
+Ammodytes tobianus,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=402&vautoctr=489&cap=n,312 & 730,Unsexed,21.9,0.449,,21,13,0.5,2.33,"Kiel Bight, Western Baltic; M: for North Sea (Div. IVa)",Germany,8,0.0024,3.02
+Clupea harengus,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=43&vautoctr=11740&cap=n,94462,Mixed,35.9,0.348,-0.45,359.12,24.1,,2.65,"North Sea Sub-area IV, Divisions VIId and IIIa",,,0.0055,3.1
+Limanda limanda,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=440&vautoctr=11735&cap=n,94462,Mixed,33,0.21,-0.89,373.43,13,,2.36,"North Sea, Sub-area IV",,,0.00776,3.09
