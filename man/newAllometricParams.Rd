@@ -23,23 +23,23 @@ The metabolic respiration rate, the feeding level and the reproduction level
 are set to zero.
 }
 \details{
-If the exponent n of the power-law encounter rate is not provided as a species
-parameter, it is set to 0.7. The exponent d of the power-law mortality rate is
-\emph{always} imposed as n - 1, regardless of any supplied value.
+If the exponent \code{n} of the power-law encounter rate is not provided as a
+species parameter, it is set to 0.7.  The exponent \code{d} of the power-law
+mortality rate is always imposed as \verb{n – 1}, regardless of any supplied
+value.
 
-If the species parameter \code{alpha}, which gives the proportion of the consumption
-that is assimilated, is not provided, it is set to 0.8, the default value
-used by Ecopath.
+If the species parameter \code{alpha}, which gives the proportion of the
+consumption that is assimilated, is not provided, it is set to 0.8, the
+default value used by Ecopath.
 
-The coefficient of the power-law encounter rate for each species is chosen so
-that the species grows to maturity size by its maturity age. The coefficient
-of the power-law mortality rate is computed from the growth rate and is chosen so that the juvenile biomass density has a
-slope of -0.2.
+The encounter rate coefficient for each species is chosen so that the
+species reaches its maturity weight \code{w_mat} by the age at maturity
+\code{age_mat}.  The mortality-rate coefficient is then derived from that growth
+rate and set so that the juvenile biomass spectrum has a slope of –0.2.
 
-The species uses \code{matchGrowth()} to adjust the encounter rate coefficient to
-produce the desired growth rate. It uses \code{matchBiomasses()} to match the
-biomass to the observations and \code{steadySingleSpecies()} to set the model to
-steady state.
+The function uses \code{matchBiomasses()} to match the biomass to the observations
+and \code{steadySingleSpecies()} to bring each species to steady state. It then
+calls \code{setBevertonHolt()} to set the reproduction level to zero
 
 Because the model does not make use of the resource spectrum, the resource
 dynamics is switched off.

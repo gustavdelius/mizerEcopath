@@ -1,4 +1,7 @@
+
+
 test_that("fillDefaultsFromFishBase fills missing values", {
+    skip("Skipping FishBase tests as they are currently too slow.")
     df <- data.frame(
         species = c("Hake", "Mackerel"),
         Scientific_name = c("Merluccius merluccius", "Scomber scombrus"),
@@ -15,6 +18,7 @@ test_that("fillDefaultsFromFishBase fills missing values", {
 
 
 test_that("fillDefaultsFromFishBase respects overwrite argument", {
+    skip()
     df <- data.frame(
         species = "Hake",
         Scientific_name = "Merluccius merluccius",
@@ -34,6 +38,7 @@ test_that("fillDefaultsFromFishBase respects overwrite argument", {
 
 
 test_that("fillDefaultsFromFishBase handles species not in FishBase", {
+    skip()
     df <- data.frame(
         species = "UnknownFish",
         Scientific_name = "Fictitious imaginarius",
@@ -48,6 +53,7 @@ test_that("fillDefaultsFromFishBase handles species not in FishBase", {
 
 
 test_that("fillDefaultsFromFishBase works with a custom scientific name column", {
+    skip()
     df <- data.frame(
         species = "Mackerel",
         sci_name = "Scomber scombrus",

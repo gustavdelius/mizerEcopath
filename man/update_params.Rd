@@ -4,7 +4,7 @@
 \alias{update_params}
 \title{Function that updates params object with new parameter values}
 \usage{
-update_params(params, species = 1, pars, data, w_select)
+update_params(params, species = 1, pars, data)
 }
 \arguments{
 \item{params}{The MizerParams object to update}
@@ -15,9 +15,6 @@ model.}
 \item{pars}{A named numeric vector of parameter values}
 
 \item{data}{The list with data as passed to the objective function}
-
-\item{w_select}{A logical vector indicating which weight bins were used in
-the likelihood calculation}
 }
 \value{
 The updated MizerParams object

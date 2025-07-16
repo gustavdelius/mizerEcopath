@@ -77,10 +77,13 @@
 #' params <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch)
 #' plot_catch(params, species = "Hake", catch = celtic_catch)
 #' # The function leaves the biomass of the species unchanged
-#' all.equal(getBiomass(params), getBiomass(celtic_params), tol = 1e-4)
+#' all.equal(getBiomass(params, use_cutoff = TRUE),
+#'           getBiomass(celtic_params, use_cutoff = TRUE),
+#'           tol = 1e-4)
 #' # It also leaves the energy available to an individual for reproduction
 #' # and growth unchanged
-#' all.equal(getEReproAndGrowth(params), getEReproAndGrowth(celtic_params))
+#' all.equal(getEReproAndGrowth(params),
+#'           getEReproAndGrowth(celtic_params))
 #' # The initial size spectrum is set to the steady state size spectrum
 #' params_steady <- steadySingleSpecies(params)
 #' all.equal(initialN(params), initialN(params_steady))

@@ -20,6 +20,7 @@ prepare_params <- function(p) {
     mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
     mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
     p <- set_species_param_default(p, "mu_mat", mu_mat)
+    p <- set_species_param_default(p, "d_over_g", 0.15)
 
     p <- steadySingleSpecies(p)
     p <- matchBiomasses(p)
