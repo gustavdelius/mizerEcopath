@@ -60,6 +60,7 @@ otherControl <- function(input, output, session, params, params_old,
         p@species_params[sp, "alpha"] <- input$alpha
         p@species_params[sp, "ks"]    <- input$ks
         p@species_params[sp, "k"]     <- input$k
+        p@species_params[sp, "mu_mat"] <- input$mu_mat
         p <- setMetabolicRate(p, reset = TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })
