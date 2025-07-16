@@ -19,20 +19,15 @@ In this example the species modelled include Saithe (*Pollachius virens)*, Herri
 #| message: false
 #| results: 'hide'
 # Packages
+remotes::install_github("sizespectrum/mizer", ref = "diffusion")
+
 library(rfishbase)
-library(mizer)
 library(remotes)
-#install_github("gustavdelius/mizerEcopath") 
 library(mizerEcopath)
-library(mizerExperimental)
 library(dplyr)
 library(tidyr)
 library(here)
 library(readr)
-
-# Other package versions:
-remotes::install_github("sizespectrum/mizer",force=TRUE)
-remotes::install_github("gustavdelius/mizerEcopath", force=TRUE)
 ```
 
 ## Load in Data
@@ -93,12 +88,6 @@ landings$dl<-1
 #diet matrix for tune params
 dm<-readRDS(here("inst","extdata","ns_3_spp_model_adjusted_diet_matrix.rds"))
 
-#inital model
-load(here("data","ns_3_spp_model_initial.rda"))
-#trial model
-load(here("data","ns_3_spp_model_trial.rda"))
-#final model
-load(here("data","ns_3_spp_model_final.rda"))
 
 #run tuneEcopath
 #insert_model_name <- tuneEcopath(
@@ -270,7 +259,6 @@ p_tuned <- tuneEcopath(
 ```
 
 ```{r}
-load(here("Data","ns_3_spp_model_trial.rda"))
 p_tuned<-ns_3_spp_model_trial
 ```
 
@@ -294,6 +282,5 @@ p_tuned1 <- tuneEcopath(
 ```
 
 ```{r}
-load(here("Data","ns_3_spp_model_trial.rda"))
 p_tuned1<-ns_3_spp_model_final
 ```
