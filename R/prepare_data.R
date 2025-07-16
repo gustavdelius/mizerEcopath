@@ -75,15 +75,17 @@ prepare_data <- function(params, species = 1, catch,
         # Add empty bins at either end. This will have an effect only when the
         # catch data is very poor and would be matched by curves that are still
         # large at the end of the observation interval.
+        min_length <- (sps$w_min / sps$a) ^ (1 / sps$b)
         observed_bins <- rbind(observed_bins,
-                               data.frame(bin_start = sps$w_min,
+                               data.frame(bin_start = min_length,
                                           bin_end = min(catch$length),
                                           count = 0))
         max_idx <- which.max(catch$length)
         max_length <- catch$length[max_idx] + catch$dl[max_idx]
+        l_max <- (sps$w_max / sps$a) ^ (1 / sps$b)
         observed_bins <- rbind(observed_bins,
                                data.frame(bin_start = max_length,
-                                          bin_end = max_length + catch$dl[max_idx],
+                                          bin_end = l_max,
                                           count = 0))
 
         # Create a comprehensive set of bin edges covering all observed bins
@@ -110,8 +112,8 @@ prepare_data <- function(params, species = 1, catch,
 
         w <- w(params)
         # Select subset of w that totally contains the observed range
-        w_min <- max(w[w <= min(w_bin_boundaries)])
-        w_max <- min(w[w >= max(w_bin_boundaries)])
+        w_min <- max(w[w <= min(w_bin_boundaries)], sps$w_min)
+        w_max <- min(w[w >= max(w_bin_boundaries)], sps$w_max)
     }
 
     w <- w(params)
@@ -133,7 +135,6 @@ prepare_data <- function(params, species = 1, catch,
     }
     # The cutoff index for R is one more than the C++ index
     biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
-
     growth <- getEGrowth(params)[sp_select, w_select]
 
     if (use_counts) {
