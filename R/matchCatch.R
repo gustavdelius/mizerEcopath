@@ -82,7 +82,7 @@
 #'           tol = 1e-4)
 #' # It also leaves the energy available to an individual for reproduction
 #' # and growth unchanged
-#' all.equal(getEReproAndGrowth(params,),
+#' all.equal(getEReproAndGrowth(params),
 #'           getEReproAndGrowth(celtic_params))
 #' # The initial size spectrum is set to the steady state size spectrum
 #' params_steady <- steadySingleSpecies(params)
