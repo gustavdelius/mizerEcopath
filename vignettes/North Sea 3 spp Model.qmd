@@ -46,28 +46,29 @@ Some of the data formatting alterations are made in the following code to ensure
 #| message: false
 #| results: 'hide'
 #Load in ecopath parameters
-ecopath_params <- read.csv("inst/extdata/North Sea-Basic estimates.csv")
+ecopath_params <- read.csv(here("inst","extdata","North Sea-Basic estimates.csv"))
 #
-ecopath_diet <- read.csv("inst/extdata/North Sea-Diet composition.csv")
+ecopath_diet <- read.csv(here("inst","extdata","North Sea-Diet composition.csv"))
 #
-landings <- readRDS("inst/extdata/ns_catch.rds")
+landings <- readRDS(here("inst","extdata","ns_catch.rds"))
 landings <- landings[landings$gear == "total", ] #select total gear only
+#fix for herring data with 0.5 lengths
 landings <- landings %>%
-  mutate(length = ceiling(length)) %>%           # Round up lengths
+  mutate(length = floor(length)) %>%           # Round up lengths
   group_by(species, gear, length, Scientific_name, English_name) %>%  # Group by relevant columns
   summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
 landings$count <- landings$catch
 landings$dl<-1
 
 #Ecopath catch data
-catch <- read.csv("inst/extdata/North Sea-Landings.csv")
+catch <- read.csv(here("inst","extdata","North Sea-Landings.csv"))
 colnames(catch)[2] <- "Group.name"
 catch <- left_join(ecopath_params, catch, by = c("Group.name" = "Group.name")) |>
     mutate(TotalCatch..t.km..year. = Total * Biomass..t.km..) |>
     select(Group.name, TotalCatch..t.km..year.)
 
 #Fishbase growth parameters, growth parameters are chosen by list of studies provided by fish base, study from which species growth parameters are taken were selected by availability of data, and location proximity to the North Sea. a and b values are taken from the Bayesian length-weight ratio model estimated tab in fishbase for each species.
-life_histories<-read_csv("/Users/jessicawestworth/Desktop/North Sea 3 spp params.csv")
+life_histories<-read_csv(here("inst","extdata","North Sea 3 spp params.csv"))
 life_histories<-life_histories[c(1,4:5),]
 ```
 
@@ -77,27 +78,27 @@ If you would like to skip the model building process and simply look at the 3 sp
 
 ```{r}
 #final species params data frame
-sp<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_3_spp_params.rds")
+sp<-readRDS(here("inst","extdata","ns_3_spp_params.rds"))
 
 #landings data for tune params
-landings <- readRDS("inst/extdata/ns_catch.rds")
+landings <- readRDS(here("inst","extdata","ns_catch.rds"))
 landings <- landings[landings$gear == "total", ] #select total gear only
 landings <- landings %>%
-  mutate(length = ceiling(length)) %>%           # Round up lengths
+  mutate(length = floor(length)) %>%           # Round up lengths
   group_by(species, gear, length, Scientific_name, English_name) %>%  # Group by relevant columns
   summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
 landings$count <- landings$catch
 landings$dl<-1
 
 #diet matrix for tune params
-dm<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_3_spp_model_adjusted_diet_matrix.rds")
+dm<-readRDS(here("inst","extdata","ns_3_spp_model_adjusted_diet_matrix.rds"))
 
 #inital model
-initial<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_initial.rds")
+load(here("data","ns_3_spp_model_initial.rda"))
 #trial model
-trial<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_trial.rds")
+load(here("data","ns_3_spp_model_trial.rda"))
 #final model
-final<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_final.rds")
+load(here("data","ns_3_spp_model_final.rda"))
 
 #run tuneEcopath
 #insert_model_name <- tuneEcopath(
@@ -214,7 +215,7 @@ sp <- landings %>%
   ) %>%
   select(-new_w_max)
 
-#saveRDS(sp, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_3_spp_params.rds")
+#saveRDS(sp,"inst/extdata/ns_3_spp_params.rds")
 ```
 
 # Initial Model
@@ -237,7 +238,7 @@ p <- addEcopathCatchTotal(p, catch)
 
 ```{r}
 dm <- reduceEcopathDiet(sp, ecopath_diet, ecopath_params)
-#saveRDS(dm, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_3_spp_model_adjusted_diet_matrix.rds")
+#saveRDS(dm, "inst/extdata/ns_3_spp_model_adjusted_diet_matrix.rds")
 ```
 
 ## Match Model to Observations
@@ -248,8 +249,8 @@ p <- p |> matchCatch(catch = landings, yield_lambda = 1)
 #odd warning at match catch
 p <- p |>matchConsumption()
 
-p_backup <- p
-#saveRDS(p, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_initial.rds")
+ns_3_spp_model_initial <- p
+#use_data(ns_3_spp_model_initial)
 ```
 
 ## Manual Tuning
@@ -262,9 +263,10 @@ p_tuned <- tuneEcopath(
     diet = dm,
     preserve = c("reproduction_level")
 )
-p_tuned_backup<-p_tuned
-#saveRDS(p_tuned, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_trial.rds")
-p_tuned<-readRDS("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_trial.rds")
+#ns_3_spp_model_trial<-p_tuned
+#use_data(ns_3_spp_model_trial)
+load(here("Data","ns_3_spp_model_trial.rda"))
+p_tuned<-ns_3_spp_model_trial
 
 #run new version mizerEcopath with diffusion
 #remotes::install_github("sizespectrum/mizer", ref="diffusion", force=TRUE)
@@ -277,5 +279,6 @@ p_tuned1 <- tuneEcopath(
     diet = dm,
     preserve = c("reproduction_level")
 )
-#saveRDS(p_tuned1, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/Data/ns_3_spp_model_final.rds")
+#ns_3_spp_model_final<-p_tuned1
+#use_data(ns_3_spp_model_final)
 ```
