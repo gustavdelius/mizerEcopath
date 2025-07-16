@@ -8,9 +8,9 @@ tuneEcopath(
   params,
   catch = NULL,
   diet = NULL,
-  controls = c("match", "diffusion", "fishing", "reproduction", "other", "exponent"),
+  controls = c("diffusion", "fishing", "reproduction", "other", "exponent"),
   tabs = c("Spectra", "Catch", "Growth", "Repro", "Diet", "Death"),
-  match = c("none"),
+  match = c("growth", "yield", "consumption"),
   preserve = c("erepro", "reproduction_level", "R_max"),
   return_app = FALSE,
   ...
@@ -37,8 +37,8 @@ in the main section. See "Customisation" below.}
 
 \item{match}{A character vector. Determines which quantities should be
 matched to observations each time the "steady" button is pressed. Possible
-entries are \code{"growth"} (using \code{\link[=matchGrowth]{matchGrowth()}}), \code{"catch"} (using
-\code{\link[=matchCatch]{matchCatch()}}) and \code{"consumption"} (using \code{\link[=matchConsumption]{matchConsumption()}}).}
+entries are \code{"growth"} (using \code{\link[=matchGrowth]{matchGrowth()}}), \code{"yield"} (using
+\code{\link[=matchYield]{matchYield()}}) and \code{"consumption"} (using \code{\link[=matchConsumption]{matchConsumption()}}).}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive

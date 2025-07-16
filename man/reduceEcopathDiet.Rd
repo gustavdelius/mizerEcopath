@@ -4,34 +4,47 @@
 \alias{reduceEcopathDiet}
 \title{Reduce Ecopath diet matrix to mizer species}
 \usage{
-reduceEcopathDiet(species_params, ecopath_diet)
+reduceEcopathDiet(species_params, ecopath_diet, ecopath_params)
 }
 \arguments{
-\item{species_params}{A data frame with mizer species parameters}
+\item{species_params}{A data frame with mizer species parameters.}
 
-\item{ecopath_diet}{The Ecopath diet matrix, as exported by the Ecopath
-software.}
+\item{ecopath_diet}{The Ecopath diet matrix, as exported by the Ecopath software.
+Rows correspond to prey groups, columns to predator groups.}
+
+\item{ecopath_params}{The  basic parameters data frame, containing at least biomass and
+consumption/biomass for each group.}
 }
 \value{
 A matrix with dimnames \code{predator} and \code{prey}, where the row names are
 the species names of the predators and the column names are the species
-names of the prey, an extra column "other" for groups not included in the model.
-The matrix entries give for each predator the proportion of its diet that comes
-from each prey species or from other ecosystem components.
+names of the prey, plus an extra column "other" for groups not included in the model.
+The matrix entries give, for each predator, the proportion of its total consumption
+that comes from each prey species or from other ecosystem components.
 }
 \description{
 Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
-using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 Produces a species-by-species diet matrix, including an \code{"other"} category to account
+for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
+are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+is then normalised to proportions.
+}
+\details{
+This produces a species-by-species diet matrix, including an \code{"other"} category to account
 for diet contributions from Ecopath groups not included in the model.
+
+This function assumes that the supplied Ecopath diet matrix contains proportions (not absolute rates).
 }
 \examples{
 # Generate a reduced diet matrix
 diet_matrix <- reduceEcopathDiet(
     species_params = species_params_example,
-    ecopath_diet = ecopath_diet_example
+    ecopath_diet = ecopath_diet_example,
+    ecopath_params = ecopath_params_example
 )
 
 # View first few rows of the result
 head(diet_matrix)
+
 }
