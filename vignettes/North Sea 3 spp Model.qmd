@@ -1,6 +1,6 @@
 ---
 title: "North Sea 3 Species Model"
-format: html
+format: pdf
 editor: visual
 ---
 
@@ -256,6 +256,7 @@ ns_3_spp_model_initial <- p
 ## Manual Tuning
 
 ```{r}
+#| eval: false
 ## 5.1 Tuning the model with old Mizer Ecopath so that matchCatch function is active
 p_tuned <- tuneEcopath(
     p, 
@@ -265,9 +266,18 @@ p_tuned <- tuneEcopath(
 )
 #ns_3_spp_model_trial<-p_tuned
 #use_data(ns_3_spp_model_trial)
+
+```
+
+```{r}
 load(here("Data","ns_3_spp_model_trial.rda"))
 p_tuned<-ns_3_spp_model_trial
+```
 
+## Tune with Diffusion
+
+```{r}
+#| eval: false
 #run new version mizerEcopath with diffusion
 #remotes::install_github("sizespectrum/mizer", ref="diffusion", force=TRUE)
 #remotes::install_github("gustavdelius/mizerEcopath", ref = "diffusion_control", force=TRUE)
@@ -281,4 +291,9 @@ p_tuned1 <- tuneEcopath(
 )
 #ns_3_spp_model_final<-p_tuned1
 #use_data(ns_3_spp_model_final)
+```
+
+```{r}
+load(here("Data","ns_3_spp_model_trial.rda"))
+p_tuned1<-ns_3_spp_model_final
 ```
