@@ -27,15 +27,7 @@ library(here)
 
 In this example the species modelled include Saithe (*Pollachius virens)*, Herring (*Clupea harengus*), and Dab (*Limanda limanda*), in an attempt to create a simple model with the selected species occupying a variety of niches (ie: one large piscivorous fish (saithe), one small pelagic fish (herring), and one benthic fish species (dab)).
 
-You will need to create a table with some species-specific parameters, such as von Bertalanffy growth parameters, length-weight parameters, and maturity parameters. These can be taken from FishBase or other sources. The species parameters data frame should include the following columns:
--   `species`: Common name of the species
--   `SciName`: Scientific name of the species
--   `l_inf` or `w_inf`: von Bertalanffy asymptotic length (cm) or weight (g)
--   `k_vb`: von Bertalanffy growth rate (1/year)
--   `t0`: von Bertalanffy age zero (years)
--   `l_mat` or `w_mat`: Length (cm) or weight (g) at 50% maturity
--   `a`: Length-weight relationship parameter a
--   `b`: Length-weight relationship parameter b
+You will need to create a table with some species-specific parameters, such as von Bertalanffy growth parameters, length-weight parameters, and maturity parameters. These can be taken from FishBase or other sources. The species parameters data frame should include the following columns: - `species`: Common name of the species - `SciName`: Scientific name of the species - `l_inf` or `w_inf`: von Bertalanffy asymptotic length (cm) or weight (g) - `k_vb`: von Bertalanffy growth rate (1/year) - `t0`: von Bertalanffy age zero (years) - `l_mat` or `w_mat`: Length (cm) or weight (g) at 50% maturity - `a`: Length-weight relationship parameter a - `b`: Length-weight relationship parameter b
 
 For our example we have collected the information for the three species we are modelling in a csv file called `North Sea 3 spp params.csv` which is included in the `inst/extdata` folder of the mizerEcopath package. Let's load it in and have a peek:
 
@@ -45,6 +37,10 @@ For our example we have collected the information for the three species we are m
 
 sp <- 
     read_csv(here::here("inst", "extdata", "ns_3_spp_species_params.csv"))
+head(sp)
+
+sp <- 
+    readRDS(here::here("inst", "extdata", "ns_3_spp_params.rds"))
 head(sp)
 ```
 
@@ -65,9 +61,15 @@ ecopath_diet <- read.csv(here("inst", "extdata",
                               "North Sea-Diet composition.csv"))
 ecopath_catch <- read.csv(here("inst", "extdata",
                               "North Sea-Landings.csv"))
+colnames(ecopath_catch)[2] <- "Group.name"
+ecopath_catch <- left_join(ecopath_params, ecopath_catch, by = c("Group.name" = "Group.name")) |>
+    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km..) |>
+    select(Group.name, TotalCatch..t.km..year.)
+
 ```
 
 We have extracted the size distribution of the landings data for the three species from STECF data. TODO: more info on this table.
+
 ```{r}
 #Load in catch data
 catch <- read.csv(here("inst", "extdata", "ns_3_spp_catch.csv"))
@@ -78,8 +80,7 @@ catch$catch <- catch$count
 
 ## Set l_max based on observed sizes in the landings data
 
-The `l_max` species parameter lets mizer know up to what size it needs to calculate species abundances. By setting it not too much larger than the largest observed size in the landings data, we can reduce the computational burden of the model and also choose the scale of the size axis in plots appropriately. We set `l_max` to 
-1.5 times the maximum observed weight in the landings data.
+The `l_max` species parameter lets mizer know up to what size it needs to calculate species abundances. By setting it not too much larger than the largest observed size in the landings data, we can reduce the computational burden of the model and also choose the scale of the size axis in plots appropriately. We set `l_max` to 1.5 times the maximum observed weight in the landings data.
 
 ```{r}
 sp <- catch %>%
@@ -104,8 +105,6 @@ species_to_groups <- list(
 # add biomass, production, and consumption to species parameters
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 ```
-
-
 
 # Initial Model
 
