@@ -79,6 +79,7 @@ validEcopathCatch <- function(ecopath_catch, species_params) {
     # Sometimes some columns have different names
     column_mappings <- list(
         "TotalCatch..t.km..year." = "TotalCatch (t/km²/year)",
+        "Total" = "TotalCatch (t/km²/year)",
         "Group.name" = "Group name"
     )
 
@@ -86,7 +87,8 @@ validEcopathCatch <- function(ecopath_catch, species_params) {
     for (old_name in names(column_mappings)) {
         new_name <- column_mappings[[old_name]]
         if (hasName(ecopath_catch, old_name)) {
-            ecopath_catch <- ecopath_catch |> rename(!!new_name := !!sym(old_name))
+            ecopath_catch <- ecopath_catch |>
+                rename(!!new_name := !!sym(old_name))
         }
     }
 
