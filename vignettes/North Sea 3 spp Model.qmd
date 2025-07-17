@@ -38,10 +38,6 @@ For our example we have collected the information for the three species we are m
 sp <- 
     read_csv(here::here("inst", "extdata", "ns_3_spp_species_params.csv"))
 head(sp)
-
-sp <- 
-    readRDS(here::here("inst", "extdata", "ns_3_spp_params.rds"))
-head(sp)
 ```
 
 We included many columns that mizer will not use but that will be nice for us to keep track of.
@@ -61,11 +57,6 @@ ecopath_diet <- read.csv(here("inst", "extdata",
                               "North Sea-Diet composition.csv"))
 ecopath_catch <- read.csv(here("inst", "extdata",
                               "North Sea-Landings.csv"))
-colnames(ecopath_catch)[2] <- "Group.name"
-ecopath_catch <- left_join(ecopath_params, ecopath_catch, by = c("Group.name" = "Group.name")) |>
-    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km..) |>
-    select(Group.name, TotalCatch..t.km..year.)
-
 ```
 
 We have extracted the size distribution of the landings data for the three species from STECF data. TODO: more info on this table.
