@@ -36,7 +36,7 @@ Suggests:
     testthat (>= 3.0.0),
     spelling
 Remotes:
-    sizespectrum/mizerExperimental
+    sizespectrum/mizerExperimental,
     sizespectrum/mizer@diffusion
 Encoding: UTF-8
 LazyData: true
