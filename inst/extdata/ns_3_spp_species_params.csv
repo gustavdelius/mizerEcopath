@@ -1,0 +1,4 @@
+species,l_inf,k_vb,t0,l_mat,a,b,scientific_name,Fishbase Link,Ref #,Sex,M,phi_prime,Locality,Territory,Temp
+Saithe,101,0.196,NA,69,0.00661,3.07,Pollachius virens,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=183&vautoctr=9422&cap=n,74354,Unsexed,NA,3.3,"Faroe Bank, 60°55´N; 8°40´W",Faeroe Is.,NA
+Herring,35.9,0.348,-0.45,24.1,0.0055,3.1,Clupea harengus,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=43&vautoctr=11740&cap=n,94462,Mixed,NA,2.65,"North Sea Sub-area IV, Divisions VIId and IIIa",NA,NA
+Dab,33,0.21,-0.89,13,0.00776,3.09,Limanda limanda,https://www.fishbase.se/popdyn/FishPopGrowthSummary.php?fc=440&vautoctr=11735&cap=n,94462,Mixed,NA,2.36,"North Sea, Sub-area IV",NA,NA
