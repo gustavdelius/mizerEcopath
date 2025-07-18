@@ -1,0 +1,448 @@
+---
+title: "Processing Celtic Sea Landings"
+format: pdf
+editor: visual
+---
+
+# Introduction
+
+This script processes the landings STECF FDI length-landings data to give landings by gear and size for each species, 2013 - 2021. The script is desgined to flexibly allow the user to modify the subarea selection and the gear classifications.
+
+A data frame is created containing: species (+ 3 letter code), length (in cm), catch (number of individuals), and gear type (e.g., otter, beam, static, pelagic).
+
+# Data-Inputs/Outputs
+
+## Inputs
+
+data_raw/downloaded - FDI Landings Length.csv
+
+data_raw/hosted - ASFIS_sp_2022.csv
+
+## Data description
+
+Information about the data set can be found here:
+
+<https://datacollection.jrc.ec.europa.eu/documents/d/dcf/fdi_datacall_annex_2025> Table F contains the column name defintions:
+
+Table F NAO OFR. Landings length data Table to be provided only for the Atlantic Ocean and other regions (not for the Mediterranean and Black Sea regions).
+
+1.  COUNTRY: According to the code list provided in Appendix 1; missing values not allowed.
+2.  YEAR: Four digits (e.g. 2019); missing values not allowed.
+3.  DOMAIN_LANDINGS: Text in format specified in Appendix 8; missing values not allowed.
+4.  NEP_SUB_REGION: Functional Units (FUs) according to the list in Appendix 9; ‘NK’ if not known or ‘NA’ if not applicable. This variable is asked only for Nephrops norvegicus catches.
+5.  SPECIES: according to the FAO 3-alpha code list, see Appendix 12; missing values not allowed.
+6.  TOTWGHTLANDG: Estimated landings in tonnes \[precision to 3 digits after the decimal\]; missing values not allowed.
+7.  TOTAL_SAMPLED_TRIPS: The total number of sampled trips that relate to domain; a number should only be given only if it relates to this domain, otherwise use ‘NK’.
+8.  NO_LENGTH_MEASUREMENTS: The number of length measurements, from within the domain, that relate to landings; a number should be given only if it relates to this domain, otherwise ‘NK’.
+9.  LENGTH_UNIT: The unit of length classes \[‘mm’=millimetre, ‘cm’=centimetre\]; ‘NK’ if length information is not available.
+10. MIN_LENGTH: \[integer\] The minimum length in the data for this species-domain combination; minimum length and maximum length must either both be ‘NK’ or both be not ‘NK’.
+11. MAX_LENGTH: \[integer\] The true maximum length in the data for this species-domain combination; minimum length and maximum length must either both be ‘NK’ or both be not ‘NK’.
+12. LENGTH: \[integer\] (MIN_LENGTH \<= LENGTH \<= MAX_LENGTH). ‘NK’ can be used only if both MIN_LENGTH and MAX_LENGTH are not known.
+13. NO_LENGTH: The number in thousands \[precision to 3 digits after the decimal\] at the specified length. If length information is not available, use ‘NK’.
+14. MEAN_WEIGHT_AT_LENGTH: The mean weight of fish; if no age specific information is available use ‘NK’.
+15. WEIGHT_UNIT: The unit of measure used for the column MEAN_WEIGHT_AT_LENGTH \[kg = kilogram, g = gram\]; if weight information is not available, use ‘NK’.
+
+**Point 13 is relevant, and the units are transformed by a multiplying by 1000.**
+
+## Domain Landings
+
+The domain value of each row contains a variety of information about location and fishing gear. Each category of data supplied is separated by an underscore "\_". If there are multiple entries within a field (e.g. multiple sub-regions, multiple gear types), connect the codes by a dash "-".
+
+The information supplied should follow the structure:
+
+country_quarter\_ region_gear type_target assemblage_mesh size range_selective device_mesh size range of the selective device_vessel length_species_commercial category
+
+There is, however, and exception in which Spain does not supply the country portion. Therefore to allow for Spain's data to be processed properly we need to add the country portion to the domain so that it can be processed properly in the following code.
+
+# Processing
+
+## Importing and curating the data
+
+```{r}
+# Load required libraries
+library(tidyverse)
+library(here)
+library(mizer)
+library(mizerExperimental)
+
+#Need to check if we can upload these to the reprository, if so, we can make this generalised and take from the reprository rather than my machine.
+FDI_Landings_Length<-read.csv("/Users/jessicawestworth/Desktop/FDI Landings Length.csv")
+species_codes <- read.csv("/Users/jessicawestworth/Desktop/ASFIS_sp_2022.csv")
+```
+
+## Clean Data
+
+```{r}
+library(dplyr)
+library(stringr)
+library(purrr)
+
+#Remove rows with value NA from the no length column
+FDI_Landings_Length_clean <- FDI_Landings_Length[!is.na(FDI_Landings_Length$no_length), ]
+
+#Multiply no length column by 1000 as the current value is number in thousands
+FDI_Landings_Length_clean$no_length<-FDI_Landings_Length_clean$no_length*1000
+
+#Adding country to the domain value of Spain
+FDI_Landings_Length_clean <- FDI_Landings_Length_clean %>%
+  mutate(
+    domain_landings = if_else(
+      country == "Spain" & !startsWith(domain_landings, "ESP_"),
+      paste0("ESP_", domain_landings),
+      domain_landings
+    )
+  )
+```
+
+## Configurable parameters - subareas and gears
+
+The following script is used for the Celtic Sea, however, by defining different subareas one could extract data for a variety of other areas.
+
+```{r}
+sub_area_7<- c('27.7.B', '27.7.C', '27.7.E', '27.7.F', '27.7.G', '27.7.H', '27.7.J', '27.7.K')
+ns_sub_area<-c('27.4.A','27.4.B','27.4.C') #potentially add 27.4 to this list?
+```
+
+## Data preparation
+
+```{r}
+# This function extracts gear types *only* from the 4th underscore-separated domain part, ensure that the domains follow the pattern till gear type detailed above before running.
+extract_gear_types_combined <- function(domain_parts) {
+  if (length(domain_parts) < 4) return(NA_character_)
+  gear_block <- domain_parts[4]
+  gear_codes <- str_split(gear_block, "-", simplify = FALSE)[[1]]
+  paste(gear_codes, collapse = "-")
+}
+
+length_landings <- FDI_Landings_Length_clean %>%
+  rowwise() %>%
+  mutate(
+    domain_parts = list(str_split(domain_landings, "_")[[1]]),
+    region_code = domain_parts[3],  # e.g. 27.4.a-27.4.b
+    gear_type = extract_gear_types_combined(domain_parts),
+    
+    # Normalize lengths
+    length = ifelse(length_unit == "mm", length / 10, length),
+    length_unit = "cm",
+    source = "landings"
+  ) %>%
+  ungroup() %>%
+  select(-domain_parts) %>%
+  left_join(species_codes %>% 
+              select(X3A_CODE, Scientific_name, English_name),
+            by = c("species" = "X3A_CODE")) %>%
+  rename(domain = domain_landings) %>%
+  select(
+    country, year, domain, species, Scientific_name, English_name,
+    length_unit, region_code, gear_type,
+    no_length_measurements, length, no_length, mean_weight_at_length,
+    source
+  )
+```
+
+## Subarea filtering
+
+Use the previously defined regions above in the configurable parameters section and extract them from the region_code column in the landings_length data frame. This will create a new column called sub_region and give them the value cs_sub area if the values contain any combinations of the defined areas, but reject any rows that contain other sub areas in addition to the defined regions.
+
+Example of treatment:
+
+| region_code   | sub_region  |
+|---------------|-------------|
+| 27.7.b        | cs_sub_area |
+| 27.7.b-27.7.h | cs_sub_area |
+| 27.7.g-27.7.a | NA          |
+| 27.4.a        | ns_sub_area |
+| 27.4.b-27.4.c | ns_sub_area |
+| 27.4.a-27.7.h | NA          |
+
+```{r}
+length_landings <- length_landings %>%
+  mutate(
+    # Standardize region_code format (uppercase)
+    region_code_upper = toupper(region_code),
+
+    # Split region_code into individual codes (handling multi-code entries)
+    region_parts = str_split(region_code_upper, "-"),
+
+    # Assign sub_region if ALL codes in a row match one region group
+    sub_region = case_when(
+      sapply(region_parts, function(rcs) all(rcs %in% sub_area_7)) ~ "cs_sub_area",
+      sapply(region_parts, function(rcs) all(rcs %in% ns_sub_area)) ~ "ns_sub_area",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  select(-region_code_upper, -region_parts)  # Clean up helper columns
+```
+
+# Celtic Sea
+
+### Subset data for Celtic Sea
+
+```{r}
+cs_sub_region_landings<-subset(length_landings, sub_region=="cs_sub_area")
+```
+
+### Fixes For Limited Data
+
+In this Celtic Sea example the final data frame from processing has very limited data from the following species: Monkfish and Herring.
+
+Recommended steps:
+
+1\) Check the species filering and cross check that the calls used in species filtering match with the landings_length data frame.
+
+2\) Check the landings_length data frame and determine if there is any landings data from any region for the data limited species.
+
+3\) If data is present for a nearby region document which region you are taking data from for that species and follow the recommended code below. *Reference for checking proximity to desired area: <https://fish-commercial-names.ec.europa.eu/fish-names/fishing-areas/fao-area-27_en>*
+
+4\) If data is not present for that species in a nearby region utilize an alternative data source.
+
+#### Herring
+
+There is data available for the nearby region 27.7.d
+
+```{r}
+#subset for herring
+herring<-subset(length_landings, species=="HER")
+
+#subset herring at region 27.7.d
+herring_27.7<-subset(herring, region_code==c("27.7.d","27.7"))
+```
+
+#### Monkfish
+
+There is data available for the region 27.3.a.20
+
+```{r}
+#subset for monkfish
+monkfish<-subset(length_landings, species=="MON")
+
+#subset monkfish at region 27.3.a.20
+monkfish_27.3.a.20<-subset(monkfish, region_code=="27.3.a.20")
+```
+
+#### Bind data
+
+```{r}
+cs_sub_region_landings<-rbind(cs_sub_region_landings,monkfish_27.3.a.20,herring_27.7)
+```
+
+### Calculate catch by species, size, and gear type
+
+```{r}
+# Define a function to calculate catch by species, size class, and gear type
+catch_by_size_class_and_gear <- function(data) {
+    data %>%
+        group_by(species, length, gear_type) %>%
+        summarise(total_catch = sum(no_length)) %>%
+        ungroup()
+}
+
+cs_catch_data <- catch_by_size_class_and_gear(cs_sub_region_landings)
+
+species_reference <- length_landings %>%
+    distinct(species, Scientific_name, English_name)
+```
+
+### Add species names and map gear categories
+
+```{r}
+cs_catch_data <- cs_catch_data %>%
+  left_join(species_reference, by = "species") %>%
+  rename(
+    gear = gear_type,  # Adjust as needed if `gear_type` is used elsewhere
+    catch = total_catch
+  ) %>%
+  drop_na()  # Remove rows with NA in any column
+```
+
+## Generating a size-distributed catch data frame
+
+### Create the total gear rows
+
+```{r}
+cs_total_gear <- cs_catch_data %>%
+  group_by(species, length, Scientific_name, English_name) %>%
+  summarise(
+    gear = "total",                          # Create a new 'gear' category
+    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
+    .groups = "drop"
+  )
+
+ cs_combined_data <- bind_rows(cs_catch_data, cs_total_gear)
+
+cs_combined_data$gear <- as.factor(cs_combined_data$gear)
+```
+
+### Species filter
+
+```{r}
+subset_species <- function(data, species_list, match_by = "species") {
+  # Validate match_by parameter
+  if (!match_by %in% c("species", "Scientific_name", "English_name")) {
+    stop("match_by must be one of 'species', 'Scientific_name', or 'English_name'")
+  }
+  
+  # Filter the data to include only the specified species
+  subset_data <- data %>% filter(!!sym(match_by) %in% species_list)
+  
+  return(subset_data)
+}
+
+species_list <- c("HER","COD","HAD","WHG","WHB","HKE","MON","HOM","MAC","PLE","MEG","SOL")
+
+cs_catch <- subset_species(
+  data = cs_combined_data,
+  species_list = species_list,
+  match_by = "species"
+ )
+
+# Rename the species column to species_code
+colnames(cs_catch)[colnames(cs_catch) == "species"] <- "species_code"
+
+# Create a named vector for the new species names
+new_species_names <- c("Atlantic herring"="Herring",
+"Atlantic cod"="Cod", 
+"Haddock"="Haddock",
+"Whiting"="Whiting",
+"Blue whiting(=Poutassou)"="Blue whiting",
+"European hake"="Hake",
+"Angler(=Monk)"="Monkfish",
+"Atlantic horse mackerel"="Horse mackerel",
+"Atlantic mackerel"="Mackerel",
+"European plaice"="Plaice",
+"Megrim"="Megrim",
+"Common sole"="Sole"
+)
+
+# Add the new species column by matching English_name
+cs_catch$species <- new_species_names[cs_catch$English_name]
+
+# Add the dl column
+cs_catch$dl <- 1
+
+#Save data
+#saveRDS(cs_catch, "/Users/jessicawestworth/Desktop/cs_catch.rds")
+```
+
+# North Sea
+
+### Subset data for North Sea
+
+```{r}
+ns_sub_region_landings<-subset(length_landings, sub_region=="ns_sub_area")
+```
+
+### Calculate catch by species, size, and gear type
+
+```{r}
+# Define a function to calculate catch by species, size class, and gear type
+catch_by_size_class_and_gear <- function(data) {
+    data %>%
+        group_by(species, length, gear_type) %>%
+        summarise(total_catch = sum(no_length)) %>%
+        ungroup()
+}
+
+ns_catch_data <- catch_by_size_class_and_gear(ns_sub_region_landings)
+# Only if wider-area species required
+# catch_data_full_area <- catch_by_size_class_and_gear(full_area_landings)
+# catch_data_combined <- bind_rows(catch_data, catch_data_full_area)
+
+species_reference <- length_landings %>%
+    distinct(species, Scientific_name, English_name)
+```
+
+### Add species names and map gear categories
+
+```{r}
+ns_catch_data <- ns_catch_data %>%
+  left_join(species_reference, by = "species") %>%
+  rename(
+    gear = gear_type,  # Adjust as needed if `gear_type` is used elsewhere
+    catch = total_catch
+  ) %>%
+  drop_na()  # Remove rows with NA in any column
+```
+
+## Generating a size-distributed catch data frame
+
+### Create the total gear rows
+
+```{r}
+ns_total_gear <- ns_catch_data %>%
+  group_by(species, length, Scientific_name, English_name) %>%
+  summarise(
+    gear = "total",                          # Create a new 'gear' category
+    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
+    .groups = "drop"
+  )
+
+ns_combined_data <- bind_rows(ns_catch_data, ns_total_gear)
+
+ns_combined_data$gear <- as.factor(ns_combined_data$gear)
+```
+
+### Species filter
+
+```{r}
+subset_species <- function(data, species_list, match_by = "species") {
+  # Validate match_by parameter
+  if (!match_by %in% c("species", "Scientific_name", "English_name")) {
+    stop("match_by must be one of 'species', 'Scientific_name', or 'English_name'")
+  }
+  
+  # Filter the data to include only the specified species
+  subset_data <- data %>% filter(!!sym(match_by) %in% species_list)
+  
+  return(subset_data)
+}
+
+species_list <- c("SPR", "SAN", "NOP", "HER", "DAB", "WHG", "SOL", "GUX", "GUR", "TUB", "PLE", "HAD", "COD", "POK")
+
+ns_catch <- subset_species(
+  data = ns_combined_data,
+  species_list = species_list,
+  match_by = "species"
+ )
+
+# Rename the species column to species_code
+colnames(ns_catch)[colnames(ns_catch) == "species"] <- "species_code"
+
+# Create a named vector for the new species names
+new_species_names <- c(
+  "European sprat" = "Sprat",
+  "Sandeel" = "Sandeel",
+  "Norway pout" = "N.pout",
+  "Atlantic herring" = "Herring",
+  "Common dab" = "Dab",
+  "Whiting" = "Whiting",
+  "Common sole" = "Sole",
+  "Gurnards, searobins nei" = "Grey Gurnard",
+  "Red gurnard" = "Red Gurnard",
+  "Tub Gurnard" = "Tub Gurnard",
+  "European plaice" = "Plaice",
+  "Haddock" = "Haddock",
+  "Atlantic cod" = "Cod",
+  "Saithe(=Pollock)" = "Saithe"
+)
+
+# Add the new species column by matching English_name
+ns_catch$species <- new_species_names[ns_catch$English_name]
+
+# Combine the gurnards
+ns_catch <- ns_catch %>%
+  # First, standardise species: Grey gurnard or Red gurnard => Gurnard
+  mutate(species = ifelse(species %in% c("Grey Gurnard", "Red Gurnard"), 
+                          "Gurnard", 
+                          species)) %>%
+  # Now group by length, gear, and the updated species, then sum the catches
+  group_by(length, gear, species) %>%
+  summarise(catch = sum(catch), .groups = "drop")
+
+# Add the dl column
+ns_catch$dl <- 1
+
+#saveRDS(ns_catch,"/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_catch.rds")
+```
+
+# 
