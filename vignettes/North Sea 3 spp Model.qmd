@@ -79,12 +79,12 @@ catch$catch <- catch$count
 ## Set l_max based on observed sizes in the landings data
 
 The `l_max` species parameter lets mizer know up to what size it needs to calculate species abundances. By setting it not too much larger than the largest observed size in the landings data, we can reduce the computational burden of the model and also choose the scale of the size axis in plots appropriately. We set `l_max` to 
-1.5 times the maximum observed weight in the landings data.
+5% above the maximum observed weight in the landings data.
 
 ```{r}
 sp <- catch %>%
   group_by(species) %>%
-  summarise(l_max = 1.5 * max(length + dl, na.rm = TRUE)) %>%
+  summarise(l_max = 1.05 * max(length + dl, na.rm = TRUE)) %>%
   right_join(sp, by = "species")
 ```
 
