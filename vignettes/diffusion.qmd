@@ -228,49 +228,101 @@ $$
 $$ {#eq-PDExs}
 Note that while the diffusion rate was just rescaled by the factor of $1/w^2$ that should be expected from the transformation from $d^2/dw^2$ to $d^2/dx^2$, the growth rate also received an additional contribution from the diffusion.
 
+To get to a more common form of the advection-reaction-diffusion equation we rewrite the diffusion term:
+$$
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) + \frac12 \frac{\partial}{\partial x}\left(\left(\frac{\partial}{\partial x}\tilde{d}\right)n\right)
+$$
+The second term can be combined with the growth term if we introduce 
+$$
+\hat{g}=\tilde{g}-\frac12 \frac{\partial}{\partial x}\tilde{d}.
+$$
+This gives us the PDE
+$$
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n.
+$$ {#eq-PDEhatg}
+where $\hat{g}$ is the rescaled growth rate that includes the effect of diffusion.
+
+
 # Numerical scheme for steady-state ODE {#sec-diffusion-numerical}
 
-To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation
-$$
-\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n=0.
-$$ {#eq-ODE}
-Our boundary conditions are
-$$
-n(x_0)=n_0,~~~~n(x_{max})=0.
-$$ {#eq-bc}
-where $x_{max}$ is some size that fish can never reach.
+To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation. So
+For the growth term we use an upwind difference scheme, with the direction of upwind depending on the sign of $\hat{g}$:
 
-## Upwind difference scheme
+- If $\hat{g}_i \geq 0$, we use
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i}n_{i}-\hat{g}_{i-1}n_{i-1}}{h}.
+$$
+- If $\hat{g}_i < 0$, we use
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i+1}n_{i+1}-\hat{g}_{i}n_{i}}{h}.
+$$
 
-We use our equally-spaced grid with spacing $h$:
-$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. Here $N$ is the number of internal grid points. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
+A concise way to write this is
+$$
+\left(\hat{g}n\right)'(x_i) \approx \frac{|\hat{g}_i|n_i-
+\hat{g}^+_{i-1}n_{i-1}
+-\hat{g}^-_{i+1}n_{i+1}}{h}
+$$
+where
+$$
+\hat{g}^\pm = |\hat{g}|\pm \hat{g}
+$$
+are either positive or zero, depending on the sign of $\hat{g}$.
+
+The diffusion term in @eq-PDEhatg can be treated with a second-order scheme.
+$$
+\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) \approx \frac1{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right),
+$$
+where $\tilde{d}_{i+1/2}$ and $\tilde{d}_{i-1/2}$ are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use
+$$
+\tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
+$$
+but this can be replaced by a more sophisticated scheme if desired.
+
+Unless we want to use our explicit knowledge of $\tilde{d}'$ we can approximate
+$$
+\hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
+$$
+
+After multiplying by $h^2$ this gives us the linear system
 $$
 \begin{split}
-\left(\tilde{g}n\right)'(x_i)&\approx\frac{\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}}{h},\\
-\left(\tilde{d}n\right)''(x_i)&=\frac{\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}}{h^2},
+\frac{1}{2}\left(\tilde{d}_{i+1/2}(n_{i+1}-n_i)-\tilde{d}_{i-1/2}(n_i-n_{i-1})\right) - h\left(|\hat{g}_i|n_i-\hat{g}^+_{i-1}n_{i-1}-\hat{g}^-_{i+1}n_{i+1}\right) - h^2 \mu_i n_i &= 0.
 \end{split}
-$$ {#eq-finite-diff}
-where $\tilde{g}_i = \tilde{g}(x_i)$ and $\tilde{d}_i = \tilde{d}(x_i)$ are the values of the rescaled growth and diffusion rates at the grid points $x_i$.
-for $i=1,\dots, N$. Substituting this into the ODE and multiplying by $h^2$ gives us the linear system
 $$
-\frac{1}{2}\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
-$$ {#eq-ODE2}
-which we can rewrite as
+Collecting terms gives us
 $$
-U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
-$$ {#eq-UDL}
+L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
+$$
 with
 $$
-U_i=\frac{\tilde{d}_{i+1}}{2}, \qquad L_i=\frac{\tilde{d}_{i-1}}{2}+h\,\tilde{g}_{i-1} \qquad \text{ and }~~~D_i = -\tilde{d}_i - h\,\tilde{g}_i-h^2\mu_i
-$$ {#eq-UDL2}
-for $i=1,\dots,N$. We implement this method in the function `solve_steady_state_upwind` as follows:
+\begin{split}
+D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i\right),\\
+L_i&=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
+\end{split}
+$$
+
 
 ```{r}
-solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
+stable_steady <- function(dtilde, gtilde, mu, n0, h) {
+    # We have to be careful when translating from maths to code because
+    # in the maths we indexed our grid points from 0 to N+1, where $N$ is
+    # the number of interior points, but in R we index from 1 to N+2.
+    # So for example \tilde{d}_i in the maths corresponds to dtilde[i+1] in R.
+    
     # Number of interior points
     N <- length(dtilde) - 2
     
     # Calculate finite difference scheme coefficients
+    # We calculate the midpoint values for diffusion
+    # \tilde{d}_{i+1/2} = (\tilde{d}_i + \tilde{d}_{i+1}) / 2
+    # where \tilde{d}_{i} = dtilde[i+1] = for i=0,...,N+1
+    # dtilde_half[i] = \tilde{d}_{i+1/2} for i=1,...,N+1
+    dtilde_half <- (dtilde[2:(N+1)] + dtilde[3:(N+2)]) / 2
+    # Calculate the adjusted growth rate
+    # \hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2} - \tilde{d}_{i-1/2}}{h}
+    # \tilde{g}_i = gtilde[i+1] = for i=0,...,N+1
+    ghat <- gtilde - (dtilde_half[3:(N+2)] - dtilde_half[1:N]) / (2 * h)  # Adjusted growth rate
     U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
     L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
     D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
@@ -287,6 +339,7 @@ solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
     return(solve_ode_double_sweep(U, L, D, n0))
 }
 ```
+
 
 ## Double-sweep method
 
@@ -350,6 +403,108 @@ solve_ode_double_sweep <- function(U, L, D, n0) {
 ```
 
 
+## Stability
+
+The double-sweep method is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. Now we automatically have $L_i>0, U_i>0$ and $D_i<0$. The condition $U_i+L_i\leq -D_i$ is satisfied if
+$$
+\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h\left(\hat{g}^+_{i+1}+\hat{g}^-_{i-1}\right)\leq \frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i,
+$$
+which simplifies to $0\leq \mu_i$, which is always satisfied.
+
+## Without diffusion
+
+When the diffusion rate is zero, then $\hat{g}=\tilde{g}$ and the double-sweep method reduces to the method we are currently using. In that case, using that then $\tilde{g}_i >0$, we have
+$$
+U_i=0,\qquad L_i=h\tilde{g}_{i-1}, \qquad D_i=-h\,\tilde{g}_i-h^2\mu_i
+$$
+and thus
+$$
+\alpha_{i+1} = -\frac{U_i}{D_i} = 0, \qquad \beta_{i+1} = -\frac{\beta_i L_i}{D_i}
+= \beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+$$
+This gives
+$$
+n_i=\beta_{i+1}=\beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=n_{i-1}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+$$
+For the number density as a function of $w$ this gives
+$$
+\begin{split}
+N_i=\frac{n_i}{w_i} &= \frac{n_{i-1}}{w_{i}}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i}}\frac{g_{i-1}/w_{i-1}}{g_i/w_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i-1}}\frac{g_{i-1}}{g_i+hw_i\mu_i }\\
+&=N_{i-1}\frac{g_{i-1}}{g_i+\Delta w_i\mu_i}+O(h^2)
+\end{split}
+$$
+where we used that
+$$
+\Delta w_i=w_{i+1}-w_i = w_i\left(\exp(h)-1\right)= hw_i+O(h^2).
+$$
+
+This is the same as the scheme we are currently using for calculating the steady state.
+
+
+# Archive
+
+Here we archive some earlier versions of the code that implement a second-order finite-difference scheme, just in case it becomes useful later. These scheme are not unconditionally stable, so they are not used in the main text.
+
+$$
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n=0.
+$$ {#eq-ODE}
+Our boundary conditions are
+$$
+n(x_0)=n_0,~~~~n(x_{max})=0.
+$$ {#eq-bc}
+where $x_{max}$ is some size that fish can never reach.
+
+## Upwind difference scheme
+
+We use our equally-spaced grid with spacing $h$:
+$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. Here $N$ is the number of internal grid points. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
+$$
+\begin{split}
+\left(\tilde{g}n\right)'(x_i)&\approx\frac{\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}}{h},\\
+\left(\tilde{d}n\right)''(x_i)&=\frac{\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}}{h^2},
+\end{split}
+$$ {#eq-finite-diff}
+where $\tilde{g}_i = \tilde{g}(x_i)$ and $\tilde{d}_i = \tilde{d}(x_i)$ are the values of the rescaled growth and diffusion rates at the grid points $x_i$.
+for $i=1,\dots, N$. Substituting this into the ODE and multiplying by $h^2$ gives us the linear system
+$$
+\frac{1}{2}\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
+$$ {#eq-ODE2}
+which we can rewrite as
+$$
+U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
+$$ {#eq-UDL}
+with
+$$
+U_i=\frac{\tilde{d}_{i+1}}{2}, \qquad L_i=\frac{\tilde{d}_{i-1}}{2}+h\,\tilde{g}_{i-1} \qquad \text{ and }~~~D_i = -\tilde{d}_i - h\,\tilde{g}_i-h^2\mu_i
+$$ {#eq-UDL2}
+for $i=1,\dots,N$. We implement this method in the function `solve_steady_state_upwind` as follows:
+
+```{r}
+solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
+    # Number of interior points
+    N <- length(dtilde) - 2
+    
+    # Calculate finite difference scheme coefficients
+    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
+    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
+    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
+    
+    # Check stability conditions
+    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
+        warning("Stability conditions not met.")
+    }
+    if (any(U + L > -D)) {
+        warning("Stability condition U + L <= -D not met.")
+    }
+    
+    # Solve using double sweep method
+    return(solve_ode_double_sweep(U, L, D, n0))
+}
+```
+
 ### Stability
 
 The double-sweep method is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. These conditions on the signs are automatically satisfied if $\tilde{d},\tilde{g}$ and $\mu$ are all positive, which is true as long as
@@ -400,113 +555,7 @@ $$
 
 This is the same as the scheme we are currently using for calculating the steady state. Note that this scheme is also unstable if $g'_\mu<0$ because then $g_{i-1}/(g_i+\Delta w_i\mu_i)>1$.
 
-## More stable scheme
-
-We rewrite the diffusion term
-$$
-\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) + \frac12 \frac{\partial}{\partial x}\left(\left(\frac{\partial}{\partial x}\tilde{d}\right)n\right)
-$$
-The first term is a more standard diffusion term and can be treated with a second-order scheme.
-$$
-\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) \approx \frac1{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right),
-$$
-where $\tilde{d}_{i+1/2}$ and $\tilde{d}_{i-1/2}$ are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use
-$$
-\tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
-$$
-but this can be replaced by a more sophisticated scheme if desired.
-
-The second term can be combined with the growth term if we introduce 
-$$
-\hat{g}=\tilde{g}-\frac12 \frac{\partial}{\partial x}\tilde{d}.
-$$
-Unless we want to use our explicit knowledge of $\tilde{d}'$ we can approximate
-$$
-\hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
-$$
-
-For the growth term we use an upwind difference scheme, depending on the sign of $\hat{g}$:
-- If $\hat{g}_i \geq 0$, we use
-$$
-\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i}n_{i}-\hat{g}_{i-1}n_{i-1}}{h}.
-$$
-- If $\hat{g}_i < 0$, we use
-$$
-\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i+1}n_{i+1}-\hat{g}_{i}n_{i}}{h}.
-$$
-A concise way to write this is
-$$
-\left(\hat{g}n\right)'(x_i) \approx \frac{|\hat{g}_i|n_i-
-\hat{g}^+_{i+1}n_{i+1}
--\hat{g}^-_{i-1}n_{i-1}}{h}
-$$
-where
-$$
-\hat{g}^\pm = |\hat{g}|\pm \hat{g}
-$$
-are either positive or zero, depending on the sign of $\hat{g}$.
-
-This gives us the linear system
-$$
-\begin{split}
-\frac{1}{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right) - \frac{|\hat{g}_i|n_i-\hat{g}^+_{i+1}n_{i+1}-\hat{g}^-_{i-1}n_{i-1}}{h} - \mu_i n_i &= 0.
-\end{split}
-$$
-Collecting terms gives us
-$$
-L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
-$$
-with
-$$
-\begin{split}
-D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{|\hat{g}_i|}{h}+\mu_i\right),\\
-L_i&=\frac{\tilde{d}_{i-1/2}}{2h^2}+\frac{\hat{g}^-_{i-1}}{h},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2h^2}+\frac{\hat{g}^+_{i+1}}{h}.
-\end{split}
-$$
-Now we automatically have $L_i>0, U_i>0$ and $D_i<0$. The condition $U_i+L_i\leq -D_i$ is satisfied if
-$$
-\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{\hat{g}^+_{i+1}+\hat{g}^-_{i-1}}{h}\leq \frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2h^2}+\frac{|\hat{g}_i|}{h}+\mu_i,
-$$
-which simplifies to $0\leq \mu_i$, which is always satisfied.
-
-```{r}
-stable_steady <- function(dtilde, gtilde, mu, n0, h) {
-    # We have to be careful when translating from maths to code because
-    # in the maths we indexed our grid points from 0 to N+1, where $N$ is
-    # the number of interior points, but in R we index from 1 to N+2.
-    # So for example \tilde{d}_i in the maths corresponds to dtilde[i+1] in R.
-    
-    # Number of interior points
-    N <- length(dtilde) - 2
-    
-    # Calculate finite difference scheme coefficients
-    # We calculate the midpoint values for diffusion
-    # \tilde{d}_{i+1/2} = (\tilde{d}_i + \tilde{d}_{i+1}) / 2
-    # where \tilde{d}_{i} = dtilde[i+1] = for i=0,...,N+1
-    # dtilde_half[i] = \tilde{d}_{i+1/2} for i=1,...,N+1
-    dtilde_half <- (dtilde[2:(N+1)] + dtilde[3:(N+2)]) / 2
-    # Calculate the adjusted growth rate
-    # \hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2} - \tilde{d}_{i-1/2}}{h}
-    # \tilde{g}_i = gtilde[i+1] = for i=0,...,N+1
-    ghat <- gtilde - (dtilde_half[3:(N+2)] - dtilde_half[1:N]) / (2 * h)  # Adjusted growth rate
-    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
-    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
-    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
-    
-    # Check stability conditions
-    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
-        warning("Stability conditions not met.")
-    }
-    if (any(U + L > -D)) {
-        warning("Stability condition U + L <= -D not met.")
-    }
-    
-    # Solve using double sweep method
-    return(solve_ode_double_sweep(U, L, D, n0))
-}
-```
-
-# Example {#sec-diffusion-NS}
+### Example {#sec-diffusion-NS}
 
 We will now implement this in an example. We start with the North Sea Herring.
 
@@ -567,8 +616,7 @@ ggplot(y, aes(x = l, y = `Catch density`, colour = Type)) +
     geom_line()
 ```
 
-
-# Second-order finite-difference scheme
+## Second-order finite-difference scheme
 
 This section is here for historical reasons. The scheme described above is a first-order upwind scheme. It is stable but not very accurate. A second-order finite-difference scheme is more accurate but the way it is implemented here is not very stable. It is included here in case parts of it become useful later.
 
@@ -666,7 +714,7 @@ solve_steady_state_ode <- function(a, b, c, n0, h) {
 }
 ```
 
-## Example
+### Example
 
 We will now implement this in an example. We start with the North Sea Herring.
 
