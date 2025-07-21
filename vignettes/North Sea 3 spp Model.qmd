@@ -1,6 +1,8 @@
 ---
 title: "North Sea 3 Species Model"
-format: pdf
+format:
+  html: default
+  pdf: default
 editor: visual
 ---
 
@@ -15,11 +17,11 @@ Creating a simplified 3 species North Sea model.
 #| message: false
 #| results: 'hide'
 # Currently we still need a special branch of mizer
+
 remotes::install_github("sizespectrum/mizer", ref = "diffusion")
 
 library(mizerEcopath)
 library(dplyr)
-library(readr)
 library(here)
 ```
 
@@ -28,6 +30,7 @@ library(here)
 In this example the species modelled include Saithe (*Pollachius virens)*, Herring (*Clupea harengus*), and Dab (*Limanda limanda*), in an attempt to create a simple model with the selected species occupying a variety of niches (ie: one large piscivorous fish (saithe), one small pelagic fish (herring), and one benthic fish species (dab)).
 
 You will need to create a table with some species-specific parameters, such as von Bertalanffy growth parameters, length-weight parameters, and maturity parameters. These can be taken from FishBase or other sources. The species parameters data frame should include the following columns:
+
 -   `species`: Common name of the species
 -   `SciName`: Scientific name of the species
 -   `l_inf` or `w_inf`: von Bertalanffy asymptotic length (cm) or weight (g)
@@ -43,9 +46,8 @@ For our example we have collected the information for the three species we are m
 #| warning: false
 #| message: false
 
-sp <- 
-    read_csv(here::here("inst", "extdata", "ns_3_spp_species_params.csv"))
-head(sp)
+sp <- read.csv(here::here("inst", "extdata", "ns_3_spp_species_params.csv"))
+sp
 ```
 
 We included many columns that mizer will not use but that will be nice for us to keep track of.
