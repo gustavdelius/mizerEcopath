@@ -1,0 +1,374 @@
+---
+title: "Creating Size Age-Dataset for Celtic Sea (To do: generalize)"
+format: pdf
+editor: visual
+---
+
+# Use ICES DATRAS R package to extract data files
+
+## Initial Data Exploration
+
+Utilize the DATRAS website to via the link below to search for surveys which contain data from selected areas:
+
+<https://gis.ices.dk/geonetwork/srv/eng/catalog.search#/search?isTemplate=n&resourceTemporalDateRange=%7B%22range%22:%7B%22resourceTemporalDateRange%22:%7B%22gte%22:null,%22lte%22:null,%22relation%22:%22intersects%22%7D%7D%7D&sortBy=relevance&sortOrder=&facet.q=type%2Fdataset&resultType=details&from=1&to=30&fast=index&_content_type=json&any=DATRAS&languageStrategy=searchInAllLanguages&query_string=%7B%22resourceType%22:%7B%22dataset%22:true%7D%7D>
+
+List of Surveys that are reported to have data from our defined celtic sea ICES areas ('27.7.B', '27.7.C', '27.7.E', '27.7.F', '27.7.G', '27.7.H', '27.7.J', '27.7.K')
+
+Viewed Surveys with Celtic Sea Data: Based on the Spatial Extent Map tool
+
+-   DATRAS Scottish Rockall Groundfish Survey (SCOROC)
+
+    -   Year: 2011 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected during the Scottish Rockall Survey. This is a new survey from 2011, replacing historical ROCKALL survey in DATRAS
+
+-   DATRAS Offshore Beam Trawl Surveys (BTS)
+
+    -   Year: 1987 - Now
+
+    -   Description: The Offshore Beam Trawl Surveys include data collected by 4 countries (BE, DE, NL, UK) in the North Sea, Celtic Sea, and Irish Sea. Although, the surveys target plaice and sole, composition of the whole catch is analyzed.
+
+-   DATRAS Inshore Beam Trawl Surveys (DYFS)
+
+    -   Year: 1990 - Now
+
+    -   Description: The Inshore Beam Trawl Surveys include data collected by 4 countries (BE, DE, NL, UK) cover cover most of the coastal and estuarine waters along the continental coast, and are also known as the Youngfish Surveys. Although, the surveys target plaice and sole, composition of the whole catch is analyzed. Responsible survey group is WGBEAM
+
+-   DATRAS Scottish Bottom Trawl Rockall Survey (ROCKALL)
+
+    -   Year: 1999 - 2010
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected during the Scottish Rockall Survey. New survey design was applied from 2011, starting the DATRAS SCOROC dataset
+
+-   DATRAS Irish Ground Fish Survey (IE-IGFS)
+
+    -   Year: 2003 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected during the Irish Ground Fish trawl survey.
+
+-   DATRAS French Channel Groundfish Survey (FR-CGFS)
+
+    -   Year: 1988 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected by the French Channel Groundfish Trawl Survey.
+
+-   DATRAS Irish Anglerfish and Megrim Survey (IE-IAMS)
+
+    -   Year: 2016 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected during the Irish Anglerfish and Megrim survey.
+
+-   DATRAS Spanish Porcupine Bottom Trawl Survey (SP-PORC)
+
+    -   Year: 2001 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected during the Spanish Porcupine Bottom Trawl Survey.
+
+-   DATRAS French Southern Atlantic Bottom Trawl Survey (EVHOE)
+
+    -   Year: 1997 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species collected by the French trawl survey EVHOE.
+
+-   DATRAS North Sea International Bottom Trawl Survey (NS-IBTS)
+
+    -   Year: 1965 - Now
+
+    -   Description: The dataset includes age- and length-based catch per unit effort data for commercial fish species from IBTS in ICES roundfish areas in the North Sea.
+
+Surveys which have Celtic Sea data but were not included:
+
+-   ICES Trawl Survey Datasets (DATRAS)
+
+    -   Year: 1965 - Now
+
+    -   Description: ICES database of trawl surveys
+
+    -   Cannot be extracted from DATRAS download page
+
+-   Marine litter data from DATRAS trawl surveys
+
+    -   About marine litter not size or age data
+
+-   DATRAS Beam Trawl Survey - Irish Sea (VIIa)
+
+    -   Is now obsolete was included in the offshore beam trawl survey dataset
+
+-   DATRAS Central Northeast Atlantic Deepwater Trawl Surveys (DWS)
+
+    -   Has no data present within the loaded data frame
+
+## Loading Potential Data
+
+### Install Packages and Libraries
+
+```{r}
+#Install packages
+#install.packages("icesDatras")
+#install.packages("icesRect")
+#install.packages("sf")
+
+#load library
+library(icesDatras)
+#library(icesRect)
+library(sf)
+library(dplyr)
+library(stringr)
+```
+
+### Load Potential Data
+
+Use function getDATRAS() to load in the 11 surveys containing data from the Celtic Sea listed above. Loading the following chunk takes more than **25 minutes**! This is a drawback of the code because it does not allow you subset the species or area you would like so you need to load thousands of data that is entirely unneccessary.
+
+The column information for each column is detailed here: <https://datras.ices.dk/Data_products/ReportingFormat.aspx>
+
+```{r}
+#SCOROC
+SCOROC <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
+
+#BTS
+BTS <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4) 
+
+#DYFS
+DYFS <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
+
+#ROCKALL
+ROCKALL <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
+
+#IE-IGFS
+IE_IGFS <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
+
+#FR-CGFS
+FR_CGFS <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
+
+#IE-IAMS
+IE_IAMS <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
+
+#SP-PORC
+SP_PORC <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
+
+#EVHOE
+EVHOE <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
+
+#NS-IBTS
+NS_IBTS <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4) 
+
+```
+
+# Clean and Organize Data
+
+```{r}
+#rbind data together into singular dataset
+data<-rbind(SCOROC,BTS,DYFS,ROCKALL,IE_IGFS,FR_CGFS,IE_IAMS,SP_PORC,EVHOE,NS_IBTS)
+```
+
+## Subset Desired Celtic Sea Species
+
+```{r}
+#remove rows that do not contain the North Sea Desired Species
+clean_data<-subset(data, SpecCode %in% c(126417,126436,126437,126438,126439,126484,126555,126822,127023,127143,127146,127160))
+#SpecCode to scientific name dictionary is detailed below
+```
+
+# Subset Desired Celtic Sea Area
+
+In this section some the the Area Codes generated in the data set loaded from DATRAS are given in different formats, additionally the data frames which load in should have a AreaType Column which should correlate with these codes. After extensive exploration of the data it has become evident this is not the case. Therefore, based on the structure of the AreaCode value an ICES area value is assigned. Only ICES statistical rectangle and ICES area codes are analysed all other area codes are given the value NA and later removed from the data set. This was performed due to the fact that other area codes provided did not give a clear indication that the data included was only from the Celtic Sea and not nearby areas.
+
+## Kennedy Dictionary Between ICES rectangles and ICES areas
+
+```{r}
+#Define stat recs to areas
+VIIa = c('38E4', '38E5', '38E6', '37E4', '37E5', '37E6', '36E4', '36E5', '36E6', '35E4', 
+         '35E5', '35E6', '34E4', '34E5', '36E3', '33E3', '33E4', '33E5')
+VIIb = c('37D8', '37D9', '37E0', '37E1', '36D8', '36D9', '35D8', '35D9', 
+         '35E0', '34D8', '34D9', '34E0')
+VIIc = c('37D1', '37D2', '37D3', '37D4', '37D5', '37D6', '37D7', 
+         '36D1', '36D2', '36D3', '36D4', '36D5', '36D6', '36D7', 
+         '35D1', '35D2', '35D3', '35D4', '35D5', '35D6', '35D7', 
+         '34D1', '34D2', '34D3', '34D4', '34D5', '34D6', '34D7')
+VIId = c('30E8', '30E9', '30F0', '30F1', '29E8', '29E9', '29F0', '29F1', '28E8', '28E9', '28F0')
+VIIe = c('30E6', '30E7', '29E5', '29E6', '29E7', '28E3', '28E4', '28E5', '28E6', '28E7', 
+         '27E5', '27E6', '27E7', '27E8', '26E5', '26E6', '26E7', '26E8', '25E5')
+VIIf = c('32E5', '31E5', '31E6', '30E4', '30E5', '29E3', '29E4')
+VIIg = c('32E1', '32E2', '32E3', '32E4', '31E1', '31E2', '31E3', '31E4', 
+         '30E1', '30E2', '30E3', '29E1', '29E2')
+VIIh = c('28E1', '28E2', '27E1', '27E2', '27E3', '27E4', 
+         '26E1', '26E2', '26E3', '26E4', '25E1', '25E2', '25E3', '25E4')
+VIIj = c('33D8', '33D9', '32D8', '32D9', '31D8', '31D9', '31E0', 
+         '30D8', '30D9', '30E0', '29D8', '29D9', '29E0', '28D8', '28D9', '28E0', 
+         '27D8', '27D9', '27E0', '26D8', '26D9', '26E0', '25D8', '25D9', '25E0')
+VIIk = c('33D1', '33D2', '33D3', '33D4', '33D5', '33D6', '33D7', 
+         '32D1', '32D2', '32D3', '32D4', '32D5', '32D6', '32D7', 
+         '31D1', '31D2', '31D3', '31D4', '31D5', '31D6', '31D7', 
+         '30D1', '30D2', '30D3', '30D4', '30D5', '30D6', '30D7', 
+         '29D1', '29D2', '29D3', '29D4', '29D5', '29D6', '29D7', 
+         '28D1', '28D2', '28D3', '28D4', '28D5', '28D6', '28D7', 
+         '27D1', '27D2', '27D3', '27D4', '27D5', '27D6', '27D7', 
+         '26D1', '26D2', '26D3', '26D4', '26D5', '26D6', '26D7', 
+         '25D1', '25D2', '25D3', '25D4', '25D5', '25D6', '25D7')
+```
+
+## Conversion in Dataset from Statistical Rectangles to ICES Areas and Pulling ICES Areas values in AreaCode column into the SubArea Column
+
+```{r}
+#Define subareas from area codes and dictionary
+clean_data_region <- clean_data %>%
+  mutate(
+    SubArea = case_when(
+      AreaCode %in% VIIa ~ "27.7.a",
+      AreaCode %in% VIIb ~ "27.7.b",
+      AreaCode %in% VIIc ~ "27.7.c",
+      AreaCode %in% VIId ~ "27.7.d",
+      AreaCode %in% VIIe ~ "27.7.e",
+      AreaCode %in% VIIf ~ "27.7.f",
+      AreaCode %in% VIIg ~ "27.7.g",
+      AreaCode %in% VIIh ~ "27.7.h",
+      AreaCode %in% VIIj ~ "27.7.j",
+      AreaCode %in% VIIk ~ "27.7.k",
+      AreaCode %in% "VIIa" ~ "27.7.a",
+      AreaCode %in% "VIIb" ~ "27.7.b",
+      AreaCode %in% "VIIc" ~ "27.7.c",
+      AreaCode %in% "VIId" ~ "27.7.d",
+      AreaCode %in% "VIIe" ~ "27.7.e",
+      AreaCode %in% "VIIf" ~ "27.7.f",
+      AreaCode %in% "VIIg" ~ "27.7.g",
+      AreaCode %in% "VIIh" ~ "27.7.h",
+      AreaCode %in% "VIIj" ~ "27.7.j",
+      AreaCode %in% "VIIk" ~ "27.7.k",
+      TRUE ~ NA_character_
+    )
+)
+
+#Subset for subareas '27.7.B', '27.7.C', '27.7.E', '27.7.F', '27.7.G', '27.7.H', '27.7.J', '27.7.K'
+cs_data<-subset(clean_data_region, SubArea %in% c('27.7.b', '27.7.c', '27.7.e', '27.7.f', '27.7.g', '27.7.h', '27.7.j', '27.7.k'))
+```
+
+## Keys
+
+### Species Code
+
+Go to: <https://datras.ices.dk/Data_products/qryspec.aspx>
+
+```{r}
+cs_data$SpecCode<-as.factor(cs_data$SpecCode)
+
+SpecCode_to_Latinname<-c("126417"="Clupea harengus",
+                         "126436"="Gadus morhua",
+                         "126437"="Melanogrammus aeglefinus",
+                         "126438"="Merlangius merlangus",
+                         "126439"="Micromesistius poutassou",
+                         "126484"="Merluccius merluccius",
+                         "126555"="Lophius piscatorius",
+                         "126822"="Trachurus trachurus",
+                         "127023"="Scomber scombrus",
+                         "127143"="Pleuronectes platessa",
+                         "127146"="Lepidorhombus whiffiagonis",
+                         "127160"="Solea solea")
+
+cs_data$Scientific_name <- SpecCode_to_Latinname[cs_data$SpecCode]
+```
+
+### Maturity Code
+
+Go to: <https://vocab.ices.dk/?CodeTypeRelID=361&CodeID=34402>
+
+```{r}
+cs_data_maturity <- cs_data %>%
+  mutate(
+    Maturity = case_when(
+      Maturity %in% c("2","3","4","5","52","53","54","55","62","63","64","65","B","Ba","Bb","C","Ca","Cb","D","Da","Db","E","II","III","IV","IX","M","R1_2","R1_3","R1_4","R2_4","R2_6","R2_8","RF2","RF3","RF4","RF5","RF6","S2","S3","S4","S5","S6","V","VI","VII","VIII","X") ~ "mature",
+      Maturity %in% c("6","66","F") ~ "abnormal",
+      Maturity %in% c("1","51","61","A","I","R1_1","R2_2","RF1","S1") ~ "immature",
+      Maturity %in% "-9" ~ NA_character_,
+      TRUE ~ NA_character_
+    )
+)
+```
+
+## Aggregating
+
+```{r}
+cs_age_size <- cs_data_maturity %>%
+  group_by(Survey, Quarter, Scientific_name, Year, Sex, LngtClass, IndWgt, Maturity, Age) %>%
+  summarise(
+    CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE),  # sum ignoring NAs
+    .groups = "drop"  # ungroup the result
+  )
+
+saveRDS(cs_age_size, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/Celtic_Sea_Size_at_Age_w_Sex_Data.rds")
+
+
+cs_age_size <- cs_data_maturity %>%
+  group_by(Survey, Quarter, Scientific_name, Year, LngtClass, IndWgt, Maturity, Age) %>%
+  summarise(
+    CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE),  # sum ignoring NAs
+    .groups = "drop"  # ungroup the result
+  )
+
+saveRDS(cs_age_size, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/Celtic_Sea_Size_at_Age_Data.rds")
+```
+
+# Potential to Create a Large Dictionary between all ICES statistical rectangles and ICES areas
+
+Creating a dictionary for all ICES statistical rectangles and ICES as detailed below would allow users not working within the Celtic Sea to extract and process the DATRAS data more easily. For the Celtic Sea aize at age processing above we utilized Kennedy's Dictionary.
+
+## Create an array dictionary between the ICES statistical rectangles and the ICES areas
+
+Load data in from
+
+<https://www.eea.europa.eu/en/analysis/maps-and-charts/overview-of-the-international-conference-1/map-package.zip>
+
+```{r}
+# Read polygons
+areas <- st_read("/Users/jessicawestworth/Downloads/Map-package/Data/areas.shp")
+rects <- st_read("/Users/jessicawestworth/Downloads/Map-package/Data/sampled_statrecs.shp")
+
+# Join rectangles with areas based on spatial overlap
+mapping <- st_join(
+  rects,
+  areas %>% select(Area_Full),
+  join = st_intersects,
+  left = FALSE
+)
+
+# Create a lookup table (drop geometry)
+lookup <- mapping %>%
+  st_drop_geometry() %>%
+  select(StatRec, Area_Full)  # StatRec = ICES rectangle, Area_Full = EC subarea
+
+#Collapse lookup so each StatRec only has one row
+lookup_unique <- lookup %>%
+  group_by(StatRec) %>%
+  summarise(Area_Full = paste(unique(Area_Full), collapse = "-")) %>%
+  ungroup()
+
+#Save as csv file
+#write.csv(lookup_unique, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES_stat_rec_to_ICES_Area_Dictionary", row.names = FALSE)
+```
+
+## Apply ICES Areas to Area Codes and Subset for the Celtic Sea
+
+```{r}
+AreaType0_region <- AreaType0 %>%
+  left_join(lookup_unique, by = c("AreaCode" = "StatRec"))
+
+AreaType0_cs <- AreaType0_region %>%
+  mutate(
+    Area_Full_upper = toupper(Area_Full)
+  ) %>%
+  mutate(
+    Area_Full_parts = str_split(Area_Full_upper, "-")
+  ) %>%
+  rowwise() %>%
+  mutate(
+    sub_region = case_when(
+      all(Area_Full_parts %in% sub_area_7) ~ "cs_sub_area",
+      all(Area_Full_parts %in% ns_sub_area) ~ "ns_sub_area",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  ungroup() %>%
+  select(-Area_Full_upper, -Area_Full_parts)
+```
+
+## 
