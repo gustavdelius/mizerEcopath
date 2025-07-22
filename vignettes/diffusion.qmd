@@ -119,6 +119,7 @@ $$ {#eq-dw4}
 sigma <- 1
 factor_1 <- 1/(1 - feeding_coeff) * alpha / beta * exp((2 * lambda - 3) * sigma^2 / 2)
 ```
+
 However we see that the value of $d(w)$ is strongly influenced by the width of the feeding kernel. If we choose $\sigma = 1$ then $d(w)\approx `r round(factor_1, digits = 2)` g(w)w$. This decrease in the diffusion rate with decreasing $\sigma$ may explains the result from [@datta2010a] that the stability of the system decreases with decreasing $\sigma$.
 
 # Effect on juvenile slope {#sec-diffusion-juvenile}
@@ -129,14 +130,17 @@ Without diffusion we find the juvenile spectrum by solving the steady-state equa
 $$
 \frac{\partial}{\partial w}(g(w) N(w)) =-\mu(w) N(w).
 $$ {#eq-ss}
+
 This has the solution
 $$
 N(w) = \frac{g(w_0)}{g(w)}N(w_0)\exp\left(-\int_{w_0}^w\frac{\mu(w')}{g(w')}dw'\right).
 $$ {#eq-Nw}
+
 With allometic growth and death rates $g(w)=g_0w^n$ and $\mu(w)=\mu_0w^{n-1}$ this gives
 $$
-N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}
-$$ {#eq-Nwss}.
+N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}.
+$$ {#eq-Nwss}
+
 Thus the juvenile steady state abundance density is given by a power law with exponent $-\mu_0/g_0-n$.
 
 In the presence of diffusion the steady state equation becomes the second-order ODE
@@ -150,7 +154,7 @@ $$
 $$ {#eq-diffssansatz}
 which requires that
 $$
-\frac12 d_0(n+1+a)(n+a) -g_0(n+a)-\mu_0= 0.
+\frac12 d_0 (n+a)^2+\left(\frac12 d_0 -g_0\right)(n+a)-\mu_0=0.
 $$ {#eq-diffssansatz2}
 This is a quadratic equation for $n+a$:
 $$
@@ -231,11 +235,11 @@ Note that while the diffusion rate was just rescaled by the factor of $1/w^2$ th
 To get to a more common form of the advection-reaction-diffusion equation we rewrite the diffusion term:
 $$
 \frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) + \frac12 \frac{\partial}{\partial x}\left(\left(\frac{\partial}{\partial x}\tilde{d}\right)n\right)
-$$
+$$ {#eq-PDEdiff}
 The second term can be combined with the growth term if we introduce 
 $$
 \hat{g}=\tilde{g}-\frac12 \frac{\partial}{\partial x}\tilde{d}.
-$$
+$$ {#eq-hatg}
 This gives us the PDE
 $$
 \frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n.
@@ -251,95 +255,102 @@ For the growth term we use an upwind difference scheme, with the direction of up
 - If $\hat{g}_i \geq 0$, we use
 $$
 \left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i}n_{i}-\hat{g}_{i-1}n_{i-1}}{h}.
-$$
+$$ {#eq-upwind1}
 - If $\hat{g}_i < 0$, we use
 $$
 \left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i+1}n_{i+1}-\hat{g}_{i}n_{i}}{h}.
-$$
+$$ {#eq-upwind2}
 
 A concise way to write this is
 $$
 \left(\hat{g}n\right)'(x_i) \approx \frac{|\hat{g}_i|n_i-
 \hat{g}^+_{i-1}n_{i-1}
 -\hat{g}^-_{i+1}n_{i+1}}{h}
-$$
+$$ {#eq-upwind}
 where
 $$
 \hat{g}^\pm = |\hat{g}|\pm \hat{g}
-$$
+$$ {#eq-hatgpm}
 are either positive or zero, depending on the sign of $\hat{g}$.
 
 The diffusion term in @eq-PDEhatg can be treated with a second-order scheme.
 $$
 \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) \approx \frac1{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right),
-$$
+$$ {#eq-diffusion}
 where $\tilde{d}_{i+1/2}$ and $\tilde{d}_{i-1/2}$ are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use
 $$
 \tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
-$$
+$$v {#eq-diffusion-midpoint}
 but this can be replaced by a more sophisticated scheme if desired.
 
 Unless we want to use our explicit knowledge of $\tilde{d}'$ we can approximate
 $$
-\hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
-$$
+\hat{g}_i = \tilde{g}_i - \frac12\frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
+$$ {#eq-hatg2}
 
 After multiplying by $h^2$ this gives us the linear system
 $$
 \begin{split}
-\frac{1}{2}\left(\tilde{d}_{i+1/2}(n_{i+1}-n_i)-\tilde{d}_{i-1/2}(n_i-n_{i-1})\right) - h\left(|\hat{g}_i|n_i-\hat{g}^+_{i-1}n_{i-1}-\hat{g}^-_{i+1}n_{i+1}\right) - h^2 \mu_i n_i &= 0.
+\frac{1}{2}&\left(\tilde{d}_{i+1/2}(n_{i+1}-n_i)-\tilde{d}_{i-1/2}(n_i-n_{i-1})\right)\\& - h\left(|\hat{g}_i|n_i-\hat{g}^+_{i-1}n_{i-1}-\hat{g}^-_{i+1}n_{i+1}\right) - h^2 \mu_i n_i = 0.
 \end{split}
-$$
+$$ {#eq-linear-system}
 Collecting terms gives us
 $$
 L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
-$$
+$$ {#eq-UDL}
 with
 $$
 \begin{split}
 D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i\right),\\
 L_i&=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
 \end{split}
-$$
+$$ {#eq-UDL2}
 
 
 ```{r}
-stable_steady <- function(dtilde, gtilde, mu, n0, h) {
-    # We have to be careful when translating from maths to code because
-    # in the maths we indexed our grid points from 0 to N+1, where $N$ is
-    # the number of interior points, but in R we index from 1 to N+2.
-    # So for example \tilde{d}_i in the maths corresponds to dtilde[i+1] in R.
-    
-    # Number of interior points
+stable_steady <- function(dtilde, ghat, mu, n0, h) {
+    # Number of interior points (N in the maths, but R indices run 1 to N+2)
     N <- length(dtilde) - 2
-    
-    # Calculate finite difference scheme coefficients
-    # We calculate the midpoint values for diffusion
-    # \tilde{d}_{i+1/2} = (\tilde{d}_i + \tilde{d}_{i+1}) / 2
-    # where \tilde{d}_{i} = dtilde[i+1] = for i=0,...,N+1
-    # dtilde_half[i] = \tilde{d}_{i+1/2} for i=1,...,N+1
-    dtilde_half <- (dtilde[2:(N+1)] + dtilde[3:(N+2)]) / 2
-    # Calculate the adjusted growth rate
-    # \hat{g}_i = \tilde{g}_i - \frac{\tilde{d}_{i+1/2} - \tilde{d}_{i-1/2}}{h}
-    # \tilde{g}_i = gtilde[i+1] = for i=0,...,N+1
-    ghat <- gtilde - (dtilde_half[3:(N+2)] - dtilde_half[1:N]) / (2 * h)  # Adjusted growth rate
-    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
-    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
-    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
-    
+
+    # Calculate midpoint values for diffusion
+    # In the maths: \tilde{d}_{i+1/2} for i = 0,...,N
+    # In R: dtilde_half[1] = \tilde{d}_{1/2}, ..., dtilde_half[N+1] = \tilde{d}_{N+1/2}
+    dtilde_half <- (dtilde[1:(N+1)] + dtilde[2:(N+2)]) / 2
+
+    # Prepare diagonals for upwind scheme
+    abs_ghat <- abs(ghat)
+    ghat_plus <- (abs_ghat + ghat) / 2  # ghat^+
+    ghat_minus <- (abs_ghat - ghat) / 2 # ghat^-
+
+    # Lower diagonal (L): (dtilde_{i-1/2}/2) + h * ghat^+_{i-1}
+    # In R: L[i] = (dtilde_half[i]/2) + h * ghat_plus[i],
+    # corresponds to L_i for i = 1,...,N
+    L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
+    # Upper diagonal (U): (dtilde_{i+1/2}/2) + h * ghat^-_{i+1}
+    # In R: U[i] = (dtilde_half[i+1]/2) + h * ghat_minus[i+1],
+    # corresponds to U_i for i = 1,...,N
+    U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
+    # Main diagonal (D): -((dtilde_{i+1/2} + dtilde_{i-1/2})/2 + h*|ghat_i| + h^2*mu_i)
+    # In R: D[i] = -((dtilde_half[i+1] + dtilde_half[i])/2 + h * abs_ghat[i] + h^2 * mu[i]), 
+    # corresponds to D_i for i = 1,...,N
+    D <- -((dtilde_half[2:(N+1)] + dtilde_half[1:N]) / 2 + 
+          h * abs_ghat[2:(N+1)] + h^2 * mu[2:(N+1)])
+
     # Check stability conditions
+    if (any(is.na(U)) || any(is.na(L)) || any(is.na(D))) {
+        stop("NA values detected in diagonals. Check input lengths and indexing.")
+    }
     if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
         warning("Stability conditions not met.")
     }
     if (any(U + L > -D)) {
         warning("Stability condition U + L <= -D not met.")
     }
-    
+
     # Solve using double sweep method
     return(solve_ode_double_sweep(U, L, D, n0))
 }
 ```
-
 
 ## Double-sweep method
 
@@ -360,7 +371,7 @@ $$
 \alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
 $$ {#eq-alphabetarecursion}
 Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
-We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
+We can now use @eq-alphabetarecursion to determine all the $\alpha$'s and $\beta$'s.
 Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
 
 ```{r}
@@ -444,6 +455,48 @@ $$
 This is the same as the scheme we are currently using for calculating the steady state.
 
 
+# Example
+
+## Calculation and plot of steady state solution
+
+We now demonstrate the use of the upwind finite-difference scheme by calculating and plotting a steady state solution for a realistic species (Herring) from the North Sea model.
+
+```{r}
+# Select species and extract parameters
+species <- "Herring"
+sps <- species_params(params)[species, ]
+n <- sps$n
+w <- w(params)
+x <- log(w / w[1])
+h <- x[2] - x[1]
+
+# Get mortality and growth rates
+mu <- getMort(params)[species, ]
+g <- getEGrowth(params)[species, ]
+
+# Calculate diffusion rate as a power law: d(w) = 0.15 * g(w) * w
+# (see earlier example for justification)
+d_0 <- 0.15 * (g[1] / w[1]^n)
+d <- d_0 * w^(n + 1)
+dtilde <- d / w^2
+dtilde_prime <- d_0 * (n - 1) * w^(n-1)
+gtilde <- g / w - 0.5 * dtilde
+ghat <- gtilde - dtilde_prime / 2
+
+# Set initial abundance at smallest size
+n0 <- initialN(params)[species, 1] * w[1]
+
+# Solve for steady state using the upwind scheme
+n_steady <- stable_steady(dtilde, gtilde, mu, n0, h) / w
+
+# Plot the resulting abundance density versus size
+plot(w, n_steady, log = "xy", type = "l", lwd = 2,
+     xlab = "Weight (g)", ylab = "Abundance density",
+     main = paste("Steady state solution for", species))
+```
+
+
+
 # Archive
 
 Here we archive some earlier versions of the code that implement a second-order finite-difference scheme, just in case it becomes useful later. These scheme are not unconditionally stable, so they are not used in the main text.
@@ -470,7 +523,10 @@ $$ {#eq-finite-diff}
 where $\tilde{g}_i = \tilde{g}(x_i)$ and $\tilde{d}_i = \tilde{d}(x_i)$ are the values of the rescaled growth and diffusion rates at the grid points $x_i$.
 for $i=1,\dots, N$. Substituting this into the ODE and multiplying by $h^2$ gives us the linear system
 $$
-\frac{1}{2}\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
+\begin{split}
+\frac{1}{2}&\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)\\
+&-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
+\end{split}
 $$ {#eq-ODE2}
 which we can rewrite as
 $$
