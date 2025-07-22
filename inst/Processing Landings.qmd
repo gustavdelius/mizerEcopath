@@ -332,6 +332,44 @@ cs_catch$dl <- 1
 ns_sub_region_landings<-subset(length_landings, sub_region=="ns_sub_area")
 ```
 
+### Fixes For Limited Data
+
+In this North Sea example the final data frame from processing has no data from the following species: N.pout and Sandeel
+
+Recommended steps:
+
+1\) Check the species filering and cross check that the calls used in species filtering match with the landings_length data frame.
+
+2\) Check the landings_length data frame and determine if there is any landings data from any region for the data limited species.
+
+3\) If data is present for a nearby region document which region you are taking data from for that species and follow the recommended code below. *Reference for checking proximity to desired area: <https://fish-commercial-names.ec.europa.eu/fish-names/fishing-areas/fao-area-27_en>*
+
+4\) If data is not present for that species in a nearby region utilize an alternative data source.
+
+#### Sprat
+
+There is data available for the region 27.3d
+
+```{r}
+#subset for sprat
+sprat<-subset(length_landings, species=="SPR")
+```
+
+#### Sandeel
+
+There is data available for the region 27.3.d.24 and 27.3.d.25
+
+```{r}
+#subset for sandeel
+sandeel<-subset(length_landings, species=="ABZ")
+```
+
+#### Bind data
+
+```{r}
+ns_sub_region_landings<-rbind(ns_sub_region_landings,sandeel,sprat)
+```
+
 ### Calculate catch by species, size, and gear type
 
 ```{r}
@@ -397,7 +435,9 @@ subset_species <- function(data, species_list, match_by = "species") {
   return(subset_data)
 }
 
-species_list <- c("SPR", "SAN", "NOP", "HER", "DAB", "WHG", "SOL", "GUX", "GUR", "TUB", "PLE", "HAD", "COD", "POK")
+species_list <- c("SPR", "ABZ", 
+                 # "NOP", 
+                  "HER", "DAB", "WHG", "SOL", "GUX", "GUR", "TUB", "PLE", "HAD", "COD", "POK")
 
 ns_catch <- subset_species(
   data = ns_combined_data,
@@ -411,8 +451,8 @@ colnames(ns_catch)[colnames(ns_catch) == "species"] <- "species_code"
 # Create a named vector for the new species names
 new_species_names <- c(
   "European sprat" = "Sprat",
-  "Sandeel" = "Sandeel",
-  "Norway pout" = "N.pout",
+  "Small sandeel" = "Sandeel",
+  #"Norway pout" = "N.pout",
   "Atlantic herring" = "Herring",
   "Common dab" = "Dab",
   "Whiting" = "Whiting",
@@ -436,7 +476,7 @@ ns_catch <- ns_catch %>%
                           "Gurnard", 
                           species)) %>%
   # Now group by length, gear, and the updated species, then sum the catches
-  group_by(length, gear, species) %>%
+  group_by(length, gear, species, Scientific_name, English_name) %>%
   summarise(catch = sum(catch), .groups = "drop")
 
 # Add the dl column
