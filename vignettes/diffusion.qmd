@@ -249,6 +249,10 @@ where $\hat{g}$ is the rescaled growth rate that includes the effect of diffusio
 
 # Numerical scheme for steady-state ODE {#sec-diffusion-numerical}
 
+We now solve the steady-state ODE
+$$
+\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n=0.
+$$ {#eq-PDEhatg}
 To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation. So
 For the growth term we use an upwind difference scheme, with the direction of upwind depending on the sign of $\hat{g}$:
 
@@ -280,13 +284,8 @@ $$ {#eq-diffusion}
 where $\tilde{d}_{i+1/2}$ and $\tilde{d}_{i-1/2}$ are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use
 $$
 \tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
-$$v {#eq-diffusion-midpoint}
+$$ {#eq-diffusion-midpoint}
 but this can be replaced by a more sophisticated scheme if desired.
-
-Unless we want to use our explicit knowledge of $\tilde{d}'$ we can approximate
-$$
-\hat{g}_i = \tilde{g}_i - \frac12\frac{\tilde{d}_{i+1/2}-\tilde{d}_{i-1/2}}{h}.
-$$ {#eq-hatg2}
 
 After multiplying by $h^2$ this gives us the linear system
 $$
@@ -298,13 +297,14 @@ Collecting terms gives us
 $$
 L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
 $$ {#eq-UDL}
-with
+for $i=1,\dots N$, with
 $$
 \begin{split}
 D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i\right),\\
 L_i&=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
 \end{split}
 $$ {#eq-UDL2}
+
 
 
 ```{r}
@@ -347,69 +347,81 @@ stable_steady <- function(dtilde, ghat, mu, n0, h) {
         warning("Stability condition U + L <= -D not met.")
     }
 
-    # Solve using double sweep method
-    return(solve_ode_double_sweep(U, L, D, n0))
+    # Right-hand side: n0 at left boundary, zeros elsewhere
+    b <- numeric(N)
+    b[1] <- L[1] * n0
+    # The right boundary is handled by the system structure (last value is zero)
+
+    # Solve using double sweep method (Thomas algorithm)
+    n <- solve_double_sweep(U[1:(N-1)], L[2:N], D, b)
+
+    # Add boundary values: n0 at left, 0 at right
+    solution <- numeric(N + 2)
+    solution[1] <- n0
+    solution[2:(N + 1)] <- n
+    solution[N + 2] <- 0
+    return(solution)
 }
 ```
 
 ## Double-sweep method
 
-Here we derive the double-sweep method (also known as Thomas' method) for solving a tri-diagonal linear system by making the Ansatz
+Here we derive the double-sweep method (Thomas' algorithm) for solving a tridiagonal linear system. The system is given by
 $$
-n_{i-1}=\alpha_in_i+\beta_i
-$$ {#eq-alphabeta}
-for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
+A x = b
 $$
-U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
-$$ {#eq-UDL2}
-Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
+where $A$ is a tridiagonal matrix with lower diagonal $L$, main diagonal $D$, and upper diagonal $U$.
+
+The Thomas algorithm proceeds as follows:
+
+- Let $\alpha$ be the modified upper diagonal (length $N-1$), $\beta$ the modified right-hand side (length $N$), and $d$ the modified main diagonal (length $N$).
+- Initialize $\alpha_1 = U_1$, $\beta_1 = b_1$, $d_1 = D_1$.
+- For $i = 2, \ldots, N$ (forward sweep):
 $$
-\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
-$$ {#eq-UDL3}
-We can satisfy this by making the expressions in the square brackets vanish, which gives us
+    m = \frac{L_{i-1}}{d_{i-1}} \\
+    d_i = D_i - m \alpha_{i-1} \\
+    \alpha_i = U_i \text{ (for } i < N\text{)} \\
+    \beta_i = b_i - m \beta_{i-1}
 $$
-\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
-$$ {#eq-alphabetarecursion}
-Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
-We can now use @eq-alphabetarecursion to determine all the $\alpha$'s and $\beta$'s.
-Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
+- After the forward sweep, perform back substitution:
+    - $x_N = \beta_N / d_N$
+    - For $i = N-1, \ldots, 1$:
+$$
+    x_i = \frac{\beta_i - \alpha_i x_{i+1}}{d_i}
+$$
+
+This yields the solution vector $x$.
 
 ```{r}
-# Helper function for double sweep method
-solve_ode_double_sweep <- function(U, L, D, n0) {
-    N <- length(D)  # Number of internal points
-    if (length(U) != N || length(L) != N) {
-        stop("U, L, and D must have the same length.")
+# Helper function for double sweep method (Thomas algorithm)
+solve_double_sweep <- function(U, L, D, b) {
+    # U: upper diagonal (length N-1)
+    # L: lower diagonal (length N-1)
+    # D: main diagonal (length N)
+    # b: right-hand side (length N)
+    N <- length(D)
+    if (length(U) != N - 1 || length(L) != N - 1 || length(b) != N) {
+        stop("Dimensions of U, L, D, and b do not match for tridiagonal system.")
     }
-    # Initialize arrays for alpha and beta coefficients
-    alpha <- numeric(N + 1)
-    beta <- numeric(N + 1)
-    
-    # Initialize n array for solution
-    n <- numeric(N + 1)
-    n[N + 1] <- 0  # Boundary condition at x_max
-    
-    # Initial condition
-    alpha[1] <- 0
-    beta[1] <- n0
-    
-    # Forward sweep - calculate alpha and beta coefficients
-    for (i in 1:N) {
-        denom <- alpha[i] * L[i] + D[i]
-        alpha[i + 1] <- -U[i] / denom
-        beta[i + 1] <- -(beta[i] * L[i]) / denom
+    # Use alpha for modified upper diagonal, beta for modified right-hand side
+    alpha <- U
+    beta <- b
+    dp <- D
+
+    # Forward sweep
+    for (i in 2:N) {
+        m <- L[i - 1] / dp[i - 1]
+        dp[i] <- dp[i] - m * alpha[i - 1]
+        beta[i] <- beta[i] - m * beta[i - 1]
     }
-    
-    # Work backwards to get interior n values
-    for (i in N:1) {
-        n[i] <- alpha[i + 1] * n[i + 1] + beta[i + 1]
+
+    # Back substitution
+    x <- numeric(N)
+    x[N] <- beta[N] / dp[N]
+    for (i in (N - 1):1) {
+        x[i] <- (beta[i] - alpha[i] * x[i + 1]) / dp[i]
     }
-    
-    # Add initial value
-    solution <- numeric(N + 2)
-    solution[1] <- n0  # Set the first value to n0
-    solution[2:(N + 2)] <- n  # Fill in the other points
-    return(solution)
+    return(x)
 }
 ```
 
@@ -489,179 +501,28 @@ n0 <- initialN(params)[species, 1] * w[1]
 # Solve for steady state using the upwind scheme
 n_steady <- stable_steady(dtilde, gtilde, mu, n0, h) / w
 
+# Without diffusion
+dtilde[] <- 0
+ghat <- g / w
+n_steady_no_diffusion <- stable_steady(dtilde, ghat, mu, n0, h) / w
+
 # Plot the resulting abundance density versus size
 plot(w, n_steady, log = "xy", type = "l", lwd = 2,
      xlab = "Weight (g)", ylab = "Abundance density",
      main = paste("Steady state solution for", species))
+lines(w, n_steady_no_diffusion, col = "red", lwd = 2, lty = 2)
 ```
-
-
-
-# Archive
-
-Here we archive some earlier versions of the code that implement a second-order finite-difference scheme, just in case it becomes useful later. These scheme are not unconditionally stable, so they are not used in the main text.
-
-$$
-\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n=0.
-$$ {#eq-ODE}
-Our boundary conditions are
-$$
-n(x_0)=n_0,~~~~n(x_{max})=0.
-$$ {#eq-bc}
-where $x_{max}$ is some size that fish can never reach.
-
-## Upwind difference scheme
-
-We use our equally-spaced grid with spacing $h$:
-$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. Here $N$ is the number of internal grid points. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
-$$
-\begin{split}
-\left(\tilde{g}n\right)'(x_i)&\approx\frac{\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}}{h},\\
-\left(\tilde{d}n\right)''(x_i)&=\frac{\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}}{h^2},
-\end{split}
-$$ {#eq-finite-diff}
-where $\tilde{g}_i = \tilde{g}(x_i)$ and $\tilde{d}_i = \tilde{d}(x_i)$ are the values of the rescaled growth and diffusion rates at the grid points $x_i$.
-for $i=1,\dots, N$. Substituting this into the ODE and multiplying by $h^2$ gives us the linear system
-$$
-\begin{split}
-\frac{1}{2}&\left(\tilde{d}_{i+1}n_{i+1}-2\tilde{d}_in_i+\tilde{d}_{i-1}n_{i-1}\right)\\
-&-h\left(\tilde{g}_{i}n_{i}-\tilde{g}_{i-1}n_{i-1}\right) - h^2\mu_i n_i=0
-\end{split}
-$$ {#eq-ODE2}
-which we can rewrite as
-$$
-U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
-$$ {#eq-UDL}
-with
-$$
-U_i=\frac{\tilde{d}_{i+1}}{2}, \qquad L_i=\frac{\tilde{d}_{i-1}}{2}+h\,\tilde{g}_{i-1} \qquad \text{ and }~~~D_i = -\tilde{d}_i - h\,\tilde{g}_i-h^2\mu_i
-$$ {#eq-UDL2}
-for $i=1,\dots,N$. We implement this method in the function `solve_steady_state_upwind` as follows:
-
-```{r}
-solve_steady_state_upwind <- function(dtilde, gtilde, mu, n0, h) {
-    # Number of interior points
-    N <- length(dtilde) - 2
-    
-    # Calculate finite difference scheme coefficients
-    U <- (dtilde / 2)[3:(N+2)]    # Upper diagonal
-    L <- (dtilde / 2 + h * gtilde)[1:N]     # Lower diagonal 
-    D <- (-dtilde - h * gtilde - h^2 * mu)[2:(N+1)]  # Main diagonal
-    
-    # Check stability conditions
-    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
-        warning("Stability conditions not met.")
-    }
-    if (any(U + L > -D)) {
-        warning("Stability condition U + L <= -D not met.")
-    }
-    
-    # Solve using double sweep method
-    return(solve_ode_double_sweep(U, L, D, n0))
-}
-```
-
-### Stability
-
-The double-sweep method is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. These conditions on the signs are automatically satisfied if $\tilde{d},\tilde{g}$ and $\mu$ are all positive, which is true as long as
-$$
-d(w)<2wg(w).
-$$
-The condition $U_i+L_i\leq -D_i$ is more subtle:
-$$
-\begin{split}
-U_i + L_i + D_i &= \frac{\tilde{d}_{i+1}}{2} + \frac{\tilde{d}_{i-1}}{2} + h\,\tilde{g}_{i-1} - \tilde{d}_i - h\,\tilde{g}_i - h^2\mu_i\\
-&= h^2\left(\frac12\frac{\tilde{d}_{i+1} -2\tilde{d}_i + \tilde{d}_{i-1}}{h^2}
-+\frac{\tilde{g}_{i-1} - \tilde{g}_i}{h}- \mu_i\right)\\
-&\approx h^2\left(\frac12 \tilde{d}'' - \tilde{g}' - \mu \right)(x_i)\leq 0.
-\end{split}
-$$
-
-This could become particularly problematic in places where $g'$ is negative. 
-
-### Without diffusion
-
-When the diffusion rate is zero, the double-sweep method reduces to the method we are currently using. In that case
-$$
-U_i=0,\qquad L_i=h\tilde{g}_{i-1}, \qquad D_i=-h\,\tilde{g}_i-h^2\mu_i
-$$
-and thus
-$$
-\alpha_{i+1} = -\frac{U_i}{D_i} = 0, \qquad \beta_{i+1} = -\frac{\beta_i L_i}{D_i}
-= \beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
-$$
-This gives
-$$
-n_i=\beta_{i+1}=\beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
-=n_{i-1}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
-$$
-For the number density as a function of $w$ this gives
-$$
-\begin{split}
-N_i=\frac{n_i}{w_i} &= \frac{n_{i-1}}{w_{i}}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
-=\frac{n_{i-1}}{w_{i}}\frac{g_{i-1}/w_{i-1}}{g_i/w_i+h\mu_i}
-=\frac{n_{i-1}}{w_{i-1}}\frac{g_{i-1}}{g_i+hw_i\mu_i }\\
-&=N_{i-1}\frac{g_{i-1}}{g_i+\Delta w_i\mu_i}+O(h^2)
-\end{split}
-$$
-where we used that
-$$
-\Delta w_i=w_{i+1}-w_i = w_i\left(\exp(h)-1\right)= hw_i+O(h^2).
-$$
-
-This is the same as the scheme we are currently using for calculating the steady state. Note that this scheme is also unstable if $g'_\mu<0$ because then $g_{i-1}/(g_i+\Delta w_i\mu_i)>1$.
-
-### Example {#sec-diffusion-NS}
-
-We will now implement this in an example. We start with the North Sea Herring.
-
-```{r}
-species <- "Herring"
-sps <- species_params(params)[species, ]
-n <- sps$n
-species_params(params)[species, ]$w_max <- 2 * sps$w_max
-mu <- getMort(params)[species, ]
-g <- getEGrowth(params)[species, ]
-# At small size we have $g(w) = g_0 w^n$, hence $g_0 = g(w)/w^n$
-g_0 <- g[1] / w[1]^n
-```
-
-We choose diffusion rate to be a power law with exponent $n+1$ which at small size satisfies $d(w) = 0.15 g(w) w$, see the example at the end of @sec-diffusion-example.
-
-```{r}
-d_0 <- 0.15 * g_0
-d <- d_0 * w^(n + 1)
-dtilde <- d / w^2
-gtilde <- g / w - 0.5 * dtilde
-```
-
-We can now solve the ODE.
-```{r}
-n0 <- initialN(params)[species, 1] * w[1]
-N_diffusion <- solve_steady_state_upwind(dtilde, gtilde, mu, n0, h) / w
-```
-Calculate solution with 0 diffusion for comparison
-```{r}
-dtilde_no_diffusion <- dtilde
-dtilde_no_diffusion[] <- 1e-10
-gtilde_no_diffusion <- g / w
-N_no_diffusion <- solve_steady_state_upwind(dtilde_no_diffusion, 
-                                            gtilde_no_diffusion, 
-                                            mu, n0, h) / w
-```
-
-We will now plot the yield versus size for the two cases, with and without diffusion.
 
 ```{r}
 p0 <- params
-initialN(p0)[species, ] <- N_no_diffusion
+p0@initial_n[species, ] <- n_steady_no_diffusion
 y0 <- plotYieldVsSize(p0, species = species, x_var = "Length",
                       return_data = TRUE)[[1]] |>
     dplyr::filter(Type == "Model catch")
 y0$Type <- "No diffusion"
 
 p <- params
-initialN(p)[species, ] <- N_diffusion
+p@initial_n[species, ] <- n_steady
 y <- plotYieldVsSize(p, species = species, x_var = "Length",
                      return_data = TRUE)[[1]] |>
     dplyr::filter(Type == "Model catch")
@@ -672,164 +533,109 @@ ggplot(y, aes(x = l, y = `Catch density`, colour = Type)) +
     geom_line()
 ```
 
-## Second-order finite-difference scheme
 
-This section is here for historical reasons. The scheme described above is a first-order upwind scheme. It is stable but not very accurate. A second-order finite-difference scheme is more accurate but the way it is implemented here is not very stable. It is included here in case parts of it become useful later.
 
-We could also write the PDE @eq-PDExs in a form where the derivatives act directly on $n$ by expanding
-$$
-\frac{\partial}{\partial x}\left(\tilde{g}n\right) = \tilde{g}'n + \tilde{g}n'
-$$
-and
-$$
-\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n)=\frac12\tilde{d}''n+\tilde{d}'n'+\frac12\tilde{d}n''
-$$
-where we have denoted the derivative with respect to $x$ by a prime. Collecting terms gives
-$$
-\frac{\partial n}{\partial t} = \frac12 \tilde{d}n'' - \left(\tilde{g}-\tilde{d'}\right)n'-\left(\mu +\tilde{g}'-\frac12\tilde{d}''\right)n
-$$
-It is not clear that there is any advantage to this, but it is the way I originally did it so I will use this form of the equation here.
 
-We can now obtain the steady-state abundance density by solving the second-order ODE
-$$
-an''-bn'-cn=0
-$$
-with 
-$$
-a = \frac12 \tilde{d},~~~~b=\tilde{g}-\tilde{d}',~~~~c=\mu +\tilde{g}'-\frac12\tilde{d}''.
-$$
-Our boundary conditions are
-$$
-n(x_0)=n_0,~~~~n(x_{max})=0.
-$$
-where $x_{max}$ is some size that fish can never reach.
 
-We solve this with a second-order finite-difference scheme, using our equally-spaced grid with spacing $h$:
-$x_i = x_0 + ih$ for $i=0,\dots,N+1$ such that $x_{N+1}=x_{max}$. We use the notation $n(x_i)=n_i$. The finite-difference approximations to the derivatives are
-$$
-n'(x_i)=\frac{n_{i+1}-n_{i-1}}{2h},~~~~n''(x_i)=\frac{n_{i+1}-2n_i+n_{i-1}}{h^2}.
-$$
-That gives us the linear system
-$$
-U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
-$$ {#eq-UDL}
-with
-$$
-U_i=a_i-\frac{h}{2}b_i, \qquad L_i=a_i+\frac{h}{2}b_i \qquad \text{ and }~~~D_i = -2a_i-h^2c_i
-$$
-for $i=1,\dots,N$. 
-This can be solved by making the Ansatz
-$$
-n_{i-1}=\alpha_in_i+\beta_i
-$$ {#eq-alphabeta}
-for $i=1,\dots N$, where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
-$$
-U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
-$$ {#eq-UDL2}
-Similarly using $n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}$ in @eq-UDL2 gives
-$$
-\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
-$$ {#eq-UDL3}
-We can satisfy this by making the expressions in the square brackets vanish, which gives us
-$$
-\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
-$$ {#eq-alphabetarecursion}
-Looking at @eq-alphabeta for $i=1$, i.e., $n_0 = \alpha_1n_1+\beta_1$ we see that we can choose $\alpha_1=0$ and $\beta_1=n_0$.
-We can now use @eq-alphabetarecursion to determine the all the $\alpha$s and $\beta$s.
-Starting from the boundary condition $n_{N+1}=0$ we can then use @eq-alphabeta to determine the remaining $n_i$.
+# Time-dependent PDE solution with upwind finite-difference method
 
-This scheme is known to be stable if $U_i,L_i>0$, $D_i<0$ and $U_i+L_i\leq -D_i$. The requirement that $U_i>0$ gives us a maximum step size of
+We now solve the time-dependent PDE
 $$
-h\leq\frac{\tilde{d}}{\tilde{g}-\tilde{d}'}.
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}(\hat{g}n)-\mu n
 $$
+using the same upwind finite-difference method as for the steady-state ODE, but now with time-stepping. We use an implicit Euler method for time integration, which is unconditionally stable for this kind of equation. At each time step, we solve a tridiagonal linear system using the double-sweep (Thomas) algorithm.
 
-We implement this in the function `solve_steady_state_ode` as follows:
+## Implementation
 
 ```{r}
-solve_steady_state_ode <- function(a, b, c, n0, h) {
-    # Number of interior points
-    N <- length(a) - 1
-    
-    # Calculate finite difference scheme coefficients
-    U <- a - h/2 * b     # Upper diagonal
-    L <- a + h/2 * b     # Lower diagonal 
-    D <- -2*a - h^2 * c  # Main diagonal
-    
-    # Check stability conditions
-    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
-        warning("Stability conditions not met. Try reducing step size h.")
+solve_pde_implicit <- function(dtilde, ghat, mu, n_init, h, dt, nsteps) {
+    N <- length(dtilde) - 2
+    dtilde_half <- (dtilde[1:(N+1)] + dtilde[2:(N+2)]) / 2
+    abs_ghat <- abs(ghat)
+    ghat_plus <- (abs_ghat + ghat) / 2
+    ghat_minus <- (abs_ghat - ghat) / 2
+
+    L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
+    U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
+    D <- -((dtilde_half[2:(N+1)] + dtilde_half[1:N]) / 2 +
+           h * abs_ghat[2:(N+1)] + h^2 * mu[2:(N+1)])
+
+    # For implicit Euler: (I - dt*A) n^{k+1} = n^k
+    D_new <- 1 - dt * D
+    L_new <- -dt * L[2:N]
+    U_new <- -dt * U[1:(N-1)]
+
+    n <- n_init
+    n_hist <- matrix(0, nrow = length(n), ncol = nsteps + 1)
+    n_hist[, 1] <- n
+
+    for (step in 1:nsteps) {
+        # Solve (I - dt*A) n_new = n_old
+        n_new <- solve_double_sweep(U_new, L_new, D_new, n)
+        n_new[length(n_new)] <- 0  # Enforce boundary at large size
+        n <- n_new
+        n_hist[, step + 1] <- n
     }
-    if (any(U + L > -D)) {
-        warning("Stability condition U + L <= -D not met.")
-    }
-    
-    # Solve using double sweep method
-    n <- solve_ode_double_sweep(U, L, D, n0)
-    
-    return(n)
+    return(n_hist)
 }
 ```
 
-### Example
-
-We will now implement this in an example. We start with the North Sea Herring.
+## Example: Initial condition with only the first entry nonzero
 
 ```{r}
+# Set up grid and parameters as before
 species <- "Herring"
 sps <- species_params(params)[species, ]
 n <- sps$n
-m <- sps$m
-w_mat <- sps$w_mat
-U <- log(3) / log(w_mat / sps$w_mat25)
-w_repro_max <- sps$w_repro_max
+w <- w(params)
+x <- log(w / w[1])
+h <- x[2] - x[1]
 mu <- getMort(params)[species, ]
 g <- getEGrowth(params)[species, ]
-# At small size we have $g(w) = g_0 w^n$, hence $g_0 = g(w)/w^n$
-g_0 <- g[1] / w[1]^n
-```
-
-We choose diffusion rate to be a power law with exponent $n+1$ which at small size satisfies $d(w) = 0.15 g(w) w$, see the example at the end of @sec-diffusion-example.
-
-```{r}
-d_0 <- 0.15 * g_0
+d_0 <- 0.15 * (g[1] / w[1]^n)
 d <- d_0 * w^(n + 1)
 dtilde <- d / w^2
+dtilde_prime <- d_0 * (n - 1) * w^(n-1)
 gtilde <- g / w - 0.5 * dtilde
+ghat <- gtilde - dtilde_prime / 2
+
+# Initial condition: only first entry nonzero
+n_init <- rep(0, length(w) - 2)
+n_init[1] <- 1
+
+# Time step and number of steps
+dt <- 0.1
+nsteps <- 100
+
+# Solve the PDE
+n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
 ```
-To calculate the derivative of the growth rate we go back to the expression for the growth rate and calculate the derivatives of the terms in the expression. For simplicity we set metabolic loss to zero.
-$$
-g(w)=g_0w^n(1-\psi(w))
-$$
-where $\psi(w)$ is the proportion of available energy that is invested into reproduction.
-$$
-\psi(w) = \left(1+\left(\frac{w}{w_{mat}}\right)^{U}\right)^{-1}\left(\frac{w}{w_{repro\_max}}\right)^{m-n}
-$$
-For the derivative we get after some simplification (see [ChatGPT chat](https://chatgpt.com/share/678776f5-bf00-8007-9549-f1d186829235),
-$$
-\frac{d}{dw}g(w) = g_0 w^{n-1} \left( n - \frac{\left(m + (m - U)\left(\frac{w}{w_{\text{mat}}}\right)^U\right) \left(\frac{w}{w_{\text{repro\_max}}}\right)^{m-n}}{\left(1 + \left(\frac{w}{w_{\text{mat}}}\right)^U\right)^2} \right)
-$$
 
 ```{r}
-dgdw <- 
-  g_0 * w^(n - 1) * (n - 
-  (m + (m  - U) * (w / w_mat)^U) * (w / w_repro_max)^(m - n) / 
-  (1 + (w / w_mat)^U)^2)
-```
+# Plot the solution at several time points using ggplot2
+library(tidyr)
+library(dplyr)
+library(ggplot2)
 
-Now we calculate the parameters for the numerical scheme.
-```{r}
-dtildeprime <- (n - 1) * d_0 * w^(n - 2)
-dtildepp <- (n - 2) * (n - 1) * d_0 * w^(n - 3)
-gtildeprime <- dgdw - g / w - 0.5 * dtildeprime
+# Select time points to plot
+plot_steps <- c(1, 2, 3, 21, 51, 101)
+plot_times <- (plot_steps - 1) * dt
+plot_labels <- paste0("t=", round(plot_times, 2))
 
-a <- 0.5 * dtilde
-b <- gtilde - dtildeprime
-c <- mu + gtildeprime - 0.5 * dtildepp
-```
+# Prepare data frame for ggplot2
+plot_df <- data.frame(
+  Weight = rep(w, times = length(plot_steps)),
+  Abundance = as.vector(n_hist[, plot_steps] + 1e-10),
+  Time = factor(rep(plot_labels, each = length(w)), levels = plot_labels)
+)
 
-We can now solve the ODE.
-
-```r
-n0 <- initialN(params)[species, 1] * w[1]
-n <- solve_steady_state_ode(a, b, c, n0, h)
+# Plot
+p <- ggplot(plot_df, aes(x = Weight, y = Abundance, color = Time)) +
+  geom_line(size = 1) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = "Weight (g)", y = "Abundance density",
+       title = "Evolution of n(w, t) from point source at small size") +
+  theme_minimal()
+print(p)
 ```
