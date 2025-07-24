@@ -369,28 +369,41 @@ stable_steady <- function(dtilde, ghat, mu, n0, h) {
 Here we derive the double-sweep method (Thomas' algorithm) for solving a tridiagonal linear system. The system is given by
 $$
 A x = b
+$$ {#eq-UDLsystem}
+where $A$ is a tridiagonal matrix with lower diagonal $L$, main diagonal $D$, and upper diagonal $U$, so in components the system takes the form
 $$
-where $A$ is a tridiagonal matrix with lower diagonal $L$, main diagonal $D$, and upper diagonal $U$.
+L_ix_{i-1} +D_ix_{i} + U_ix_{i+1} - b_i = 0
+$$ {#eq-UDLc}
+for $i=1,\dots,N$ with the understanding that $L_1 = U_N = 0$ so that only the interior points $i=1,\dots,N$ are solved for. The boundary conditions should be encoded in the choice of $b_1$ and $b_N$.
 
-The Thomas algorithm proceeds as follows:
+The Thomas algorithm proceeds by making the Ansatz
+$$
+x_{i-1}=\alpha_ix_i+\beta_i,
+$$ {#eq-alphabeta}
+where $\alpha_i$ and $\beta_i$ are to be determined. Substituting @eq-alphabeta this into @eq-UDL gives
+$$
+U_ix_{i+1}+(\alpha_iL_i+D_i)x_i+\beta_iL_i - b_i = 0.
+$$ {#eq-UDLc2}
+Similarly using $x_{i}=\alpha_{i+1}x_{i+1}+\beta_{i+1}$ in @eq-UDLc2 gives
+$$
+\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]x_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i-b_i\right]=0.
+$$ {#eq-UDL3}
+We can satisfy this by making the expressions in the square brackets vanish, which gives us
+$$
+\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i-b_i}{\alpha_iL_i+D_i}.
+$$ {#eq-alphabetarecursion}
+Looking at the case $i=1$ where by definition we have $L_1=0$, we see that $\alpha_2=-U_1/D_1$ and $\beta_2=b_1/D_1$.
+We can now use @eq-alphabetarecursion to determine all the $\alpha$'s and $\beta$'s.
 
-- Let $\alpha$ be the modified upper diagonal (length $N-1$), $\beta$ the modified right-hand side (length $N$), and $d$ the modified main diagonal (length $N$).
-- Initialize $\alpha_1 = U_1$, $\beta_1 = b_1$, $d_1 = D_1$.
-- For $i = 2, \ldots, N$ (forward sweep):
+If we consider @eq-UDLc2 for $i=N$ and use $U_N=0$, we find that
 $$
-    m = \frac{L_{i-1}}{d_{i-1}} \\
-    d_i = D_i - m \alpha_{i-1} \\
-    \alpha_i = U_i \text{ (for } i < N\text{)} \\
-    \beta_i = b_i - m \beta_{i-1}
+(\alpha_NL_N+D_N)x_N+\beta_NL_N - b_N = 0,
 $$
-- After the forward sweep, perform back substitution:
-    - $x_N = \beta_N / d_N$
-    - For $i = N-1, \ldots, 1$:
+from which we get
 $$
-    x_i = \frac{\beta_i - \alpha_i x_{i+1}}{d_i}
+x_N = \frac{b_N - \beta_N L_N}{\alpha_N L_N + D_N}.
 $$
-
-This yields the solution vector $x$.
+We can now use the $\alpha$'s and $\beta$'s to calculate $x_{N-1}$, $x_{N-2}$, ..., $x_1$ in a back substitution step.
 
 ```{r}
 # Helper function for double sweep method (Thomas algorithm)
@@ -400,26 +413,32 @@ solve_double_sweep <- function(U, L, D, b) {
     # D: main diagonal (length N)
     # b: right-hand side (length N)
     N <- length(D)
-    if (length(U) != N - 1 || length(L) != N - 1 || length(b) != N) {
-        stop("Dimensions of U, L, D, and b do not match for tridiagonal system.")
+    if (length(U) != N || length(L) != N || length(b) != N) {
+        stop("U, L, D, and b must have the same length.")
     }
-    # Use alpha for modified upper diagonal, beta for modified right-hand side
-    alpha <- U
-    beta <- b
-    dp <- D
-
-    # Forward sweep
-    for (i in 2:N) {
-        m <- L[i - 1] / dp[i - 1]
-        dp[i] <- dp[i] - m * alpha[i - 1]
-        beta[i] <- beta[i] - m * beta[i - 1]
+    # Initialize arrays for alpha and beta coefficients
+    alpha <- numeric(N)
+    beta <- numeric(N)
+    
+    # Initial condition
+    alpha[2] <- -U[1]/D[1]
+    beta[2] <- b[1]/D[1]
+    
+    # Forward sweep - calculate alpha and beta coefficients
+    for (i in 3:(N-1)) {
+        denom <- alpha[i] * L[i] + D[i]
+        alpha[i + 1] <- -U[i] / denom
+        beta[i + 1] <- -(beta[i] * L[i] - b[i]) / denom
     }
-
-    # Back substitution
+    
+    # Initialize n array for solution
     x <- numeric(N)
-    x[N] <- beta[N] / dp[N]
-    for (i in (N - 1):1) {
-        x[i] <- (beta[i] - alpha[i] * x[i + 1]) / dp[i]
+    # Set last value of x using the last beta and alpha
+    x[N] <- (b[N] - beta[N] * L[N]) / (alpha[N] * L[N] + D[N])
+    
+    # Work backwards to get all x values
+    for (i in (N-1):1) {
+        x[i] <- alpha[i + 1] * x[i + 1] + beta[i + 1]
     }
     return(x)
 }
