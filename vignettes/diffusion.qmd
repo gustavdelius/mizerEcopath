@@ -20,7 +20,6 @@ library(mizerEcopath)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
-params <- NS_params
 ```
 
 # The jump-growth equation {#sec-jump-growth}
@@ -199,6 +198,7 @@ where $w_0$ is an arbitrary reference weight.
 That transforms the logarithmically-spaced bins in $w$ to equally-spaced bins in $x$.
 
 ```{r}
+params <- celtic_params
 w <- w(params)
 x <- log(w / w[1])
 h <- x[2] - x[1]
@@ -666,7 +666,7 @@ n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
 Plot the evolution of n(w, t) at selected time points
 ```{r}
 # Select time points to plot
-plot_steps <- c(1,2,21,41,61)
+plot_steps <- c(1,2,6,13,21,41,61,81,101)
 plot_times <- (plot_steps - 1) * dt
 plot_labels <- paste0("t=", round(plot_times, 2))
 
