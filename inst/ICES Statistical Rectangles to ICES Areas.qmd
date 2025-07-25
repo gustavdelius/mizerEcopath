@@ -1,0 +1,140 @@
+---
+title: "ICES Statistical Rectangles to ICES Areas (+ option for customisation)"
+format: pdf
+editor: visual
+---
+
+# Introduction
+
+In the DATRAS age at size data for fish, area of data collection is reported in both the ICES statistical rectangles as well as ICES areas. Converting from ICES statistical rectangles to ICES areas requires a dictionary between the two. This code creates this dictionary, but is generalised so that it can be functionally adapted to create a dictionary between a variety of spatial definitions, based on the shape files publicly available at: <https://marineregions.org/downloads.php?name=ICES_StatRec>
+
+# Read in Data and Libraries
+
+Go to: <https://marineregions.org/downloads.php?name=ICES_StatRec> to download the desired boundary areas. In this example ICES statistical areas and ICES statistical rectangles are utilized.
+
+```{r}
+#load library
+library(icesDatras)
+library(sf)
+library(dplyr)
+library(stringr)
+library(readr)
+library(ggplot2)
+
+#load ICES statistical areas
+areas <- st_read("/Users/jessicawestworth/Desktop/ICES_areas/ICES_Areas_20160601_cut_dense_3857.shp")
+#load ICES statistical rectangles
+rects <- st_read("/Users/jessicawestworth/Desktop/ICES_rectangles/ICES_Statistical_Rectangles_Eco.shp")
+```
+
+# Geometry Cleanup and Compatibility
+
+```{r}
+#fix any invalid geometries (ie: self intersection, holes not closed)
+areas <- st_make_valid(areas)
+rects <- st_make_valid(rects)
+
+#Project the cordinate reference system of areas to match that of rects, this ensures compatability between objects
+areas<-st_transform(areas, st_crs(rects))
+```
+
+# Plotting (optional)
+
+If creating your own spatial overlap dictionary, plotting will be important to validate the final dictionary and ensure that a shared boundary between two points is not recognized in the way you would have hope. Here we will plot a map in which the statistical areas identities are marked via color, and the statistical rectangle identities are labelled.
+
+```{r}
+# Compute centroids for rects (label positions)
+rects_centroids <- st_centroid(rects)
+
+#plot
+ggplot() +
+  geom_sf(data = areas, aes(fill = Area_Full), color = "black", alpha = 0.3) +
+  geom_sf(data = rects, fill = NA, color = "blue", linetype = "dashed", size = 0.5) +
+  geom_sf_text(data = rects_centroids, aes(label = ICESNAME), size = 2, color = "red") +
+  theme_minimal() +
+  guides(fill = "none") +
+  labs(title = "ICES Areas and Statistical Rectangles")
+```
+
+# Creating the Dictionary
+
+## Step 1: Intersect
+
+Compute the areas and rectangles which overlap using the function st_intersection(), this function notes any possible overlap even if just a single coordinate. This means that even if two areas simply share a border, they will be considered as overlapping.
+
+```{r}
+overlap <- st_intersection(rects, areas)
+```
+
+## Step 2: Specify Overlap Amount
+
+Because st_intersection() notes any coordinate matching between the two shape files as overlapping areas we will need to specify the percentage of area overlap between two shapes which should be noted as spatial overlap.
+
+### 2.1 Calculate Overlap Area
+
+```{r}
+#Calculate overlap area
+overlap$overlap_area <- st_area(overlap)
+```
+
+### 2.2 Get original rectangle areas (match by ICESNAME)
+
+```{r}
+#Get original rectangle areas (match by ICESNAME)
+rect_areas <- st_area(rects)
+overlap$rect_area <- rect_areas[match(overlap$ICESNAME, rects$ICESNAME)]
+```
+
+### 2.3 Compute percent overlap
+
+```{r}
+#Compute percent overlap
+overlap$overlap_percent <- as.numeric(overlap$overlap_area / overlap$rect_area) * 100
+```
+
+### 2.4 Filter
+
+Filter overlaps so they are areas with \>1% overlap. This value can be adjusted higher or lower depending on the desired outcome.
+
+```{r}
+#filter overlaps so they are only > 1% area overlap
+overlap_filtered <- overlap %>%
+  group_by(ICESNAME) %>%
+  filter( overlap_percent > 1) %>%
+  ungroup()
+```
+
+## Step 3: Create Dictonary Table
+
+## 3.1 Drop Geometry
+
+```{r}
+# Drop geometry
+overlap_table <- st_drop_geometry(overlap_filtered[, c("ICESNAME", "Area_Full")])
+```
+
+## 3.2 Table with single ICES rectangle values
+
+Table with unique ICES rectangle value, if a rectangle overlaps multiple statistical areas, statistical areas are reported and separated by a "-".
+
+```{r}
+overlap_table_combined <- overlap_table %>%
+  group_by(ICESNAME) %>%
+  summarise(Area_Full = paste(unique(Area_Full), collapse = "-"), .groups = "drop")
+
+colnames(overlap_table_combined)<-c("ICES_Rectangle", "ICES_Area")
+head(overlap_table_combined)
+
+#write.csv(overlap_table_combined,"/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES Rectangle to Area.csv", row.names = FALSE)
+```
+
+## 3.3 Table with one row per Rectangle–Area pair
+
+Table with one row per ICES rectangle-area pair, if a rectangle overlaps multiple statistical areas, a new row is created for each area with which it overlaps.
+
+```{r}
+area_rect_long <- overlap_table %>%
+  distinct(ICESNAME, Area_Full)
+
+head(area_rect_long)
+```
