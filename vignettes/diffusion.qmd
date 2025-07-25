@@ -18,6 +18,8 @@ knitr::opts_chunk$set(
 #| warning: false
 library(mizerEcopath)
 library(ggplot2)
+library(tidyr)
+library(dplyr)
 params <- NS_params
 ```
 
@@ -68,7 +70,7 @@ as a Gaussian integral. Using the general result that
 $$
 \int e^{ax}\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)dx = \sqrt{\frac{2\pi}{\sigma^2}}\exp\left(a\mu+\frac{a^2\sigma^2}{2}\right)
 $$ {#eq-gaussian}
-with $a = 2-\lambda$ and $\mu = \log(w)-\log(\beta)$ we find that 
+with $a = 2-\lambda$ and $\mu = \log(w/w_0)-\log(\beta)$ we find that 
 $$
 \begin{split}
 I_g&=
@@ -77,7 +79,7 @@ I_g&=
 \end{split}
 $$ {#eq-Ig3}
 
-Assuming further a constant feeding level $f(w)=f$, an allometric metabolic loss rate $K(w) = k_s w^n$ and an allometric search volume $\gamma(w)=\gamma w^q$ with an exponent of $q = n + 2 - \lambda$ we obtain
+Assuming further a constant feeding level $f(w)=f$, an allometric metabolic loss rate $K(w) = k_s w^n$ and an allometric search volume $\gamma(w)=\gamma w^q$ with an exponent of $q = n - 2 + \lambda$ we obtain
 $$
 g(w) = \left((1-f)\gamma \alpha \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)-k_s\right) w^n.
 $$ {#eq-gw2}
@@ -88,7 +90,7 @@ $$ {#eq-gwe}
 
 We can evaluate the diffusion rate $d(w)$ in the same manner. The extra factor of $w_p$ changes $a$ from $2-\lambda$ to $3-\lambda$ and we obtain
 $$
-d(w) = \left((1-f(w))\gamma \alpha^2 \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 3}\exp\left(\frac{(3-\lambda)^2\sigma^2}{2}\right)\right) w^n.
+d(w) = \left((1-f(w))\gamma \alpha^2 \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 3}\exp\left(\frac{(3-\lambda)^2\sigma^2}{2}\right)\right) w^{n+1}.
 $$ {#eq-dw2}
 Comparing this to the expression @eq-gwe for $g(w)$ we find that
 $$
@@ -253,7 +255,9 @@ We now solve the steady-state ODE
 $$
 \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n=0.
 $$ {#eq-PDEhatg}
-To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation. So
+To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation. 
+
+## Upwind scheme
 For the growth term we use an upwind difference scheme, with the direction of upwind depending on the sign of $\hat{g}$:
 
 - If $\hat{g}_i \geq 0$, we use
@@ -301,20 +305,48 @@ for $i=1,\dots N$, with
 $$
 \begin{split}
 D_i=&-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i\right),\\
-L_i&=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\ U_i&=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
+L_i&=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\
+U_i&=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
 \end{split}
 $$ {#eq-UDL2}
+The boundary conditions are that $n_0 = n_0$ at the left boundary and $n_{N+1} = 0$ at the right boundary.
+We can write the equations for the intermediate points in matrix form by brining the boundary terms to the right-hand side:
+$$
+\begin{pmatrix}
+D_1 & U_1 & 0 & \cdots & 0\\
+L_2 & D_2 & U_2 & \cdots & 0\\
+\vdots & \vdots & \ddots & \ddots & \vdots\\
+0 & L_{N-1} & D_{N-1} & U_{N-1} & 0\\
+0 & 0 & \cdots & L_N & D_N
+\end{pmatrix}
+\begin{pmatrix}
+n_1\\
+n_2\\
+\vdots\\
+n_{N-1}\\
+n_N
+\end{pmatrix}
+=
+\begin{pmatrix}
+-n_0 L_1\\
+0\\
+\vdots\\
+0\\
+0
+\end{pmatrix}
+$$ {#eq-UDLsystem}
+We can solve this system using the double-sweep method, also known as Thomas' algorithm.
 
-
-
+### Implementation
 ```{r}
 stable_steady <- function(dtilde, ghat, mu, n0, h) {
     # Number of interior points (N in the maths, but R indices run 1 to N+2)
     N <- length(dtilde) - 2
 
     # Calculate midpoint values for diffusion
-    # In the maths: \tilde{d}_{i+1/2} for i = 0,...,N
-    # In R: dtilde_half[1] = \tilde{d}_{1/2}, ..., dtilde_half[N+1] = \tilde{d}_{N+1/2}
+    # \tilde{d}_{i+1/2} = (\tilde{d}_i+\tilde{d}_{i+1})/2 for i = 0,...,N
+    # In R:
+    # dtilde_half[1] = \tilde{d}_{1/2}, ..., dtilde_half[N+1] = \tilde{d}_{N+1/2}
     dtilde_half <- (dtilde[1:(N+1)] + dtilde[2:(N+2)]) / 2
 
     # Prepare diagonals for upwind scheme
@@ -322,11 +354,11 @@ stable_steady <- function(dtilde, ghat, mu, n0, h) {
     ghat_plus <- (abs_ghat + ghat) / 2  # ghat^+
     ghat_minus <- (abs_ghat - ghat) / 2 # ghat^-
 
-    # Lower diagonal (L): (dtilde_{i-1/2}/2) + h * ghat^+_{i-1}
+    # Lower diagonal L_i = (dtilde_{i-1/2}/2) + h * ghat^+_{i-1}
     # In R: L[i] = (dtilde_half[i]/2) + h * ghat_plus[i],
     # corresponds to L_i for i = 1,...,N
     L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
-    # Upper diagonal (U): (dtilde_{i+1/2}/2) + h * ghat^-_{i+1}
+    # Upper diagonal U_i = (dtilde_{i+1/2}/2) + h * ghat^-_{i+1}
     # In R: U[i] = (dtilde_half[i+1]/2) + h * ghat_minus[i+1],
     # corresponds to U_i for i = 1,...,N
     U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
@@ -349,11 +381,11 @@ stable_steady <- function(dtilde, ghat, mu, n0, h) {
 
     # Right-hand side: n0 at left boundary, zeros elsewhere
     b <- numeric(N)
-    b[1] <- L[1] * n0
+    b[1] <- - L[1] * n0
     # The right boundary is handled by the system structure (last value is zero)
 
     # Solve using double sweep method (Thomas algorithm)
-    n <- solve_double_sweep(U[1:(N-1)], L[2:N], D, b)
+    n <- solve_double_sweep(U, L, D, b)
 
     # Add boundary values: n0 at left, 0 at right
     solution <- numeric(N + 2)
@@ -405,6 +437,8 @@ x_N = \frac{b_N - \beta_N L_N}{\alpha_N L_N + D_N}.
 $$
 We can now use the $\alpha$'s and $\beta$'s to calculate $x_{N-1}$, $x_{N-2}$, ..., $x_1$ in a back substitution step.
 
+### Implementation
+
 ```{r}
 # Helper function for double sweep method (Thomas algorithm)
 solve_double_sweep <- function(U, L, D, b) {
@@ -425,7 +459,7 @@ solve_double_sweep <- function(U, L, D, b) {
     beta[2] <- b[1]/D[1]
     
     # Forward sweep - calculate alpha and beta coefficients
-    for (i in 3:(N-1)) {
+    for (i in 2:(N-1)) {
         denom <- alpha[i] * L[i] + D[i]
         alpha[i + 1] <- -U[i] / denom
         beta[i + 1] <- -(beta[i] * L[i] - b[i]) / denom
@@ -518,7 +552,7 @@ ghat <- gtilde - dtilde_prime / 2
 n0 <- initialN(params)[species, 1] * w[1]
 
 # Solve for steady state using the upwind scheme
-n_steady <- stable_steady(dtilde, gtilde, mu, n0, h) / w
+n_steady <- stable_steady(dtilde, ghat, mu, n0, h) / w
 
 # Without diffusion
 dtilde[] <- 0
@@ -573,16 +607,15 @@ solve_pde_implicit <- function(dtilde, ghat, mu, n_init, h, dt, nsteps) {
     abs_ghat <- abs(ghat)
     ghat_plus <- (abs_ghat + ghat) / 2
     ghat_minus <- (abs_ghat - ghat) / 2
-
     L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
     U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
     D <- -((dtilde_half[2:(N+1)] + dtilde_half[1:N]) / 2 +
            h * abs_ghat[2:(N+1)] + h^2 * mu[2:(N+1)])
 
     # For implicit Euler: (I - dt*A) n^{k+1} = n^k
-    D_new <- 1 - dt * D
-    L_new <- -dt * L[2:N]
-    U_new <- -dt * U[1:(N-1)]
+    D_new <- 1 - dt / h^2 * D
+    L_new <- -dt / h^2 * L
+    U_new <- -dt / h^2 * U
 
     n <- n_init
     n_hist <- matrix(0, nrow = length(n), ncol = nsteps + 1)
@@ -623,29 +656,26 @@ n_init <- rep(0, length(w) - 2)
 n_init[1] <- 1
 
 # Time step and number of steps
-dt <- 0.1
+dt <- 0.01
 nsteps <- 100
 
 # Solve the PDE
 n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
 ```
 
+Plot the evolution of n(w, t) at selected time points
 ```{r}
-# Plot the solution at several time points using ggplot2
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-
 # Select time points to plot
-plot_steps <- c(1, 2, 3, 21, 51, 101)
+plot_steps <- c(1,2,21,41,61)
 plot_times <- (plot_steps - 1) * dt
 plot_labels <- paste0("t=", round(plot_times, 2))
 
 # Prepare data frame for ggplot2
+N <- length(n_hist[, 1])
 plot_df <- data.frame(
-  Weight = rep(w, times = length(plot_steps)),
+  Weight = rep(w[2:(N+1)], times = length(plot_steps)),
   Abundance = as.vector(n_hist[, plot_steps] + 1e-10),
-  Time = factor(rep(plot_labels, each = length(w)), levels = plot_labels)
+  Time = factor(rep(plot_labels, each = N), levels = plot_labels)
 )
 
 # Plot
