@@ -635,16 +635,19 @@ solve_pde_implicit <- function(dtilde, ghat, mu, n_init, h, dt, nsteps) {
 ## Example: Initial condition with only the first entry nonzero
 
 ```{r}
+params <- celtic_params
 # Set up grid and parameters as before
 species <- "Herring"
 sps <- species_params(params)[species, ]
+#ext_encounter(params) <- ext_encounter(params) * 0.1
+#ext_mort(params) <- ext_mort(params) * 0.1
 n <- sps$n
 w <- w(params)
 x <- log(w / w[1])
 h <- x[2] - x[1]
 mu <- getMort(params)[species, ]
 g <- getEGrowth(params)[species, ]
-d_0 <- 0.15 * (g[1] / w[1]^n)
+d_0 <- 0.0015 * (g[1] / w[1]^n)
 d <- d_0 * w^(n + 1)
 dtilde <- d / w^2
 dtilde_prime <- d_0 * (n - 1) * w^(n-1)
@@ -656,8 +659,8 @@ n_init <- rep(0, length(w) - 2)
 n_init[1] <- 1
 
 # Time step and number of steps
-dt <- 0.01
-nsteps <- 100
+dt <- 0.05
+nsteps <- 200
 
 # Solve the PDE
 n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
@@ -666,23 +669,27 @@ n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
 Plot the evolution of n(w, t) at selected time points
 ```{r}
 # Select time points to plot
-plot_steps <- c(1,2,6,13,21,41,61,81,101)
+plot_steps <- c(21,41,61,81,101,201)
 plot_times <- (plot_steps - 1) * dt
 plot_labels <- paste0("t=", round(plot_times, 2))
 
 # Prepare data frame for ggplot2
 N <- length(n_hist[, 1])
+l <- (w/sps$a)^(1/sps$b)
 plot_df <- data.frame(
   Weight = rep(w[2:(N+1)], times = length(plot_steps)),
+  Length = rep(l[2:(N+1)], times = length(plot_steps)),
   Abundance = as.vector(n_hist[, plot_steps] + 1e-10),
+  t = rep(plot_times, each = N),
   Time = factor(rep(plot_labels, each = N), levels = plot_labels)
 )
 
 # Plot
-p <- ggplot(plot_df, aes(x = Weight, y = Abundance, color = Time)) +
-  geom_line(size = 1) +
-  scale_x_log10() +
-  scale_y_log10() +
+p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t/2), color = Time)) +
+  geom_line(linewidth = 1) +
+  #scale_x_log10() +
+  #scale_y_log10() +
+    xlim(1e-3, 40) +
   labs(x = "Weight (g)", y = "Abundance density",
        title = "Evolution of n(w, t) from point source at small size") +
   theme_minimal()
