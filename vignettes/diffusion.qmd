@@ -251,7 +251,7 @@ where $\hat{g}$ is the rescaled growth rate that includes the effect of diffusio
 
 # Numerical scheme for steady-state ODE {#sec-diffusion-numerical}
 
-We now solve the steady-state ODE
+We need to solve the steady-state ODE
 $$
 \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n=0.
 $$ {#eq-PDEhatg}
@@ -315,9 +315,9 @@ $$
 \begin{pmatrix}
 D_1 & U_1 & 0 & \cdots & 0\\
 L_2 & D_2 & U_2 & \cdots & 0\\
-\vdots & \vdots & \ddots & \ddots & \vdots\\
-0 & L_{N-1} & D_{N-1} & U_{N-1} & 0\\
-0 & 0 & \cdots & L_N & D_N
+\vdots & \ddots & \ddots & \ddots & \vdots\\
+0 & \cdots & L_{N-1} & D_{N-1} & U_{N-1}\\
+0 & \cdots & 0 & L_N & D_N
 \end{pmatrix}
 \begin{pmatrix}
 n_1\\
@@ -335,66 +335,8 @@ n_N
 0
 \end{pmatrix}
 $$ {#eq-UDLsystem}
-We can solve this system using the double-sweep method, also known as Thomas' algorithm.
 
-### Implementation
-```{r}
-stable_steady <- function(dtilde, ghat, mu, n0, h) {
-    # Number of interior points (N in the maths, but R indices run 1 to N+2)
-    N <- length(dtilde) - 2
-
-    # Calculate midpoint values for diffusion
-    # \tilde{d}_{i+1/2} = (\tilde{d}_i+\tilde{d}_{i+1})/2 for i = 0,...,N
-    # In R:
-    # dtilde_half[1] = \tilde{d}_{1/2}, ..., dtilde_half[N+1] = \tilde{d}_{N+1/2}
-    dtilde_half <- (dtilde[1:(N+1)] + dtilde[2:(N+2)]) / 2
-
-    # Prepare diagonals for upwind scheme
-    abs_ghat <- abs(ghat)
-    ghat_plus <- (abs_ghat + ghat) / 2  # ghat^+
-    ghat_minus <- (abs_ghat - ghat) / 2 # ghat^-
-
-    # Lower diagonal L_i = (dtilde_{i-1/2}/2) + h * ghat^+_{i-1}
-    # In R: L[i] = (dtilde_half[i]/2) + h * ghat_plus[i],
-    # corresponds to L_i for i = 1,...,N
-    L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
-    # Upper diagonal U_i = (dtilde_{i+1/2}/2) + h * ghat^-_{i+1}
-    # In R: U[i] = (dtilde_half[i+1]/2) + h * ghat_minus[i+1],
-    # corresponds to U_i for i = 1,...,N
-    U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
-    # Main diagonal (D): -((dtilde_{i+1/2} + dtilde_{i-1/2})/2 + h*|ghat_i| + h^2*mu_i)
-    # In R: D[i] = -((dtilde_half[i+1] + dtilde_half[i])/2 + h * abs_ghat[i] + h^2 * mu[i]), 
-    # corresponds to D_i for i = 1,...,N
-    D <- -((dtilde_half[2:(N+1)] + dtilde_half[1:N]) / 2 + 
-          h * abs_ghat[2:(N+1)] + h^2 * mu[2:(N+1)])
-
-    # Check stability conditions
-    if (any(is.na(U)) || any(is.na(L)) || any(is.na(D))) {
-        stop("NA values detected in diagonals. Check input lengths and indexing.")
-    }
-    if (any(U <= 0) || any(L <= 0) || any(D >= 0)) {
-        warning("Stability conditions not met.")
-    }
-    if (any(U + L > -D)) {
-        warning("Stability condition U + L <= -D not met.")
-    }
-
-    # Right-hand side: n0 at left boundary, zeros elsewhere
-    b <- numeric(N)
-    b[1] <- - L[1] * n0
-    # The right boundary is handled by the system structure (last value is zero)
-
-    # Solve using double sweep method (Thomas algorithm)
-    n <- solve_double_sweep(U, L, D, b)
-
-    # Add boundary values: n0 at left, 0 at right
-    solution <- numeric(N + 2)
-    solution[1] <- n0
-    solution[2:(N + 1)] <- n
-    solution[N + 2] <- 0
-    return(solution)
-}
-```
+This is implemented in the function `steady_diffusion()`. The linear system is solved using the double-sweep method implemented in `solve_double_sweep()`. The double-sweep method is a very efficient algorithm for solving tridiagonal linear systems like the one we have here. It is described in more detail in the next section.
 
 ## Double-sweep method
 
@@ -437,47 +379,7 @@ x_N = \frac{b_N - \beta_N L_N}{\alpha_N L_N + D_N}.
 $$
 We can now use the $\alpha$'s and $\beta$'s to calculate $x_{N-1}$, $x_{N-2}$, ..., $x_1$ in a back substitution step.
 
-### Implementation
-
-```{r}
-# Helper function for double sweep method (Thomas algorithm)
-solve_double_sweep <- function(U, L, D, b) {
-    # U: upper diagonal (length N-1)
-    # L: lower diagonal (length N-1)
-    # D: main diagonal (length N)
-    # b: right-hand side (length N)
-    N <- length(D)
-    if (length(U) != N || length(L) != N || length(b) != N) {
-        stop("U, L, D, and b must have the same length.")
-    }
-    # Initialize arrays for alpha and beta coefficients
-    alpha <- numeric(N)
-    beta <- numeric(N)
-    
-    # Initial condition
-    alpha[2] <- -U[1]/D[1]
-    beta[2] <- b[1]/D[1]
-    
-    # Forward sweep - calculate alpha and beta coefficients
-    for (i in 2:(N-1)) {
-        denom <- alpha[i] * L[i] + D[i]
-        alpha[i + 1] <- -U[i] / denom
-        beta[i + 1] <- -(beta[i] * L[i] - b[i]) / denom
-    }
-    
-    # Initialize n array for solution
-    x <- numeric(N)
-    # Set last value of x using the last beta and alpha
-    x[N] <- (b[N] - beta[N] * L[N]) / (alpha[N] * L[N] + D[N])
-    
-    # Work backwards to get all x values
-    for (i in (N-1):1) {
-        x[i] <- alpha[i + 1] * x[i + 1] + beta[i + 1]
-    }
-    return(x)
-}
-```
-
+This is implemented in the function `solve_double_sweep()`.
 
 ## Stability
 
@@ -527,37 +429,16 @@ This is the same as the scheme we are currently using for calculating the steady
 We now demonstrate the use of the upwind finite-difference scheme by calculating and plotting a steady state solution for a realistic species (Herring) from the North Sea model.
 
 ```{r}
-# Select species and extract parameters
+params <- celtic_params
 species <- "Herring"
-sps <- species_params(params)[species, ]
-n <- sps$n
-w <- w(params)
-x <- log(w / w[1])
-h <- x[2] - x[1]
-
-# Get mortality and growth rates
-mu <- getMort(params)[species, ]
-g <- getEGrowth(params)[species, ]
-
-# Calculate diffusion rate as a power law: d(w) = 0.15 * g(w) * w
-# (see earlier example for justification)
-d_0 <- 0.15 * (g[1] / w[1]^n)
-d <- d_0 * w^(n + 1)
-dtilde <- d / w^2
-dtilde_prime <- d_0 * (n - 1) * w^(n-1)
-gtilde <- g / w - 0.5 * dtilde
-ghat <- gtilde - dtilde_prime / 2
-
-# Set initial abundance at smallest size
-n0 <- initialN(params)[species, 1] * w[1]
 
 # Solve for steady state using the upwind scheme
-n_steady <- stable_steady(dtilde, ghat, mu, n0, h) / w
+n_steady <- steady_diffusion(params, species)
 
 # Without diffusion
-dtilde[] <- 0
-ghat <- g / w
-n_steady_no_diffusion <- stable_steady(dtilde, ghat, mu, n0, h) / w
+params_no_diffusion <- params
+species_params(params_no_diffusion)[species, "d_over_g"] <- 0
+n_steady_no_diffusion <- steady_diffusion(params_no_diffusion, species)
 
 # Plot the resulting abundance density versus size
 plot(w, n_steady, log = "xy", type = "l", lwd = 2,
@@ -636,34 +517,17 @@ solve_pde_implicit <- function(dtilde, ghat, mu, n_init, h, dt, nsteps) {
 
 ```{r}
 params <- celtic_params
-# Set up grid and parameters as before
 species <- "Herring"
 sps <- species_params(params)[species, ]
-#ext_encounter(params) <- ext_encounter(params) * 0.1
-#ext_mort(params) <- ext_mort(params) * 0.1
-n <- sps$n
-w <- w(params)
-x <- log(w / w[1])
-h <- x[2] - x[1]
-mu <- getMort(params)[species, ]
-g <- getEGrowth(params)[species, ]
-d_0 <- 0.0015 * (g[1] / w[1]^n)
-d <- d_0 * w^(n + 1)
-dtilde <- d / w^2
-dtilde_prime <- d_0 * (n - 1) * w^(n-1)
-gtilde <- g / w - 0.5 * dtilde
-ghat <- gtilde - dtilde_prime / 2
 
-# Initial condition: only first entry nonzero
-n_init <- rep(0, length(w) - 2)
-n_init[1] <- 1
-
-# Time step and number of steps
+# Set initial condition
+n_init <- rep(0, length(w))
+n_init[2] <- 1  # Point source at small size
+initialN(params)[species, ] <- n_init
+# Solve the PDE
 dt <- 0.05
 nsteps <- 200
-
-# Solve the PDE
-n_hist <- solve_pde_implicit(dtilde, ghat, mu, n_init, h, dt, nsteps)
+n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
 ```
 
 Plot the evolution of n(w, t) at selected time points
@@ -675,6 +539,7 @@ plot_labels <- paste0("t=", round(plot_times, 2))
 
 # Prepare data frame for ggplot2
 N <- length(n_hist[, 1])
+w <- w(params)
 l <- (w/sps$a)^(1/sps$b)
 plot_df <- data.frame(
   Weight = rep(w[2:(N+1)], times = length(plot_steps)),
@@ -685,13 +550,13 @@ plot_df <- data.frame(
 )
 
 # Plot
-p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t/2), color = Time)) +
+p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t*0.8), color = Time)) +
   geom_line(linewidth = 1) +
   #scale_x_log10() +
   #scale_y_log10() +
-    xlim(1e-3, 40) +
-  labs(x = "Weight (g)", y = "Abundance density",
-       title = "Evolution of n(w, t) from point source at small size") +
+    xlim(1e-3, 50) +
+  labs(x = "Length (cm)", y = "Abundance density",
+       title = "Evolution of n(l, t) from point source at small size") +
   theme_minimal()
 print(p)
 ```
