@@ -422,9 +422,7 @@ $$
 This is the same as the scheme we are currently using for calculating the steady state.
 
 
-# Example
-
-## Calculation and plot of steady state solution
+# Example of steady state solution
 
 We now demonstrate the use of the upwind finite-difference scheme by calculating and plotting a steady state solution for a realistic species (Herring) from the North Sea model.
 
@@ -479,39 +477,7 @@ $$
 $$
 using the same upwind finite-difference method as for the steady-state ODE, but now with time-stepping. We use an implicit Euler method for time integration, which is unconditionally stable for this kind of equation. At each time step, we solve a tridiagonal linear system using the double-sweep (Thomas) algorithm.
 
-## Implementation
 
-```{r}
-solve_pde_implicit <- function(dtilde, ghat, mu, n_init, h, dt, nsteps) {
-    N <- length(dtilde) - 2
-    dtilde_half <- (dtilde[1:(N+1)] + dtilde[2:(N+2)]) / 2
-    abs_ghat <- abs(ghat)
-    ghat_plus <- (abs_ghat + ghat) / 2
-    ghat_minus <- (abs_ghat - ghat) / 2
-    L <- (dtilde_half[1:N] / 2) + h * ghat_plus[1:N]
-    U <- (dtilde_half[2:(N+1)] / 2) + h * ghat_minus[3:(N+2)]
-    D <- -((dtilde_half[2:(N+1)] + dtilde_half[1:N]) / 2 +
-           h * abs_ghat[2:(N+1)] + h^2 * mu[2:(N+1)])
-
-    # For implicit Euler: (I - dt*A) n^{k+1} = n^k
-    D_new <- 1 - dt / h^2 * D
-    L_new <- -dt / h^2 * L
-    U_new <- -dt / h^2 * U
-
-    n <- n_init
-    n_hist <- matrix(0, nrow = length(n), ncol = nsteps + 1)
-    n_hist[, 1] <- n
-
-    for (step in 1:nsteps) {
-        # Solve (I - dt*A) n_new = n_old
-        n_new <- solve_double_sweep(U_new, L_new, D_new, n)
-        n_new[length(n_new)] <- 0  # Enforce boundary at large size
-        n <- n_new
-        n_hist[, step + 1] <- n
-    }
-    return(n_hist)
-}
-```
 
 ## Example: Initial condition with only the first entry nonzero
 
