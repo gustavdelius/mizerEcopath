@@ -1,35 +1,59 @@
 
-##  0.  LOAD PACKAGES ------------------------------------------
+##  0.  LOAD PACKAGES AND DATA ------------------------------------
 # (Matrix for sparse algebra, data.table for counts)
 library(Matrix)      # sparse matrices, fast %*%
 library(data.table)  # collapsing raw survey rows
 library(dplyr)
+
+# Load age at size data compiled by Jess
 survey <- readRDS(here::here("inst", "extdata",
                              "Celtic_Sea_Size_at_Age_Data.rds"))
+# Aggregate to cm bins
+survey <- survey |>
+    # remove rows with NA in any column
+    filter(!is.na(LngtClass) & !is.na(Age) & !is.na(CANoAtLngt)) |>
+    # round down to cm
+    mutate(LngtClass = floor(LngtClass)) |>
+    # aggregate counts
+    group_by(Quarter, LngtClass, Age) |>
+    summarise(CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE), .groups = "drop")
 
+params <- celtic_params
+species <- "Herring"
+sps <- species_params(params)[species, ]
+w <- w(params)
+l <- sps$a * w^sps$b
+
+# Set initial condition
+n_init <- rep(0, length(l))
+n_init[2] <- 1  # Point source at small size
+initialN(params)[species, ] <- n_init
+# Solve the PDE
+dt <- 0.05
+nsteps <- 200
+n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
 
 ##  1.  INPUTS THAT COME FROM ELSEWHERE ------------------------
 # fine‑age grid (centres) and widths  [years]
-age_mid   <- seq(0, 10,  by = 0.05)          # example
+age_mid   <- seq(0.05, 10,  by = 0.05)
 age_width <- rep(0.05, length(age_mid))
 
 # model length‑bin edges [cm]
-L_edge <- l[2:N]
+L_edge <- l
 # survey length‑bin edges [cm]
-S_edge <- survey$LngtClass
+S_edge <- min(survey$LntClass):(max(survey$LngtClass) + 1)
 
 # list of fractional survey dates   f_h  (e.g. Q1 = 0.125, Q2 = 0.375 …)
 f_h <- c(0.125, 0.375, 0.625, 0.875)             # one per quarter
 
 # list of model snapshots at those dates
 # Each N_h is an (age × modelLen) matrix  dim = length(age_mid) × (length(L_edge)-1)
-# Example placeholder:
-N_list <- n_hist
+#
+N_list <- n_hist[2:(length(age_mid) + 1), 1:(length(L_edge) - 1)]
 
 # observed survey counts collapsed to a data.table
 #  columns: qtr (1..H), lenBin (1..s), ageClass (0..K), count
 Y_obs <- survey |>
-    filter(!is.na(LngtClass) & !is.na(Age)) |>
     transmute(qtr = Quarter,
               lenBin = as.integer(LngtClass),
               ageClass = as.integer(Age),
