@@ -538,13 +538,13 @@ plot_times <- (plot_steps - 1) * dt
 plot_labels <- paste0("t=", round(plot_times, 2))
 
 # Prepare data frame for ggplot2
-N <- length(n_hist[, 1])
+N <- length(n_hist[1, ])
 w <- w(params)
 l <- (w/sps$a)^(1/sps$b)
 plot_df <- data.frame(
   Weight = rep(w[2:(N+1)], times = length(plot_steps)),
   Length = rep(l[2:(N+1)], times = length(plot_steps)),
-  Abundance = as.vector(n_hist[, plot_steps] + 1e-10),
+  Abundance = as.vector(n_hist[plot_steps, ] + 1e-10),
   t = rep(plot_times, each = N),
   Time = factor(rep(plot_labels, each = N), levels = plot_labels)
 )

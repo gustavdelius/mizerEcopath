@@ -22,7 +22,7 @@ solve_diffusion_pde(d, g, mu, n_init, h, dt, nsteps)
 \item{nsteps}{Number of time steps to compute.}
 }
 \value{
-A matrix where each column corresponds to the solution at a time step.
+A matrix (time x size) with the solution of the PDE.
 }
 \description{
 This function uses the implicit Euler method to solve a PDE of the form:

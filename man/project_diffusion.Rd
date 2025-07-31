@@ -16,7 +16,7 @@ project_diffusion(params, species, dt = 0.05, nsteps = 200)
 \item{nsteps}{Number of time steps to compute.}
 }
 \value{
-A matrix where each column corresponds to the solution at a time step.
+A matrix (time x size) with the solution of the PDE.
 }
 \description{
 This function solves the PDE for a single species

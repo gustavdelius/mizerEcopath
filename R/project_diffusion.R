@@ -10,7 +10,7 @@
 #' @param species The species for which to solve the steady-state equation.
 #' @param dt Time step size.
 #' @param nsteps Number of time steps to compute.
-#' @return A matrix where each column corresponds to the solution at a time step.
+#' @return A matrix (time x size) with the solution of the PDE.
 #' @export
 project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     params <- validParams(params)
@@ -63,7 +63,7 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
 #' @param h Spatial step size.
 #' @param dt Time step size.
 #' @param nsteps Number of time steps to compute.
-#' @return A matrix where each column corresponds to the solution at a time step.
+#' @return A matrix (time x size) with the solution of the PDE.
 #' @export
 solve_diffusion_pde <- function(d, g, mu, n_init, h, dt, nsteps) {
     # Because of the way we calculate the derivative of the diffusion we
@@ -85,15 +85,15 @@ solve_diffusion_pde <- function(d, g, mu, n_init, h, dt, nsteps) {
     U_new <- -dt / h^2 * U
 
     n <- n_init[interior]
-    n_hist <- matrix(0, nrow = length(d), ncol = nsteps + 1)
-    n_hist[interior, 1] <- n
+    n_hist <- matrix(0, nrow = nsteps + 1, ncol = length(d))
+    n_hist[1, interior] <- n
 
     for (step in 1:nsteps) {
         # Solve (I - dt*A) n_new = n_old
         n_new <- solve_double_sweep(U_new, L_new, D_new, n)
         n_new[length(n_new)] <- 0  # Enforce boundary at large size
         n <- n_new
-        n_hist[interior, step + 1] <- n
+        n_hist[step + 1, interior] <- n
     }
     return(n_hist)
 }
