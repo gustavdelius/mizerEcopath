@@ -483,7 +483,7 @@ using the same upwind finite-difference method as for the steady-state ODE, but 
 
 ```{r}
 params <- celtic_params
-species <- "Herring"
+species <- "Cod"
 sps <- species_params(params)[species, ]
 
 # Set initial condition
@@ -501,26 +501,26 @@ Plot the evolution of n(w, t) at selected time points
 # Select time points to plot
 plot_steps <- c(21,41,61,81,101,201)
 plot_times <- (plot_steps - 1) * dt
-plot_labels <- paste0("t=", round(plot_times, 2))
+plot_labels <- paste0("age=", round(plot_times, 2))
 
 # Prepare data frame for ggplot2
 N <- length(n_hist[1, ])
 w <- w(params)
 l <- (w/sps$a)^(1/sps$b)
 plot_df <- data.frame(
-  Weight = rep(w[2:(N+1)], times = length(plot_steps)),
-  Length = rep(l[2:(N+1)], times = length(plot_steps)),
-  Abundance = as.vector(n_hist[plot_steps, ] + 1e-10),
+  Weight = rep(w, times = length(plot_steps)),
+  Length = rep(l, times = length(plot_steps)),
+  Abundance = as.vector(t(n_hist[plot_steps, ]) + 1e-10),
   t = rep(plot_times, each = N),
   Time = factor(rep(plot_labels, each = N), levels = plot_labels)
 )
 
 # Plot
-p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t*0.8), color = Time)) +
+p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t*0.5), color = Time)) +
   geom_line(linewidth = 1) +
   #scale_x_log10() +
   #scale_y_log10() +
-    xlim(1e-3, 50) +
+    xlim(1e-3, 120) +
   labs(x = "Length (cm)", y = "Abundance density",
        title = "Evolution of n(l, t) from point source at small size") +
   theme_minimal()
