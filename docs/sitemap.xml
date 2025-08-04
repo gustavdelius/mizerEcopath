@@ -16,6 +16,7 @@
 <url><loc>/reference/deathTab.html</loc></url>
 <url><loc>/reference/dietTab.html</loc></url>
 <url><loc>/reference/diet_matrix_example.html</loc></url>
+<url><loc>/reference/diffusionControl.html</loc></url>
 <url><loc>/reference/ecopath_diet_example.html</loc></url>
 <url><loc>/reference/exponentControl.html</loc></url>
 <url><loc>/reference/fillDefaultsFromFishBase.html</loc></url>
@@ -41,7 +42,6 @@
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/isAllometric.html</loc></url>
 <url><loc>/reference/makeInteracting.html</loc></url>
-<url><loc>/reference/makeInteractive.html</loc></url>
 <url><loc>/reference/makeNoninteracting.html</loc></url>
 <url><loc>/reference/matchCatch.html</loc></url>
 <url><loc>/reference/matchConsumption.html</loc></url>
@@ -59,13 +59,18 @@
 <url><loc>/reference/plotProductionVsSpecies.html</loc></url>
 <url><loc>/reference/precompute_weights.html</loc></url>
 <url><loc>/reference/prepare_data.html</loc></url>
+<url><loc>/reference/project_diffusion.html</loc></url>
 <url><loc>/reference/reduceEcopathDiet.html</loc></url>
 <url><loc>/reference/reproTab.html</loc></url>
 <url><loc>/reference/reproductionControl.html</loc></url>
 <url><loc>/reference/setFeedingLevel.html</loc></url>
 <url><loc>/reference/setResourceInteraction.html</loc></url>
+<url><loc>/reference/solve_diffusion_ode.html</loc></url>
+<url><loc>/reference/solve_diffusion_pde.html</loc></url>
+<url><loc>/reference/solve_double_sweep.html</loc></url>
 <url><loc>/reference/species_params_example.html</loc></url>
 <url><loc>/reference/spectraTab.html</loc></url>
+<url><loc>/reference/steady_diffusion.html</loc></url>
 <url><loc>/reference/tuneEcopath.html</loc></url>
 <url><loc>/reference/update_params.html</loc></url>
 <url><loc>/reference/validEcopathCatch.html</loc></url>

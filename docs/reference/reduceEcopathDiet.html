@@ -6,12 +6,16 @@
     }
   };
 </script><script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Reduce Ecopath diet matrix to mizer species — reduceEcopathDiet"><meta name="description" content='Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
-using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 Produces a species-by-species diet matrix, including an "other" category to account
-for diet contributions from Ecopath groups not included in the model.'><meta property="og:description" content='Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
-using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
+are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+is then normalised to proportions.'><meta property="og:description" content='Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
+using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 Produces a species-by-species diet matrix, including an "other" category to account
-for diet contributions from Ecopath groups not included in the model.'></head><body>
+for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
+are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+is then normalised to proportions.'></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -19,7 +23,7 @@ for diet contributions from Ecopath groups not included in the model.'></head><b
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9004</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9010</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,14 +57,16 @@ for diet contributions from Ecopath groups not included in the model.'></head><b
 
     <div class="ref-description section level2">
     <p>Aggregates a group-level Ecopath diet matrix to the species level defined in a mizer model,
-using a mapping dictionary from Ecopath groups (e.g. juvenile/adult stanzas) to a single mizer species.
+using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 Produces a species-by-species diet matrix, including an <code>"other"</code> category to account
-for diet contributions from Ecopath groups not included in the model.</p>
+for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
+are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+is then normalised to proportions.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">reduceEcopathDiet</span><span class="op">(</span><span class="va">species_params</span>, <span class="va">ecopath_diet</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">reduceEcopathDiet</span><span class="op">(</span><span class="va">species_params</span>, <span class="va">ecopath_diet</span>, <span class="va">ecopath_params</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -68,21 +74,32 @@ for diet contributions from Ecopath groups not included in the model.</p>
 
 
 <dl><dt id="arg-species-params">species_params<a class="anchor" aria-label="anchor" href="#arg-species-params"></a></dt>
-<dd><p>A data frame with mizer species parameters</p></dd>
+<dd><p>A data frame with mizer species parameters.</p></dd>
 
 
 <dt id="arg-ecopath-diet">ecopath_diet<a class="anchor" aria-label="anchor" href="#arg-ecopath-diet"></a></dt>
-<dd><p>The Ecopath diet matrix, as exported by the Ecopath
-software.</p></dd>
+<dd><p>The Ecopath diet matrix, as exported by the Ecopath software.
+Rows correspond to prey groups, columns to predator groups.</p></dd>
+
+
+<dt id="arg-ecopath-params">ecopath_params<a class="anchor" aria-label="anchor" href="#arg-ecopath-params"></a></dt>
+<dd><p>The  basic parameters data frame, containing at least biomass and
+consumption/biomass for each group.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A matrix with dimnames <code>predator</code> and <code>prey</code>, where the row names are
 the species names of the predators and the column names are the species
-names of the prey, an extra column "other" for groups not included in the model.
-The matrix entries give for each predator the proportion of its diet that comes
-from each prey species or from other ecosystem components.</p>
+names of the prey, plus an extra column "other" for groups not included in the model.
+The matrix entries give, for each predator, the proportion of its total consumption
+that comes from each prey species or from other ecosystem components.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>This produces a species-by-species diet matrix, including an <code>"other"</code> category to account
+for diet contributions from Ecopath groups not included in the model.</p>
+<p>This function assumes that the supplied Ecopath diet matrix contains proportions (not absolute rates).</p>
     </div>
 
     <div class="section level2">
@@ -90,16 +107,15 @@ from each prey species or from other ecosystem components.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Generate a reduced diet matrix</span></span></span>
 <span class="r-in"><span><span class="va">diet_matrix</span> <span class="op">&lt;-</span> <span class="fu">reduceEcopathDiet</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    species_params <span class="op">=</span> <span class="va">species_params_example</span>,</span></span>
-<span class="r-in"><span>    ecopath_diet <span class="op">=</span> <span class="va">ecopath_diet_example</span></span></span>
+<span class="r-in"><span>    ecopath_diet <span class="op">=</span> <span class="va">ecopath_diet_example</span>,</span></span>
+<span class="r-in"><span>    ecopath_params <span class="op">=</span> <span class="va">ecopath_params_example</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> length(default) not equal to no_sp</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># View first few rows of the result</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">diet_matrix</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 prey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> predator                Hake       Megrim Horse mackerel     other</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Hake           0.011343712 0.0193336309     0.10184681 0.8674759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Megrim         0.002535134 0.0002813999     0.07453295 0.9226505</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Horse mackerel 0.000000000 0.0000000000     0.00000000 1.0000000</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'diet_matrix' not found</span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

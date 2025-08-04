@@ -19,7 +19,7 @@ tabs for various diagnostic plots."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9004</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9010</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,8 +64,9 @@ tabs for various diagnostic plots.</p>
 <span>  <span class="va">params</span>,</span>
 <span>  catch <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  diet <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  controls <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"match"</span>, <span class="st">"fishing"</span>, <span class="st">"reproduction"</span>, <span class="st">"other"</span>, <span class="st">"exponent"</span><span class="op">)</span>,</span>
+<span>  controls <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"diffusion"</span>, <span class="st">"fishing"</span>, <span class="st">"reproduction"</span>, <span class="st">"other"</span>, <span class="st">"exponent"</span>, <span class="st">"match"</span><span class="op">)</span>,</span>
 <span>  tabs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Spectra"</span>, <span class="st">"Catch"</span>, <span class="st">"Growth"</span>, <span class="st">"Repro"</span>, <span class="st">"Diet"</span>, <span class="st">"Death"</span><span class="op">)</span>,</span>
+<span>  match <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"growth"</span>, <span class="st">"yield"</span>, <span class="st">"catch"</span>, <span class="st">"consumption"</span><span class="op">)</span>,</span>
 <span>  preserve <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"erepro"</span>, <span class="st">"reproduction_level"</span>, <span class="st">"R_max"</span><span class="op">)</span>,</span>
 <span>  return_app <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -98,6 +99,13 @@ below.</p></dd>
 <dt id="arg-tabs">tabs<a class="anchor" aria-label="anchor" href="#arg-tabs"></a></dt>
 <dd><p>A character vector of names of the tabs that should be displayed
 in the main section. See "Customisation" below.</p></dd>
+
+
+<dt id="arg-match">match<a class="anchor" aria-label="anchor" href="#arg-match"></a></dt>
+<dd><p>A character vector. Determines which quantities should be
+matched to observations each time the "steady" button is pressed. Possible
+entries are <code>"growth"</code> (using <code>matchGrowth()</code>), <code>"yield"</code> (using
+<code>matchYield()</code>) and <code>"consumption"</code> (using <code><a href="matchConsumption.html">matchConsumption()</a></code>).</p></dd>
 
 
 <dt id="arg-preserve">preserve<a class="anchor" aria-label="anchor" href="#arg-preserve"></a></dt>
