@@ -2,7 +2,6 @@
 library(mizerEcopath)
 library(Matrix)      # sparse matrices, fast %*%
 library(dplyr)
-library(tidyr)
 library(ggplot2)
 
 # Load age at size data compiled by Jess ----
@@ -97,8 +96,7 @@ print(p)
 ## Convert to numbers from densities ----
 
 N_mat <- n_hist[2:(nsteps + 1), 1:m]
-N_mat <- N_mat * dw(params)[1:m]
-
+N_mat <- sweep(N_mat, 2, dw(params)[1:m], "*")
 
 # Build aggretation matrices ----
 
