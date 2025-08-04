@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9004</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9010</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,18 +79,13 @@
     <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/gustavdelius/mizerEcopath" class="external-link">mizerEcopath</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: mizer</span></span>
-<span><span class="co">#&gt; Loading required package: mizerExperimental</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'mizerEcopath'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:mizerExperimental':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     alignResource</span></span>
-<span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">NS_params</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <section class="section level2"><h2 id="sec-jump-growth">The jump-growth equation<a class="anchor" aria-label="anchor" href="#sec-jump-growth"></a>
 </h2>
-<p>As was observed in <span class="citation" data-cites="datta2010">(<a href="#ref-datta2010" role="doc-biblioref">Datta, Delius, and Law 2010</a>)</span>, the variability in prey size leads to a diffusion term in the PDE for the abundance density <span class="math inline">\(N(w,t)\)</span>. This term is neglected in mizer but may well become important when modelling seasonality because it will contribute to a broadening of the yearly cohorts as they grow up. The PDE including the diffusion term is <span id="eq-PDE"><span class="math display">\[
+<p>As was observed in <span class="citation" data-cites="datta2010">(<a href="#ref-datta2010" role="doc-biblioref">Datta, Delius, and Law 2010</a>)</span>, the variability in prey size leads to a diffusion term in the PDE for the abundance density <span class="math inline">\(N(w,t)\)</span>. This term is neglected in mizer but will become important when matching mizer abundances to observed abundances, because it will account for fish that are larger than average. The PDE including the diffusion term is <span id="eq-PDE"><span class="math display">\[
 \frac{\partial N}{\partial t} = \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N
 \tag{1}\]</span></span> where <span class="math inline">\(g\)</span> is the growth rate, <span class="math inline">\(\mu\)</span> is the death rate and <span class="math inline">\(d\)</span> is a new diffusion rate.</p>
 <p>The diffusion rate has an expression that is similar to that of the growth rate. Recall that the growth rate is given by <span id="eq-gw"><span class="math display">\[
@@ -99,253 +94,351 @@ g(w)=&amp;(1-f(w))\,\gamma(w)\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw
 &amp;- K(w)(1-\psi(w)),
 \end{split}
 \tag{2}\]</span></span> where <span class="math inline">\(N_c(w)\)</span> is the abundance density of prey, <span class="math inline">\(\phi(w/w_p)\)</span> is the predation kernel, <span class="math inline">\(\gamma(w)\)</span> is the search volume, <span class="math inline">\(f(w)\)</span> is the feeding level, <span class="math inline">\(K(w)\)</span> is the metabolic respiration rate, <span class="math inline">\(\alpha\)</span> is the conversion efficiency and <span class="math inline">\(\psi(w)\)</span> is the proportion of available energy that is invested into reproduction. Because the metabolic respiration loss is subtracted from the available energy before that is split into growth and reproduction, only a proportion <span class="math inline">\(1-\psi\)</span> of the metabolic rate is subtracted from the growth rate.</p>
-<p>The factor <span class="math inline">\(\alpha (1- \psi(w))w_p\)</span> in the integral in <a href="#eq-gw" class="quarto-xref">Eq. 2</a> is the increase in somatic weight of the predator resulting from the ingestion of the prey of weight <span class="math inline">\(w_p\)</span>. In the expression for the diffusion rate <span class="math inline">\(d(w)\)</span> this factor is squared: <span class="math display">\[
+<p>The factor <span class="math inline">\(\alpha (1- \psi(w))w_p\)</span> in the integral in <a href="#eq-gw" class="quarto-xref">Eq. 2</a> is the increase in somatic weight of the predator resulting from the ingestion of the prey of weight <span class="math inline">\(w_p\)</span>. In the expression for the diffusion rate <span class="math inline">\(d(w)\)</span> this factor is squared: <span id="eq-dw"><span class="math display">\[
 d(w) = (1-f(w))\,\gamma(w) \int N_c(w_p)\phi(w/w_p)(\alpha\,(1-\psi(w)) w_p)^2\,dw_p.
-\]</span> The loss due to metabolic respiration affects the growth rate but not the diffusion rate. In the derivation of the PDE <a href="#eq-PDE" class="quarto-xref">Eq. 1</a> in <span class="citation" data-cites="datta2010">(<a href="#ref-datta2010" role="doc-biblioref">Datta, Delius, and Law 2010</a>)</span> the metabolic respiration was not discussed but its contribution to only the first-order derivative term can be found in <span class="citation" data-cites="capitan2010">(<a href="#ref-capitan2010" role="doc-biblioref">Capitan and Delius 2010</a>)</span>.</p>
-<p>The increase <span class="math inline">\(\alpha (1- \psi(w))w_p\)</span> in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(1-\psi(w)\)</span> are both smaller than <span class="math inline">\(1\)</span>. Because this factor is squared in the expression for <span class="math inline">\(d(w)\)</span> it might be expected that the term in the PDE involving <span class="math inline">\(d(w)\)</span> can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. We will then use that to determine its effect on the slope of the juvenile spectrum.</p>
+\tag{3}\]</span></span> The loss due to metabolic respiration affects the growth rate but not the diffusion rate. In the derivation of the PDE <a href="#eq-PDE" class="quarto-xref">Eq. 1</a> in <span class="citation" data-cites="datta2010">(<a href="#ref-datta2010" role="doc-biblioref">Datta, Delius, and Law 2010</a>)</span> the metabolic respiration was not discussed but its contribution to only the first-order derivative term can be found in <span class="citation" data-cites="capitan2010">(<a href="#ref-capitan2010" role="doc-biblioref">Capitan and Delius 2010</a>)</span>.</p>
+<p>The increase <span class="math inline">\(\alpha (1- \psi(w))w_p\)</span> in predator mass is typically only a small proportion of the predator mass because the preferred prey are typically much smaller than the predator and also <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(1-\psi(w)\)</span> are both smaller than <span class="math inline">\(1\)</span>. Because this factor is squared in the expression for <span class="math inline">\(d(w)\)</span> it might be expected that the term in the PDE involving <span class="math inline">\(d(w)\)</span> can be safely neglected. However it is worth testing this intuition. We will do this now by first determining the diffusion rate in a model with allometric growth and death rates. We will then use that to determine its effect on the slope of the juvenile spectrum. Finally we will look at the numerical solution for the steady state.</p>
 </section><section class="section level2"><h2 id="sec-diffusion-example">Example calculation of diffusion rate<a class="anchor" aria-label="anchor" href="#sec-diffusion-example"></a>
 </h2>
-<p>Let us assume that the prey abundance is given by a power law: <span class="math inline">\(N_c(w)=N_0w^{-\lambda}\)</span> and that the predation kernel is <span class="math display">\[
+<p>Let us assume that the prey abundance is given by a power law: <span class="math inline">\(N_c(w)=N_0w^{-\lambda}\)</span> and that the predation kernel is <span id="eq-phi"><span class="math display">\[
 \phi(w/w_p) = \exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right).
-\]</span></p>
-<p>For juveniles <span class="math inline">\(\psi(w)=0\)</span> and hence the integral in the expression <a href="#eq-gw" class="quarto-xref">Eq. 2</a> for the growth rate becomes <span class="math display">\[
-I_g:=\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p =
-\alpha\int w_p^{1-\lambda}\exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right)dw_p.
-\]</span> This integral can be evaluated most easily by changing integration variable to <span class="math inline">\(x=\log(w_p/w_0)\)</span>for an arbitrary reference weight <span class="math inline">\(w_0\)</span> and then recognising the resulting integral <span class="math display">\[
+\tag{4}\]</span></span></p>
+<p>For juveniles <span class="math inline">\(\psi(w)=0\)</span> and hence the integral in the expression <a href="#eq-gw" class="quarto-xref">Eq. 2</a> for the growth rate becomes <span id="eq-Ig"><span class="math display">\[
+\begin{split}
+I_g&amp;:=\int N_c(w_p)\phi(w/w_p)\alpha\,(1-\psi(w)) w_p\,dw_p\\
+&amp;=\alpha\int w_p^{1-\lambda}\exp\left(-\frac{\log(w/w_p/\beta)^2}{2\sigma^2}\right)dw_p.
+\end{split}
+\tag{5}\]</span></span> This integral can be evaluated most easily by changing integration variable to <span class="math inline">\(x=\log(w_p/w_0)\)</span>for an arbitrary reference weight <span class="math inline">\(w_0\)</span> and then recognising the resulting integral <span id="eq-Ig2"><span class="math display">\[
 I_g=\alpha\, w_0^{2-\lambda}\int e^{(2-\lambda)x}\exp\left(-\frac{(x-\log(w/w_0)+\log(\beta))^2}{2\sigma^2}\right)dx
-\]</span> as a Gaussian integral. Using the general result that <span class="math display">\[
+\tag{6}\]</span></span> as a Gaussian integral. Using the general result that <span id="eq-gaussian"><span class="math display">\[
 \int e^{ax}\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)dx = \sqrt{\frac{2\pi}{\sigma^2}}\exp\left(a\mu+\frac{a^2\sigma^2}{2}\right)
-\]</span> with <span class="math inline">\(a = 2-\lambda\)</span> and <span class="math inline">\(\mu = \log(w)-\log(\beta)\)</span> we find that <span class="math display">\[
+\tag{7}\]</span></span> with <span class="math inline">\(a = 2-\lambda\)</span> and <span class="math inline">\(\mu = \log(w/w_0)-\log(\beta)\)</span> we find that <span id="eq-Ig3"><span class="math display">\[
 \begin{split}
 I_g&amp;=
 \alpha\, w_0^{2-\lambda}\sqrt{\frac{2\pi}{\sigma^2}}\exp\left((2-\lambda)(\log(w/w_0)-\log(\beta))+\frac{(2-\lambda)^2\sigma^2}{2}\right)\\
 &amp;=\alpha w^{2-\lambda}\sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)
 \end{split}
-\]</span></p>
-<p>Assuming further a constant feeding level <span class="math inline">\(f(w)=f\)</span>, an allometric metabolic loss rate <span class="math inline">\(K(w) = k_s w^n\)</span> and an allometric search volume <span class="math inline">\(\gamma(w)=\gamma w^q\)</span> with an exponent of <span class="math inline">\(q = n + 2 - \lambda\)</span> we obtain <span class="math display">\[
+\tag{8}\]</span></span></p>
+<p>Assuming further a constant feeding level <span class="math inline">\(f(w)=f\)</span>, an allometric metabolic loss rate <span class="math inline">\(K(w) = k_s w^n\)</span> and an allometric search volume <span class="math inline">\(\gamma(w)=\gamma w^q\)</span> with an exponent of <span class="math inline">\(q = n - 2 + \lambda\)</span> we obtain <span id="eq-gw2"><span class="math display">\[
 g(w) = \left((1-f)\gamma \alpha \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)-k_s\right) w^n.
-\]</span> If we assume further that the metabolic loss is a fraction <span class="math inline">\(f_c/f\)</span> of the incoming energy (we refer to <span class="math inline">\(f_c\)</span> as the critical feeding level) then this simplifies to <span id="eq-gwe"><span class="math display">\[
+\tag{9}\]</span></span> If we assume further that the metabolic loss is a fraction <span class="math inline">\(f_c/f\)</span> of the incoming energy (we refer to <span class="math inline">\(f_c\)</span> as the critical feeding level) then this simplifies to <span id="eq-gwe"><span class="math display">\[
 g(w) =\left( \left(1-\frac{f_c}{f}\right)(1-f)\gamma \alpha \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 2}\exp\left(\frac{(2-\lambda)^2\sigma^2}{2}\right)\right) w^n.
-\tag{3}\]</span></span></p>
-<p>We can evaluate the diffusion rate <span class="math inline">\(d(w)\)</span> in the same manner. The extra factor of <span class="math inline">\(w_p\)</span> changes <span class="math inline">\(a\)</span> from <span class="math inline">\(2-\lambda\)</span> to <span class="math inline">\(3-\lambda\)</span> and we obtain <span class="math display">\[
-d(w) = \left((1-f(w))\gamma \alpha^2 \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 3}\exp\left(\frac{(3-\lambda)^2\sigma^2}{2}\right)\right) w^n.
-\]</span> Comparing this to the expression <a href="#eq-gwe" class="quarto-xref">Eq. 3</a> for <span class="math inline">\(g(w)\)</span> we find that <span class="math display">\[
+\tag{10}\]</span></span></p>
+<p>We can evaluate the diffusion rate <span class="math inline">\(d(w)\)</span> in the same manner. The extra factor of <span class="math inline">\(w_p\)</span> changes <span class="math inline">\(a\)</span> from <span class="math inline">\(2-\lambda\)</span> to <span class="math inline">\(3-\lambda\)</span> and we obtain <span id="eq-dw2"><span class="math display">\[
+d(w) = \left((1-f(w))\gamma \alpha^2 \sqrt{\frac{2\pi}{\sigma^2}}\beta^{\lambda - 3}\exp\left(\frac{(3-\lambda)^2\sigma^2}{2}\right)\right) w^{n+1}.
+\tag{11}\]</span></span> Comparing this to the expression <a href="#eq-gwe" class="quarto-xref">Eq. 10</a> for <span class="math inline">\(g(w)\)</span> we find that <span id="eq-dw3"><span class="math display">\[
 d(w) = g(w)w\frac{1}{1-f_c/f}\frac{\alpha}{\beta}\exp\left(\frac{(2\lambda - 3)\sigma^2}{2}\right).
-\]</span></p>
-<p>To get a feel for the typical magnitude of the factor let’s consider concrete values <span class="math inline">\((1-f_c/f)=0.6\)</span>, <span class="math inline">\(\alpha = 0.8\)</span>, <span class="math inline">\(\beta = 100\)</span>, <span class="math inline">\(\sigma = 1\)</span> and <span class="math inline">\(\lambda = 2\)</span>. Then <span class="math inline">\(d(w) \approx 0.02 g(w)w\)</span>. However we see that the value of <span class="math inline">\(d(w)\)</span> is strongly influenced by the width of the feeding kernel. If we choose <span class="math inline">\(\sigma = 2\)</span> then <span class="math inline">\(d(w)\approx0.1g(w)w\)</span>. This increase in the diffusion rate with increasin <span class="math inline">\(\sigma\)</span> may explains the result from <span class="citation" data-cites="datta2010a">(<a href="#ref-datta2010a" role="doc-biblioref">Datta et al. 2010</a>)</span> that the stability of the system increases with increasing <span class="math inline">\(\sigma\)</span>.</p>
+\tag{12}\]</span></span></p>
+<p>To get a feel for the typical magnitude of the factor let’s consider concrete values <span id="eq-params"><span class="math display">\[
+(1-f_c/f)=0.6, \qquad\alpha = 0.8, \qquad\beta = 100, \qquad\sigma = 2, \qquad\lambda = 2.
+\tag{13}\]</span></span></p>
+<p>Then <span id="eq-dw4"><span class="math display">\[
+d(w) \approx 0.15 g(w)w.
+\tag{14}\]</span></span></p>
+<p>However we see that the value of <span class="math inline">\(d(w)\)</span> is strongly influenced by the width of the feeding kernel. If we choose <span class="math inline">\(\sigma = 1\)</span> then <span class="math inline">\(d(w)\approx 0.03 g(w)w\)</span>. This decrease in the diffusion rate with decreasing <span class="math inline">\(\sigma\)</span> may explains the result from <span class="citation" data-cites="datta2010a">(<a href="#ref-datta2010a" role="doc-biblioref">Datta et al. 2010</a>)</span> that the stability of the system decreases with decreasing <span class="math inline">\(\sigma\)</span>.</p>
 </section><section class="section level2"><h2 id="sec-diffusion-juvenile">Effect on juvenile slope<a class="anchor" aria-label="anchor" href="#sec-diffusion-juvenile"></a>
 </h2>
-<p>Now we are ready to investigate the effect of the diffusion on the slope of the juvenile spectrum in the steady state. Without diffusion we find the juvenile spectrum by solving the steady-state equation <span class="math display">\[
+<p>In this section we will calculate the effect of the diffusion on the slope of the juvenile spectrum in the steady state. You can skip this section if you are not interested in the details of the calculation. The outcome is that the change in the juvenile slope is small. However, the change in the size spectrum of the adults is much larger, as we will see in <a href="#sec-diffusion-numerical" class="quarto-xref">Section 5</a>.</p>
+<p>Without diffusion we find the juvenile spectrum by solving the steady-state equation <span id="eq-ss"><span class="math display">\[
 \frac{\partial}{\partial w}(g(w) N(w)) =-\mu(w) N(w).
-\]</span> This has the solution <span class="math display">\[
+\tag{15}\]</span></span></p>
+<p>This has the solution <span id="eq-Nw"><span class="math display">\[
 N(w) = \frac{g(w_0)}{g(w)}N(w_0)\exp\left(-\int_{w_0}^w\frac{\mu(w')}{g(w')}dw'\right).
-\]</span> With allometic growth and death rates <span class="math inline">\(g(w)=g_0w^n\)</span> and <span class="math inline">\(\mu(w)=\mu_0w^{n-1}\)</span> this gives <span class="math display">\[
-N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}
-\]</span> Thus the juvenile steady state abundance density is given by a power law with exponent <span class="math inline">\(-\mu_0/g_0-n\)</span>.</p>
+\tag{16}\]</span></span></p>
+<p>With allometic growth and death rates <span class="math inline">\(g(w)=g_0w^n\)</span> and <span class="math inline">\(\mu(w)=\mu_0w^{n-1}\)</span> this gives <span id="eq-Nwss"><span class="math display">\[
+N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}.
+\tag{17}\]</span></span></p>
+<p>Thus the juvenile steady state abundance density is given by a power law with exponent <span class="math inline">\(-\mu_0/g_0-n\)</span>.</p>
 <p>In the presence of diffusion the steady state equation becomes the second-order ODE <span id="eq-diffss"><span class="math display">\[
 \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N=0.
-\tag{4}\]</span></span></p>
-<p>We have seen in the previous section that with <span class="math inline">\(g(w)=g_0w^n\)</span> the diffusion rate is also a power law with one extra factor of <span class="math inline">\(w\)</span>: <span class="math inline">\(d(w)=d_0w^{n+1}\)</span>. This makes the equation <a href="#eq-diffss" class="quarto-xref">Eq. 4</a> scale invariant and hence we again expect the solution to be a power law, So we make the Ansatz <span class="math inline">\(N(w)=N(w_0)(w/w_0)^a\)</span> with the exponent <span class="math inline">\(a\)</span> to be determined. Substituting this Ansatz into <a href="#eq-diffss" class="quarto-xref">Eq. 4</a> gives <span class="math display">\[
+\tag{18}\]</span></span></p>
+<p>We have seen in the previous section that with <span class="math inline">\(g(w)=g_0w^n\)</span> the diffusion rate is also a power law with one extra factor of <span class="math inline">\(w\)</span>: <span class="math inline">\(d(w)=d_0w^{n+1}\)</span>. This makes the equation <a href="#eq-diffss" class="quarto-xref">Eq. 18</a> scale invariant and hence we again expect the solution to be a power law, So we make the Ansatz <span class="math inline">\(N(w)=N(w_0)(w/w_0)^a\)</span> with the exponent <span class="math inline">\(a\)</span> to be determined. Substituting this Ansatz into <a href="#eq-diffss" class="quarto-xref">Eq. 18</a> gives <span id="eq-diffssansatz"><span class="math display">\[
 \frac12 d_0N_0(n+1+a)(n+a)w^{n+a-1} -g_0N_0(n+a)w^{n+a-1}-\mu_0 N_0w^{n-1+a} = 0
-\]</span> which requires that <span class="math display">\[
-\frac12 d_0(n+1+a)(n+a) -g_0(n+a)-\mu_0= 0.
-\]</span> This is a quadratic equation for <span class="math inline">\(n+a\)</span>: <span class="math display">\[
+\tag{19}\]</span></span> which requires that <span id="eq-diffssansatz2"><span class="math display">\[
 \frac12 d_0 (n+a)^2+\left(\frac12 d_0 -g_0\right)(n+a)-\mu_0=0.
-\]</span> This has two solutions <span class="math display">\[
+\tag{20}\]</span></span> This is a quadratic equation for <span class="math inline">\(n+a\)</span>: <span id="eq-diffssansatz3"><span class="math display">\[
+\frac12 d_0 (n+a)^2+\left(\frac12 d_0 -g_0\right)(n+a)-\mu_0=0.
+\tag{21}\]</span></span> This has two solutions <span id="eq-a"><span class="math display">\[
 (n+a_\pm) = \frac1{d_0}\left(g_0-d_0/2\pm\sqrt{(g_0-d_0/2)^2+2d_0\mu_0}\right)
-\]</span></p>
-<p>We are only interested in the solution that goes to <span class="math inline">\(a=-\mu_0/g_0-n\)</span> when <span class="math inline">\(d_0\to 0\)</span>. This means we are interested in the solution with the - sign. To check that indeed the solution <span class="math inline">\(a_{-}\)</span> satisfies <span class="math inline">\(\lim_{a_-\to 0}= -\mu_0/g_0-n\)</span> it is helpful to expand the square root term around <span class="math inline">\(d_0=0\)</span>: <span class="math display">\[
+\tag{22}\]</span></span> where <span class="math inline">\(a_+\)</span> is the solution with the + sign and <span class="math inline">\(a_-\)</span> is the solution with the - sign.</p>
+<p>We are only interested in the solution that goes to <span class="math inline">\(a=-\mu_0/g_0-n\)</span> when <span class="math inline">\(d_0\to 0\)</span>. This means we are interested in the solution with the - sign. To check that indeed the solution <span class="math inline">\(a_{-}\)</span> satisfies <span class="math inline">\(\lim_{a_-\to 0}= -\mu_0/g_0-n\)</span> it is helpful to expand the square root term around <span class="math inline">\(d_0=0\)</span>: <span id="eq-sqrt"><span class="math display">\[
 \sqrt{(g_0-d_0/2)^2+2d_0\mu_0}=g_0+\frac{-g_0+2\mu_0}{2g_0}d_0+\frac{g_0^2-(-g_0+2\mu_0)^2}{8g_0^3}d_0^2+\dots
-\]</span> So we find <span class="math display">\[
+\tag{23}\]</span></span> So we find <span id="eq-a-2"><span class="math display">\[
 \begin{split}
 a &amp;= -n+\frac1{d_0}\left(g_0-d_0/2-\sqrt{(g_0-d_0/2)^2+2d_0\mu_0}\right)\\
 &amp;\approx -n-\frac{\mu_0}{g_0} - \frac18\left(1-\left(-1+2\frac{\mu_0}{g_0}\right)^2\right) d_0+\dots\\
 &amp;=-n-\frac{\mu_0}{g_0} +\frac12\left(\frac{\mu_0}{g_0}\left(1-\frac{\mu_0}{g_0}\right)\right)\frac{d_0}{g_0}+\dots
 \end{split}
-\]</span></p>
-<p>We see that when <span class="math inline">\(\mu_0=g_0\)</span> then the first correction term to the juvenile slope vanishes. The largest increase in slope (i.e., the least negative slope) is achieved when <span class="math inline">\(\mu_0/g_0=1/2\)</span>. In that case the slope without diffusion is <span class="math inline">\(-1.25\)</span> (assuming $n=0.75). The correction term then is <span class="math inline">\(1/8 d_0/g_0\)</span>. We had already seen in the previous section that <span class="math inline">\(d_0/g_0\)</span> is typically very small, so the change in slope is also very small.</p>
-<p>Using the example value of <span class="math inline">\(d_0/g_0=0.002\)</span> and <span class="math inline">\(n=0.75\)</span> we get a slope correction of <span class="math inline">\(0.00025\)</span> from <span class="math inline">\(-1.25\)</span> to <span class="math inline">\(-1.24975\)</span>. Using the value <span class="math inline">\(d_0/g_0=0.1\)</span> we get a larger slope correction of <span class="math inline">\(0.0125\)</span> from <span class="math inline">\(-1.25\)</span> to <span class="math inline">\(-1.2375\)</span>. While this still seems irrelevant, we have to remember that we are looking at a power law exponent and that small changes in the exponent can have a large effect on the value of the power law. If, for example, we have a fixed abundance of eggs of size 0.001g and then look at the resulting density of fish of 1000g, then the diffusion correction increases that by a factor of <span class="math inline">\((10^6)^{0.0125}\approx 1.19\)</span>, an increase by 19\%.</p>
+\tag{24}\]</span></span></p>
+<p>We see that when <span class="math inline">\(\mu_0=g_0\)</span> then the first correction term to the juvenile slope vanishes. The largest increase in slope (i.e., the least negative slope) is achieved when <span class="math inline">\(\mu_0/g_0=1/2\)</span>. In that case the slope without diffusion is <span class="math inline">\(-1.25\)</span> (assuming <span class="math inline">\(n=0.75\)</span>). The correction term then is <span class="math inline">\(d_0/(8g_0)\)</span>. We had already seen in the previous section that <span class="math inline">\(d_0/g_0\)</span> is typically very small, so the change in slope is also very small.</p>
+<p>Using the example value of <span class="math inline">\(d_0/g_0\approx0.15\)</span> and <span class="math inline">\(n=0.75\)</span> we get a slope correction of approximately <span class="math inline">\(0.018\)</span> from <span class="math inline">\(-1.25\)</span> to <span class="math inline">\(-1.232\)</span>.</p>
+<p>Using the value <span class="math inline">\(d_0/g_0\approx0.03\)</span> we get a smaller slope correction of approximately <span class="math inline">\(0.004\)</span> from <span class="math inline">\(-1.25\)</span> to <span class="math inline">\(-1.246\)</span>.</p>
 <p>When <span class="math inline">\(\mu_0/g_0&gt;1\)</span> then the diffusion correction is negative, i.e., the juvenile slope becomes more negative due to diffusion, meaning fewer large fish.</p>
 </section><section class="section level2"><h2 id="sec-diffusion-log">Transforming to logarithmic weight<a class="anchor" aria-label="anchor" href="#sec-diffusion-log"></a>
 </h2>
-<p>Mizer works with logarithmically-spaced weight bins. That is good, but it makes it complicated to work out numerical schemes for solving the equations. It is much easier to work with equally-spaced bins. The obvious solution is to view the logarithm of the weight as the independent variable instead of the weight. So we will work with <span class="math display">\[
+<p>Mizer works with logarithmically-spaced weight bins. That is good, but it makes it complicated to work out numerical schemes for solving the equations. It is much easier to work with equally-spaced bins. The obvious solution is to view the logarithm of the weight as the independent variable instead of the weight. So we will work with <span id="eq-x"><span class="math display">\[
 x = \log(w/w_0)
-\]</span> where <span class="math inline">\(w_0\)</span> is an arbitrary reference weight. That transforms the logarithmically-spaced bins in <span class="math inline">\(w\)</span> to equally-spaced bins in <span class="math inline">\(x\)</span>.</p>
+\tag{25}\]</span></span> where <span class="math inline">\(w_0\)</span> is an arbitrary reference weight. That transforms the logarithmically-spaced bins in <span class="math inline">\(w\)</span> to equally-spaced bins in <span class="math inline">\(x\)</span>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/w.html" class="external-link">w</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">celtic_params</span></span>
+<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/w.html" class="external-link">w</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">w</span> <span class="op">/</span> <span class="va">w</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">h</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span></code></pre></div>
 </div>
-<p>We should then also work with the abundance density as a function of <span class="math inline">\(x\)</span>. Let’s denote it by <span class="math inline">\(n(x)\)</span>. It is related to the abundance density <span class="math inline">\(N(w)\)</span> by <span class="math display">\[
+<p>We should then also work with the abundance density as a function of <span class="math inline">\(x\)</span>. Let’s denote it by <span class="math inline">\(n(x)\)</span>. It is related to the abundance density <span class="math inline">\(N(w)\)</span> by <span id="eq-nx"><span class="math display">\[
 n(x)dx = N(w)dw
-\]</span> Because <span class="math inline">\(dx = dw / w\)</span> this means <span class="math inline">\(N(w)=n(w)/w\)</span>.</p>
-<p>By the chain rule we have <span class="math display">\[
+\tag{26}\]</span></span> where <span class="math inline">\(dx = dw/w\)</span> is the differential in <span class="math inline">\(x\)</span>. Because <span class="math inline">\(dx = dw / w\)</span> this means <span class="math inline">\(N(w)=n(x)/w\)</span>.</p>
+<p>By the chain rule we have <span id="eq-dxw"><span class="math display">\[
 \frac{\partial}{\partial w} = \frac{\partial x}{\partial w}\frac{\partial}{\partial x} = \frac{1}{w}\frac{\partial}{\partial x}
-\]</span></p>
+\tag{27}\]</span></span></p>
 <p>We can now transform the PDE <a href="#eq-PDE" class="quarto-xref">Eq. 1</a> for <span class="math inline">\(N(w,t)\)</span> into a PDE for <span class="math inline">\(n(x,t)\)</span>: <span id="eq-PDEx"><span class="math display">\[
 \frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\frac{1}{w}\frac{\partial}{\partial x}\frac{d n}{w}\right) - \frac{\partial}{\partial x}\left(\frac{g n}{w}\right)-\mu n
-\tag{5}\]</span></span> We rewrite this using that <span class="math display">\[
+\tag{28}\]</span></span> We rewrite this using that <span id="eq-dxw2"><span class="math display">\[
 \frac{1}{w}\frac{\partial}{\partial x}\frac{d n}{w} = \frac{\partial}{\partial x}\frac{d n}{w^2}+\frac{d n}{w^2}
-\]</span> Introducing the rescaled growth and diffusion rates <span class="math display">\[
+\tag{29}\]</span></span> Introducing the rescaled growth and diffusion rates <span id="eq-tildegd"><span class="math display">\[
 \tilde{g} = \frac{g}{w}-\frac12\frac{d}{w^2},~~~~\tilde{d}=\frac{d}{w^2}
-\]</span> simplifies the PDE <a href="#eq-PDEx" class="quarto-xref">Eq. 5</a> to <span id="eq-PDExs"><span class="math display">\[
+\tag{30}\]</span></span> simplifies the PDE <a href="#eq-PDEx" class="quarto-xref">Eq. 28</a> to <span id="eq-PDExs"><span class="math display">\[
 \frac{\partial n}{\partial t} = \frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}\left(\tilde{g}n\right)-\mu n
-\tag{6}\]</span></span> Note that while the diffusion rate was just rescaled by the factor of <span class="math inline">\(1/w^2\)</span> that should be expected from the transformation from <span class="math inline">\(d^2/dw^2\)</span> to <span class="math inline">\(d^2/dx^2\)</span>, the growth rate also received an additional contribution from the diffusion.</p>
-<p>We can also write the PDE in a form where the derivatives act directly on <span class="math inline">\(n\)</span> by expanding <span class="math display">\[
-\frac{\partial}{\partial x}\left(\tilde{g}n\right) = \tilde{g}'n + \tilde{g}n'
-\]</span> and <span class="math display">\[
-\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n)=\frac12\tilde{d}''n+\tilde{d}'n'+\frac12\tilde{d}n''
-\]</span> where we have denoted the derivative with respect to <span class="math inline">\(x\)</span> by a prime. Collecting terms gives <span class="math display">\[
-\frac{\partial n}{\partial t} = \frac12 \tilde{d}n'' - \left(\tilde{g}-\tilde{d'}\right)n'-\left(\mu +\tilde{g}'-\frac12\tilde{d}''\right)n
-\]</span></p>
+\tag{31}\]</span></span> Note that while the diffusion rate was just rescaled by the factor of <span class="math inline">\(1/w^2\)</span> that should be expected from the transformation from <span class="math inline">\(d^2/dw^2\)</span> to <span class="math inline">\(d^2/dx^2\)</span>, the growth rate also received an additional contribution from the diffusion.</p>
+<p>To get to a more common form of the advection-reaction-diffusion equation we rewrite the diffusion term: <span id="eq-PDEdiff"><span class="math display">\[
+\frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) + \frac12 \frac{\partial}{\partial x}\left(\left(\frac{\partial}{\partial x}\tilde{d}\right)n\right)
+\tag{32}\]</span></span> The second term can be combined with the growth term if we introduce <span id="eq-hatg"><span class="math display">\[
+\hat{g}=\tilde{g}-\frac12 \frac{\partial}{\partial x}\tilde{d}.
+\tag{33}\]</span></span> This gives us the PDE <span id="eq-PDEhatg"><span class="math display">\[
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n.
+\tag{34}\]</span></span> where <span class="math inline">\(\hat{g}\)</span> is the rescaled growth rate that includes the effect of diffusion.</p>
 </section><section class="section level2"><h2 id="sec-diffusion-numerical">Numerical scheme for steady-state ODE<a class="anchor" aria-label="anchor" href="#sec-diffusion-numerical"></a>
 </h2>
-<p>We can now obtain the steady-state abundance density by solving the second-order ODE <span class="math display">\[
-an''-bn'-cn=0
-\]</span> with <span class="math display">\[
-a = \frac12 \tilde{d},~~~~b=\tilde{g}-\tilde{d}',~~~~c=\mu +\tilde{g}'-\frac12\tilde{d}''.
-\]</span> Our boundary conditions are <span class="math display">\[
-n(x_0)=n_0,~~~~n(x_{max})=0.
-\]</span> where <span class="math inline">\(x_{max}\)</span> is some size that fish can never reach.</p>
-<p>We solve this with a second-order finite-difference scheme, using our equally-spaced grid with spacing <span class="math inline">\(h\)</span>: <span class="math inline">\(x_i = x_0 + ih\)</span> for <span class="math inline">\(i=0,\dots,N+1\)</span> such that <span class="math inline">\(x_{N+1}=x_{max}\)</span>. We use the notation <span class="math inline">\(n(x_i)=n_i\)</span>. The finite-difference approximations to the derivatives are <span class="math display">\[
-n'(x_i)=\frac{n_{i+1}-n_{i-1}}{2h},~~~~n''(x_i)=\frac{n_{i+1}-2n_i+n_{i-1}}{h^2}.
-\]</span> That gives us the linear system <span id="eq-UDL"><span class="math display">\[
-U_i n_{i+1}+D_i n_i+L_i n_{i-1}=0
-\tag{7}\]</span></span> with <span class="math display">\[
-U_i=a_i-\frac{h}{2}b_i, \qquad L_i=a_i-\frac{h}{2}b_i \qquad \text{ and }~~~D_i = -2a_i-h^2c_i
-\]</span> for <span class="math inline">\(i=1,\dots,N\)</span>. This can be solved by making the Ansatz <span id="eq-alphabeta"><span class="math display">\[
-n_{i-1}=\alpha_in_i+\beta_i
-\tag{8}\]</span></span> for <span class="math inline">\(i=1,\dots N\)</span>, where <span class="math inline">\(\alpha_i\)</span> and <span class="math inline">\(\beta_i\)</span> are to be determined. Substituting <a href="#eq-alphabeta" class="quarto-xref">Eq. 8</a> this into <a href="#eq-UDL" class="quarto-xref">Eq. 7</a> gives <span id="eq-UDL2"><span class="math display">\[
-U_in_{i+1}+(\alpha_iL_i+D_i)n_i+\beta_iL_i=0.
-\tag{9}\]</span></span> Similarly using <span class="math inline">\(n_{i}=\alpha_{i+1}n_{i+1}+\beta_{i+1}\)</span> in <a href="#eq-UDL2" class="quarto-xref">Eq. 9</a> gives <span id="eq-UDL3"><span class="math display">\[
-\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]n_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i\right]=0.
-\tag{10}\]</span></span> We can satisfy this by making the expressions in the square brackets vanish, which gives us <span id="eq-alphabetarecursion"><span class="math display">\[
-\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i}{\alpha_iL_i+D_i}.
-\tag{11}\]</span></span> Looking at <a href="#eq-alphabeta" class="quarto-xref">Eq. 8</a> for <span class="math inline">\(i=1\)</span>, i.e., <span class="math inline">\(n_0 = \alpha_1n_1+\beta_1\)</span> we see that we can choose <span class="math inline">\(\alpha_1=0\)</span> and <span class="math inline">\(\beta_1=n_0\)</span>. We can now use <a href="#eq-alphabetarecursion" class="quarto-xref">Eq. 11</a> to determine the all the <span class="math inline">\(\alpha\)</span>s and <span class="math inline">\(\beta\)</span>s. Starting from the boundary condition <span class="math inline">\(n_{N+1}=0\)</span> we can then use <a href="#eq-alphabeta" class="quarto-xref">Eq. 8</a> to determine the remaining <span class="math inline">\(n_i\)</span>.</p>
-<p>This scheme is known to be stable if <span class="math inline">\(U_i,L_i&gt;0\)</span>, <span class="math inline">\(D_i&lt;0\)</span> and <span class="math inline">\(U_i+L_i\leq -D_i\)</span>. The requirement that <span class="math inline">\(U_i&gt;0\)</span> gives us a maximum step size of <span class="math display">\[
-h\leq\frac{\tilde{d}}{\tilde{g}-\tilde{d}'}.
+<p>We need to solve the steady-state ODE <span id="eq-PDEhatg"><span class="math display">\[
+\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) - \frac{\partial}{\partial x}\left(\hat{g}n\right)-\mu n=0.
+\tag{35}\]</span></span> To achieve stability even where the diffusion is small compared to the advection, we should use an upwind difference scheme to solve the steady-state equation.</p>
+<section class="level2"><h3 id="upwind-scheme">Upwind scheme<a class="anchor" aria-label="anchor" href="#upwind-scheme"></a>
+</h3>
+<p>For the growth term we use an upwind difference scheme, with the direction of upwind depending on the sign of <span class="math inline">\(\hat{g}\)</span>:</p>
+<ul>
+<li>If <span class="math inline">\(\hat{g}_i \geq 0\)</span>, we use <span id="eq-upwind1"><span class="math display">\[
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i}n_{i}-\hat{g}_{i-1}n_{i-1}}{h}.
+\tag{36}\]</span></span>
+</li>
+<li>If <span class="math inline">\(\hat{g}_i &lt; 0\)</span>, we use <span id="eq-upwind2"><span class="math display">\[
+\left(\hat{g}n\right)'(x_i) \approx \frac{\hat{g}_{i+1}n_{i+1}-\hat{g}_{i}n_{i}}{h}.
+\tag{37}\]</span></span>
+</li>
+</ul>
+<p>A concise way to write this is <span id="eq-upwind"><span class="math display">\[
+\left(\hat{g}n\right)'(x_i) \approx \frac{|\hat{g}_i|n_i-
+\hat{g}^+_{i-1}n_{i-1}
+-\hat{g}^-_{i+1}n_{i+1}}{h}
+\tag{38}\]</span></span> where <span id="eq-hatgpm"><span class="math display">\[
+\hat{g}^\pm = |\hat{g}|\pm \hat{g}
+\tag{39}\]</span></span> are either positive or zero, depending on the sign of <span class="math inline">\(\hat{g}\)</span>.</p>
+<p>The diffusion term in <a href="#eq-PDEhatg" class="quarto-xref">Eq. 35</a> can be treated with a second-order scheme. <span id="eq-diffusion"><span class="math display">\[
+\frac12 \frac{\partial}{\partial x}\left(\tilde{d}\frac{\partial n}{\partial x}\right) \approx \frac1{2h}\left(\tilde{d}_{i+1/2}\frac{n_{i+1}-n_i}{h}-\tilde{d}_{i-1/2}\frac{n_i-n_{i-1}}{h}\right),
+\tag{40}\]</span></span> where <span class="math inline">\(\tilde{d}_{i+1/2}\)</span> and <span class="math inline">\(\tilde{d}_{i-1/2}\)</span> are approximating the values of the diffusion rate at the midpoints between the grid points. For simplicity we use <span id="eq-diffusion-midpoint"><span class="math display">\[
+\tilde{d}_{i+1/2} = \frac{\tilde{d}_i + \tilde{d}_{i+1}}{2}
+\tag{41}\]</span></span> but this can be replaced by a more sophisticated scheme if desired.</p>
+<p>After multiplying by <span class="math inline">\(h^2\)</span> this gives us the linear system <span id="eq-linear-system"><span class="math display">\[
+\begin{split}
+\frac{1}{2}&amp;\left(\tilde{d}_{i+1/2}(n_{i+1}-n_i)-\tilde{d}_{i-1/2}(n_i-n_{i-1})\right)\\&amp; - h\left(|\hat{g}_i|n_i-\hat{g}^+_{i-1}n_{i-1}-\hat{g}^-_{i+1}n_{i+1}\right) - h^2 \mu_i n_i = 0.
+\end{split}
+\tag{42}\]</span></span> Collecting terms gives us <span id="eq-UDL"><span class="math display">\[
+L_in_{i-1} +D_in_{i} + U_in_{i+1} = 0
+\tag{43}\]</span></span> for <span class="math inline">\(i=1,\dots N\)</span>, with <span id="eq-UDL2"><span class="math display">\[
+\begin{split}
+D_i=&amp;-\left(\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i\right),\\
+L_i&amp;=\frac{\tilde{d}_{i-1/2}}{2}+h\hat{g}^+_{i-1},\\
+U_i&amp;=\frac{\tilde{d}_{i+1/2}}{2}+h\hat{g}^-_{i+1}.
+\end{split}
+\tag{44}\]</span></span> The boundary conditions are that <span class="math inline">\(n_0 = n_0\)</span> at the left boundary and <span class="math inline">\(n_{N+1} = 0\)</span> at the right boundary. We can write the equations for the intermediate points in matrix form by brining the boundary terms to the right-hand side: <span id="eq-UDLsystem"><span class="math display">\[
+\begin{pmatrix}
+D_1 &amp; U_1 &amp; 0 &amp; \cdots &amp; 0\\
+L_2 &amp; D_2 &amp; U_2 &amp; \cdots &amp; 0\\
+\vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \vdots\\
+0 &amp; \cdots &amp; L_{N-1} &amp; D_{N-1} &amp; U_{N-1}\\
+0 &amp; \cdots &amp; 0 &amp; L_N &amp; D_N
+\end{pmatrix}
+\begin{pmatrix}
+n_1\\
+n_2\\
+\vdots\\
+n_{N-1}\\
+n_N
+\end{pmatrix}
+=
+\begin{pmatrix}
+-n_0 L_1\\
+0\\
+\vdots\\
+0\\
+0
+\end{pmatrix}
+\tag{45}\]</span></span></p>
+<p>This is implemented in the function <code><a href="../reference/steady_diffusion.html">steady_diffusion()</a></code>. The linear system is solved using the double-sweep method implemented in <code><a href="../reference/solve_double_sweep.html">solve_double_sweep()</a></code>. The double-sweep method is a very efficient algorithm for solving tridiagonal linear systems like the one we have here. It is described in more detail in the next section.</p>
+</section><section class="level2"><h3 id="double-sweep-method">Double-sweep method<a class="anchor" aria-label="anchor" href="#double-sweep-method"></a>
+</h3>
+<p>Here we derive the double-sweep method (Thomas’ algorithm) for solving a tridiagonal linear system. The system is given by <span id="eq-UDLsystem"><span class="math display">\[
+A x = b
+\tag{46}\]</span></span> where <span class="math inline">\(A\)</span> is a tridiagonal matrix with lower diagonal <span class="math inline">\(L\)</span>, main diagonal <span class="math inline">\(D\)</span>, and upper diagonal <span class="math inline">\(U\)</span>, so in components the system takes the form <span id="eq-UDLc"><span class="math display">\[
+L_ix_{i-1} +D_ix_{i} + U_ix_{i+1} - b_i = 0
+\tag{47}\]</span></span> for <span class="math inline">\(i=1,\dots,N\)</span> with the understanding that <span class="math inline">\(L_1 = U_N = 0\)</span> so that only the interior points <span class="math inline">\(i=1,\dots,N\)</span> are solved for. The boundary conditions should be encoded in the choice of <span class="math inline">\(b_1\)</span> and <span class="math inline">\(b_N\)</span>.</p>
+<p>The Thomas algorithm proceeds by making the Ansatz <span id="eq-alphabeta"><span class="math display">\[
+x_{i-1}=\alpha_ix_i+\beta_i,
+\tag{48}\]</span></span> where <span class="math inline">\(\alpha_i\)</span> and <span class="math inline">\(\beta_i\)</span> are to be determined. Substituting <a href="#eq-alphabeta" class="quarto-xref">Eq. 48</a> this into <a href="#eq-UDL" class="quarto-xref">Eq. 43</a> gives <span id="eq-UDLc2"><span class="math display">\[
+U_ix_{i+1}+(\alpha_iL_i+D_i)x_i+\beta_iL_i - b_i = 0.
+\tag{49}\]</span></span> Similarly using <span class="math inline">\(x_{i}=\alpha_{i+1}x_{i+1}+\beta_{i+1}\)</span> in <a href="#eq-UDLc2" class="quarto-xref">Eq. 49</a> gives <span id="eq-UDL3"><span class="math display">\[
+\left[U_i + (\alpha_iL_i+D_i)\alpha_{i+1}\right]x_{i+1}+\left[(\alpha_iL_i+D_i)\beta_{i+1}+\beta_iL_i-b_i\right]=0.
+\tag{50}\]</span></span> We can satisfy this by making the expressions in the square brackets vanish, which gives us <span id="eq-alphabetarecursion"><span class="math display">\[
+\alpha_{i+1}=-\frac{U_i}{\alpha_iL_i+D_i},\qquad \beta_{i+1}=-\frac{\beta_iL_i-b_i}{\alpha_iL_i+D_i}.
+\tag{51}\]</span></span> Looking at the case <span class="math inline">\(i=1\)</span> where by definition we have <span class="math inline">\(L_1=0\)</span>, we see that <span class="math inline">\(\alpha_2=-U_1/D_1\)</span> and <span class="math inline">\(\beta_2=b_1/D_1\)</span>. We can now use <a href="#eq-alphabetarecursion" class="quarto-xref">Eq. 51</a> to determine all the <span class="math inline">\(\alpha\)</span>’s and <span class="math inline">\(\beta\)</span>’s.</p>
+<p>If we consider <a href="#eq-UDLc2" class="quarto-xref">Eq. 49</a> for <span class="math inline">\(i=N\)</span> and use <span class="math inline">\(U_N=0\)</span>, we find that <span class="math display">\[
+(\alpha_NL_N+D_N)x_N+\beta_NL_N - b_N = 0,
+\]</span> from which we get <span class="math display">\[
+x_N = \frac{b_N - \beta_N L_N}{\alpha_N L_N + D_N}.
+\]</span> We can now use the <span class="math inline">\(\alpha\)</span>’s and <span class="math inline">\(\beta\)</span>’s to calculate <span class="math inline">\(x_{N-1}\)</span>, <span class="math inline">\(x_{N-2}\)</span>, …, <span class="math inline">\(x_1\)</span> in a back substitution step.</p>
+<p>This is implemented in the function <code><a href="../reference/solve_double_sweep.html">solve_double_sweep()</a></code>.</p>
+</section><section class="level2"><h3 id="stability">Stability<a class="anchor" aria-label="anchor" href="#stability"></a>
+</h3>
+<p>The double-sweep method is known to be stable if <span class="math inline">\(U_i,L_i&gt;0\)</span>, <span class="math inline">\(D_i&lt;0\)</span> and <span class="math inline">\(U_i+L_i\leq -D_i\)</span>. Now we automatically have <span class="math inline">\(L_i&gt;0, U_i&gt;0\)</span> and <span class="math inline">\(D_i&lt;0\)</span>. The condition <span class="math inline">\(U_i+L_i\leq -D_i\)</span> is satisfied if <span class="math display">\[
+\frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h\left(\hat{g}^+_{i+1}+\hat{g}^-_{i-1}\right)\leq \frac{\tilde{d}_{i+1/2}+\tilde{d}_{i-1/2}}{2}+h|\hat{g}_i|+h^2\mu_i,
+\]</span> which simplifies to <span class="math inline">\(0\leq \mu_i\)</span>, which is always satisfied.</p>
+</section><section class="level2"><h3 id="without-diffusion">Without diffusion<a class="anchor" aria-label="anchor" href="#without-diffusion"></a>
+</h3>
+<p>When the diffusion rate is zero, then <span class="math inline">\(\hat{g}=\tilde{g}\)</span> and the double-sweep method reduces to the method we are currently using. In that case, using that then <span class="math inline">\(\tilde{g}_i &gt;0\)</span>, we have <span class="math display">\[
+U_i=0,\qquad L_i=h\tilde{g}_{i-1}, \qquad D_i=-h\,\tilde{g}_i-h^2\mu_i
+\]</span> and thus <span class="math display">\[
+\alpha_{i+1} = -\frac{U_i}{D_i} = 0, \qquad \beta_{i+1} = -\frac{\beta_i L_i}{D_i}
+= \beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+\]</span> This gives <span class="math display">\[
+n_i=\beta_{i+1}=\beta_i\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=n_{i-1}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}.
+\]</span> For the number density as a function of <span class="math inline">\(w\)</span> this gives <span class="math display">\[
+\begin{split}
+N_i=\frac{n_i}{w_i} &amp;= \frac{n_{i-1}}{w_{i}}\frac{\tilde{g}_{i-1}}{\tilde{g}_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i}}\frac{g_{i-1}/w_{i-1}}{g_i/w_i+h\mu_i}
+=\frac{n_{i-1}}{w_{i-1}}\frac{g_{i-1}}{g_i+hw_i\mu_i }\\
+&amp;=N_{i-1}\frac{g_{i-1}}{g_i+\Delta w_i\mu_i}+O(h^2)
+\end{split}
+\]</span> where we used that <span class="math display">\[
+\Delta w_i=w_{i+1}-w_i = w_i\left(\exp(h)-1\right)= hw_i+O(h^2).
 \]</span></p>
-<p>We implement this in the function <code>solve_steady_state_ode</code> as follows:</p>
+<p>This is the same as the scheme we are currently using for calculating the steady state.</p>
+</section></section><section class="section level2"><h2 id="example-of-steady-state-solution">Example of steady state solution<a class="anchor" aria-label="anchor" href="#example-of-steady-state-solution"></a>
+</h2>
+<p>We now demonstrate the use of the upwind finite-difference scheme by calculating and plotting a steady state solution for a realistic species (Herring) from the North Sea model.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">solve_steady_state_ode</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span>, <span class="va">c</span>, <span class="va">n0</span>, <span class="va">h</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="co"># Number of interior points</span></span>
-<span>    <span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">a</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
-<span>    </span>
-<span>    <span class="co"># Calculate finite difference scheme coefficients</span></span>
-<span>    <span class="va">U</span> <span class="op">&lt;-</span> <span class="va">a</span> <span class="op">-</span> <span class="va">h</span><span class="op">/</span><span class="fl">2</span> <span class="op">*</span> <span class="va">b</span>     <span class="co"># Upper diagonal</span></span>
-<span>    <span class="va">L</span> <span class="op">&lt;-</span> <span class="va">a</span> <span class="op">+</span> <span class="va">h</span><span class="op">/</span><span class="fl">2</span> <span class="op">*</span> <span class="va">b</span>     <span class="co"># Lower diagonal </span></span>
-<span>    <span class="va">D</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">2</span><span class="op">*</span><span class="va">a</span> <span class="op">-</span> <span class="va">h</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">c</span>  <span class="co"># Main diagonal</span></span>
-<span>    </span>
-<span>    <span class="co"># Check stability conditions</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">U</span> <span class="op">&lt;=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">L</span> <span class="op">&lt;=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">D</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"Stability conditions not met. Try reducing step size h."</span><span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">U</span> <span class="op">+</span> <span class="va">L</span> <span class="op">&gt;</span> <span class="op">-</span><span class="va">D</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"Stability condition U + L &lt;= -D not met."</span><span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>    </span>
-<span>    <span class="co"># Solve using double sweep method</span></span>
-<span>    <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu">solve_ode_double_sweep</span><span class="op">(</span><span class="va">U</span>, <span class="va">L</span>, <span class="va">D</span>, <span class="va">n0</span>, <span class="va">N</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">celtic_params</span></span>
+<span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Herring"</span></span>
 <span></span>
-<span><span class="co"># Helper function for double sweep method</span></span>
-<span><span class="va">solve_ode_double_sweep</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">U</span>, <span class="va">L</span>, <span class="va">D</span>, <span class="va">n0</span>, <span class="va">N</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="co"># Initialize arrays for alpha and beta coefficients</span></span>
-<span>    <span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">N</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
-<span>    <span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">N</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
-<span>    <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">N</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="co"># Initial conditions</span></span>
-<span>    <span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
-<span>    <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">n0</span></span>
-<span>    </span>
-<span>    <span class="co"># Forward sweep - calculate alpha and beta coefficients</span></span>
-<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">denom</span> <span class="op">&lt;-</span> <span class="va">alpha</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">L</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">D</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
-<span>        <span class="va">alpha</span><span class="op">[</span><span class="va">i</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">U</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">/</span> <span class="va">denom</span></span>
-<span>        <span class="va">beta</span><span class="op">[</span><span class="va">i</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="op">(</span><span class="va">beta</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">L</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="va">denom</span></span>
-<span>    <span class="op">}</span></span>
-<span>    </span>
-<span>    <span class="co"># Backward sweep - calculate n values</span></span>
-<span>    <span class="va">n</span><span class="op">[</span><span class="va">N</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>  <span class="co"># Boundary condition at x_max</span></span>
-<span>    </span>
-<span>    <span class="co"># Work backwards to get remaining n values</span></span>
-<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="va">N</span><span class="op">:</span><span class="fl">1</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">n</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">alpha</span><span class="op">[</span><span class="va">i</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">n</span><span class="op">[</span><span class="va">i</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="va">i</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span></span>
-<span>    <span class="op">}</span></span>
-<span>    </span>
-<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="co"># Solve for steady state using the upwind scheme</span></span>
+<span><span class="va">n_steady</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/steady_diffusion.html">steady_diffusion</a></span><span class="op">(</span><span class="va">params</span>, <span class="va">species</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in solve_diffusion_ode(dtilde, ghat, mu, n0, h): Stability condition U</span></span>
+<span><span class="co">#&gt; + L &lt;= -D not met.</span></span>
+<span></span>
+<span><span class="co"># Without diffusion</span></span>
+<span><span class="va">params_no_diffusion</span> <span class="op">&lt;-</span> <span class="va">params</span></span>
+<span><span class="fu"><a href="https://sizespectrum.org/mizer/reference/species_params.html" class="external-link">species_params</a></span><span class="op">(</span><span class="va">params_no_diffusion</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="st">"d_over_g"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">n_steady_no_diffusion</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/steady_diffusion.html">steady_diffusion</a></span><span class="op">(</span><span class="va">params_no_diffusion</span>, <span class="va">species</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in solve_diffusion_ode(dtilde, ghat, mu, n0, h): Stability conditions</span></span>
+<span><span class="co">#&gt; not met.</span></span>
+<span><span class="co">#&gt; Warning in solve_diffusion_ode(dtilde, ghat, mu, n0, h): Stability condition U</span></span>
+<span><span class="co">#&gt; + L &lt;= -D not met.</span></span>
+<span></span>
+<span><span class="co"># Plot the resulting abundance density versus size</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">w</span>, <span class="va">n_steady</span>, log <span class="op">=</span> <span class="st">"xy"</span>, type <span class="op">=</span> <span class="st">"l"</span>, lwd <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>     xlab <span class="op">=</span> <span class="st">"Weight (g)"</span>, ylab <span class="op">=</span> <span class="st">"Abundance density"</span>,</span>
+<span>     main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Steady state solution for"</span>, <span class="va">species</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in xy.coords(x, y, xlabel, ylabel, log): 1 y value &lt;= 0 omitted from</span></span>
+<span><span class="co">#&gt; logarithmic plot</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">w</span>, <span class="va">n_steady_no_diffusion</span>, col <span class="op">=</span> <span class="st">"red"</span>, lwd <span class="op">=</span> <span class="fl">2</span>, lty <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output-display">
+<div>
+<figure><p><img src="diffusion_files/figure-html/unnamed-chunk-6-1.png" width="672"></p>
+</figure>
 </div>
-</section><section class="section level2"><h2 id="sec-diffusion-NS">North Sea Cod example<a class="anchor" aria-label="anchor" href="#sec-diffusion-NS"></a>
-</h2>
-<p>We will now implement this in an example. We start with the North Sea Cod.</p>
+</div>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Cod"</span></span>
-<span><span class="va">sps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/species_params.html" class="external-link">species_params</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="va">sps</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="va">sps</span><span class="op">$</span><span class="va">m</span></span>
-<span><span class="va">w_mat</span> <span class="op">&lt;-</span> <span class="va">sps</span><span class="op">$</span><span class="va">w_mat</span></span>
-<span><span class="va">U</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">w_mat</span> <span class="op">/</span> <span class="va">sps</span><span class="op">$</span><span class="va">w_mat25</span><span class="op">)</span></span>
-<span><span class="va">w_repro_max</span> <span class="op">&lt;-</span> <span class="va">sps</span><span class="op">$</span><span class="va">w_repro_max</span></span>
-<span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/getMort.html" class="external-link">getMort</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/getEGrowth.html" class="external-link">getEGrowth</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span></span>
-<span><span class="co"># At small size we have $g(w) = g_0 w^n$, hence $g_0 = g(w)/w^n$</span></span>
-<span><span class="va">g_0</span> <span class="op">&lt;-</span> <span class="va">g</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="va">w</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="va">n</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p0</span> <span class="op">&lt;-</span> <span class="va">params</span></span>
+<span><span class="va">p0</span><span class="op">@</span><span class="va">initial_n</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="va">n_steady_no_diffusion</span></span>
+<span><span class="va">y0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizerExperimental/reference/plotYieldVsSize.html" class="external-link">plotYieldVsSize</a></span><span class="op">(</span><span class="va">p0</span>, species <span class="op">=</span> <span class="va">species</span>, x_var <span class="op">=</span> <span class="st">"Length"</span>,</span>
+<span>                      return_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">Type</span> <span class="op">==</span> <span class="st">"Model catch"</span><span class="op">)</span></span>
+<span><span class="va">y0</span><span class="op">$</span><span class="va">Type</span> <span class="op">&lt;-</span> <span class="st">"No diffusion"</span></span>
+<span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="va">params</span></span>
+<span><span class="va">p</span><span class="op">@</span><span class="va">initial_n</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="va">n_steady</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizerExperimental/reference/plotYieldVsSize.html" class="external-link">plotYieldVsSize</a></span><span class="op">(</span><span class="va">p</span>, species <span class="op">=</span> <span class="va">species</span>, x_var <span class="op">=</span> <span class="st">"Length"</span>,</span>
+<span>                     return_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">Type</span> <span class="op">==</span> <span class="st">"Model catch"</span><span class="op">)</span></span>
+<span><span class="va">y</span><span class="op">$</span><span class="va">Type</span> <span class="op">&lt;-</span> <span class="st">"With diffusion"</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">y0</span>, <span class="va">y</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">y</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">l</span>, y <span class="op">=</span> <span class="va">`Catch density`</span>, colour <span class="op">=</span> <span class="va">Type</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output-display">
+<div>
+<figure><p><img src="diffusion_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
+</figure>
 </div>
-<p>To calculate the derivative of the growth rate we go back to the expression for the growth rate and calculate the derivatives of the terms in the expression. For simplicity we set metabolic loss to zero. <span class="math display">\[
-g(w)=g_0w^n(1-\psi(w))
-\]</span> where <span class="math inline">\(\psi(w)\)</span> is the proportion of available energy that is invested into reproduction. <span class="math display">\[
-\psi(w) = \left(1+\left(\frac{w}{w_{mat}}\right)^{U}\right)^{-1}\left(\frac{w}{w_{repro\_max}}\right)^{m-n}
-\]</span> For the derivative we get after some simplification (see https://chatgpt.com/share/678776f5-bf00-8007-9549-f1d186829235), <span class="math display">\[
-\frac{d}{dw}g(w) = g_0 w^{n-1} \left( n - \frac{\left(m + (m - U)\left(\frac{w}{w_{\text{mat}}}\right)^U\right) \left(\frac{w}{w_{\text{repro\_max}}}\right)^{m-n}}{\left(1 + \left(\frac{w}{w_{\text{mat}}}\right)^U\right)^2} \right)
-\]</span></p>
+</div>
+</div>
+</section><section class="section level2"><h2 id="time-dependent-pde-solution-with-upwind-finite-difference-method">Time-dependent PDE solution with upwind finite-difference method<a class="anchor" aria-label="anchor" href="#time-dependent-pde-solution-with-upwind-finite-difference-method"></a>
+</h2>
+<p>We now solve the time-dependent PDE <span class="math display">\[
+\frac{\partial n}{\partial t} = \frac12 \frac{\partial^2}{\partial x^2}(\tilde{d}n) - \frac{\partial}{\partial x}(\hat{g}n)-\mu n
+\]</span> using the same upwind finite-difference method as for the steady-state ODE, but now with time-stepping. We use an implicit Euler method for time integration, which is unconditionally stable for this kind of equation. At each time step, we solve a tridiagonal linear system using the double-sweep (Thomas) algorithm.</p>
+<section class="level2"><h3 id="example-initial-condition-with-only-the-first-entry-nonzero">Example: Initial condition with only the first entry nonzero<a class="anchor" aria-label="anchor" href="#example-initial-condition-with-only-the-first-entry-nonzero"></a>
+</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dgdw</span> <span class="op">&lt;-</span> </span>
-<span>  <span class="va">g_0</span> <span class="op">*</span> <span class="va">w</span><span class="op">^</span><span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> </span>
-<span>  <span class="op">(</span><span class="va">m</span> <span class="op">+</span> <span class="op">(</span><span class="va">m</span>  <span class="op">-</span> <span class="va">U</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">w</span> <span class="op">/</span> <span class="va">w_mat</span><span class="op">)</span><span class="op">^</span><span class="va">U</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">w</span> <span class="op">/</span> <span class="va">w_repro_max</span><span class="op">)</span><span class="op">^</span><span class="op">(</span><span class="va">m</span> <span class="op">-</span> <span class="va">n</span><span class="op">)</span> <span class="op">/</span> </span>
-<span>  <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="op">(</span><span class="va">w</span> <span class="op">/</span> <span class="va">w_mat</span><span class="op">)</span><span class="op">^</span><span class="va">U</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">celtic_params</span></span>
+<span><span class="va">species</span> <span class="op">&lt;-</span> <span class="st">"Cod"</span></span>
+<span><span class="va">sps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/species_params.html" class="external-link">species_params</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Set initial condition</span></span>
+<span><span class="va">n_init</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_init</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>  <span class="co"># Point source at small size</span></span>
+<span><span class="fu"><a href="https://sizespectrum.org/mizer/reference/initialN-set.html" class="external-link">initialN</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="va">n_init</span></span>
+<span><span class="co"># Solve the PDE</span></span>
+<span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="fl">0.05</span></span>
+<span><span class="va">nsteps</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
+<span><span class="va">n_hist</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project_diffusion.html">project_diffusion</a></span><span class="op">(</span><span class="va">params</span>, <span class="va">species</span>, dt <span class="op">=</span> <span class="va">dt</span>, nsteps <span class="op">=</span> <span class="va">nsteps</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>We choose diffusion rate to be a power law with exponent <span class="math inline">\(n+1\)</span> which at small size satisfies <span class="math inline">\(d(w) = 0.1 g(w) w\)</span>, see the example at the end of <a href="#sec-diffusion-example" class="quarto-xref">Section 2</a>.</p>
+<p>Plot the evolution of n(w, t) at selected time points</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d_0</span> <span class="op">&lt;-</span> <span class="fl">0.1</span> <span class="op">*</span> <span class="va">g_0</span></span>
-<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">d_0</span> <span class="op">*</span> <span class="va">w</span><span class="op">^</span><span class="op">(</span><span class="va">n</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">dprime</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="va">d_0</span> <span class="op">*</span> <span class="va">w</span><span class="op">^</span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>Now we calculate the parameters for the numerical scheme.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dtilde</span> <span class="op">&lt;-</span> <span class="va">d</span> <span class="op">/</span> <span class="va">w</span><span class="op">^</span><span class="fl">2</span></span>
-<span><span class="va">dtildeprime</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="va">d_0</span> <span class="op">*</span> <span class="va">w</span><span class="op">^</span><span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">dtildepp</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="va">d_0</span> <span class="op">*</span> <span class="va">w</span><span class="op">^</span><span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="va">gtilde</span> <span class="op">&lt;-</span> <span class="va">g</span> <span class="op">/</span> <span class="va">w</span> <span class="op">-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">dtilde</span></span>
-<span><span class="va">gtildeprime</span> <span class="op">&lt;-</span> <span class="va">dgdw</span> <span class="op">-</span> <span class="va">g</span> <span class="op">/</span> <span class="va">w</span> <span class="op">-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">dtildeprime</span></span>
+<code class="sourceCode R"><span><span class="co"># Select time points to plot</span></span>
+<span><span class="va">plot_steps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">21</span>,<span class="fl">41</span>,<span class="fl">61</span>,<span class="fl">81</span>,<span class="fl">101</span>,<span class="fl">201</span><span class="op">)</span></span>
+<span><span class="va">plot_times</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">plot_steps</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="va">dt</span></span>
+<span><span class="va">plot_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"age="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">plot_times</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">dtilde</span></span>
-<span><span class="va">b</span> <span class="op">&lt;-</span> <span class="va">gtilde</span> <span class="op">-</span> <span class="va">dtildeprime</span></span>
-<span><span class="va">c</span> <span class="op">&lt;-</span> <span class="va">mu</span> <span class="op">+</span> <span class="va">gtildeprime</span> <span class="op">-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">dtildepp</span></span></code></pre></div>
-</div>
-<p>We can now solve the ODE.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/initialN-set.html" class="external-link">initialN</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span><span class="op">[</span><span class="va">species</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">w</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fu">solve_steady_state_ode</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span>, <span class="va">c</span>, <span class="va">n0</span>, <span class="va">h</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in solve_steady_state_ode(a, b, c, n0, h): Stability conditions not</span></span>
-<span><span class="co">#&gt; met. Try reducing step size h.</span></span>
-<span><span class="co">#&gt; Warning in solve_steady_state_ode(a, b, c, n0, h): Stability condition U + L &lt;=</span></span>
-<span><span class="co">#&gt; -D not met.</span></span></code></pre></div>
-</div>
-<p>We can now plot the result.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">n</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Prepare data frame for ggplot2</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">n_hist</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/w.html" class="external-link">w</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span>
+<span><span class="va">l</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">w</span><span class="op">/</span><span class="va">sps</span><span class="op">$</span><span class="va">a</span><span class="op">)</span><span class="op">^</span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="va">sps</span><span class="op">$</span><span class="va">b</span><span class="op">)</span></span>
+<span><span class="va">plot_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">w</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plot_steps</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">l</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plot_steps</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Abundance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">n_hist</span><span class="op">[</span><span class="va">plot_steps</span>, <span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1e-10</span><span class="op">)</span>,</span>
+<span>  t <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">plot_times</span>, each <span class="op">=</span> <span class="va">N</span><span class="op">)</span>,</span>
+<span>  Time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">plot_labels</span>, each <span class="op">=</span> <span class="va">N</span><span class="op">)</span>, levels <span class="op">=</span> <span class="va">plot_labels</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Plot</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">plot_df</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">Length</span>, y <span class="op">=</span> <span class="va">Abundance</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">t</span><span class="op">*</span><span class="fl">0.5</span><span class="op">)</span>, color <span class="op">=</span> <span class="va">Time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="co">#scale_x_log10() +</span></span>
+<span>  <span class="co">#scale_y_log10() +</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/lims.html" class="external-link">xlim</a></span><span class="op">(</span><span class="fl">1e-3</span>, <span class="fl">120</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Length (cm)"</span>, y <span class="op">=</span> <span class="st">"Abundance density"</span>,</span>
+<span>       title <span class="op">=</span> <span class="st">"Evolution of n(l, t) from point source at small size"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Removed 102 rows containing missing values or values outside the scale range</span></span>
+<span><span class="co">#&gt; (`geom_line()`).</span></span></code></pre></div>
 <div class="cell-output-display">
 <div>
 <figure><p><img src="diffusion_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
@@ -364,7 +457,7 @@ Datta, Samik, Gustav W. Delius, and Richard Law. 2010. <span>‘A Jump-Growth Mo
 Datta, Samik, Gustav W. Delius, Richard Law, and Michael J. Plank. 2010. <span>‘A Stability Analysis of the Power-Law Steady State of Marine Size Spectra’</span>. <em>Journal of Mathematical Biology</em> 63 (December): 779–99. <a href="https://doi.org/10.1007/s00285-010-0387-z" class="external-link">https://doi.org/10.1007/s00285-010-0387-z</a>.
 </div>
 </div>
-</section><script id="quarto-html-after-body" type="application/javascript">
+</section></section><script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
     const mode = bsSheetEl.getAttribute("data-mode");
@@ -465,7 +558,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
-</script></main>
+</script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

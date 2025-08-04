@@ -3,6 +3,10 @@ template:
   bootstrap: 5
   math-rendering: mathjax
 
+build:
+  articles: true
+  lazy: false
+
 reference:
 - title: "Building model"
   desc: >
@@ -99,5 +103,12 @@ reference:
     - species_params_example
     - ecopath_diet_example
     - diet_matrix_example
-
-
+- title: "Diffusion"
+  desc: >
+    Functions for solving diffusion equations in mizer models.
+  contents:
+  - solve_double_sweep
+  - steady_diffusion
+  - project_diffusion
+  - solve_diffusion_ode
+  - solve_diffusion_pde

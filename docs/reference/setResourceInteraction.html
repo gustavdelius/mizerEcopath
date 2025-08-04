@@ -6,14 +6,12 @@
     }
   };
 </script><script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Set resource interaction to absorb external encounter rate — setResourceInteraction"><meta name="description" content="This function sets the resource interaction for each species to absorb as
-much of the external encounter rate as possible. It sets the resource
-dynamics and adjusts the resource capacity so that the resource can sustain
-the extra encounter without changing the current resource abundance or the
-resource level."><meta property="og:description" content="This function sets the resource interaction for each species to absorb as
-much of the external encounter rate as possible. It sets the resource
-dynamics and adjusts the resource capacity so that the resource can sustain
-the extra encounter without changing the current resource abundance or the
-resource level."></head><body>
+much of the external encounter rate as possible. It adjusts the resource
+capacity so that the resource can sustain the extra encounter without
+changing the current resource abundance or the resource level."><meta property="og:description" content="This function sets the resource interaction for each species to absorb as
+much of the external encounter rate as possible. It adjusts the resource
+capacity so that the resource can sustain the extra encounter without
+changing the current resource abundance or the resource level."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +19,7 @@ resource level."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9004</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9010</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,15 +53,14 @@ resource level."></head><body>
 
     <div class="ref-description section level2">
     <p>This function sets the resource interaction for each species to absorb as
-much of the external encounter rate as possible. It sets the resource
-dynamics and adjusts the resource capacity so that the resource can sustain
-the extra encounter without changing the current resource abundance or the
-resource level.</p>
+much of the external encounter rate as possible. It adjusts the resource
+capacity so that the resource can sustain the extra encounter without
+changing the current resource abundance or the resource level.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">setResourceInteraction</span><span class="op">(</span><span class="va">params</span>, resource_dynamics <span class="op">=</span> <span class="st">"resource_semichemostat"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">setResourceInteraction</span><span class="op">(</span><span class="va">params</span>, resource_dynamics <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -75,10 +72,7 @@ resource level.</p>
 
 
 <dt id="arg-resource-dynamics">resource_dynamics<a class="anchor" aria-label="anchor" href="#arg-resource-dynamics"></a></dt>
-<dd><p>Optional. Name of the function that determines the
-resource dynamics by calculating the resource spectrum at the next time
-step from the current state. If not provided, the function will
-use <code>resource_semichemostat()</code>.</p></dd>
+<dd><p>Optional. Character string specifying the resource dynamics to use. If NULL (default), does not change the current resource dynamics.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -92,6 +86,17 @@ species parameters and correspondingly decreased external encounter rate.</p>
 steady state. This is because the total encounter rate is not modified by
 this function and because the extra mortality on the resource is exactly
 balanced by the changed resource capacity.</p>
+<p>Optionally, you can specify the resource dynamics to use (e.g.,
+"resource_semichemostat" or "resource_constant") by setting the
+resource_dynamics argument. This allows you to switch between dynamic and
+constant resource regimes directly through this function. For example:
+params &lt;- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
+will set the resource dynamics to semichemostat.</p>
+<p>Note: The function ensures that the resource level passed to setResource()
+is strictly between 0 and 1, as required by mizer. If any value of
+resource_level is greater than or equal to 1, it is set to just below 1
+(0.99999999). If any value is less than or equal to 0, it is set to a small
+positive value (1e-8). This prevents errors and ensures biological realism.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
