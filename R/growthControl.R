@@ -1,6 +1,12 @@
 #' A single slider that adjusts both `h` and `gamma`
 #'
-#' @inheritParams abundanceControl
+#' @param input Reactive holding the inputs
+#' @param output Reactive holding the outputs
+#' @param session Shiny session
+#' @param params Reactive value holding updated MizerParams object
+#' @param params_old Reactive value holding non-updated MizerParams object
+#' @param flags Environment holding flags to skip certain observers
+#' @param ... Unused
 growthControl <- function(input, output, session, params, params_old, flags,
                                     ...) {
     observeEvent(input$gamma, {
@@ -34,7 +40,8 @@ growthControl <- function(input, output, session, params, params_old, flags,
 }
 
 #' @rdname growthControl
-#' @inheritParams abundanceControlUI
+#' @param params The MizerParams object currently being tuned.
+#' @param input Reactive holding the inputs
 growthControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
