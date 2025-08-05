@@ -33,7 +33,7 @@ ageTab <- function(input, output, session, params, logs,
 #' @inheritParams biomassTabUI
 ageTabUI <- function(...) {
     tagList(
-        plotOutput("plotAge"),
+        plotOutput("plotAge", height = "800px"),
         plotlyOutput("plot_consumption")
     )
 }
