@@ -1,7 +1,7 @@
 #' Age tab for tuning gadget
 #'
 #' @inheritParams deathTab
-#' @param age_at_length
+#' @param age_at_length A data frame with age at length observations.
 ageTab <- function(input, output, session, params, logs,
                       age_at_length = NULL, ...) {
     # Help button ----
