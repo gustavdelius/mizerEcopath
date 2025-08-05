@@ -232,12 +232,15 @@ ggplot(diff_df, aes(x = Length, y = Age, fill = difference)) +
 ages <- 0:K
 
 weighted_quantile <- function(x, w, probs = c(0.25, 0.5, 0.75)) {
-    # Returns vector of quantiles for weighted data
+    # Returns vector of quantiles for weighted data, using only actual observations
     ord <- order(x)
     x <- x[ord]
     w <- w[ord]
     cum_w <- cumsum(w) / sum(w)
-    sapply(probs, function(p) approx(cum_w, x, xout = p, ties = "ordered")$y)
+    sapply(probs, function(p) {
+        idx <- which(cum_w >= p)[1]
+        x[idx]
+    })
 }
 
 result <- data.frame(
