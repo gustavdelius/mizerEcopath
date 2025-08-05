@@ -145,44 +145,66 @@ plotAge <- function(params, species, age_at_length,
     Y_list <- lapply(seq_along(quarter_h), Y_quarter)
 
     # Panelled plot for all quarters
+    weighted_mean_ci <- function(x, w, conf = 0.95) {
+        # Weighted mean
+        m <- sum(x * w)
+        # Weighted variance (unbiased, per Cochran 1977)
+        v <- sum(w * (x - m)^2) / sum(w^2)
+        # Standard error
+        se <- sqrt(v)
+        # z-value for confidence interval
+        z <- qnorm(1 - (1 - conf) / 2)
+        c(mean = m, lower = m - z * se, upper = m + z * se)
+    }
+    obs_mean_ci <- function(x, counts, conf = 0.95) {
+        n <- sum(counts)
+        if (n == 0) return(c(mean = NA, lower = NA, upper = NA))
+        p <- counts / n
+        m <- sum(x * p)
+        v <- sum(p * (x - m)^2) / n
+        se <- sqrt(v)
+        z <- qnorm(1 - (1 - conf) / 2)
+        c(mean = m, lower = m - z * se, upper = m + z * se)
+    }
     all_results <- data.frame()
     for (i in seq_along(quarter_h)) {
         P <- P_list[[i]]
         Y <- Y_list[[i]]
         for (j in 1:s) {
-            # Model
-            mod_quants <- weighted_quantile(ages, P[,j])
+            # Model (mean only, no CI)
+            mod_mean <- sum(ages * P[,j])
             all_results <- rbind(all_results, data.frame(
                 column = low_S[j],
                 type = "Model",
-                median = mod_quants[2],
-                q25 = mod_quants[1],
-                q75 = mod_quants[3],
+                mean = mod_mean,
+                lower = NA,
+                upper = NA,
                 quarter = as.factor(quarter_h[i])
             ))
-            # Observed
+            # Observed (mean and multinomial CI)
             Yj <- Y[,j]
             if (sum(Yj) > 0) {
-                Yj_prob <- Yj / sum(Yj)
-                obs_quants <- weighted_quantile(ages, Yj_prob)
+                obs_stats <- obs_mean_ci(ages, Yj)
             } else {
-                obs_quants <- c(NA, NA, NA)
+                obs_stats <- c(NA, NA, NA)
             }
             all_results <- rbind(all_results, data.frame(
                 column = low_S[j],
                 type = "Observed",
-                median = obs_quants[2],
-                q25 = obs_quants[1],
-                q75 = obs_quants[3],
+                mean = obs_stats[1],
+                lower = obs_stats[2],
+                upper = obs_stats[3],
                 quarter = as.factor(quarter_h[i])
             ))
         }
     }
 
-    ggplot(all_results, aes(x = column, y = median, color = type)) +
+    ggplot(all_results, aes(x = column, y = mean, color = type)) +
         geom_line() +
-        geom_ribbon(aes(ymin = q25, ymax = q75, fill = type), alpha = 0.2, color = NA) +
-        labs(x = "Length [cm]", y = "Age (median and IQR)", color = "Type", fill = "Type") +
+        geom_ribbon(data = subset(all_results, type == "Observed"),
+                    aes(ymin = lower, ymax = upper, fill = type),
+                    alpha = 0.2, color = NA) +
+        labs(x = "Length [cm]", y = "Age (mean and 95% CI)", color = "Type", fill = "Type") +
         theme_minimal() +
         facet_wrap(~ quarter, ncol = 1)
 
