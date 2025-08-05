@@ -16,10 +16,19 @@ ageTab <- function(input, output, session, params, logs,
         )
     )
 
-    # Plot age ----
-    output$plotAge <- renderPlot({
+    # Plot mean age ----
+    output$plotmean <- renderPlot({
         p <- params()
-        plotAge(p, species = input$sp, age_at_length = age_at_length) +
+        plotAge(p, species = input$sp, age_at_length = age_at_length,
+                plot = "mean") +
+            theme(text = element_text(size = 16))
+    })
+
+    # Plot quantiles age ----
+    output$plotquantiles <- renderPlot({
+        p <- params()
+        plotAge(p, species = input$sp, age_at_length = age_at_length,
+                plot = "quantiles") +
             theme(text = element_text(size = 16))
     })
 
@@ -33,7 +42,8 @@ ageTab <- function(input, output, session, params, logs,
 #' @inheritParams biomassTabUI
 ageTabUI <- function(...) {
     tagList(
-        plotOutput("plotAge", height = "800px"),
+        plotOutput("plotquantiles"),
+        plotOutput("plotmean"),
         plotlyOutput("plot_consumption")
     )
 }
