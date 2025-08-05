@@ -22,7 +22,8 @@
 #'   matrix. Default is `Inf`.
 #' @return A matrix with dimnames `predator` and `prey` containing the rates of
 #'   biomass flow from a prey species to a predator species (or that part of
-#'   the predator species population that is larger than `min_w_pred`).
+#'   the predator species population that is between `min_w_pred` and
+#'   `max_w_pred`).
 #' @export
 #' @family rate functions
 #' @examples

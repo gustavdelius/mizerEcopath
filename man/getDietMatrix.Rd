@@ -18,7 +18,8 @@ matrix. Default is \code{Inf}.}
 \value{
 A matrix with dimnames \code{predator} and \code{prey} containing the rates of
 biomass flow from a prey species to a predator species (or that part of
-the predator species population that is larger than \code{min_w_pred}).
+the predator species population that is between \code{min_w_pred} and
+\code{max_w_pred}).
 }
 \description{
 Returns the diet matrix with one row for each predator species and one
