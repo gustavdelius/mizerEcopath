@@ -64,28 +64,6 @@ otherControl <- function(input, output, session, params, params_old,
         p <- setMetabolicRate(p, reset = TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })
-
-    observeEvent(
-        input$p,
-        {
-            p <- params()
-            sp <- input$sp
-
-            # change ks so that metabolic rate at maturity stays the same
-            p@species_params[[sp, "ks"]] <- p@species_params[[sp, "ks"]] *
-                p@species_params[[sp, "w_mat"]] ^
-                (p@species_params[[sp, "p"]] - input$p)
-            p@species_params[[sp, "p"]] <- input$p
-            ks <- p@species_params[[sp, "ks"]]
-            updateSliderInput(session, "ks",
-                              value = ks, # this will trigger the other observer
-                              min = signif(ks / 2, 2),
-                              max = signif((ks + 0.1) * 1.5, 2))
-            updateSliderInput(session, "p",
-                              min = signif(input$p - 0.1, 2),
-                              max = signif(input$p + 0.1, 2))
-        },
-        ignoreInit = TRUE)
 }
 
 #' @rdname otherControl
@@ -101,10 +79,6 @@ otherControlUI <- function(params, input) {
                     min = signif(sp$ks / 2, 2),
                     max = signif((sp$ks + 0.1) * 1.5, 2),
                     step = 0.05),
-        sliderInput("p", "Exponent of metabolism 'p'",
-                     value = sp[["p"]],
-                     min = sp[["p"]] - 0.1, max = sp[["p"]] + 0.1,
-                     step = 0.005),
         sliderInput("k", "Coefficient of activity 'k'",
                     value = sp$k,
                     min = signif(sp$k / 2, 2),

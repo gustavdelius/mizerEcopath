@@ -81,7 +81,8 @@
 #' @import shinyBS
 #' @export
 tuneEcopath <- function(params, catch = NULL, diet = NULL,
-                        controls = c("diffusion",
+                        controls = c("growth",
+                                     "diffusion",
                                      "fishing",
                                      "reproduction",
                                      "other",
