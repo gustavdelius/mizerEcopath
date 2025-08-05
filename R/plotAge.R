@@ -28,7 +28,7 @@
 #' # See package vignette for example usage
 #' @export
 plotAge <- function(params, species, age_at_length,
-                    dt = 0.05, t_max = 6,
+                    dt = 0.05, t_max = NULL,
                     f_h = c(0.125, 0.625, 0.875),
                     quarter_h = c(1, 3, 4),
                     plot = c("mean", "quantiles")) {
@@ -80,6 +80,9 @@ plotAge <- function(params, species, age_at_length,
     ## Solve the PDE ----
 
     # fine‑age grid (centres) and widths  [years]
+    if (is.null(t_max)) {
+        t_max <- K + 2  # default maximum time
+    }
     age_mid   <- seq(dt, t_max,  by = dt)
     nsteps <- length(age_mid)
     age_width <- rep(dt, nsteps)
