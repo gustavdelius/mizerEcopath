@@ -144,64 +144,46 @@ plotAge <- function(params, species, age_at_length,
     # Calculate counts for each quarter
     Y_list <- lapply(seq_along(quarter_h), Y_quarter)
 
-    # Plot quartiles of age at length ----
-
-    # Do it for one quarter
-    P <- P_list[[h]]
-    Y <- Y_list[[h]]
-
-    weighted_quantile <- function(x, w, probs = c(0.25, 0.5, 0.75)) {
-        # Returns vector of quantiles for weighted data, using only actual observations
-        ord <- order(x)
-        x <- x[ord]
-        w <- w[ord]
-        cum_w <- cumsum(w) / sum(w)
-        sapply(probs, function(p) {
-            idx <- which(cum_w >= p)[1]
-            x[idx]
-        })
-    }
-
-    result <- data.frame(
-        column = integer(0),
-        type = character(0),
-        median = numeric(0),
-        q25 = numeric(0),
-        q75 = numeric(0)
-    )
-
-    for (j in 1:s) {
-        # Model
-        mod_quants <- weighted_quantile(ages, P[,j])
-        result <- rbind(result, data.frame(
-            column = low_S[j],
-            type = "Model",
-            median = mod_quants[2],
-            q25 = mod_quants[1],
-            q75 = mod_quants[3]
-        ))
-
-        # Observed
-        Yj <- Y[,j]
-        if (sum(Yj) > 0) {
-            Yj_prob <- Yj / sum(Yj)
-            obs_quants <- weighted_quantile(ages, Yj_prob)
-        } else {
-            obs_quants <- c(NA, NA, NA)
+    # Panelled plot for all quarters
+    all_results <- data.frame()
+    for (i in seq_along(quarter_h)) {
+        P <- P_list[[i]]
+        Y <- Y_list[[i]]
+        for (j in 1:s) {
+            # Model
+            mod_quants <- weighted_quantile(ages, P[,j])
+            all_results <- rbind(all_results, data.frame(
+                column = low_S[j],
+                type = "Model",
+                median = mod_quants[2],
+                q25 = mod_quants[1],
+                q75 = mod_quants[3],
+                quarter = as.factor(quarter_h[i])
+            ))
+            # Observed
+            Yj <- Y[,j]
+            if (sum(Yj) > 0) {
+                Yj_prob <- Yj / sum(Yj)
+                obs_quants <- weighted_quantile(ages, Yj_prob)
+            } else {
+                obs_quants <- c(NA, NA, NA)
+            }
+            all_results <- rbind(all_results, data.frame(
+                column = low_S[j],
+                type = "Observed",
+                median = obs_quants[2],
+                q25 = obs_quants[1],
+                q75 = obs_quants[3],
+                quarter = as.factor(quarter_h[i])
+            ))
         }
-        result <- rbind(result, data.frame(
-            column = low_S[j],
-            type = "Observed",
-            median = obs_quants[2],
-            q25 = obs_quants[1],
-            q75 = obs_quants[3]
-        ))
     }
 
-    ggplot(result, aes(x = column, y = median, color = type)) +
+    ggplot(all_results, aes(x = column, y = median, color = type)) +
         geom_line() +
         geom_ribbon(aes(ymin = q25, ymax = q75, fill = type), alpha = 0.2, color = NA) +
         labs(x = "Length [cm]", y = "Age (median and IQR)", color = "Type", fill = "Type") +
-        theme_minimal()
+        theme_minimal() +
+        facet_wrap(~ quarter, ncol = 1)
 
 }
