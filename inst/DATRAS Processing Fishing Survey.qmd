@@ -60,56 +60,56 @@ SCOROC_CA <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quart
 SCOROC_CA <- SCOROC_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-SCOROC_HL_CA<-left_join(SCOROC,SCOROC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+SCOROC_HL_CA<-left_join(SCOROC_HL,SCOROC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #BTS
 BTS_CA <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4)
 BTS_CA <- BTS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-BTS_HL_CA<-left_join(BTS,BTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+BTS_HL_CA<-left_join(BTS_HL,BTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #DYFS
 DYFS_CA <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
 DYFS_CA <- DYFS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-DYFS_HL_CA<-left_join(DYFS,DYFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+DYFS_HL_CA<-left_join(DYFS_HL,DYFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #ROCKALL
 ROCKALL_CA <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
 ROCKALL_CA <- ROCKALL_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-ROCKALL_HL_CA<-left_join(ROCKALL,ROCKALL_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+ROCKALL_HL_CA<-left_join(ROCKALL_HL,ROCKALL_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #IE-IGFS
 IE_IGFS_CA <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
 IE_IGFS_CA <- IE_IGFS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-IE_IGFS_HL_CA<-left_join(IE_IGFS,IE_IGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+IE_IGFS_HL_CA<-left_join(IE_IGFS_HL,IE_IGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #FR-CGFS
 FR_CGFS_CA <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
 FR_CGFS_CA <- FR_CGFS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-FR_CGFS_HL_CA<-left_join(FR_CGFS,FR_CGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+FR_CGFS_HL_CA<-left_join(FR_CGFS_HL,FR_CGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #IE-IAMS
 IE_IAMS_CA <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
 IE_IAMS_CA <- IE_IAMS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-IE_IAMS_HL_CA<-left_join(IE_IAMS,IE_IAMS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+IE_IAMS_HL_CA<-left_join(IE_IAMS_HL,IE_IAMS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 #SP-PORC
 SP_PORC_CA <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
 SP_PORC_CA <- SP_PORC_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-SP_PORC_HL_CA<-left_join(SP_PORC,SP_PORC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+SP_PORC_HL_CA<-left_join(SP_PORC_HL,SP_PORC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 
 #EVHOE
@@ -117,7 +117,7 @@ EVHOE_CA <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter
 EVHOE_CA <- EVHOE_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-EVHOE_HL_CA<-left_join(EVHOE,EVHOE_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+EVHOE_HL_CA<-left_join(EVHOE_HL,EVHOE_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 
 
 #NS-IBTS
@@ -125,7 +125,7 @@ NS_IBTS_CA <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, qua
 NS_IBTS_CA <- NS_IBTS_CA %>%
   select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
   distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
-NS_IBTS_HL_CA<-left_join(NS_IBTS,NS_IBTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+NS_IBTS_HL_CA<-left_join(NS_IBTS_HL,NS_IBTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
 ```
 
 # Clean and Organize Data
