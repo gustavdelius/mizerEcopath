@@ -6,6 +6,18 @@ editor: visual
 
 Note this seems like a waste of time because isn't the point of matching the survey data also to understand the fishing pressure on fish, survey data does not represent that...
 
+## Load in libraries
+
+```{r}
+library(purrr)
+library(icesDatras)
+library(sf)
+library(dplyr)
+library(stringr)
+library(readr)
+library(ggplot2)
+```
+
 ## Load in Surveys
 
 Takes more than an hour to load min to load in data.
@@ -15,7 +27,7 @@ Takes more than an hour to load min to load in data.
 SCOROC_HL <- getDATRAS(record = "HL", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
 
 #BTS
-BTS_HL <- getDATRAS(record = "HL", survey = "BTS", year = 1985:2024, quarter = 1:4)
+BTS <- getDATRAS(record = "HL", survey = "BTS", year = 1985:2024, quarter = 1:4)
 
 #DYFS
 DYFS_HL <- getDATRAS(record = "HL", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
