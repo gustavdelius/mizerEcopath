@@ -63,6 +63,7 @@ There is, however, and exception in which Spain does not supply the country port
 library(tidyverse)
 library(here)
 library(mizer)
+library(here)
 library(mizerExperimental)
 
 #Need to check if we can upload these to the reprository, if so, we can make this generalised and take from the reprository rather than my machine.
@@ -321,7 +322,7 @@ cs_catch$species <- new_species_names[cs_catch$English_name]
 cs_catch$dl <- 1
 
 #Save data
-#saveRDS(cs_catch, "/Users/jessicawestworth/Desktop/cs_catch.rds")
+#saveRDS(cs_catch, here("inst","extdata","cs_catch.rds"))
 ```
 
 # North Sea

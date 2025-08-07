@@ -1,0 +1,826 @@
+---
+title: "DATRAS Processing survey"
+format: pdf
+editor: visual
+---
+
+Note this seems like a waste of time because isn't the point of matching the survey data also to understand the fishing pressure on fish, survey data does not represent that...
+
+## Load in libraries
+
+```{r}
+library(purrr)
+library(icesDatras)
+library(sf)
+library(dplyr)
+library(stringr)
+library(here)
+library(readr)
+library(ggplot2)
+```
+
+## Load in Surveys
+
+Takes more than an hour to load min to load in data.
+
+```{r}
+#SCOROC
+SCOROC_HL <- getDATRAS(record = "HL", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
+
+#BTS
+BTS_HL <- getDATRAS(record = "HL", survey = "BTS", year = 1985:2024, quarter = 1:4)
+
+#DYFS
+DYFS_HL <- getDATRAS(record = "HL", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
+
+#ROCKALL
+ROCKALL_HL <- getDATRAS(record = "HL", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
+
+#IE-IGFS
+IE_IGFS_HL <- getDATRAS(record = "HL", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
+
+#FR-CGFS
+FR_CGFS_HL <- getDATRAS(record = "HL", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
+
+#IE-IAMS
+IE_IAMS_HL <- getDATRAS(record = "HL", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
+
+#SP-PORC
+SP_PORC_HL <- getDATRAS(record = "HL", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
+ 
+#EVHOE
+EVHOE_HL <- getDATRAS(record = "HL", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
+
+#NS-IBTS
+NS_IBTS_HL <- getDATRAS(record = "HL", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4) 
+
+
+#CA data
+#SCOROC
+SCOROC_CA <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quarter = 1:4)
+SCOROC_CA <- SCOROC_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+SCOROC_HL_CA<-left_join(SCOROC_HL,SCOROC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#BTS
+BTS_CA <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4)
+BTS_CA <- BTS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+BTS_HL_CA<-left_join(BTS_HL,BTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#DYFS
+DYFS_CA <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
+DYFS_CA <- DYFS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+DYFS_HL_CA<-left_join(DYFS_HL,DYFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#ROCKALL
+ROCKALL_CA <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
+ROCKALL_CA <- ROCKALL_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+ROCKALL_HL_CA<-left_join(ROCKALL_HL,ROCKALL_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#IE-IGFS
+IE_IGFS_CA <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
+IE_IGFS_CA <- IE_IGFS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+IE_IGFS_HL_CA<-left_join(IE_IGFS_HL,IE_IGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#FR-CGFS
+FR_CGFS_CA <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
+FR_CGFS_CA <- FR_CGFS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+FR_CGFS_HL_CA<-left_join(FR_CGFS_HL,FR_CGFS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#IE-IAMS
+IE_IAMS_CA <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
+IE_IAMS_CA <- IE_IAMS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+IE_IAMS_HL_CA<-left_join(IE_IAMS_HL,IE_IAMS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+#SP-PORC
+SP_PORC_CA <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
+SP_PORC_CA <- SP_PORC_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+SP_PORC_HL_CA<-left_join(SP_PORC_HL,SP_PORC_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+
+#EVHOE
+EVHOE_CA <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
+EVHOE_CA <- EVHOE_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+EVHOE_HL_CA<-left_join(EVHOE_HL,EVHOE_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+
+
+#NS-IBTS
+NS_IBTS_CA <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4)
+NS_IBTS_CA <- NS_IBTS_CA %>%
+  select(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, AreaCode) %>%
+  distinct(Survey, Quarter, Country, Ship, Gear, SweepLngt, GearEx, DoorType, StNo, HaulNo, Year, SpecCode, .keep_all = TRUE)
+NS_IBTS_HL_CA<-left_join(NS_IBTS_HL,NS_IBTS_CA, by=c("Survey","Quarter", "Country", "Ship", "Gear","SweepLngt","GearEx","DoorType","StNo","HaulNo","Year","SpecCode"))
+```
+
+# Clean and Organize Data
+
+Columns shared: Record Type, Quarter, Country, Ship, Gear,SweetLngt,GearEx,DoorType,StNo,HaulNo,Year,SpecCode
+
+```{r}
+#rbind data together into singular dataset
+data<-rbind(SCOROC_HL_CA,BTS_HL_CA,DYFS_HL_CA,ROCKALL_HL_CA,IE_IGFS_HL_CA,FR_CGFS_HL_CA,IE_IAMS_HL_CA,SP_PORC_HL_CA,EVHOE_HL_CA,NS_IBTS_HL_CA)
+
+```
+
+## Subset Desired Celtic Sea Species
+
+```{r}
+#remove rows that do not contain the North Sea Desired Species
+clean_data<-subset(data, SpecCode %in% c(126417,126436,126437,126438,126439,126484,126555,126822,127023,127143,127146,127160))
+#SpecCode to scientific name dictionary is detailed below
+```
+
+## Subset Desired Celtic Sea Area
+
+In this section some the the Area Codes generated in the data set loaded from DATRAS are given in different formats, additionally the data frames which load in should have a AreaType Column which should correlate with these codes. After extensive exploration of the data it has become evident this is not the case. Therefore, based on the structure of the AreaCode value an ICES area value is assigned. Only ICES statistical rectangle and ICES area codes are analysed all other area codes are given the value NA and later removed from the data set. This was performed due to the fact that other area codes provided did not give a clear indication that the data included was only from the Celtic Sea and not nearby areas.
+
+### Load in and Apply Dictionary Between ICES rectangles and ICES areas
+
+Processing code of overlapping spatial areas is available in inst/extdata.
+
+```{r}
+rect_to_area<-read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES Rectangle to Area.csv")
+colnames(rect_to_area)<-c("AreaCode","ICES_Area")
+
+data_working <- clean_data %>%
+    left_join(rect_to_area, by = c("AreaCode"))
+
+data_add_areas <- data_working %>%
+    mutate(
+        ICES_Area = case_when(
+            is.na(ICES_Area) & AreaCode == "VIIa" ~ "27.7.a",
+            is.na(ICES_Area) & AreaCode == "VIIb" ~ "27.7.b",
+            is.na(ICES_Area) & AreaCode == "VIIc" ~ "27.7.c",
+            is.na(ICES_Area) & AreaCode == "VIId" ~ "27.7.d",
+            is.na(ICES_Area) & AreaCode == "VIIe" ~ "27.7.e",
+            is.na(ICES_Area) & AreaCode == "VIIf" ~ "27.7.f",
+            is.na(ICES_Area) & AreaCode == "VIIg" ~ "27.7.g",
+            is.na(ICES_Area) & AreaCode == "VIIh" ~ "27.7.h",
+            is.na(ICES_Area) & AreaCode == "VIIj" ~ "27.7.j",
+            is.na(ICES_Area) & AreaCode == "VIIk" ~ "27.7.k",
+            TRUE ~ ICES_Area  # keep original value if not NA or no match
+        )
+    )
+```
+
+## Subset areas
+
+```{r}
+cs_subarea<-c('27.7.b', '27.7.c', '27.7.c.1', '27.7.c.2', '27.7.e', '27.7.f', '27.7.g', '27.7.h', '27.7.j','27.7.j.1','27.7.j.2', '27.7.k','27.7.k.1','27.7.k.2')
+
+cs_data<- data_add_areas %>%
+  filter(map_lgl(str_split(ICES_Area, "-"), ~ any(.x %in% cs_subarea)))
+```
+
+## Dictionaries
+
+### Species Code
+
+Go to: <https://datras.ices.dk/Data_products/qryspec.aspx>
+
+```{r}
+cs_data$SpecCode<-as.factor(cs_data$SpecCode)
+
+SpecCode_to_Latinname<-c("126417"="Clupea harengus",
+                         "126436"="Gadus morhua",
+                         "126437"="Melanogrammus aeglefinus",
+                         "126438"="Merlangius merlangus",
+                         "126439"="Micromesistius poutassou",
+                         "126484"="Merluccius merluccius",
+                         "126555"="Lophius piscatorius",
+                         "126822"="Trachurus trachurus",
+                         "127023"="Scomber scombrus",
+                         "127143"="Pleuronectes platessa",
+                         "127146"="Lepidorhombus whiffiagonis",
+                         "127160"="Solea solea")
+
+cs_data$Scientific_name <- SpecCode_to_Latinname[cs_data$SpecCode]
+```
+
+## Standardize Length Classes
+
+We want to convert the length to cm. So we will divide LngtClass Columns with LngtCode (".") by 10. BTS surveyalso has a value for 1 which should be centimeters.
+
+```{r}
+#check that these are the only codes we have
+#make the coversion
+cs_data_length_corrected<-cs_data%>%
+    mutate(LngtClass = case_when(
+        LngtCode == "."~ LngtClass/10,
+        LngtCode == "1"~ LngtClass,
+    ))
+
+#cs_survey<-write.csv(cs_data_length_corrected, here("inst", "extdata", "cs_survey.csv"))
+```
+
+## Aggregating
+
+```{r}
+survey <- cs_data_length_corrected %>%
+  group_by(Scientific_name, LngtClass, Gear) %>%
+  summarise(
+    catch = sum(HLNoAtLngt, na.rm = TRUE),  # sum ignoring NAs
+    .groups = "drop"  # ungroup the result
+  )
+survey <- survey %>%
+  mutate(LngtClass = floor(LngtClass)) %>%           # Round up lengths
+  group_by(Scientific_name, Gear, LngtClass) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
+survey$dl<-1
+colnames(survey)<-c("species","gear","length","catch","dl")
+
+total_survey <- survey %>%
+  group_by(species, length, dl) %>%
+  summarise(
+    gear = "total",                          # Create a new 'gear' category
+    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
+    .groups = "drop"
+  )
+total_survey$count <- total_survey$catch
+```
+
+# Compare to Survey to Current Landings Data
+
+```{r}
+#cs_catch
+cs_catch <- readRDS("/Users/jessicawestworth/Desktop/cs_catch.rds")
+cs_catch <- cs_catch[cs_catch$gear == "total", ] #select total gear only
+cs_catch <- cs_catch %>%
+  mutate(length = floor(length)) %>%           # Round up lengths
+  group_by(species, gear, length, Scientific_name, English_name) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop") # Sum catch for duplicates
+cs_catch$count <- cs_catch$catch
+cs_catch$dl<-1
+# Correct case for Horse Mackerel
+cs_catch <- cs_catch %>%
+    mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
+```
+
+# Normalizing the Data
+
+```{r}
+cs_catch <- cs_catch %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+
+total_survey<- total_survey %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+## Herring
+
+```{r}
+herring_cs_catch<-subset(cs_catch, species=="Herring")
+herring_total_survey<-subset(total_survey, species=="Clupea harengus")
+
+#plot together
+a<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = herring_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = herring_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Herring Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+```
+
+## Cod
+
+```{r}
+cod_cs_catch<-subset(cs_catch, species=="Cod")
+
+cod_total_survey<-subset(total_survey, species=="Gadus morhua")
+
+#plot together
+b<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = cod_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = cod_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Cod Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#cs and processed data overlap
+```
+
+## Haddock
+
+```{r}
+haddock_cs_catch<-subset(cs_catch, species=="Haddock")
+haddock_total_survey<-subset(total_survey, species=="Melanogrammus aeglefinus")
+   
+#plot together
+c<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = haddock_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+geom_line(data = haddock_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Haddock Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#cs and processed data overlap
+```
+
+## Whiting
+
+```{r}
+whiting_cs_catch<-subset(cs_catch, species=="Whiting")
+
+whiting_total_survey<-subset(total_survey, species=="Merlangius merlangus")
+
+#plot together
+d<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = whiting_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = whiting_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Whiting Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#processed and cs data overlap
+```
+
+## Blue whiting
+
+```{r}
+blue_whiting_cs_catch<-subset(cs_catch, species=="Blue whiting")
+#no data
+    
+blue_whiting_total_survey<-subset(total_survey, species=="Micromesistius poutassou")
+
+#plot together
+e<-ggplot() +
+  # Add cs_catch data (red line)
+    geom_line(data = blue_whiting_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+    geom_line(data = blue_whiting_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Blue whiting Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer, catch survey, and processed data overlap
+```
+
+## Hake
+
+```{r}
+hake_cs_catch<-subset(cs_catch, species=="Hake")
+    
+hake_total_survey<-subset(total_survey, species=="Merluccius merluccius")
+
+#plot together
+f<-ggplot() +
+  # Add cs_catch data (red line)
+    geom_line(data = hake_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+    geom_line(data = hake_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Hake Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#processed and cs are similar
+```
+
+## Monkfish
+
+```{r}
+monkfish_cs_catch<-subset(cs_catch, species=="Monkfish")
+#No data for monkfish
+
+monkfish_total_survey<-subset(total_survey, species=="Lophius piscatorius")
+
+#plot together
+g<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = monkfish_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+      geom_line(data = monkfish_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Monkfish Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+```
+
+## Horse mackerel
+
+```{r}
+horse_mackerel_cs_catch<-subset(cs_catch, species=="Horse mackerel")
+
+horse_mackerel_total_survey<-subset(total_survey, species=="Trachurus trachurus")
+
+#plot together
+h<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = horse_mackerel_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = horse_mackerel_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Horse_mackerel Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#all data overlap
+```
+
+## Mackerel
+
+```{r}
+mackerel_cs_catch<-subset(cs_catch, species=="Mackerel")
+    
+mackerel_total_survey<-subset(total_survey, species=="Scomber scombrus")
+
+#plot together
+i<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = mackerel_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = mackerel_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Mackerel Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#cs and processed data overlap
+```
+
+## Plaice
+
+```{r}
+plaice_cs_catch<-subset(cs_catch, species=="Plaice")
+    
+plaice_total_survey<-subset(total_survey, species=="Pleuronectes platessa")
+
+#plot together
+j<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = plaice_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = plaice_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Plaice Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#all data overlap
+```
+
+## Megrim
+
+```{r}
+megrim_cs_catch<-subset(cs_catch, species=="Megrim")
+megrim_total_survey<-subset(total_survey, species=="Lepidorhombus whiffiagonis")
+
+
+#plot together
+k<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = megrim_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = megrim_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Megrim Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#observer and catch survey data overlap
+#cs and processed data overlap
+```
+
+## Sole
+
+```{r}
+sole_cs_catch<-subset(cs_catch, species=="Sole")
+sole_total_survey<-subset(total_survey, species=="Solea solea")
+
+#plot together
+l<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = sole_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = sole_total_survey, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Sole Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+#all data overlap
+```
+
+# Graph
+
+```{r}
+library(ggpubr)
+ggarrange(
+    a, b, c,
+    d, e, f,
+    g, h, i,
+    j, k, l,
+    NULL,
+    ncol = 3, nrow = 4
+)
+```
+
+# Applying Minimum survey Size
+
+<https://www.kentandessex-ifca.gov.uk/i-want-to-find-out-about/regulations/minimum-sizes>
+
+```{r}
+#herring - 20 cm
+herring_total_survey_min<-subset(herring_total_survey, length >= 20)
+herring_total_survey_min<- herring_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+a1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = herring_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = herring_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Herring Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#cod - 35 cm
+cod_total_survey_min<-subset(cod_total_survey, length >= 35)
+cod_total_survey_min<- cod_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+b1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = cod_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = cod_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Cod Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#haddock - 30 cm
+haddock_total_survey_min<-subset(haddock_total_survey, length >= 30)
+haddock_total_survey_min<- haddock_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+c1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = haddock_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+geom_line(data = haddock_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Haddock Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#whiting - 27 cm
+whiting_total_survey_min<-subset(whiting_total_survey, length >= 27)
+whiting_total_survey_min<- whiting_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+d1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = whiting_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = whiting_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Whiting Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#blue whiting ?
+blue_whiting_total_survey_min<-blue_whiting_total_survey
+blue_whiting_total_survey_min<- blue_whiting_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+e1<-ggplot() +
+  # Add cs_catch data (red line)
+    geom_line(data = blue_whiting_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+    geom_line(data = blue_whiting_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Blue whiting Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#hake - 27 cm
+hake_total_survey_min<-subset(hake_total_survey, length >= 27)
+hake_total_survey_min<- hake_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+f1<-ggplot() +
+  # Add cs_catch data (red line)
+    geom_line(data = hake_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+    geom_line(data = hake_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Hake Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#monkfish ?
+monkfish_total_survey_min<-monkfish_total_survey
+monkfish_total_survey_min<- monkfish_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+g1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = monkfish_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+      geom_line(data = monkfish_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Monkfish Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#horse mackerel - 15 cm
+horse_mackerel_total_survey_min<-subset(horse_mackerel_total_survey,length >= 15)
+horse_mackerel_total_survey_min<- horse_mackerel_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+h1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = horse_mackerel_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = horse_mackerel_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Horse_mackerel Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#mackerel - 30 cm
+mackerel_total_survey_min<-subset(mackerel_total_survey, length >= 30)
+mackerel_total_survey_min<- mackerel_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+i1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = mackerel_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = mackerel_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Mackerel Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#plaice - 27 cm
+plaice_total_survey_min<-subset(plaice_total_survey, length >= 27)
+plaice_total_survey_min<- plaice_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+j1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = plaice_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = plaice_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Plaice Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#megrim ?
+megrim_total_survey_min<-megrim_total_survey
+megrim_total_survey_min<- megrim_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+k1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = megrim_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = megrim_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Megrim Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+#sole - 25 cm
+sole_total_survey_min<-subset(sole_total_survey, length >= 24)
+sole_total_survey_min<- sole_total_survey_min %>%
+  group_by(species) %>%
+  mutate(norm_catch = catch / sum(catch, na.rm = TRUE)) %>%
+  ungroup()
+l1<-ggplot() +
+  # Add cs_catch data (red line)
+  geom_line(data = sole_cs_catch, 
+            aes(x = length, y = norm_catch), 
+            color = "red") +
+  geom_line(data = sole_total_survey_min, 
+            aes(x = length, y = norm_catch), 
+            color = "blue", alpha=0.5) +
+  labs(title = "Sole Catch by Length",
+       x = "Length",
+       y = "Catch Count") +
+  theme_minimal()
+
+print(
+    ggarrange(
+    a1, b1, c1,
+    d1, e1, f1,
+    g1, h1, i1,
+    j1, k1, l1,
+    ncol = 3, nrow = 4
+    )
+)
+```

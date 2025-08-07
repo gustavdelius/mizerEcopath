@@ -1,0 +1,64 @@
+---
+title: "Calculate Length at Maturity from Size at Age Data"
+format: pdf
+editor: visual
+---
+
+## Load in Data
+
+```{r}
+library(here)
+library(tidyr)
+cs_age_size<-readRDS(here("inst","extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
+```
+
+## Calculate Length at Maturity
+
+```{r}
+maturity_testing <- cs_age_size %>%
+  group_by(Scientific_name, LngtClass, Maturity) %>%
+  mutate(LngtClass = floor(LngtClass)) %>%
+    summarise(
+    CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE),  # sum ignoring NAs
+    .groups = "drop"  # ungroup the result
+  )
+
+# Filter to include only 'immature' and 'mature'
+maturity_testing_filtered <- maturity_testing%>%
+    filter(Maturity %in% c("immature", "mature"))%>%
+    mutate(Maturity=ifelse(Maturity == "mature", 1, 0))%>%
+    uncount(CANoAtLngt) %>%
+    mutate(CANoAtLngt = 1)
+
+# Remove rows where LngtClass is NA or not finite
+maturity_testing_filtered <- maturity_testing_filtered %>%
+  filter(!is.na(LngtClass), is.finite(LngtClass))
+
+#species remaining after filtering
+unique(maturity_testing_filtered$Scientific_name)
+#Gadus morhua,Lepidorhombus whiffiagonis","Lophius piscatorius","Melanogrammus aeglefinus","Merlangius merlangus","Merluccius merluccius","Pleuronectes platessa","Scomber scombrus","Solea solea"
+
+#Linear model
+fit <- glm(Maturity ~ LngtClass*Scientific_name, family = binomial, data = maturity_testing_filtered)
+coefs <- coef(fit)
+#Coefs are in odd order to extract LM of each species 
+#need to put negative intercept over slope
+lm<-c(
+-coefs[1]/coefs[2],
+-1*(coefs[1]+coefs[3]) / (coefs[2]+coefs[11]),
+-1*(coefs[1]+coefs[4]) / (coefs[2]+coefs[12]),
+-1*(coefs[1]+coefs[5]) / (coefs[2]+coefs[13]),
+-1*(coefs[1]+coefs[6]) / (coefs[2]+coefs[14]),
+-1*(coefs[1]+coefs[7]) / (coefs[2]+coefs[15]),
+-1*(coefs[1]+coefs[8]) / (coefs[2]+coefs[16]),
+-1*(coefs[1]+coefs[9]) / (coefs[2]+coefs[17]),
+-1*(coefs[1]+coefs[10]) / (coefs[2]+coefs[18]))
+
+lm_fin <- data.frame(
+  Scientific_name = (c("Gadus morhua","Lepidorhombus whiffiagonis","Lophius piscatorius","Melanogrammus aeglefinus","Merlangius merlangus","Merluccius merluccius","Pleuronectes platessa","Scomber scombrus","Solea solea")),
+  l50 = as.numeric(lm),
+  row.names = NULL
+)
+
+#write_csv(lm_fin, here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
+```
