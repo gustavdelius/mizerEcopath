@@ -14,6 +14,7 @@ library(icesDatras)
 library(sf)
 library(dplyr)
 library(stringr)
+library(here)
 library(readr)
 library(ggplot2)
 ```
@@ -27,7 +28,7 @@ Takes more than an hour to load min to load in data.
 SCOROC_HL <- getDATRAS(record = "HL", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
 
 #BTS
-BTS <- getDATRAS(record = "HL", survey = "BTS", year = 1985:2024, quarter = 1:4)
+BTS_HL <- getDATRAS(record = "HL", survey = "BTS", year = 1985:2024, quarter = 1:4)
 
 #DYFS
 DYFS_HL <- getDATRAS(record = "HL", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
@@ -225,6 +226,8 @@ cs_data_length_corrected<-cs_data%>%
         LngtCode == "."~ LngtClass/10,
         LngtCode == "1"~ LngtClass,
     ))
+
+#cs_survey<-write.csv(cs_data_length_corrected, here("inst", "extdata", "cs_survey.csv"))
 ```
 
 ## Aggregating
