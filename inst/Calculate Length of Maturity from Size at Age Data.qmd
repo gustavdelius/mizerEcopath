@@ -60,20 +60,5 @@ lm_fin <- data.frame(
   row.names = NULL
 )
 
-#life_history from fishbase:
-life_histories <- read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EWE/Data/life_histories.csv")
-# Make sure to update the CSV; incomplete version used in initial script.
-
-# Temporary - create a subset and fetch a and b. Filtering is a lazy way of getting parameters.
-
-life_histories_summary <- life_histories %>%
-    filter(Sex %in% c("Unsexed", "Mixed"),
-           !is.na(l_mat)) %>%  
-    group_by(Species) %>%                # group by Species
-    slice(1) %>%                         # take the first row per group
-    ungroup()                            # remove grouping
-fish_Lm<-life_histories_summary[,c("Species","l_mat")]
-colnames(fish_Lm)<-c("Scientific_name","l_mat")
-
-df<-left_join(lm_fin,fish_Lm, by="Scientific_name")
+#write_csv(lm_fin, here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
 ```
