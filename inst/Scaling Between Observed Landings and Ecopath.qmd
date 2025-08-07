@@ -1,0 +1,111 @@
+---
+title: "Scaling Between Observed Landings and Ecopath"
+format: pdf
+editor: visual
+---
+
+## Extract Summation - for total biomass caught per species in landings data
+
+```{r}
+cs_catch_original<-readRDS("/Users/jessicawestworth/Desktop/cs_catch.rds")
+cs_catch_original <- cs_catch_original[cs_catch_original$gear == "total", ] #select total gear only
+cs_catch <- cs_catch_original %>%
+  mutate(length = floor(length)) %>%           # Round down lengths
+  group_by(species, gear, length, Scientific_name) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop") # Sum catch for duplicates
+cs_catch$dl<-1
+# Correct case for Horse Mackerel
+cs_catch <- cs_catch %>%
+    mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
+
+### Life history data
+life_histories <- read_csv(
+    "/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/life_histories.csv",
+    locale = locale(encoding = "Latin1")
+)
+
+#Extract a and b values for each species
+life_histories_summary <- life_histories %>%
+    group_by(Species, a, b)%>%
+    summarise(.groups = "drop"  # ungroup the result
+  )
+
+#add a and b column to cs_catch
+cs_catch_LWR <- cs_catch %>%
+  left_join(life_histories_summary, by = c("Scientific_name" = "Species"))
+cs_catch <- cs_catch_LWR %>%
+  mutate(
+    weight =a * (length ^ b)
+    )
+
+#add biomass column to cs_catch
+cs_catch$biomass <- (cs_catch$catch*cs_catch$weight)
+
+cs_catch_sp <- cs_catch %>%
+    group_by(species) %>%
+    summarise(biomass = sum(biomass, na.rm = TRUE), .groups = "drop")
+```
+
+## Extract Yield
+
+```{r}
+fishing_mortality <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EWE/Data/Ecopath-Fishing mortality rates.csv")
+
+ecopath_params <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EWE/Data/Ecopath-Basic estimates.csv")
+
+fishing_mortality$totalF <- rowSums(fishing_mortality[, -(1:2)], na.rm = TRUE)
+
+yield <- left_join(ecopath_params, fishing_mortality, by = c("Group.name" = "Fleet.group")) |>
+    mutate(TotalCatch..t.km..year. = totalF * Biomass..t.km.2.) |>
+    select(Group.name, TotalCatch..t.km..year.)
+
+species_to_groups <- list(
+    "Herring" = "Herring",
+    "Cod" = c("Cod", "Juvenile cod"),
+    "Haddock" = c("Haddock", "Juvenile haddock"),
+    "Whiting" = c("Whiting", "Juvenile whiting"),
+    "Blue whiting" = c("Blue whiting", "Juvenile blue whiting"),
+    "Hake" = c("Hake", "Juvenile hake"),
+    "Monkfish" = c("Monkfish", "Juvenile monkfish"),
+    "Horse mackerel" = "Horse mackerel",
+    "Mackerel" = "Mackerel",
+    "Plaice" = c("Plaice", "Juvenile plaice"),
+    "Megrim" = c("Megrim", "Juvenile megrim"),
+    "Sole" = "Sole"
+)
+
+species_lookup <- unlist(lapply(names(species_to_groups), function(group) {
+  species <- species_to_groups[[group]]
+  setNames(rep(group, length(species)), species)
+}))
+
+yield$species <- species_lookup[yield$Group.name]
+
+yield<-yield%>%
+    group_by(species)%>%
+    summarise(yield=sum(TotalCatch..t.km..year., na.rm = TRUE), .groups = "drop")
+
+yield<-na.omit(yield)
+```
+
+## Raising factor for each species
+
+```{r}
+yields<-left_join(yield,cs_catch_sp, by="species")
+yields$raisingfactor<-(yields$yield/yields$biomass)
+colnames(yields)<-c("species","yield_from_ecopath", "yield_from_landings", "scaling_factor")
+
+#write.csv(yields,"/Users/jessicawestworth/Desktop/yields.csv")
+
+yields<-yields[,c("species","scaling_factor")]
+```
+
+## Apply to Species Catch Landings
+
+```{r}
+cs_catch<-left_join(cs_catch,yields)
+cs_catch$scaled_biomass<-cs_catch$biomass*cs_catch$scaling_factor
+cs_catch$scaled_catch<-cs_catch$catch*cs_catch$scaling_factor
+
+#write.csv(cs_catch,"/Users/jessicawestworth/Desktop/scaled_landings.csv")
+```
