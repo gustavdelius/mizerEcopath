@@ -126,83 +126,83 @@ Load in both the CA and HH data sets for each survey and join by Survey, Year, Q
 
 ```{r}
 #SCOROC
-SCOROC <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
+SCOROC_CA <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
 SCOROC_HH <- getDATRAS(record = "HH", survey = "SCOROC", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-SCOROC <- left_join(SCOROC, SCOROC_HH,
+SCOROC_HH_CA <- left_join(SCOROC_CA, SCOROC_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #BTS
-BTS <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4)
+BTS_CA <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4)
 BTS_HH <- getDATRAS(record = "HH", survey = "BTS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-BTS <- left_join(BTS, BTS_HH,
+BTS_HH_CA <- left_join(BTS_CA, BTS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
     
 #DYFS
-DYFS <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
+DYFS_CA <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
 DYFS_HH <- getDATRAS(record = "HH", survey = "DYFS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-DYFS <- left_join(DYFS, DYFS_HH,
+DYFS_HH_CA <- left_join(DYFS_CA, DYFS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
   
 #ROCKALL
-ROCKALL <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
+ROCKALL_CA <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
 ROCKALL_HH <- getDATRAS(record = "HH", survey = "ROCKALL", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-ROCKALL <- left_join(ROCKALL, ROCKALL_HH,
+ROCKALL_HH_CA <- left_join(ROCKALL_CA, ROCKALL_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
   
 #IE-IGFS
-IE_IGFS <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
+IE_IGFS_CA <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
 IE_IGFS_HH <- getDATRAS(record = "HH", survey = "IE-IGFS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-IE_IGFS <- left_join(IE_IGFS, IE_IGFS_HH,
+IE_IGFS_HH_CA <- left_join(IE_IGFS_CA, IE_IGFS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #FR-CGFS
-FR_CGFS <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
+FR_CGFS_CA <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
 FR_CGFS_HH <- getDATRAS(record = "HH", survey = "FR-CGFS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-FR_CGFS <- left_join(FR_CGFS, FR_CGFS_HH,
+FR_CGFS_HH_CA <- left_join(FR_CGFS_CA, FR_CGFS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #IE-IAMS
-IE_IAMS <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
+IE_IAMS_CA <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
 IE_IAMS_HH <- getDATRAS(record = "HH", survey = "IE-IAMS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-IE_IAMS <- left_join(IE_IAMS, IE_IAMS_HH,
+IE_IAMS_HH_CA <- left_join(IE_IAMS_CA, IE_IAMS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #SP-PORC
-SP_PORC <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
+SP_PORC_CA <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
 SP_PORC_HH <- getDATRAS(record = "HH", survey = "SP-PORC", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-SP_PORC <- left_join(SP_PORC, SP_PORC_HH,
+SP_PORC_HH_CA <- left_join(SP_PORC_CA, SP_PORC_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #EVHOE
-EVHOE <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
+EVHOE_CA <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
 EVHOE_HH <- getDATRAS(record = "HH", survey = "EVHOE", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-EVHOE <- left_join(EVHOE, EVHOE_HH,
+EVHOE_HH_CA <- left_join(EVHOE_CA, EVHOE_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #NS-IBTS
-NS_IBTS <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4) 
+NS_IBTS_CA <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4) 
 NS_IBTS_HH <- getDATRAS(record = "HH", survey = "NS-IBTS", year = 1985:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-NS_IBTS <- left_join(NS_IBTS, NS_IBTS_HH,
+NS_IBTS_HH_CA <- left_join(NS_IBTS_CA, NS_IBTS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 ```
 
@@ -210,7 +210,7 @@ NS_IBTS <- left_join(NS_IBTS, NS_IBTS_HH,
 
 ```{r}
 #rbind data together into singular dataset
-data<-rbind(SCOROC,BTS,DYFS,ROCKALL,IE_IGFS,FR_CGFS,IE_IAMS,SP_PORC,EVHOE,NS_IBTS)
+data<-rbind(SCOROC_HH_CA,BTS_HH_CA,DYFS_HH_CA,ROCKALL_HH_CA,IE_IGFS_HH_CA,FR_CGFS_HH_CA,IE_IAMS_HH_CA,SP_PORC_HH_CA,EVHOE_HH_CA,NS_IBTS_HH_CA)
 ```
 
 ## Subset Desired Celtic Sea Species
