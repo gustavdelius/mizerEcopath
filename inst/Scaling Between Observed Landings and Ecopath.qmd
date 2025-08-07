@@ -7,7 +7,9 @@ editor: visual
 ## Extract Summation - for total biomass caught per species in landings data
 
 ```{r}
-cs_catch_original<-readRDS("/Users/jessicawestworth/Desktop/cs_catch.rds")
+library(here)
+library(dplyr)
+cs_catch_original<-readRDS(here("inst","extdata","cs_catch.rds"))
 cs_catch_original <- cs_catch_original[cs_catch_original$gear == "total", ] #select total gear only
 cs_catch <- cs_catch_original %>%
   mutate(length = floor(length)) %>%           # Round down lengths
@@ -107,5 +109,5 @@ cs_catch<-left_join(cs_catch,yields)
 cs_catch$scaled_biomass<-cs_catch$biomass*cs_catch$scaling_factor
 cs_catch$scaled_catch<-cs_catch$catch*cs_catch$scaling_factor
 
-#write.csv(cs_catch,"/Users/jessicawestworth/Desktop/scaled_landings.csv")
+#write.csv(cs_catch,here("inst","extdata", "cs_scaled_landings.csv"))
 ```
