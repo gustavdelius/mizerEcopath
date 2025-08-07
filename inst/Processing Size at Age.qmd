@@ -297,7 +297,7 @@ cs_data_maturity <- cs_data %>%
   mutate(
     Maturity = case_when(
       Maturity %in% c("2","3","4","5","52","53","54","55","62","63","64","65","B","Ba","Bb","C","Ca","Cb","D","Da","Db","E","II","III","IV","IX","M","R1_2","R1_3","R1_4","R2_4","R2_6","R2_8","RF2","RF3","RF4","RF5","RF6","S2","S3","S4","S5","S6","V","VI","VII","VIII","X") ~ "mature",
-      Maturity %in% c("6","66","F") ~ "abnormal",
+      Maturity %in% c("6","66","F") ~ NA_character_,
       Maturity %in% c("1","51","61","A","I","R1_1","R2_2","RF1","S1") ~ "immature",
       Maturity %in% "-9" ~ NA_character_,
       TRUE ~ NA_character_
