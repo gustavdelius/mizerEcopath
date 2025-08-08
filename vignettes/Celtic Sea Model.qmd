@@ -255,22 +255,6 @@ model_non_int <- model_non_int %>%
     matchConsumption()
 ```
 
-## Gear Params - For Survey and Landings
-
-```{r}
-#In future this can be written into the function so that it looks at the catch data frame and it takes the unique(catch$gear), and assigns a gear parameter for it but for model testing this will do the trick.
-
-gear_params<-gear_params(model_non_int)
-
-# First, duplicate the data for both gear types
-gear_params_expanded <- gear_params[rep(1:nrow(gear_params), each = 2), ]
-
-# Then, assign the gear types alternately
-gear_params_expanded$gear <- rep(c("survey", "landings"), times = nrow(gear_params))
-
-gear_params(model_non_int)<-gear_params_expanded
-```
-
 ## View in Tune Ecopath
 
 ```{r}
