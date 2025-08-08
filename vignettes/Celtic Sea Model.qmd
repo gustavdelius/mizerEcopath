@@ -55,43 +55,33 @@ cs_scaled_landings <- cs_scaled_landings[cs_scaled_landings$gear == "total", ] #
 cs_scaled_landings <- cs_scaled_landings %>%
   mutate(length = floor(length)) %>%           # Round up lengths
   group_by(species, gear, length, Scientific_name) %>%  # Group by relevant columns
-  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
+  summarise(catch = sum(scaled_catch, na.rm = TRUE),
+            biomass = sum(scaled_biomass, na.rm = TRUE), .groups = "drop")                                                          # Sum catch for duplicates
 cs_scaled_landings$count <- cs_scaled_landings$catch
 cs_scaled_landings$dl<-1
-cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count")]
+cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count", "biomass")]
 
 #Survey data
 cs_survey<- read_csv(here("inst","extdata", "cs_survey.csv")) 
-cs_survey <- cs_survey %>%
-  group_by(Scientific_name, LngtClass, Gear) %>%
-  summarise(
-    catch = sum(HLNoAtLngt, na.rm = TRUE),  # sum ignoring NAs
-    .groups = "drop")%>%  # ungroup the result
-  left_join(species_map_lauria, by="Scientific_name")
-cs_survey <- cs_survey %>%
-  mutate(LngtClass = floor(LngtClass)) %>%           # Round up lengths
-  group_by(species, Scientific_name, Gear, LngtClass) %>%  # Group by relevant columns
-  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")%>%# Sum catch for duplicates
-    rename(length=LngtClass,
-           gear=Gear)
-cs_survey$dl<-1
+
 cs_survey <- cs_survey %>%
   group_by(species, Scientific_name, length, dl) %>%
   summarise(
     gear = "total",                          # Create a new 'gear' category
-    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
+    catch =sum(scaled_catch, na.rm = TRUE),       # Sum all catch across gears
+    count= catch,
+    biomass = sum(scaled_biomass, na.rm = TRUE),       # Sum all catch across gears
     .groups = "drop"
   )
-cs_survey$count <- cs_survey$catch
 
 #For the time being cs_survey is going to be called catch but in future we will combine the landings and survey and have them as different gear types.
 catch<-cs_survey
 
 #Future addition: combine survey and landings as different gear types catch? call this dataframe catch.
 
-#cs_survey$gear<-"survey"
-#cs_scaled_landings$gear<-"landings"
-#catch<-rbind(cs_survey,cs_scaled_landings)
+cs_survey$gear<-"survey"
+cs_scaled_landings$gear<-"landings"
+catch<-rbind(cs_survey,cs_scaled_landings)
 
 #Age Length Data
 age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
@@ -219,7 +209,7 @@ observed_max <- cs_scaled_landings %>%
         .groups = "drop"
     )
 
-sp1 <- sp %>%
+sp <- sp %>%
     left_join(observed_max, by = "species") %>%
     mutate(
         l_max      = pmax(obs_len, l_max),
@@ -234,7 +224,7 @@ sp1 <- sp %>%
 model_non_int <- newAllometricParams(sp, no_w = 200)
 
 ## 6.2 Add total fishing mortality (not size specific)
-model_non_int <- addEcopathCatchTotal(model_non_int, yield)
+model_non_int <- addCatch(model_non_int, landings= cs_scaled_landings, survey=cs_survey)
 
 # Match growth and biomass
 # We need species_params to get the adult biomass
@@ -265,11 +255,27 @@ model_non_int <- model_non_int %>%
     matchConsumption()
 ```
 
+## Gear Params - For Survey and Landings
+
+```{r}
+#In future this can be written into the function so that it looks at the catch data frame and it takes the unique(catch$gear), and assigns a gear parameter for it but for model testing this will do the trick.
+
+gear_params<-gear_params(model_non_int)
+
+# First, duplicate the data for both gear types
+gear_params_expanded <- gear_params[rep(1:nrow(gear_params), each = 2), ]
+
+# Then, assign the gear types alternately
+gear_params_expanded$gear <- rep(c("survey", "landings"), times = nrow(gear_params))
+
+gear_params(model_non_int)<-gear_params_expanded
+```
+
 ## View in Tune Ecopath
 
 ```{r}
 tuneEcopath(
-    model_non_int, 
+    p, 
     catch = catch,
     age_at_length = age_at_length
 )
