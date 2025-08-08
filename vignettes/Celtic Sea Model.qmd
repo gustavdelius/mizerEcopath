@@ -58,6 +58,7 @@ cs_scaled_landings <- cs_scaled_landings %>%
   summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")       # Sum catch for duplicates
 cs_scaled_landings$count <- cs_scaled_landings$catch
 cs_scaled_landings$dl<-1
+cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count")]
 
 #Survey data
 cs_survey<- read_csv(here("inst","extdata", "cs_survey.csv")) 
@@ -87,6 +88,10 @@ cs_survey$count <- cs_survey$catch
 catch<-cs_survey
 
 #Future addition: combine survey and landings as different gear types catch? call this dataframe catch.
+
+#cs_survey$gear<-"survey"
+#cs_scaled_landings$gear<-"landings"
+#catch<-rbind(cs_survey,cs_scaled_landings)
 
 #Age Length Data
 age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
@@ -177,6 +182,7 @@ sp <- sp_params %>%
         a, b, t0,
         n, p, d, alpha
     )
+sp$age_mat <- mizer:::age_mat_vB(sp)
 ```
 
 ## Add Ecopath Params
@@ -267,7 +273,6 @@ tuneEcopath(
     catch = catch,
     age_at_length = age_at_length
 )
-
 ```
 
 # Step 3 - Diet Matching
