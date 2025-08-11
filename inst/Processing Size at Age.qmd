@@ -388,3 +388,11 @@ cs_age_size <- cs_age_size_WgtClass %>%
 
 #saveRDS(cs_age_size, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/Celtic_Sea_Size_at_Age_Data.rds")
 ```
+
+## Determining area of Celtic sea
+
+```{r}
+area<-subset(areas, Area_Full %in% c('27.7.b', '27.7.c', '27.7.c.1', '27.7.c.2', '27.7.e', '27.7.f', '27.7.g', '27.7.h', '27.7.j','27.7.j.1','27.7.j.2', '27.7.k','27.7.k.1','27.7.k.2'))
+sum(area$Area_km2)
+#617499.7
+```

@@ -221,13 +221,51 @@ We want to convert the length to cm. So we will divide LngtClass Columns with Ln
 ```{r}
 #check that these are the only codes we have
 #make the coversion
-cs_data_length_corrected<-cs_data%>%
+cs_survey<-cs_data%>%
     mutate(LngtClass = case_when(
         LngtCode == "."~ LngtClass/10,
         LngtCode == "1"~ LngtClass,
     ))
+```
 
-#cs_survey<-write.csv(cs_data_length_corrected, here("inst", "extdata", "cs_survey.csv"))
+## Add column of tonnes/km\^2/year
+
+```{r}
+a_b_conversion <- read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/life_histories.csv")%>%
+    distinct(Species,a,b)
+
+species_map_lauria <- data.frame(
+    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake", 
+                "Monkfish", "Horse mackerel", "Mackerel", "Plaice", "Megrim", "Sole"),
+    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus", 
+                        "Merlangius merlangus", "Micromesistius poutassou", "Merluccius merluccius",
+                        "Lophius piscatorius", "Trachurus trachurus", "Scomber scombrus", 
+                        "Pleuronectes platessa", "Lepidorhombus whiffiagonis", "Solea solea")
+)
+
+cs_survey <- cs_survey %>%
+  group_by(Scientific_name, LngtClass, Gear) %>%
+  summarise(
+    catch = sum(HLNoAtLngt, na.rm = TRUE),  # sum ignoring NAs
+    .groups = "drop")%>%  # ungroup the result
+  left_join(species_map_lauria, by="Scientific_name")
+cs_survey <- cs_survey %>%
+  mutate(LngtClass = floor(LngtClass)) %>%           # Round up lengths
+  group_by(species, Scientific_name, Gear, LngtClass) %>%  # Group by relevant columns
+  summarise(catch = sum(catch, na.rm = TRUE), .groups = "drop")%>%# Sum catch for duplicates
+    rename(length=LngtClass,
+           gear=Gear)
+cs_survey$dl<-1
+
+cs_survey_final<-cs_survey%>%
+    left_join(a_b_conversion, by= c("Scientific_name"="Species"))%>%
+    mutate(
+        weight=a*length^b,
+        scaled_biomass= (1e-6*weight*catch)/617499.7/(max(clean_data$Year)-min(clean_data$Year)+1),
+        scaled_catch=catch/617499.7/(max(clean_data$Year)-min(clean_data$Year)+1))%>%
+        select(-a, -b)
+cs_survey_final$count<-cs_survey_final$catch
+#write.csv(cs_survey_final, here("inst", "extdata", "cs_survey.csv"))
 ```
 
 ## Aggregating
@@ -253,7 +291,6 @@ total_survey <- survey %>%
     catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
     .groups = "drop"
   )
-total_survey$count <- total_survey$catch
 ```
 
 # Compare to Survey to Current Landings Data
