@@ -14,17 +14,11 @@ Creating a Celtic Sea model including species herring (*Clupea harengus*), cod (
 #| warning: false
 #| message: false
 #| results: 'hide'
-library(mizer)
 library(remotes)
-library(devtools)
 #install_github("gustavdelius/mizerEcopath") 
 library(mizerEcopath)
-library(mizerExperimental)
 library(dplyr)
-library(tidyr)
 library(here)
-library(readr)
-library(rfishbase)
 ```
 
 ## Load in Data
@@ -50,7 +44,7 @@ yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |
     select(Group.name, TotalCatch..t.km..year.)
 
 #Scaled landings data
-cs_scaled_landings<- read_csv(here("inst","extdata", "cs_scaled_landings.csv")) 
+cs_scaled_landings<- read.csv(here("inst","extdata", "cs_scaled_landings.csv")) 
 cs_scaled_landings <- cs_scaled_landings[cs_scaled_landings$gear == "total", ] #only total gear
 cs_scaled_landings <- cs_scaled_landings %>%
   mutate(length = floor(length)) %>%           # Round up lengths
@@ -62,7 +56,7 @@ cs_scaled_landings$dl<-1
 cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count", "biomass")]
 
 #Survey data
-cs_survey<- read_csv(here("inst","extdata", "cs_survey.csv")) 
+cs_survey<- read.csv(here("inst","extdata", "cs_survey.csv")) 
 
 cs_survey <- cs_survey %>%
   group_by(species, Scientific_name, length, dl) %>%
@@ -88,7 +82,7 @@ age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rd
 
 #Species parameters from Fishbase
     #Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
-life_histories <- read_csv(here("inst","extdata", "life_histories.csv"))
+life_histories <- read.csv(here("inst","extdata", "life_histories.csv"))
 life_histories_summary <- life_histories %>%
     filter(Sex %in% c("Unsexed", "Mixed"), # keep Unsexed or Mixed
            !is.na(l_mat)) %>%            # keep data with non-NA values for l_mat
@@ -107,7 +101,7 @@ life_histories_summary <- life_histories %>%
     # take the first row per group
     ungroup()                            # remove grouping
 #length maturity from processed size at age DATRAS data
-lm<-read_csv(here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
+lm<-read.csv(here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
 lm<-rename(lm,l_mat2=l50)
 sp_params<-left_join(life_histories_summary, lm, by="Scientific_name")
 
