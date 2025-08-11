@@ -257,9 +257,9 @@ model_non_int <- model_non_int %>%
 
 ## View in Tune Ecopath
 
-```{r}
+```{r eval=FALSE}
 tuneEcopath(
-    p, 
+    model_non_int, 
     catch = catch,
     age_at_length = age_at_length
 )
@@ -267,7 +267,7 @@ tuneEcopath(
 
 # Step 3 - Diet Matching
 
-```{r}
+```{r eval=FALSE}
 fits <- readRDS(here("Data", "stomach_data_fit.rds"))
 ecopath_diet <- read.csv(here("Data", "Ecopath-Diet composition.csv")) 
 ```
