@@ -1,0 +1,63 @@
+,Fleet\group,"UK Otter trawl (/year)","UK Pair trawl (/year)","UK Beam trawl (/year)","UK Gillnets (/year)","UK Pots and traps (/year)","UK Dredge (/year)","UK Pelagic fleet (/year)","Ireland Otter trawl (/year)","Ireland Pair trawl (/year)","Ireland Beam trawl (/year)","Ireland Gillnets (/year)","Ireland Pots and traps (/year)", Ireland Dredge (/year),"Ireland Pelagic fleet (/year)","France Otter trawl (/year)","France Pair trawl (/year)","France Beam trawl (/year)","France Gillnets (/year)","France Pots and traps (/year)","France Dredge (/year)","Spain Otter trawl (/year)","Spain Pair trawl (/year)","Spain Beam trawl (/year)","Spain Gillnets (/year)","Spain Pots and traps (/year)","Spain Dredge (/year)","Other countries (/year)"
+1,"Baleen whales",,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,"Toothed whales",0.019,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,Seals,0.002,,,,,,,0.025,,,,,,,,,,,,,,,,,,,
+4,"Seabird-surface feeders",,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,"Seabird-inshore divers",,,,,,,,,,,,,,,,,,,,,,,,,,,
+6,"Seabird offshore divers",,,,,,,,,,,,,,,,,,,,,,,,,,,
+7,Gulls,,,,,,,,,,,,,,,,,,,,,,,,,,,
+8,"Manx shearwater",,,,,,,,,,,,,,,,,,,,,,,,,,,
+9,"European storm petrel",,,,,,,,,,,,,,,,,,,,,,,,,,,
+10,Cod,0.036,,,0.015,,,,0.061,,,0.033,,,,0.639,,,,,,,,,,,,0.019
+11,"Juvenile cod",0.038,,,,,,,,,,,,,,0.109,,,,,,,,,,,,
+12,"Blue whiting",,,,,,,,,,,,,,,,,,,,,0.005,,,,,,0.263
+13,"Juvenile blue whiting",,,,,,,,,,,,,,,,,,,,,0.000,,,,,,
+14,Hake,,,,0.284,,,,0.026,,,0.078,,,,,,,,,,,0.559,,,,,0.003
+15,"Juvenile hake",,,,0.051,,,,,,,,,,,,,,,,,,0.048,,,,,
+16,Plaice,,,0.134,,,,,0.050,,0.075,,,,,,,0.122,,,,,,,,,,0.115
+17,"Juvenile plaice",,,0.180,,,,,,,,,,,,,,0.266,,,,,,,,,,
+18,Megrim,,,0.194,,,,,0.169,,0.072,,,,,,,0.420,,,,,0.371,,,,,0.002
+19,"Juvenile megrim",,,0.003,,,,,,,0.000,,,,,,,0.007,,,,,,,,,,
+20,Whiting,0.055,,,,,,,0.130,,,,,,,0.929,,,,,,,,,,,,0.024
+21,"Juvenile whiting",0.003,,,,,,,,,,,,,,0.022,,,,,,,,,,,,
+22,Monkfish,,,0.017,0.017,,,,0.012,,0.005,,,,,,,,0.137,,,,0.011,,,,,0.000
+23,"Juvenile monkfish",0.014,,,0.003,,,,,,,,,,,,,,0.000,,,,0.000,,,,,
+24,Haddock,0.063,,,,,,,0.151,,,,,,,0.819,,,,,,,,,,,,0.005
+25,"Juvenile haddock",0.117,,,,,,,,,,,,,,,,,,,,,,,,,,
+26,Sole,,,0.021,,,,,,,0.135,,,,,,,,0.054,,,,,,,,,0.249
+27,Mackerel,,,,,,,0.063,,,,,,,0.001,,,,,,,0.000,,,0.000,,,0.002
+28,"Horse mackerel",,,,,,,0.004,,,,,,,0.004,,,,,,,,,,,,,0.037
+29,"Red mullet",,,0.001,,,,,,,0.000,,,,,,,0.004,,,,,,,,,,
+30,"Sea bass",,0.004,,0.002,,,,,,,,,,,,,,0.003,,,,,,,,,
+31,"Large sharks",0.000,,,,,,,,,,,,,,0.001,,,,,,,,,,,,
+32,"Small sharks",,,,,,,,,,,,,,,,,,,,,,,,,,,
+33,Clupeids,,,,,,,0.010,,,,,,,0.029,,,,0.001,,,,0.000,,,,,0.002
+34,"Rays and Skates",,,,,,,,,,,,,,,,,0.021,,,,,,,,,,
+35,"Turbot and Brill",,,0.003,,,,,,,0.003,,,,,,,0.003,,,,,,,,,,0.001
+36,"Small and medium flatfish",,,0.001,,,0.019,,,,0.001,,,,,,,0.002,,,,,,,,,,0.000
+37,Trisopterus,0.001,,,,,,,0.000,,,,,,,0.001,,,,,,0.000,,,,,,0.000
+38,Gurnards,,,,,,,,0.000,,,,,,,0.005,,,,,,,,,,,,0.000
+39,"Pollack and Saithe",,,,,,,,0.002,,,,,,,,,,,,,,,,0.000,,,0.000
+40,"Small benthic fishes",,,,,,,,,,,,,,,,,,,,,,,,,,,
+41,"Small pelagic spp.",,,,,,,,,,,,,,,,,,,,,,,,,,,
+42,Garfish,,,,,,,,,,,,,,,,,,,,,,,,,,,
+43,"Demersal predators",0.003,,,,,,,0.000,,,,,,,0.007,,,,,,0.000,,,,,,0.000
+44,"Small crabs and other",,,,,0.000,,,,,,,0.000,,,,,,,0.000,,,,,,,,0.000
+45,"Large crabs and lobsters",,,,,0.004,,,,,,,0.005,,,,,,,,,,,,,,,0.000
+46,"Small benthic crustacea",,,,,0.000,,,,,,,,,,,,,,,,,,,,,,
+47,Bivalves,,,,,,0.001,,,,,,,0.000,,,,,,,0.000,,,,,,,
+48,Gasteropods,,,,,,,,,,,,,,,,,,,,,,,,,,,
+49,Cuttlefish,0.011,,0.011,,,,,0.013,,0.013,,,,,0.090,,0.090,,,,0.001,,0.001,,,,0.006
+50,Squid,0.001,,0.001,,,,,0.002,,0.002,,,,,0.002,,0.002,,,,0.000,,0.000,,,,0.000
+51,"Sessile invertebrate",,,,,,,,,,,,,,,,,,,,,,,,,,,
+52,Echinoderms,,,,,,,,,,,,,,,,,,,,,,,,,,,
+53,Polychaetes,,,,,,,,,,,,,,,,,,,,,,,,,,,
+54,Nematoda,,,,,,,,,,,,,,,,,,,,,,,,,,,
+55,Zooplankton,,,,,,,,,,,,,,,,,,,,,,,,,,,
+56,"Carnivorous macroplankton",,,,,,,,,,,,,,,,,,,,,,,,,,,
+57,Euphausiids,,,,,,,,,,,,,,,,,,,,,,,,,,,
+58,Microflagellate,,,,,,,,,,,,,,,,,,,,,,,,,,,
+59,"Pelagic bacteria",,,,,,,,,,,,,,,,,,,,,,,,,,,
+60,"Benthic bacteria",,,,,,,,,,,,,,,,,,,,,,,,,,,
+61,Phytoplankton,,,,,,,,,,,,,,,,,,,,,,,,,,,
+62,Herring,,,,,,,0.436,,,,,,,,,,,,,,,,,,,,0.280

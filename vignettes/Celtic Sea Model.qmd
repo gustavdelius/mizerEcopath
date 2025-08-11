@@ -39,10 +39,10 @@ Some of the data formatting alterations are made in the following code to ensure
 #| results: 'hide'
 
 #Load in ecopath parameters Consumption 
-ecopath_params <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/Ecopath-Basic estimates.csv")
+ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
 
 #Ecopath yield data
-yield <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/Ecopath-Fishing mortality rates.csv")
+yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
 colnames(yield)[2] <- "Group.name"
 yield$Total<-rowSums(yield[,3:29],na.rm=TRUE)
 yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |>
@@ -88,7 +88,7 @@ age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rd
 
 #Species parameters from Fishbase
     #Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
-life_histories <- read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/life_histories.csv")
+life_histories <- read_csv(here("inst","extdata", "life_histories.csv"))
 life_histories_summary <- life_histories %>%
     filter(Sex %in% c("Unsexed", "Mixed"), # keep Unsexed or Mixed
            !is.na(l_mat)) %>%            # keep data with non-NA values for l_mat
