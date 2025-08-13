@@ -31,6 +31,7 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     # Get mortality and growth rates
     mu <- getMort(params)[species, ]
     g <- getEGrowth(params)[species, ]
+    emigration <- emigration(params)[species, ]
 
     # Calculate diffusion rate as a power law
     g_0 <- g[1] / w[1]^n
@@ -40,6 +41,7 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     dtilde <- d / w^2
     dtilde_prime <- d_0 * (n - 1) * w^(n-1)
     gtilde <- g / w - 0.5 * dtilde
+    etilde <- emigration * w
     # Transform to standard form for diffusion term
     ghat <- gtilde - dtilde_prime / 2
 
@@ -47,7 +49,10 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     n_init <- initialN(params)[species, ]
 
     # Solve the PDE
-    n_hist <- solve_diffusion_pde(dtilde, ghat, mu, n_init, h, dt, nsteps)
+    n_hist <- solve_diffusion_pde(dtilde, ghat, mu, etilde,
+                                  n_init, h, dt, nsteps)
+    # Convert to density in w
+    n_hist <- sweep(n_hist, 2, w, "/")
 
     return(n_hist)
 }
@@ -56,16 +61,17 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
 #'
 #' This function uses the implicit Euler method to solve a PDE of the form:
 #' \deqn{\dot{n}(x,t) = (d(x) n'(x,t))'-(g(x)n(x,t))'-\mu(x)n(x,t)}
-#' @param d A vector of diffusion coefficients.
-#' @param g A vector of advection coefficients.
-#' @param mu A vector of reaction coefficients.
+#' @param d A vector of diffusion rates.
+#' @param g A vector of advection rates.
+#' @param mu A vector of reaction rates.
+#' @param emigration A vector of emigration rates.
 #' @param n_init Initial condition for the solution.
 #' @param h Spatial step size.
 #' @param dt Time step size.
 #' @param nsteps Number of time steps to compute.
 #' @return A matrix (time x size) with the solution of the PDE.
 #' @export
-solve_diffusion_pde <- function(d, g, mu, n_init, h, dt, nsteps) {
+solve_diffusion_pde <- function(d, g, mu, emigration, n_init, h, dt, nsteps) {
     # Because of the way we calculate the derivative of the diffusion we
     # we can solve the equation only at interior points
     N <- length(d) - 2
@@ -88,9 +94,11 @@ solve_diffusion_pde <- function(d, g, mu, n_init, h, dt, nsteps) {
     n_hist <- matrix(0, nrow = nsteps + 1, ncol = length(d))
     n_hist[1, interior] <- n
 
+    b <- n - dt * emigration[interior]  # Add emigration term
+
     for (step in 1:nsteps) {
         # Solve (I - dt*A) n_new = n_old
-        n_new <- solve_double_sweep(U_new, L_new, D_new, n)
+        n_new <- solve_double_sweep(U_new, L_new, D_new, b)
         n_new[length(n_new)] <- 0  # Enforce boundary at large size
         n <- n_new
         n_hist[step + 1, interior] <- n

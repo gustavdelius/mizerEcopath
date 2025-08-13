@@ -1,7 +1,7 @@
 Type: Package
 Package: mizerEcopath
 Title: Extending an Ecopath model to a mizer model
-Version: 0.1.0.9010
+Version: 0.1.0.9011
 Authors@R: 
     person("Gustav", "Delius", , "gustav.delius@york.ac.uk", role = c("cre", "aut", "cph"),
            comment = c(ORCID = "0000-0003-4092-8228"))
@@ -11,7 +11,7 @@ License: GPL-3
 URL: https://github.com/gustavdelius/mizerEcopath
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
-    mizer (>= 2.5.3),
+    mizer (>= 2.5.3.9012),
     mizerExperimental (>= 2.5.3),
     R (>= 3.5)
 Imports:
@@ -20,6 +20,7 @@ Imports:
     dplyr,
     ggplot2,
     lubridate,
+    Matrix,
     methods,
     plotly,
     prompter,
