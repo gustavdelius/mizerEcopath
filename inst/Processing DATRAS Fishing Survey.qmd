@@ -261,17 +261,20 @@ cs_survey_final<-cs_survey%>%
     left_join(a_b_conversion, by= c("Scientific_name"="Species"))%>%
     mutate(
         weight=a*length^b,
-        scaled_biomass= (1e-6*weight*catch)/617499.7/(max(clean_data$Year)-min(clean_data$Year)+1),
-        scaled_catch=catch/617499.7/(max(clean_data$Year)-min(clean_data$Year)+1))%>%
+        scaled_biomass= (weight*catch)/6.174997e+11/(max(clean_data$Year)-min(clean_data$Year)+1),
+        scaled_catch=catch/6.174997e+11/(max(clean_data$Year)-min(clean_data$Year)+1))%>%
         select(-a, -b)
+
+#add count column
 cs_survey_final$count<-cs_survey_final$catch
+
 #write.csv(cs_survey_final, here("inst", "extdata", "cs_survey.csv"))
 ```
 
 ## Aggregating
 
 ```{r}
-survey <- cs_data_length_corrected %>%
+survey <- cs_survey_final %>%
   group_by(Scientific_name, LngtClass, Gear) %>%
   summarise(
     catch = sum(HLNoAtLngt, na.rm = TRUE),  # sum ignoring NAs
