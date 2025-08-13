@@ -321,7 +321,8 @@ cs_catch$species <- new_species_names[cs_catch$English_name]
 # Add the dl column
 cs_catch$dl <- 1
 
-#Save data
+#convert catch to per year per area (m^2): total area surveyed is area of celtic sea 6.174997e+11 (m^2) and number of years is 2013 to 2020 so 8 years
+cs_catch$catch<-cs_catch$catch/6.174997e+11/8
 #saveRDS(cs_catch, here("inst","extdata","cs_catch.rds"))
 ```
 

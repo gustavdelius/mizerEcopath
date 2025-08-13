@@ -21,10 +21,7 @@ cs_catch <- cs_catch %>%
     mutate(species = ifelse(species == "Horse Mackerel", "Horse mackerel", species))
 
 ### Life history data
-life_histories <- read_csv(
-    "/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/life_histories.csv",
-    locale = locale(encoding = "Latin1")
-)
+life_histories <- read.csv(here("inst","extdata","life_histories.csv"))
 
 #Extract a and b values for each species
 life_histories_summary <- life_histories %>%
@@ -43,6 +40,7 @@ cs_catch <- cs_catch_LWR %>%
 #add biomass column to cs_catch
 cs_catch$biomass <- (cs_catch$catch*cs_catch$weight)
 
+#biomass is g/m^2/year which is compatible with ecopath tonnes/km^2/year
 cs_catch_sp <- cs_catch %>%
     group_by(species) %>%
     summarise(biomass = sum(biomass, na.rm = TRUE), .groups = "drop")
@@ -51,9 +49,9 @@ cs_catch_sp <- cs_catch %>%
 ## Extract Yield
 
 ```{r}
-fishing_mortality <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EWE/Data/Ecopath-Fishing mortality rates.csv")
+fishing_mortality <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
 
-ecopath_params <- read.csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EWE/Data/Ecopath-Basic estimates.csv")
+ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
 
 fishing_mortality$totalF <- rowSums(fishing_mortality[, -(1:2)], na.rm = TRUE)
 
