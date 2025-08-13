@@ -15,10 +15,12 @@
 #' @param params A MizerParams object.
 #' @param landings A data frame with columns `species`, `gear`, `biomass`.
 #' @param survey A data frame with columns `species`, `gear`, `biomass`.
+#' @param step sets effort depending on step, landing effort set to 0 if step =
+#' 1 and 1 if step = 2 or 3.
 #'
 #' @return A MizerParams object with updated gear parameters and effort turned on.
 #' @export
-addCatch <- function(params, landings, survey) {
+addCatch <- function(params, landings, survey,step) {
     sp <- params@species_params
 
     if (!hasName(sp, "ecopath_groups") || !hasName(sp, "biomass_observed")) {
@@ -81,8 +83,15 @@ addCatch <- function(params, landings, survey) {
     # Set gear parameters
     gear_params(params) <- validGearParams(gp, sp)
 
-    # Turn on fishing
-    initial_effort(params) <- 1
+    # Set fishing effort depending on step
+    if (step == 1) {
+        initial_effort(params)[unique(landings$gear)] <- 0
+    } else if (step %in% c(2, 3)) {
+        initial_effort(params)[unique(landings$gear)] <- 1
+    }
+
+    # Survey effort is always on
+    initial_effort(params)["survey"] <- 1
 
     return(params)
 }
