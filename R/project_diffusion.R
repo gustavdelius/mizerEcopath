@@ -46,13 +46,13 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     ghat <- gtilde - dtilde_prime / 2
 
     # Set initial abundance at smallest size
-    n_init <- initialN(params)[species, ]
+    n_init <- initialN(params)[species, ] * w
 
     # Solve the PDE
     n_hist <- solve_diffusion_pde(dtilde, ghat, mu, etilde,
                                   n_init, h, dt, nsteps)
     # Convert to density in w
-    n_hist <- sweep(n_hist, 2, w, "/")
+    n_hist <- n_hist / w
 
     return(n_hist)
 }
@@ -85,7 +85,7 @@ solve_diffusion_pde <- function(d, g, mu, emigration, n_init, h, dt, nsteps) {
     D <- -((d_half[2:(N+1)] + d_half[1:N]) / 2 +
                h * abs_g[2:(N+1)] + h^2 * mu[2:(N+1)])
 
-    # For implicit Euler: (I - dt*A) n^{k+1} = n^k
+    # For implicit Euler: (I - dt*A) n^{k+1} = n^k - dt * emigration
     D_new <- 1 - dt / h^2 * D
     L_new <- -dt / h^2 * L
     U_new <- -dt / h^2 * U
@@ -93,11 +93,12 @@ solve_diffusion_pde <- function(d, g, mu, emigration, n_init, h, dt, nsteps) {
     n <- n_init[interior]
     n_hist <- matrix(0, nrow = nsteps + 1, ncol = length(d))
     n_hist[1, interior] <- n
-
-    b <- n - dt * emigration[interior]  # Add emigration term
+    # Keep constant egg abundance
+    n_hist[, 1] <- n_init[1]
 
     for (step in 1:nsteps) {
-        # Solve (I - dt*A) n_new = n_old
+        # Solve (I - dt*A) n_new = n - dt * emigration
+        b <- n - dt * emigration[interior]  # Add emigration term
         n_new <- solve_double_sweep(U_new, L_new, D_new, b)
         n_new[length(n_new)] <- 0  # Enforce boundary at large size
         n <- n_new
