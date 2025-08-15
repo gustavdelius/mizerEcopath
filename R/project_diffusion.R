@@ -50,9 +50,10 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
 
     # Solve the PDE
     n_hist <- solve_diffusion_pde(dtilde, ghat, mu, etilde,
-                                  n_init, h, dt, nsteps)
+                                  n_init = n_init, h = h,
+                                  dt = dt, nsteps = nsteps)
     # Convert to density in w
-    n_hist <- n_hist / w
+    n_hist <- sweep(n_hist, 2, w, "/")
 
     return(n_hist)
 }
@@ -89,6 +90,8 @@ solve_diffusion_pde <- function(d, g, mu, emigration, n_init, h, dt, nsteps) {
     D_new <- 1 - dt / h^2 * D
     L_new <- -dt / h^2 * L
     U_new <- -dt / h^2 * U
+    n0_vec <- numeric(N)
+    n0_vec[1] <- L_new[1] * n_init[1] # boundary term
 
     n <- n_init[interior]
     n_hist <- matrix(0, nrow = nsteps + 1, ncol = length(d))
@@ -98,7 +101,7 @@ solve_diffusion_pde <- function(d, g, mu, emigration, n_init, h, dt, nsteps) {
 
     for (step in 1:nsteps) {
         # Solve (I - dt*A) n_new = n - dt * emigration
-        b <- n - dt * emigration[interior]  # Add emigration term
+        b <- n - n0_vec - dt * emigration[interior]
         n_new <- solve_double_sweep(U_new, L_new, D_new, b)
         n_new[length(n_new)] <- 0  # Enforce boundary at large size
         n <- n_new
