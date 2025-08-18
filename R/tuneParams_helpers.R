@@ -21,6 +21,8 @@ prepare_params <- function(p) {
     mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
     p <- set_species_param_default(p, "mu_mat", mu_mat)
     p <- set_species_param_default(p, "d_over_g", 0.15)
+    p <- set_species_param_default(p, "spawning_t0", 0.5)
+    p <- set_species_param_default(p, "spawning_kappa", 0)
 
     p <- steadySingleSpecies(p)
     p <- matchBiomasses(p)
