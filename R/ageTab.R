@@ -20,6 +20,7 @@ ageTab <- function(input, output, session, params, logs,
     output$plotmean <- renderPlot({
         p <- params()
         plotAge(p, species = input$sp, age_at_length = age_at_length,
+                t0 = input$spawning_t0, kappa = input$spawning_kappa,
                 plot = "mean") +
             theme(text = element_text(size = 16))
     })
@@ -28,6 +29,7 @@ ageTab <- function(input, output, session, params, logs,
     output$plotquantiles <- renderPlot({
         p <- params()
         plotAge(p, species = input$sp, age_at_length = age_at_length,
+                t0 = input$spawning_t0, kappa = input$spawning_kappa,
                 plot = "quantiles") +
             theme(text = element_text(size = 16))
     })

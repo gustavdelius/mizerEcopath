@@ -11,6 +11,10 @@
 #'   `LngtClass`, `Age`, and `CANoAtLngt` giving observed age-at-length data.
 #' @param dt Time step for the model simulation (years). Default is 0.05.
 #' @param t_max Maximum age to simulate (years). Default is 6.
+#' @param kappa Concentration parameter for the von Mises distribution that describes
+#' the spawning season of the fish. Default is 0 which means a uniform distribution of
+#' spawning over the year.
+#' @param t0 Mean age of age class 0 fish on 1 January. Default is 0.
 #' @param f_h Numeric vector of time of surveys in the different quarters.
 #'   Default c(0.125, 0.625, 0.875).
 #' @param quarter_h Numeric vector of survey quarters. Default is
@@ -29,6 +33,7 @@
 #' @export
 plotAge <- function(params, species, age_at_length,
                     dt = 0.05, t_max = NULL,
+                    kappa = 0, t0 = 0,
                     f_h = c(0.125, 0.625, 0.875),
                     quarter_h = c(1, 3, 4),
                     plot = c("mean", "quantiles")) {
@@ -107,13 +112,37 @@ plotAge <- function(params, species, age_at_length,
         for (k in 0:K) {
             a_low  <- k - 1 + f      #   [k-1+f, k+f)
             a_high <- k     + f
+            center <- k - 0.5 + f    # center of the age class range
+            
+            # Calculate overlap with each age bin
             overlap <- pmax(0, pmin(high, a_high) - pmax(low, a_low))
-            A_dense[k + 1, ] <- overlap / age_width       # proportion of each cell
+            
+            # Calculate von Mises weights for each age bin that overlaps
+            weights <- rep(0, length(age_mid))
+            for (i in seq_along(age_mid)) {
+                if (overlap[i] > 0) {
+                    # Map age_center to [0, 2π] within the range [a_low, a_high]
+                    theta <- 2 * pi * (age_mid[i] - a_low)
+                        
+                    # von Mises distribution: exp(kappa * cos(theta - mu)) / (2 * pi * I0(kappa))
+                    # where I0 is the modified Bessel function of the first kind
+                    weights[i] <- exp(kappa * cos(theta - pi)) / (2 * pi * besselI(kappa, 0))
+                    }
+                }
+            }
+            
+            # Normalize weights to sum to 1 within the age class range
+            if (sum(weights) > 0) {
+                weights <- weights / sum(weights)
+            }
+            
+            # Apply weights to the overlap
+            A_dense[k + 1, ] <- weights * overlap / age_width
         }
         # Matrix::Matrix(A_dense, sparse = TRUE)
         A <- A_dense
     }
-    A_list <- lapply(f_h, build_A)
+    A_list <- lapply(f_h + t0, build_A)
 
     ## LENGTH aggregation B :  s × m   (surveyLen × modelLen) ----
     # model length bins are defined by L_edge
