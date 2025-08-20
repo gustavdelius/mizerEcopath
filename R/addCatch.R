@@ -74,9 +74,7 @@ addCatch <- function(params, landings, survey,step) {
     gp <- gp %>%
         left_join(sp %>% select(species, biomass_observed), by = "species") %>%
         mutate(
-            catchability = ifelse(biomass_observed > 0,
-                                  yield_observed / biomass_observed,
-                                  0)
+            catchability = 1
         ) %>%
         select(-biomass_observed)
 
