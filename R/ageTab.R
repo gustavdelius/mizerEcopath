@@ -17,26 +17,13 @@ ageTab <- function(input, output, session, params, logs,
     )
 
     # Plot mean age ----
-    output$plotmean <- renderPlot({
+    output$plotAge <- renderPlot({
         p <- params()
         plotAge(p, species = input$sp, age_at_length = age_at_length,
-                t0 = input$spawning_t0, kappa = input$spawning_kappa,
-                plot = "mean") +
+                mu = input$spawning_mu, kappa = input$spawning_kappa,
+                a_min = input$a_min,
+                ring_formation_date = input$ring_formation_date) +
             theme(text = element_text(size = 16))
-    })
-
-    # Plot quantiles age ----
-    output$plotquantiles <- renderPlot({
-        p <- params()
-        plotAge(p, species = input$sp, age_at_length = age_at_length,
-                t0 = input$spawning_t0, kappa = input$spawning_kappa,
-                plot = "quantiles") +
-            theme(text = element_text(size = 16))
-    })
-
-    # Plot consumption ----
-    output$plot_consumption <- renderPlotly({
-        plotConsumptionVsSpecies(params())
     })
 }
 
@@ -44,8 +31,6 @@ ageTab <- function(input, output, session, params, logs,
 #' @inheritParams biomassTabUI
 ageTabUI <- function(...) {
     tagList(
-        plotOutput("plotquantiles"),
-        plotOutput("plotmean"),
-        plotlyOutput("plot_consumption")
+        plotOutput("plotAge")
     )
 }

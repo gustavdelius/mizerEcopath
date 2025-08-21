@@ -1,118 +1,179 @@
-# Code from https://chatgpt.com/share/68a34a22-6470-8007-8348-51c0ca02575f
-
-# ===== Helper functions (circular arithmetic on [0,1)) =====
-wrap01 <- function(x) x - floor(x)                      # wrap to [0,1)
-circ_diff01 <- function(a, b) {                         # shortest signed diff a-b in (-0.5,0.5]
-    d <- a - b
-    d - round(d)
+#' von Mises Probability Density Function
+#' A custom implementation to avoid external package dependencies.
+#' @param x Angle in radians.
+#' @param mu Mean direction in radians.
+#' @param kappa Concentration parameter.
+#' @return The probability density.
+von_mises_pdf <- function(x, mu, kappa) {
+    denominator <- 2 * pi * besselI(kappa, 0)
+    numerator <- exp(kappa * cos(x - mu))
+    return(numerator / denominator)
 }
 
-# ===== von Mises density on [0,1) via angle 2*pi*s =====
-dvm01 <- function(s, mu, kappa) {
-    ang <- 2*pi*wrap01(s - mu)
-    (exp(kappa*cos(ang))) / (2*pi*I0(kappa))
+#' Spawning Density Function S(d)
+#' Calculates the relative spawning intensity for any given numeric date.
+#' @param numeric_dates A vector of numeric dates (e.g., 2023.45).
+#' @param mu The mean spawning date.
+#' @param kappa The concentration parameter for the spawning distribution.
+#' @return A numeric vector of relative spawning intensities.
+spawning_density <- function(numeric_dates, mu, kappa) {
+    day_fraction <- numeric_dates %% 1
+    day_rad <- day_fraction * 2 * pi
+    mu_rad <- mu * 2 * pi
+    density <- von_mises_pdf(day_rad, mu = mu_rad, kappa = kappa)
+    return(density)
 }
 
-# Modified Bessel I0 wrapper (base R has besselI)
-I0 <- function(kappa) besselI(kappa, nu = 0, expon.scaled = FALSE)
 
-# ===== Edge readability function v(δ): probability newest annulus is counted =====
-v_edge <- function(delta, alpha, sigma) {
-    if (sigma <= 0) return(as.numeric(circ_diff01(delta, alpha) >= 0))  # hard step
-    plogis(circ_diff01(delta, alpha) / sigma)
+#' Age-to-Ring Mapping Function Calculate_K(a)
+#' For a given true age, calculates the deterministic number of otolith rings.
+#' @param age_in_years A numeric vector of true ages.
+#' @param survey_date The numeric representation of the survey date.
+#' @param t_r The numeric representation of the ring formation day.
+#' @param a_min The minimum age for a fish to form its first ring.
+#' @return An integer vector of the same length, with the calculated K for each age.
+calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
+    sapply(age_in_years, function(age) {
+        if (age < 0) return(0)
+        birth_date <- survey_date - age
+        birth_year <- floor(birth_date)
+        next_ring_date <- birth_year + t_r
+        if (next_ring_date <= birth_date) {
+            next_ring_date <- (birth_year + 1) + t_r
+        }
+        k_count <- 0
+        while (next_ring_date < survey_date) {
+            age_at_ring_date <- next_ring_date - birth_date
+            if (age_at_ring_date >= a_min) {
+                k_count <- k_count + 1
+            }
+            next_ring_date <- next_ring_date + 1
+        }
+        return(k_count)
+    })
 }
 
-# ===== P(K = k | R = r, δ) given survey phase theta and edge v(δ) =====
-pK_given_r_delta <- function(k, r, delta, theta, alpha, sigma) {
-    # Deterministic baseline ring count K* at survey:
-    # After α in the survey year, the "new" annulus is present for everyone.
-    Kstar <- if (theta >= alpha) r else max(r - 1, 0L)
+#' Generate Model Predictions for a Specific Survey Date
+#' This function encapsulates the entire prediction pipeline for one survey.
+#' @param survey_date The numeric survey date.
+#' @param G The impulse response matrix from the single cohort simulation.
+#' @param a The vector of high-resolution ages.
+#' @param l The vector of length classes.
+#' @param mu Mean spawning date.
+#' @param kappa Spawning concentration parameter.
+#' @param t_r
+#' @param a_min Minimum age at which first ring can form
+#' @return A matrix of proportions, P(K|s), for the given survey date.
+#' @export
+generate_model_predictions_for_date <- function(
+        survey_date, G, a, l, mu, kappa, t_r, a_min) {
+    # Population Convolution
+    birth_dates <- survey_date - a
+    spawning_weights <- spawning_density(birth_dates, mu, kappa)
+    N_pop <- diag(spawning_weights) %*% G
 
-    v <- v_edge(delta, alpha, sigma)
-    # With probability v, we count one more than K* (new annulus read);
-    # with 1-v, we read K*.
-    p <- (1 - v) * as.numeric(k == Kstar) + v * as.numeric(k == (Kstar + 1L))
+    # Observation Convolution
+    k_for_each_age <- calculate_K(a, survey_date, t_r, a_min)
+    max_K <- max(k_for_each_age)
+    k_bins <- 0:max_K
+    N_model <- matrix(0, nrow = length(l), ncol = length(k_bins))
+    rownames(N_model) <- l
+    colnames(N_model) <- k_bins
 
-    # Clip impossible negatives (defensive)
-    if (k < 0) p <- 0
-    p
-}
-
-# ===== Main: density of A given K = k =====
-# Returns a data.frame with columns: a (age), dens (pdf), plus posterior over R.
-age_density_given_k <- function(
-        k,
-        theta,               # survey phase in [0,1)
-        mu, kappa,           # von Mises spawning params on [0,1)
-        alpha,               # annulus visibility phase in [0,1)
-        sigma = 0.03,        # width of the edge transition; 0 => hard step
-        R_max = max(10, k + 5),  # maximum completed calendar years to consider
-        w_R   = NULL,        # optional length R_max+1 vector of prior weights over R=0..R_max
-        n_delta = 2048,      # integration grid over δ
-        n_per_year = 512     # resolution for the final A density within each [r, r+1)
-) {
-    stopifnot(theta >= 0 && theta < 1, alpha >= 0 && alpha < 1)
-    R_vals <- 0:R_max
-    if (is.null(w_R)) w_R <- rep(1, length(R_vals))
-    if (length(w_R) != length(R_vals)) stop("w_R must have length R_max+1.")
-    w_R <- pmax(w_R, 0); if (sum(w_R) == 0) stop("All w_R are zero.")
-    w_R <- w_R / sum(w_R)
-
-    # Grid for δ in [0,1)
-    delta_grid <- seq(0, 1, length.out = n_delta + 1); delta_grid <- delta_grid[-length(delta_grid)]
-    d_delta <- 1 / n_delta
-
-    # f_Δ(δ) = f_S((θ - δ) mod 1) where S ~ von Mises(μ, κ) on [0,1)
-    f_delta <- dvm01(wrap01(theta - delta_grid), mu = mu, kappa = kappa)
-    # Normalize (numerical safety)
-    f_delta <- f_delta / (sum(f_delta) * d_delta)
-
-    # For each R, compute Pr(K=k | R)
-    pK_given_R <- vapply(
-        R_vals,
-        function(r) {
-            p_vec <- pK_given_r_delta(k, r, delta_grid, theta, alpha, sigma)
-            sum(p_vec * f_delta) * d_delta
-        },
-        numeric(1)
-    )
-
-    # Posterior over R given K=k
-    numer_R <- w_R * pK_given_R
-    post_R <- if (sum(numer_R) > 0) numer_R / sum(numer_R) else rep(0, length(numer_R))
-
-    # Now build the conditional density of A on a grid by mixing over R.
-    # For each r, the support is a in [r, r+1) with density ∝ Pr(K=k | r, δ=a-r) f_Δ(δ)
-    build_r_piece <- function(r, weight_r) {
-        if (weight_r == 0) return(NULL)
-        # Grid for a in [r, r+1)
-        delta_r <- seq(0, 1, length.out = n_per_year + 1); delta_r <- delta_r[-length(delta_r)]
-        # Interpolate f_delta at these delta_r points (use nearest-neighbor from precomputed grid)
-        idx <- pmin(n_delta, pmax(1L, round(delta_r * n_delta)))
-        fdel <- f_delta[idx]
-        pKr <- pK_given_r_delta(k, r, delta_r, theta, alpha, sigma)
-        g_unnorm <- pKr * fdel
-        area <- sum(g_unnorm) * (1 / n_per_year)
-        if (area == 0) return(NULL)
-        g <- g_unnorm / area
-        data.frame(a = r + delta_r, dens = weight_r * g, r = r)
+    for (k_val in k_bins) {
+        age_indices <- which(k_for_each_age == k_val)
+        if (length(age_indices) > 0) {
+            pop_subset <- N_pop[age_indices, , drop = FALSE]
+            N_model[, k_val + 1] <- colSums(pop_subset)
+        }
     }
 
-    pieces <- do.call(rbind, Map(build_r_piece, R_vals, post_R))
-    if (is.null(pieces) || nrow(pieces) == 0) {
-        warning("Degenerate result: no posterior mass; check parameters.")
-        return(list(density = data.frame(a = numeric(0), dens = numeric(0)),
-                    post_R = data.frame(R = R_vals, post = post_R),
-                    pK_given_R = data.frame(R = R_vals, p = pK_given_R)))
+    # Step D: Convert to proportions
+    P_model_K_given_l <- prop.table(N_model, margin = 1)
+    P_model_K_given_l[is.nan(P_model_K_given_l)] <- 0
+    return(P_model_K_given_l)
+}
+
+#' Simulate a Sample from Model Predictions
+#' Uses the model proportions and observed sample sizes to generate a simulated dataset.
+#' @param P_model_K_given_l The predicted proportions from the model.
+#' @param survey_obs A data frame of observations for a single survey.
+#' @return A vector of simulated K values for the given lengths.
+simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
+    simulated_K <- integer(nrow(survey_obs))
+
+    # Get the unique length classes that were actually sampled in this survey
+    unique_lengths <- unique(survey_obs$Length)
+
+    # Get the possible K values from the column names of the proportion matrix.
+    k_values <- as.numeric(colnames(P_model_K_given_l))
+
+    # For each unique length class...
+    for (len_val in unique_lengths) {
+        indices_to_fill <- which(survey_obs$Length == len_val)
+        n_fish <- length(indices_to_fill)
+        len_char <- as.character(len_val)
+
+        # Get the model's predicted proportions of K for this length
+        k_proportions <- P_model_K_given_l[len_char, , drop = TRUE]
+
+        # Check if the length class exists in the model predictions and has valid probabilities
+        if (len_char %in% rownames(P_model_K_given_l) && sum(k_proportions, na.rm = TRUE) > 0) {
+
+            # Perform a multinomial random sample
+            sim_counts <- rmultinom(1, size = n_fish, prob = k_proportions)
+
+            # Create a vector of the simulated K values
+            simulated_k_vector <- rep(k_values, sim_counts)
+
+            # Assign these simulated K's to the correct rows in the output.
+            # The length of simulated_k_vector is guaranteed to match n_fish.
+            if (length(simulated_k_vector) > 0) {
+                simulated_K[indices_to_fill] <- simulated_k_vector
+            }
+        }
     }
+    return(simulated_K)
+}
 
-    # Normalize the overall mixture density (guard small numerical drift)
-    total_area <- sum(pieces$dens) * (1 / n_per_year)
-    pieces$dens <- pieces$dens / total_area
 
-    list(
-        density = pieces[, c("a", "dens")],
-        post_R  = data.frame(R = R_vals, post = post_R),
-        pK_given_R = data.frame(R = R_vals, p = pK_given_R)
-    )
+
+#'Pre-process length-at-age data frame
+preprocess_length_at_age <- function(params, species, length_at_age) {
+    sci_name <- species_params(params)[species, "SciName"]
+    survey_dates <- c(0.125, 0.375, 0.625, 0.875)
+    age_at_length |>
+        filter(Scientific_name == sci_name) |>
+        # remove rows with NA in any column
+        filter(!is.na(LngtClass) & !is.na(Age) & !is.na(CANoAtLngt) &
+                   !is.na(Quarter)) |>
+        # round down to cm
+        mutate(LngtClass = floor(LngtClass)) |>
+        # aggregate counts by quarter
+        group_by(Quarter, LngtClass, Age) |>
+        summarise(CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE), .groups = "drop") |>
+        transmute(survey_date = survey_dates[Quarter],
+
+                  Length = as.integer(LngtClass),
+                  K = as.integer(Age),
+                  count = CANoAtLngt)
+}
+
+length_rebinning_matrix <- function(l_model, l_survey) {
+    ## LENGTH aggregation B : (surveyLen × modelLen) ----
+    # model length bins are defined by l_model
+    low_L  <- l_model[-length(l_model)]
+    high_L <- l_model[-1]
+    # survey length bins are defined by l_survey
+    low_S  <- l_survey[-length(l_survey)]
+    high_S <- l_survey[-1]
+
+    B <- matrix(0, nrow = length(high_L), ncol = length(high_S))
+    for (l in seq_along(high_L)) {
+        for (j in seq_along(high_S)) {
+            overlap <- max(0, min(high_L[l], high_S[j]) - max(low_L[l], low_S[j]))
+            B[l, j] <- overlap / (high_L[l] - low_L[l])   # fraction of model bin
+        }
+    }
+    return(B)
 }
