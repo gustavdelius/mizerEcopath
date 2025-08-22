@@ -39,7 +39,7 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 
 
 #' Age-to-Ring Mapping Function Calculate_K(a)
-#' Deterministically maps true age to the expected count of otolith rings, given
+#' Deterministically maps true age to the expected annuli count, given
 #' a survey date, an annual ring-formation day, and a minimum age threshold.
 #' @param age_in_years A numeric vector of true ages in years.
 #' @param survey_date The survey date as a numeric year (e.g., 2023.25).

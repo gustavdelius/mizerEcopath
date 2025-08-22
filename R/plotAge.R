@@ -160,7 +160,7 @@ calculate_and_plot_residuals <- function(observed_df, simulated_df) {
             title = "Pearson Residuals of Model Fit",
             subtitle = "Blue = Model Underestimates, Red = Model Overestimates",
             x = "Fish Length (cm)",
-            y = "Otolith Ring Count (K)"
+            y = "Annuli Count (K)"
         ) +
         theme_minimal() +
         theme(

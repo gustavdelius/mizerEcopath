@@ -1,7 +1,7 @@
 #' Age tab for tuning gadget
 #'
 #' Server logic for the age-at-length tab in the tuning gadget. Renders
-#' a residual heatmap comparing observed and simulated otolith ring counts
+#' a residual heatmap comparing observed and simulated annuli counts
 #' across length classes, via `plotAge()`.
 #'
 #' @inheritParams deathTab
