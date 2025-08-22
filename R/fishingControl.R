@@ -130,7 +130,7 @@ fishingControlUI <- function(params, input) {
                            value = gp$catchability,
                            min = signif(max(0, gp$catchability / 2 - 1), 5),
                            max = signif(max(gp$catchability * 2, 2), 5),
-                           step = 0.00001)
+                           step = 1e-16)
     )
 
     if (gp$sel_func == "knife_edge") {
