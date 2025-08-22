@@ -28,6 +28,7 @@ Imports:
     shiny,
     shinyBS,
     shinyjs,
+    tidyr,
     TMB
 Suggests:
     pkgdown,
