@@ -19,10 +19,7 @@ ageTab <- function(input, output, session, params, logs,
     # Plot mean age ----
     output$plotAge <- renderPlot({
         p <- params()
-        plotAge(p, species = input$sp, age_at_length = age_at_length,
-                mu = input$spawning_mu, kappa = input$spawning_kappa,
-                a_min = input$a_min,
-                ring_formation_date = input$ring_formation_date) +
+        plotAge(p, species = input$sp, age_at_length = age_at_length) +
             theme(text = element_text(size = 16))
     })
 }

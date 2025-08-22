@@ -91,3 +91,19 @@ calculate_and_plot_residuals <- function(observed_df, simulated_df) {
 
     return(p)
 }
+
+plotAge <- function(params, species, age_at_length) {
+    params <- validParams(params)
+    species <- valid_species_arg(params, species)
+
+    # Preprocess observed data
+    observed_df <- preprocess_length_at_age(params, species, age_at_length)
+
+    # Simulate age data
+    simulated_df <- simulateAge(params, species, observed_df)
+
+    # Calculate and plot residuals
+    p <- calculate_and_plot_residuals(observed_df, simulated_df)
+
+    return(p)
+}

@@ -7,19 +7,13 @@
 #'
 #' @param params A MizerParams object.
 #' @param species Name of the species to plot.
-#' @param age_at_length A data frame with columns `Scientific_name`, `Month`, `Day`,
-#'   `LngtClass`, `Age`, and `CANoAtLngt` giving observed age-at-length data.
+#' @param observed_df A data frame with columns `survey_date`, `Length`, `K`,
+#'   and `count`
 #' @param dt Time step for the model simulation (years). Default is 0.05.
-#' @param kappa Concentration parameter for the von Mises distribution that describes
-#' the spawning season of the fish. Default is 0 which means a uniform distribution of
-#' spawning over the year.
-#' @param mu Mean time of spawning. Default is 0.5.
 #'
 #' @return A data frame with
 #' @export
-simulateAge <- function(params, species, observed_df,
-                    dt = 0.05, kappa = 0, mu = 0.5,
-                    t_r = 0, a_min = 0) {
+simulateAge <- function(params, species, observed_df, dt = 0.05) {
     params <- validParams(params)
     species <- valid_species_arg(params, species)
 
@@ -75,8 +69,8 @@ simulateAge <- function(params, species, observed_df,
         # 1. Generate the model's predictions (proportions) for this specific date
         P_model <- generate_model_predictions_for_date(
             survey_date_current, G, a = age, l = l_survey[1:s],
-            mu = mu, kappa = kappa,
-            t_r = t_r, a_min = a_min
+            mu = sps$spawning_mu, kappa = sps$spawning_kappa,
+            t_r = sps$t_r, a_min = sps$a_min
         )
 
         # 2. Simulate a sample from the model that mimics the real sampling effort

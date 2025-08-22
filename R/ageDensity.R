@@ -139,7 +139,17 @@ simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
 
 
 #'Pre-process length-at-age data frame
-preprocess_length_at_age <- function(params, species, length_at_age) {
+#'
+#' This function filters and aggregates the age-at-length data for a specific species,
+#' rounds lengths down to the nearest cm, and aggregates counts by quarter.
+#' It returns a data frame with columns `survey_date`, `Length`, `K`, and `count`.
+#' @param params A MizerParams object.
+#' @param species The species name (as in `species_params(params)$species`) to filter the data for.
+#' @param age_at_length A data frame with columns `Scientific_name`, `Month`, `Day`,
+#'   `LngtClass`, `Age`, and `CANoAtLngt` giving observed age-at-length data.
+#' @return A processed data frame ready for analysis.
+#' @export
+preprocess_length_at_age <- function(params, species, age_at_length) {
     sci_name <- species_params(params)[species, "SciName"]
     survey_dates <- c(0.125, 0.375, 0.625, 0.875)
     age_at_length |>
@@ -153,7 +163,6 @@ preprocess_length_at_age <- function(params, species, length_at_age) {
         group_by(Quarter, LngtClass, Age) |>
         summarise(CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE), .groups = "drop") |>
         transmute(survey_date = survey_dates[Quarter],
-
                   Length = as.integer(LngtClass),
                   K = as.integer(Age),
                   count = CANoAtLngt)
