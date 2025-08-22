@@ -24,7 +24,7 @@
 otherControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observe({
-        req(input$alpha, input$ks, input$k, input$mu_mat)
+        req(input$alpha, input$ks, input$p, input$k, input$mu_mat)
         p <- isolate(params())
         sp <- isolate(input$sp)
         if (!identical(sp, flags$sp_old_other)) {
@@ -40,6 +40,9 @@ otherControl <- function(input, output, session, params, params_old,
         updateSliderInput(session, "ks",
                           min = signif(input$ks / 2, 2),
                           max = signif((input$ks + 0.1) * 1.5, 2))
+        updateSliderInput(session, "p",
+                          min = signif(input$p / 2, 2),
+                          max = signif((input$p + 0.1) * 1.5, 2))
         updateSliderInput(session, "k",
                           min = signif(input$k / 2, 2),
                           max = signif((input$k + 0.1) * 1.5, 2))
@@ -59,6 +62,7 @@ otherControl <- function(input, output, session, params, params_old,
 
         p@species_params[sp, "alpha"] <- input$alpha
         p@species_params[sp, "ks"]    <- input$ks
+        p@species_params[[sp, "p"]] <- input$p
         p@species_params[sp, "k"]     <- input$k
         p@species_params[sp, "mu_mat"] <- input$mu_mat
         p <- setMetabolicRate(p, reset = TRUE)
@@ -79,6 +83,11 @@ otherControlUI <- function(params, input) {
                     min = signif(sp$ks / 2, 2),
                     max = signif((sp$ks + 0.1) * 1.5, 2),
                     step = 0.05),
+        sliderInput("p", "Exponent of metabolism 'p'",
+                    value = sp$p,
+                    min = signif(sp$p / 2, 2),
+                    max = signif((sp$p + 0.1) * 1.5, 2),
+                    step = 0.005),
         sliderInput("k", "Coefficient of activity 'k'",
                     value = sp$k,
                     min = signif(sp$k / 2, 2),

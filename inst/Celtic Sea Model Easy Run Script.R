@@ -1,38 +1,14 @@
----
-title: "Celtic Sea Model"
-format: html
-editor: visual
----
+##Celtic Sea Easy Run Model Script
 
-# Introduction
-
-Creating a Celtic Sea model including species herring (*Clupea harengus*), cod (*Gadus morhua*), haddock (*Melanogrammus aeglefinus*), whiting (*Merlangius merlangus*), blue whiting (*Micromesistius poutassou*), hake (*Merluccius merluccius*), monkfish (Lophius piscatorius), horse mackerel (*Trachurus trachurus*), mackerel (*Scomber scombrus*), plaice (*Pleuronectes platessa*), megrim (*Lepidorhombus whiffiagonis*), sole (*Solea solea*).
-
-## Loading in Repository and Libraries
-
-```{r}
-#| warning: false
-#| message: false
-#| results: 'hide'
+##load repositories
 library(remotes)
-#install_github("gustavdelius/mizerEcopath") 
+#install_github("gustavdelius/mizerEcopath")
 library(mizerEcopath)
 library(dplyr)
 library(here)
-```
 
-## Load in Data
-
-Load in the accompanying csv and rds files within the mizerEcopath repostiory into R objects. This data includes species parameters data diet data and survey fishing data taken from ecopath and DATRAS.
-
-Some of the data formatting alterations are made in the following code to ensure that they are compatible with the desired MizerEcopath functions.
-
-```{r}
-#| warning: false
-#| message: false
-#| results: 'hide'
-
-#Load in ecopath parameters Consumption 
+##Load in data
+#Load in ecopath parameters Consumption
 ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
 
 #Ecopath yield data
@@ -44,29 +20,29 @@ yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |
     select(Group.name, TotalCatch..t.km..year.)
 
 #Scaled landings data
-cs_scaled_landings<- read.csv(here("inst","extdata", "cs_scaled_landings.csv")) 
+cs_scaled_landings<- read.csv(here("inst","extdata", "cs_scaled_landings.csv"))
 cs_scaled_landings <- cs_scaled_landings[cs_scaled_landings$gear == "total", ] #only total gear
 cs_scaled_landings <- cs_scaled_landings %>%
-  mutate(length = floor(length)) %>%           # Round up lengths
-  group_by(species, gear, length, Scientific_name) %>%  # Group by relevant columns
-  summarise(catch = sum(scaled_catch, na.rm = TRUE),
-            biomass = sum(scaled_biomass, na.rm = TRUE), .groups = "drop")                                                          # Sum catch for duplicates
+    mutate(length = floor(length)) %>%           # Round up lengths
+    group_by(species, gear, length, Scientific_name) %>%  # Group by relevant columns
+    summarise(catch = sum(scaled_catch, na.rm = TRUE),
+              biomass = sum(scaled_biomass, na.rm = TRUE), .groups = "drop")                                                          # Sum catch for duplicates
 cs_scaled_landings$count <- cs_scaled_landings$catch
 cs_scaled_landings$dl<-1
 cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count", "biomass")]
 
 #Survey data
-cs_survey<- read.csv(here("inst","extdata", "cs_survey.csv")) 
+cs_survey<- read.csv(here("inst","extdata", "cs_survey.csv"))
 
 cs_survey <- cs_survey %>%
-  group_by(species, Scientific_name, length, dl) %>%
-  summarise(
-    gear = "total",                          # Create a new 'gear' category
-    catch =sum(scaled_catch, na.rm = TRUE),       # Sum all catch across gears
-    count= catch,
-    biomass = sum(scaled_biomass, na.rm = TRUE),       # Sum all catch across gears
-    .groups = "drop"
-  )
+    group_by(species, Scientific_name, length, dl) %>%
+    summarise(
+        gear = "total",                          # Create a new 'gear' category
+        catch =sum(scaled_catch, na.rm = TRUE),       # Sum all catch across gears
+        count= catch,
+        biomass = sum(scaled_biomass, na.rm = TRUE),       # Sum all catch across gears
+        .groups = "drop"
+    )
 
 #For the time being cs_survey is going to be called catch but in future we will combine the landings and survey and have them as different gear types.
 catch<-cs_survey
@@ -81,32 +57,32 @@ catch<-rbind(cs_survey,cs_scaled_landings)
 age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
 
 #Species parameters from Fishbase
-    #Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
+#Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
 life_histories <- read.csv(here("inst","extdata", "life_histories.csv"))
 
 life_histories_summary <- life_histories %>%
-  filter(Sex %in% c("Unsexed", "Mixed")) %>%      # keep Unsexed or Mixed
-  mutate(Scientific_name = Species) %>%           # duplicate Species to match maturity data
-  group_by(Species) %>%
-  # Pick row with l_mat if possible, else any row
-  slice(
-    if (any(!is.na(l_mat))) {
-      which(!is.na(l_mat))[1]  # first non-NA
-    } else {
-      1                        # first row if all NA
-    }
-  ) %>%
-  rename(l_mat1 = l_mat) %>%
-  mutate(
-    Scientific_name = Species,
-    l_max = case_when(
-      l_max_type == "TL" ~ l_max_fishbase,
-      l_max_type == "FL" ~ La + Lb * l_max_fishbase,
-      l_max_type == "SL" ~ La + Lb * l_max_fishbase
-    ),
-    l_max = ifelse(!is.na(l_max), l_max, l_max_fishbase)
-  ) %>%
-  ungroup()
+    filter(Sex %in% c("Unsexed", "Mixed")) %>%      # keep Unsexed or Mixed
+    mutate(Scientific_name = Species) %>%           # duplicate Species to match maturity data
+    group_by(Species) %>%
+    # Pick row with l_mat if possible, else any row
+    slice(
+        if (any(!is.na(l_mat))) {
+            which(!is.na(l_mat))[1]  # first non-NA
+        } else {
+            1                        # first row if all NA
+        }
+    ) %>%
+    rename(l_mat1 = l_mat) %>%
+    mutate(
+        Scientific_name = Species,
+        l_max = case_when(
+            l_max_type == "TL" ~ l_max_fishbase,
+            l_max_type == "FL" ~ La + Lb * l_max_fishbase,
+            l_max_type == "SL" ~ La + Lb * l_max_fishbase
+        ),
+        l_max = ifelse(!is.na(l_max), l_max, l_max_fishbase)
+    ) %>%
+    ungroup()
 
 #length maturity from processed size at age DATRAS data
 lm<-read.csv(here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
@@ -115,28 +91,23 @@ sp_params<-left_join(life_histories_summary, lm, by="Scientific_name")
 
 #assume life_histories summary l_mat1, lm l_mat2, l_mat is the new column
 sp_params <- sp_params %>%
-  mutate(
-    l_mat = ifelse(
-      !is.na(l_mat2),
-      l_mat2,
-      l_mat1
-    ))%>%
- select(-l_mat2)%>%
- select(-l_mat1)
-```
+    mutate(
+        l_mat = ifelse(
+            !is.na(l_mat2),
+            l_mat2,
+            l_mat1
+        ))%>%
+    select(-l_mat2)%>%
+    select(-l_mat1)
 
-# Step 1
-
-## 1.1 Species Parameters
-
-```{r}
+##Set species parameters
 # Mapping of all species to their scientific names
 species_map_lauria <- data.frame(
-    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake", 
+    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake",
                 "Monkfish", "Horse mackerel", "Mackerel", "Plaice", "Megrim", "Sole"),
-    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus", 
+    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
                         "Merlangius merlangus", "Micromesistius poutassou", "Merluccius merluccius",
-                        "Lophius piscatorius", "Trachurus trachurus", "Scomber scombrus", 
+                        "Lophius piscatorius", "Trachurus trachurus", "Scomber scombrus",
                         "Pleuronectes platessa", "Lepidorhombus whiffiagonis", "Solea solea")
 )
 
@@ -154,7 +125,7 @@ sp <- sp_params %>%
         d       = n - 1,
         alpha   = 0.8
     ) %>%
-        # join common names
+    # join common names
     left_join(
         species_map_lauria,
         by = c("SciName" = "Scientific_name")
@@ -163,8 +134,8 @@ sp <- sp_params %>%
     mutate(species = species) %>%
     # keep desired columns
     transmute(
-        species,     # common name 
-        SciName,     # scientific name 
+        species,     # common name
+        SciName,     # scientific name
         w_inf,
         k_vb,
         l_mat,
@@ -175,11 +146,9 @@ sp <- sp_params %>%
         n, p, d, alpha
     )
 sp$age_mat <- mizer:::age_mat_vB(sp)
-```
 
-## Add Ecopath Params
+##Add Ecopath Parameters
 
-```{r}
 ## 4.2 Map to Ecopath stanzas
 species_to_groups <- list(
     Herring       = "Herring",
@@ -198,17 +167,14 @@ species_to_groups <- list(
 
 # Use addEcopathParams to validate and add Ecopath parameters to Mizer species.
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
-```
 
-## Update w_max from observations
-
-```{r}
+##Update w_max from landings
 ## 5.3 Update w_max from observed sizes
 observed_max <- cs_scaled_landings %>%
-  group_by(species) %>%
-  summarise(
-    obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
-  )
+    group_by(species) %>%
+    summarise(
+        obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
+    )
 
 sp1 <- sp %>%
     left_join(observed_max, by = "species")%>%
@@ -216,11 +182,8 @@ sp1 <- sp %>%
         l_max      = pmax(obs_len, l_max),
         w_max        = a * l_max^b,
     )
-```
 
-## Build non-interacting mizer model
-
-```{r}
+##Build non-interacting Model
 ## 6.1 Initial model ----
 model_non_int <- newAllometricParams(sp, no_w = 200)
 
@@ -255,22 +218,14 @@ model_non_int <- model_non_int %>%
 model_non_int <- model_non_int %>%
     matchConsumption()
 
+
+##Run in tune Ecopath
 model_non_int_1<-tuneEcopath(
-    model_non_int, 
+    model_non_int,
     catch = cs_survey,
     age_at_length = age_at_length
 )
-```
 
-# Step 2 - Adding Landings
 
-```{r}
-model_non_int <- addFishingMort(model_non_int, cs_scaled_landings)
-```
 
-# Step 3 - Diet Matching
 
-```{r eval=FALSE}
-fits <- readRDS(here("Data", "stomach_data_fit.rds"))
-ecopath_diet <- read.csv(here("Data", "Ecopath-Diet composition.csv")) 
-```
