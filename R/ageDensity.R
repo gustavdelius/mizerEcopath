@@ -172,7 +172,17 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, t_r,
 
     total_contributions <- all_contributions_df %>%
         group_by(Length, K) %>%
-        summarise(TotalSignedNegLogLik = sum(SignedNegLogLik, na.rm = TRUE), .groups = 'drop')
+        summarise(
+            TotalObserved = sum(Observed, na.rm = TRUE),
+            TotalExpected = sum(Expected, na.rm = TRUE),
+            TotalNegLogLik = sum(NegLogLik, na.rm = TRUE),
+            .groups = 'drop'
+        ) %>%
+        mutate(
+            # The final signed NLL is the total misfit, with the sign determined
+            # by the overall difference between observed and expected counts.
+            SignedNegLogLik = sign(TotalObserved - TotalExpected) * TotalNegLogLik
+        )
 
     return(total_contributions)
 }

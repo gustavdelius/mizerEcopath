@@ -1,6 +1,7 @@
-#' Plot Signed Negative Log-Likelihood Contributions
-#' Creates a heatmap of the signed contribution of each cell to the NLL.
-#' @param contributions_df A data frame with Length, K, and TotalSignedNegLogLik.
+#' Plot Signed Negative Log-Likelihood Contributions with Mean K Lines
+#' Creates a heatmap of the signed contribution of each cell to the NLL,
+#' and overlays the mean observed and expected K values.
+#' @param contributions_df A data frame from calculate_and_aggregate_likelihood.
 #' @return A ggplot object.
 plot_log_likelihood <- function(contributions_df) {
 
@@ -8,32 +9,64 @@ plot_log_likelihood <- function(contributions_df) {
     contributions_df$Length <- as.numeric(as.character(contributions_df$Length))
     contributions_df$K <- as.numeric(as.character(contributions_df$K))
 
-    # Determine symmetric color scale limits
-    max_abs_val <- max(abs(contributions_df$TotalSignedNegLogLik), na.rm = TRUE)
+    # --- NEW: Calculate mean K lines ---
+    mean_lines_df <- contributions_df %>%
+        group_by(Length) %>%
+        summarise(
+            # Weighted mean of K by the number of observed/expected fish
+            Observed = sum(K * TotalObserved) / sum(TotalObserved),
+            Model = sum(K * TotalExpected) / sum(TotalExpected),
+            .groups = 'drop'
+        ) %>%
+        # Reshape the data for easy plotting with ggplot
+        pivot_longer(
+            cols = c("Observed", "Model"),
+            names_to = "Source",
+            values_to = "MeanK"
+        )
+
+    # Determine symmetric color scale limits for the heatmap
+    max_abs_val <- max(abs(contributions_df$SignedNegLogLik), na.rm = TRUE)
 
     # Create the plot
-    p <- ggplot(contributions_df, aes(x = Length, y = K, fill = TotalSignedNegLogLik)) +
-        geom_tile() +
-        # Use a diverging color scale
+    p <- ggplot(contributions_df, aes(x = Length, y = K)) +
+        # Heatmap layer for the misfit
+        geom_tile(aes(fill = SignedNegLogLik)) +
+        # Line layers for the mean K values
+        geom_line(
+            data = mean_lines_df,
+            aes(y = MeanK, color = Source, linetype = Source),
+            size = 1
+        ) +
+        # --- Define scales and labels ---
         scale_fill_gradient2(
             low = "red",
             mid = "white",
             high = "blue",
             midpoint = 0,
             limit = c(-max_abs_val, max_abs_val),
-            name = "Signed NLL\nContribution"
+            name = "Direction & Magnitude\nof Misfit (NLL)"
+        ) +
+        scale_color_manual(
+            name = "Mean K",
+            values = c("Observed" = "black", "Model" = "darkgreen")
+        ) +
+        scale_linetype_manual(
+            name = "Mean K",
+            values = c("Observed" = "solid", "Model" = "solid")
         ) +
         labs(
-            title = "Model Fit Diagnostic: Signed Negative Log-Likelihood",
-            subtitle = "Blue = Observed > Expected (Underestimation), Red = Observed < Expected (Overestimation)",
+            title = "Model Fit Diagnostic",
+            subtitle = "Color shows direction (Blue: Obs > Exp, Red: Obs < Exp). Intensity shows magnitude of misfit.",
             x = "Fish Length (cm)",
-            y = "Otolith Ring Count (K)"
+            y = "Otololith Ring Count (K)"
         ) +
         theme_minimal() +
         theme(
             panel.grid = element_blank(),
             plot.title = element_text(hjust = 0.5, face = "bold"),
-            plot.subtitle = element_text(hjust = 0.5, size = 9)
+            plot.subtitle = element_text(hjust = 0.5, size = 9),
+            legend.position = "right"
         )
 
     return(p)
