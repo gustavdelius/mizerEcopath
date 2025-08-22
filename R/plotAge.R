@@ -65,7 +65,7 @@ plot_log_likelihood <- function(contributions_df) {
         theme(
             panel.grid = element_blank(),
             plot.title = element_text(hjust = 0.5, face = "bold"),
-            plot.subtitle = element_text(hjust = 0.5, size = 9),
+            plot.subtitle = element_text(hjust = 0.5, size = 18),
             legend.position = "right"
         )
 
