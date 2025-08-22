@@ -59,7 +59,7 @@ plot_log_likelihood <- function(contributions_df) {
             title = "Model Fit Diagnostic",
             subtitle = "Color shows direction (Blue: Obs > Exp, Red: Obs < Exp). Intensity shows magnitude of misfit.",
             x = "Fish Length (cm)",
-            y = "Otololith Ring Count (K)"
+            y = "Annuli Count (K)"
         ) +
         theme_minimal() +
         theme(
