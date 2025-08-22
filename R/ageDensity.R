@@ -118,8 +118,8 @@ generate_model_predictions_for_date <- function(
     return(P_model_K_given_l)
 }
 
-#' Calculate and Aggregate Log-Likelihood Contributions
-#' Loops through surveys, calculates NLL for each, and aggregates the results.
+#' Calculate and Aggregate Signed Log-Likelihood Contributions
+#' Loops through surveys, calculates signed NLL for each, and aggregates the results.
 #' @param surveys A list of data frames, split by survey date.
 #' @inheritParams generate_model_predictions_for_date
 #' @return A data frame with the total NLL contribution for each Length-K bin.
@@ -137,20 +137,32 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, t_r,
             survey_date_current, G, a, l, mu, kappa, t_r, a_min
         )
 
-        # 2. Get observed counts for this survey
+        # 2. Get observed counts and total sample sizes per length for this survey
         obs_counts <- as.data.frame(table(current_obs_df$Length, current_obs_df$K))
         colnames(obs_counts) <- c("Length", "K", "Observed")
+
+        sample_sizes <- current_obs_df %>%
+            group_by(Length) %>%
+            summarise(N = n(), .groups = 'drop') %>%
+            mutate(Length = as.factor(Length))
 
         # 3. Convert model probabilities to a long data frame for joining
         P_model_df <- as.data.frame.table(P_model)
         colnames(P_model_df) <- c("Length", "K", "Prob")
 
-        # 4. Join observed counts with model probabilities
-        likelihood_df <- left_join(obs_counts, P_model_df, by = c("Length", "K"))
+        # 4. Join all data together
+        likelihood_df <- obs_counts %>%
+            left_join(sample_sizes, by = "Length") %>%
+            left_join(P_model_df, by = c("Length", "K"))
 
-        # 5. Calculate the negative log-likelihood contribution for each cell
+        # 5. Calculate the signed negative log-likelihood contribution
         epsilon <- 1e-9 # To prevent log(0)
-        likelihood_df$NegLogLik <- - (likelihood_df$Observed * log(likelihood_df$Prob + epsilon))
+        likelihood_df <- likelihood_df %>%
+            mutate(
+                Expected = N * Prob,
+                NegLogLik = - (Observed * log(Prob + epsilon)),
+                SignedNegLogLik = sign(Observed - Expected) * NegLogLik
+            )
 
         log_lik_contributions[[survey_date_str]] <- likelihood_df
     }
@@ -160,7 +172,7 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, t_r,
 
     total_contributions <- all_contributions_df %>%
         group_by(Length, K) %>%
-        summarise(TotalNegLogLik = sum(NegLogLik, na.rm = TRUE), .groups = 'drop')
+        summarise(TotalSignedNegLogLik = sum(SignedNegLogLik, na.rm = TRUE), .groups = 'drop')
 
     return(total_contributions)
 }

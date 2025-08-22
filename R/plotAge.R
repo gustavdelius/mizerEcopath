@@ -1,6 +1,6 @@
-#' Plot Negative Log-Likelihood Contributions
-#' Creates a heatmap of the contribution of each cell to the NLL.
-#' @param contributions_df A data frame with Length, K, and TotalNegLogLik.
+#' Plot Signed Negative Log-Likelihood Contributions
+#' Creates a heatmap of the signed contribution of each cell to the NLL.
+#' @param contributions_df A data frame with Length, K, and TotalSignedNegLogLik.
 #' @return A ggplot object.
 plot_log_likelihood <- function(contributions_df) {
 
@@ -8,18 +8,24 @@ plot_log_likelihood <- function(contributions_df) {
     contributions_df$Length <- as.numeric(as.character(contributions_df$Length))
     contributions_df$K <- as.numeric(as.character(contributions_df$K))
 
+    # Determine symmetric color scale limits
+    max_abs_val <- max(abs(contributions_df$TotalSignedNegLogLik), na.rm = TRUE)
+
     # Create the plot
-    p <- ggplot(contributions_df, aes(x = Length, y = K, fill = TotalNegLogLik)) +
+    p <- ggplot(contributions_df, aes(x = Length, y = K, fill = TotalSignedNegLogLik)) +
         geom_tile() +
-        # Using a sequential color scale is more appropriate for NLL (always >= 0)
-        scale_fill_viridis_c(
-            name = "Neg Log-Lik\nContribution",
-            option = "plasma", # A visually appealing color scale
-            direction = -1 # Puts darker colors for higher values
+        # Use a diverging color scale
+        scale_fill_gradient2(
+            low = "red",
+            mid = "white",
+            high = "blue",
+            midpoint = 0,
+            limit = c(-max_abs_val, max_abs_val),
+            name = "Signed NLL\nContribution"
         ) +
         labs(
-            title = "Model Fit Diagnostic: Negative Log-Likelihood",
-            subtitle = "Darker colors indicate cells with poorer model fit (higher 'surprise')",
+            title = "Model Fit Diagnostic: Signed Negative Log-Likelihood",
+            subtitle = "Blue = Observed > Expected (Underestimation), Red = Observed < Expected (Overestimation)",
             x = "Fish Length (cm)",
             y = "Otolith Ring Count (K)"
         ) +
