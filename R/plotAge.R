@@ -1,3 +1,38 @@
+#' Plot Negative Log-Likelihood Contributions
+#' Creates a heatmap of the contribution of each cell to the NLL.
+#' @param contributions_df A data frame with Length, K, and TotalNegLogLik.
+#' @return A ggplot object.
+plot_log_likelihood <- function(contributions_df) {
+
+    # Convert factors to numeric for plotting
+    contributions_df$Length <- as.numeric(as.character(contributions_df$Length))
+    contributions_df$K <- as.numeric(as.character(contributions_df$K))
+
+    # Create the plot
+    p <- ggplot(contributions_df, aes(x = Length, y = K, fill = TotalNegLogLik)) +
+        geom_tile() +
+        # Using a sequential color scale is more appropriate for NLL (always >= 0)
+        scale_fill_viridis_c(
+            name = "Neg Log-Lik\nContribution",
+            option = "plasma", # A visually appealing color scale
+            direction = -1 # Puts darker colors for higher values
+        ) +
+        labs(
+            title = "Model Fit Diagnostic: Negative Log-Likelihood",
+            subtitle = "Darker colors indicate cells with poorer model fit (higher 'surprise')",
+            x = "Fish Length (cm)",
+            y = "Otolith Ring Count (K)"
+        ) +
+        theme_minimal() +
+        theme(
+            panel.grid = element_blank(),
+            plot.title = element_text(hjust = 0.5, face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, size = 9)
+        )
+
+    return(p)
+}
+
 #' Calculate and plot Pearson residuals
 #' Creates a heatmap of Pearson residuals to visualize model fit in K-by-length
 #' space, with overlaid average K lines for observed and simulated data.
@@ -111,7 +146,7 @@ calculate_and_plot_residuals <- function(observed_df, simulated_df) {
 #' @examples
 #' # In practice provide a real `age_at_length` table for the species
 #' # p <- plotAge(params, species = "Cod", age_at_length = df)
-plotAge <- function(params, species, age_at_length) {
+plotSimulatedAge <- function(params, species, age_at_length) {
     params <- validParams(params)
     species <- valid_species_arg(params, species)
 
@@ -125,4 +160,29 @@ plotAge <- function(params, species, age_at_length) {
     p <- calculate_and_plot_residuals(observed_df, simulated_df)
 
     return(p)
+}
+
+#' Plot the likelihood of the observed age data
+#'
+#' @param params A `mizer::MizerParams` object.
+#' @param species Species name as in `species_params(params)$species`.
+#' @param age_at_length Data frame of raw age-at-length observations; will be
+#'   preprocessed internally by `preprocess_length_at_age()`.
+#' @return A `ggplot2` object suitable for display in Shiny or saving.
+#' @export
+#' @examples
+#' # In practice provide a real `age_at_length` table for the species
+#' # p <- plotAge(params, species = "Cod", age_at_length = df)
+plotAgeLikelihood <- function(params, species, age_at_length) {
+    params <- validParams(params)
+    species <- valid_species_arg(params, species)
+
+    # Preprocess observed data
+    observed_df <- preprocess_length_at_age(params, species, age_at_length)
+
+    # Simulate age data
+    logLik <- getLogLik(params, species, observed_df)
+
+    # Calculate and plot residuals
+    plot_log_likelihood(logLik)
 }
