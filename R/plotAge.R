@@ -1,8 +1,15 @@
-#' Calculate and Plot Pearson Residuals
-#' Creates a heatmap of Pearson residuals to visualize model fit.
-#' @param observed_df The data frame of observed data (Length, K).
-#' @param simulated_df The data frame of simulated data (Length, K).
-#' @return A ggplot object.
+#' Calculate and plot Pearson residuals
+#' Creates a heatmap of Pearson residuals to visualize model fit in K-by-length
+#' space, with overlaid average K lines for observed and simulated data.
+#' @param observed_df Data frame of observed data with columns `Length` and `K`.
+#' @param simulated_df Data frame of simulated data with columns `Length` and `K`.
+#' @return A `ggplot2` object.
+#' @keywords internal
+#' @examples
+#' # Toy example
+#' obs <- data.frame(Length = c(20, 20, 25, 30), K = c(0, 1, 1, 2))
+#' sim <- data.frame(Length = c(20, 25, 25, 30, 30), K = c(0, 0, 1, 1, 2))
+#' calculate_and_plot_residuals(obs, sim)
 calculate_and_plot_residuals <- function(observed_df, simulated_df) {
 
     # --- 1. Create contingency tables (counts of fish by Length and K) ---
@@ -41,27 +48,27 @@ calculate_and_plot_residuals <- function(observed_df, simulated_df) {
     # --- 5. Calculate average K for each length bin ---
     # Calculate average K for observed data
     obs_avg_k <- observed_df %>%
-        group_by(Length) %>%
+        group_by(.data$Length) %>%
         summarise(
-            avg_k = weighted.mean(K, w = rep(1, n()), na.rm = TRUE),
+            avg_k = weighted.mean(.data$K, w = rep(1, dplyr::n()), na.rm = TRUE),
             .groups = "drop"
         )
 
     # Calculate average K for simulated data
     sim_avg_k <- simulated_df %>%
-        group_by(Length) %>%
+        group_by(.data$Length) %>%
         summarise(
-            avg_k = weighted.mean(K, w = rep(1, n()), na.rm = TRUE),
+            avg_k = weighted.mean(.data$K, w = rep(1, dplyr::n()), na.rm = TRUE),
             .groups = "drop"
         )
 
     # --- 6. Create the plot using ggplot2 ---
-    p <- ggplot(all_counts, aes(x = Length, y = K, fill = Residual_capped)) +
+    p <- ggplot(all_counts, aes(x = .data$Length, y = .data$K, fill = .data$Residual_capped)) +
         geom_tile() + # This creates the heatmap tiles
         # Add lines for average K
-        geom_line(data = obs_avg_k, aes(x = Length, y = avg_k, color = "Observed Avg K"),
+        geom_line(data = obs_avg_k, aes(x = .data$Length, y = .data$avg_k, color = "Observed Avg K"),
                   linewidth = 2, inherit.aes = FALSE) +
-        geom_line(data = sim_avg_k, aes(x = Length, y = avg_k, color = "Simulated Avg K"),
+        geom_line(data = sim_avg_k, aes(x = .data$Length, y = .data$avg_k, color = "Simulated Avg K"),
                   linewidth = 1, inherit.aes = FALSE) +
         scale_fill_gradient2(
             low = "red",
@@ -92,6 +99,18 @@ calculate_and_plot_residuals <- function(observed_df, simulated_df) {
     return(p)
 }
 
+#' Plot observed vs simulated ring counts by length
+#' Generates a residual heatmap and overlays average K-by-length for both
+#' observed and simulated data, for a single species.
+#' @param params A `mizer::MizerParams` object.
+#' @param species Species name as in `species_params(params)$species`.
+#' @param age_at_length Data frame of raw age-at-length observations; will be
+#'   preprocessed internally by `preprocess_length_at_age()`.
+#' @return A `ggplot2` object suitable for display in Shiny or saving.
+#' @export
+#' @examples
+#' # In practice provide a real `age_at_length` table for the species
+#' # p <- plotAge(params, species = "Cod", age_at_length = df)
 plotAge <- function(params, species, age_at_length) {
     params <- validParams(params)
     species <- valid_species_arg(params, species)

@@ -1,9 +1,14 @@
 #' von Mises Probability Density Function
-#' A custom implementation to avoid external package dependencies.
+#' A lightweight implementation used to model circular seasonality
+#' (e.g., spawning day within a year) without adding dependencies.
 #' @param x Angle in radians.
 #' @param mu Mean direction in radians.
-#' @param kappa Concentration parameter.
-#' @return The probability density.
+#' @param kappa Concentration parameter (higher means more concentrated).
+#' @return The probability density evaluated at `x`.
+#' @keywords internal
+#' @examples
+#' # Density at angle pi when centered at pi with moderate concentration
+#' von_mises_pdf(pi, mu = pi, kappa = 2)
 von_mises_pdf <- function(x, mu, kappa) {
     denominator <- 2 * pi * besselI(kappa, 0)
     numerator <- exp(kappa * cos(x - mu))
@@ -11,11 +16,19 @@ von_mises_pdf <- function(x, mu, kappa) {
 }
 
 #' Spawning Density Function S(d)
-#' Calculates the relative spawning intensity for any given numeric date.
-#' @param numeric_dates A vector of numeric dates (e.g., 2023.45).
-#' @param mu The mean spawning date.
+#' Calculates relative spawning intensity for numeric dates using a
+#' von Mises density on the unit circle of the year.
+#' @param numeric_dates A vector of numeric dates (e.g., 2023.45). Only the
+#'   fractional part is used to determine day-of-year.
+#' @param mu The mean spawning date as a fraction of a year in \[0, 1). For
+#'   example, 0.5 is mid-year.
 #' @param kappa The concentration parameter for the spawning distribution.
-#' @return A numeric vector of relative spawning intensities.
+#' @return A numeric vector of relative spawning intensities with the same
+#'   length as `numeric_dates`.
+#' @keywords internal
+#' @examples
+#' # Peak at mid-year with moderate spread
+#' spawning_density(numeric_dates = c(2020.45, 2020.50, 2020.55), mu = 0.5, kappa = 4)
 spawning_density <- function(numeric_dates, mu, kappa) {
     day_fraction <- numeric_dates %% 1
     day_rad <- day_fraction * 2 * pi
@@ -26,12 +39,16 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 
 
 #' Age-to-Ring Mapping Function Calculate_K(a)
-#' For a given true age, calculates the deterministic number of otolith rings.
-#' @param age_in_years A numeric vector of true ages.
-#' @param survey_date The numeric representation of the survey date.
-#' @param t_r The numeric representation of the ring formation day.
-#' @param a_min The minimum age for a fish to form its first ring.
-#' @return An integer vector of the same length, with the calculated K for each age.
+#' Deterministically maps true age to the expected count of otolith rings, given
+#' a survey date, an annual ring-formation day, and a minimum age threshold.
+#' @param age_in_years A numeric vector of true ages in years.
+#' @param survey_date The survey date as a numeric year (e.g., 2023.25).
+#' @param t_r Ring formation day as fraction of a year in \[0, 1).
+#' @param a_min The minimum age (years) required to form the first ring.
+#' @return An integer vector with the calculated number of rings (K) for each age.
+#' @keywords internal
+#' @examples
+#' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5, t_r = 0.25, a_min = 0.5)
 calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
     sapply(age_in_years, function(age) {
         if (age < 0) return(0)
@@ -53,18 +70,25 @@ calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
     })
 }
 
-#' Generate Model Predictions for a Specific Survey Date
-#' This function encapsulates the entire prediction pipeline for one survey.
-#' @param survey_date The numeric survey date.
-#' @param G The impulse response matrix from the single cohort simulation.
-#' @param a The vector of high-resolution ages.
-#' @param l The vector of length classes.
-#' @param mu Mean spawning date.
+#' Generate model predictions for a specific survey date
+#' Encapsulates the prediction pipeline to obtain P(K | length) for one survey.
+#' @param survey_date Numeric survey date (e.g., 2023.25).
+#' @param G Impulse-response matrix from the single-cohort simulation
+#'   (rows = ages, cols = length classes).
+#' @param a Numeric vector of high-resolution ages corresponding to rows of `G`.
+#' @param l Numeric vector of length-class centers corresponding to columns of `G`.
+#' @param mu Mean spawning date as a fraction of a year in \[0, 1).
 #' @param kappa Spawning concentration parameter.
-#' @param t_r
-#' @param a_min Minimum age at which first ring can form
-#' @return A matrix of proportions, P(K|s), for the given survey date.
+#' @param t_r Ring formation day as fraction of a year in \[0, 1).
+#' @param a_min Minimum age (years) at which the first ring can form.
+#' @return A matrix of proportions with rows named by `l` and columns by K bins.
 #' @export
+#' @examples
+#' # Minimal schematic example (using toy inputs)
+#' a <- seq(0, 3, length.out = 5)
+#' l <- seq(10, 30, length.out = 3)
+#' G <- matrix(abs(sin(outer(a, l, "+"))), nrow = length(a))
+#' generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3, t_r = 0.25, a_min = 0.5)
 generate_model_predictions_for_date <- function(
         survey_date, G, a, l, mu, kappa, t_r, a_min) {
     # Population Convolution
@@ -94,11 +118,19 @@ generate_model_predictions_for_date <- function(
     return(P_model_K_given_l)
 }
 
-#' Simulate a Sample from Model Predictions
-#' Uses the model proportions and observed sample sizes to generate a simulated dataset.
-#' @param P_model_K_given_l The predicted proportions from the model.
-#' @param survey_obs A data frame of observations for a single survey.
-#' @return A vector of simulated K values for the given lengths.
+#' Simulate a sample from model predictions
+#' Draws K values using multinomial sampling with probabilities P(K | length)
+#' for each length observed in a given survey.
+#' @param P_model_K_given_l Matrix of predicted proportions P(K | length).
+#' @param survey_obs A data frame for one survey with at least a `Length` column.
+#' @return An integer vector of simulated K values aligned with `survey_obs` rows.
+#' @keywords internal
+#' @examples
+#' set.seed(1)
+#' P <- matrix(c(0.7, 0.3, 0.2, 0.8), nrow = 2, byrow = TRUE)
+#' rownames(P) <- c("20", "30"); colnames(P) <- c("0", "1")
+#' survey_obs <- data.frame(Length = c(20, 20, 30, 30, 30))
+#' simulate_sample_from_model(P, survey_obs)
 simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
     simulated_K <- integer(nrow(survey_obs))
 
@@ -138,36 +170,49 @@ simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
 
 
 
-#'Pre-process length-at-age data frame
+#' Pre-process length-at-age data frame
 #'
-#' This function filters and aggregates the age-at-length data for a specific species,
-#' rounds lengths down to the nearest cm, and aggregates counts by quarter.
-#' It returns a data frame with columns `survey_date`, `Length`, `K`, and `count`.
-#' @param params A MizerParams object.
-#' @param species The species name (as in `species_params(params)$species`) to filter the data for.
-#' @param age_at_length A data frame with columns `Scientific_name`, `Month`, `Day`,
-#'   `LngtClass`, `Age`, and `CANoAtLngt` giving observed age-at-length data.
-#' @return A processed data frame ready for analysis.
+#' Filters and aggregates age-at-length data for a species, rounding lengths down
+#' to the nearest cm and aggregating counts by quarter. Returns a tidy data frame
+#' with columns `survey_date`, `Length`, `K`, and `count`.
+#' @param params A `mizer::MizerParams` object.
+#' @param species Species name as in `species_params(params)$species`.
+#' @param age_at_length Data frame with at least the columns `Scientific_name`,
+#'   `Quarter`, `LngtClass`, `Age`, and `CANoAtLngt`.
+#' @return A data frame with the columns described above, one row per
+#'   quarter-length-age combination.
 #' @export
+#' @examples
+#' # Using package data would typically look like:
+#' # df <- preprocess_length_at_age(params, species = "Cod", age_at_length = your_df)
 preprocess_length_at_age <- function(params, species, age_at_length) {
     sci_name <- species_params(params)[species, "SciName"]
     survey_dates <- c(0.125, 0.375, 0.625, 0.875)
     age_at_length |>
-        filter(Scientific_name == sci_name) |>
+        filter(.data$Scientific_name == sci_name) |>
         # remove rows with NA in any column
-        filter(!is.na(LngtClass) & !is.na(Age) & !is.na(CANoAtLngt) &
-                   !is.na(Quarter)) |>
+        filter(!is.na(.data$LngtClass) & !is.na(.data$Age) & !is.na(.data$CANoAtLngt) &
+                   !is.na(.data$Quarter)) |>
         # round down to cm
-        mutate(LngtClass = floor(LngtClass)) |>
+        mutate(LngtClass = floor(.data$LngtClass)) |>
         # aggregate counts by quarter
-        group_by(Quarter, LngtClass, Age) |>
-        summarise(CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE), .groups = "drop") |>
-        transmute(survey_date = survey_dates[Quarter],
-                  Length = as.integer(LngtClass),
-                  K = as.integer(Age),
-                  count = CANoAtLngt)
+        group_by(.data$Quarter, .data$LngtClass, .data$Age) |>
+        summarise(CANoAtLngt = sum(.data$CANoAtLngt, na.rm = TRUE), .groups = "drop") |>
+        transmute(survey_date = survey_dates[.data$Quarter],
+                  Length = as.integer(.data$LngtClass),
+                  K = as.integer(.data$Age),
+                  count = .data$CANoAtLngt)
 }
 
+#' Build a length rebinning matrix
+#' Computes the fraction of each model length bin that overlaps each survey
+#' length bin, producing a matrix suitable for rebinning/aggregation.
+#' @param l_model Numeric vector of model bin edges (strictly increasing).
+#' @param l_survey Numeric vector of survey bin edges (strictly increasing).
+#' @return A matrix of dimension `(length(l_model) - 1) x (length(l_survey) - 1)`
+#'   where each entry is the fraction of the model bin width overlapping a
+#'   survey bin.
+#' @keywords internal
 length_rebinning_matrix <- function(l_model, l_survey) {
     ## LENGTH aggregation B : (surveyLen × modelLen) ----
     # model length bins are defined by l_model
