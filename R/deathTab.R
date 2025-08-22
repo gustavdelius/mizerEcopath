@@ -9,19 +9,18 @@
 #' @param ... Unused
 deathTab <- function(input, output, session, params, logs,
                      diet = NULL, ...) {
-
-    # Plot predators ----
-    output$plot_pred <- renderPlotly({
+    # Plot mortality
+    output$plot_mort <- renderPlotly({
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
             p <- matchDiet(p, diet)
         }
+        p <- catchSelectivity(p, catch)
         plotDeath(p, species = input$sp,
                   proportion = input$death_prop == "Proportion",
                   xtrans = input$death_xtrans)
     })
-
     # Plot Production
     output$plot_prod <- renderPlotly({
         plotProductionVsSpecies(params())
@@ -31,7 +30,7 @@ deathTab <- function(input, output, session, params, logs,
 #' @rdname deathTab
 deathTabUI <- function(...) {
     tagList(
-        plotlyOutput("plot_pred"),
+        plotlyOutput("plot_mort"),
         radioButtons("death_prop", "Show",
                      choices = c("Proportion", "Rate"),
                      selected = "Proportion",
