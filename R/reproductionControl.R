@@ -10,41 +10,36 @@
 reproductionControl <- function(input, output, session, params, params_old,
                                 flags, ...) {
     observeEvent(
-        list(input$w_mat, input$wfrac, #input$gonad_proportion,
-             input$m, input$w_repro_max),
+        list(input$l_mat, input$lfrac, #input$gonad_proportion,
+             input$m, input$l_repro_max),
         {
             p <- params()
             sp <- input$sp
+            sps <- p@species_params[sp, ]
             if (!identical(sp, flags$sp_old_repro)) {
                 flags$sp_old_repro <- sp
                 return()
             }
-            # # Update w_repro_max in respone to change in gonad_proportion
-            # ratio <- input$gonad_proportion /
-            #     p@species_params[sp, "gonad_proportion"]
-            # if (ratio != 1) {
-            #     w_maxratio <- ratio ^ (1 / (p@species_params[sp, "n"] -
-            #                                     p@species_params[sp, "m"]))
-            #     p@species_params[sp, "w_repro_max"] <- p@species_params[sp, "w_repro_max"] *
-            #         w_maxratio
-            # }
 
             # Update slider min/max so that they are a fixed proportion of the
             # parameter value
-            updateSliderInput(session, "w_mat",
-                              min = signif(input$w_mat / 2, 2),
-                              max = signif(input$w_mat * 1.5, 2))
+            updateSliderInput(session, "l_mat",
+                              min = signif(input$l_mat / 2, 2),
+                              max = signif(input$l_mat * 1.5, 2))
             # updateSliderInput(session, "gonad_proportion",
             #                   min = signif(input$gonad_proportion / 2, 2),
             #                   max = signif(input$gonad_proportion * 1.5, 2))
-            updateSliderInput(session, "w_repro_max",
-                              min = signif(input$w_repro_max / 2, 2),
-                              max = signif(input$w_repro_max * 1.5, 2))
+            updateSliderInput(session, "l_repro_max",
+                              min = signif(input$l_repro_max / 2, 2),
+                              max = signif(input$l_repro_max * 1.5, 2))
 
-            p@species_params[sp, "w_mat25"]   <- input$w_mat * input$wfrac
-            p@species_params[sp, "w_mat"]   <- input$w_mat
-            # p@species_params[sp, "gonad_proportion"]   <- input$gonad_proportion
-            p@species_params[sp, "w_repro_max"] <- input$w_repro_max
+            l_mat_25 <- input$l_mat * input$lfrac
+            w_mat_25 <- sps$a * (l_mat_25 ^ sps$b)
+            w_mat <- sps$a * (input$l_mat ^ sps$b)
+            w_repro_max <- sps$a * (input$l_repro_max ^ sps$b)
+            p@species_params[sp, "w_mat25"]   <- w_mat_25
+            p@species_params[sp, "w_mat"]   <- w_mat
+            p@species_params[sp, "w_repro_max"] <- w_repro_max
             p@species_params[sp, "m"]     <- input$m
 
             p <- setReproduction(p)
@@ -58,27 +53,26 @@ reproductionControl <- function(input, output, session, params, params_old,
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
 reproductionControlUI <- function(params, input) {
-    sp <- params@species_params[input$sp, ]
+    sps <- params@species_params[input$sp, ]
+    l_mat <- (sps$w_mat / sps$a) ^ (1 / sps$b)
+    l_mat25 <- (sps$w_mat25 / sps$a) ^ (1 / sps$b)
+    l_repro_max <- (sps$w_repro_max / sps$a) ^ (1 / sps$b)
     tagList(
         tags$h3(tags$a(id = "reproduction"), "Reproduction"),
-        sliderInput("w_mat", "w_mat", value = sp$w_mat,
-                    min = signif(sp$w_mat / 2, 2),
-                    max = signif(sp$w_mat * 1.5, 2)),
-        sliderInput("wfrac", "w_mat25/w_mat", value = sp$w_mat25/sp$w_mat,
+        sliderInput("l_mat", "l_mat", value = l_mat,
+                    min = signif(l_mat / 2, 2),
+                    max = signif(l_mat * 1.5, 2)),
+        sliderInput("lfrac", "l_mat25/l_mat", value = l_mat25/l_mat,
                     min = 0.01,
                     max = 1,
                     step = 0.01),
-        # sliderInput("gonad_proportion", "gonad_proportion",
-        #             value = sp$gonad_proportion,
-        #             min = signif(sp$gonad_proportion / 2, 2),
-        #             max = signif(sp$gonad_proportion * 1.5, 2)),
-        sliderInput("w_repro_max", "w_repro_max",
-                    value = sp$w_repro_max,
-                    min = signif(sp$w_repro_max / 2, 1),
-                    max = signif(sp$w_repro_max * 1.5, 1)),
+        sliderInput("l_repro_max", "l_repro_max",
+                    value = l_repro_max,
+                    min = signif(l_repro_max / 2, 1),
+                    max = signif(l_repro_max * 1.5, 1)),
         # m must always be larger than n
-        sliderInput("m", "m", value = sp$m,
-                    min = signif(sp$n, 2),
+        sliderInput("m", "m", value = sps$m,
+                    min = signif(sps$n, 2),
                     max = signif(1.5, 2),
                     step = 0.01)
     )
