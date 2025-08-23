@@ -1,3 +1,58 @@
+#' Simulate cohort evolution and calculate matrix G
+#'
+#' This function simulates the evolution of a cohort over time and calculates
+#' the matrix G which represents the cohort's size distribution over time.
+#'
+#' @param params A MizerParams object.
+#' @param species Name of the species to simulate.
+#' @param t_max Maximum time for simulation (years).
+#' @param dt Time step for the model simulation (years). Default is 0.05.
+#'
+#' @return A list containing:
+#'   - G: Matrix representing cohort size distribution over time
+#'   - age: Age grid (centres) [years]
+#'   - l: Model length-bin edges [cm]
+#'   - l_survey: Survey length-bin edges [cm]
+#'   - sps: Species parameters
+#' @export
+simulateCohort <- function(params, species, t_max, dt = 0.05) {
+    params <- validParams(params)
+    species <- valid_species_arg(params, species)
+
+    ## Set up initial pulse ----
+    sps <- species_params(params)[species, ]
+
+    # model length‑bin edges [cm]
+    w <- w(params)
+    l <- (w/sps$a)^(1/sps$b)
+    m <- length(l) - 1  # number of model bins
+
+    # Set initial condition
+    n_init <- rep(0, length(l))
+    n_init[2] <- 1  # Point source at small size
+    initialN(params)[species, ] <- n_init
+
+    ## Solve the PDE ----
+
+    # fine‑age grid (centres) and widths  [years]
+    age   <- seq(dt, t_max,  by = dt)
+    nsteps <- length(age)
+
+    n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
+
+    ## Convert to numbers from densities ----
+    G <- n_hist[-1, 1:m]
+    G <- sweep(G, 2, dw(params)[1:m], "*")
+
+    return(list(
+        G = G,
+        age = age,
+        l = l,
+        m = m,
+        sps = sps
+    ))
+}
+
 #' Simulate age-at-length data
 #'
 #' This function compares the mean age-at-length predicted by the model to
@@ -24,32 +79,12 @@ simulateAge <- function(params, species, observed_df, dt = 0.05) {
     s <- length(l_survey) - 1
 
     # Evolve a cohort over time in model ----
-
-    ## Set up initial pulse ----
-    sps <- species_params(params)[species, ]
-
-    # model length‑bin edges [cm]
-    w <- w(params)
-    l <- (w/sps$a)^(1/sps$b)
-    m <- length(l) - 1  # number of model bins
-
-    # Set initial condition
-    n_init <- rep(0, length(l))
-    n_init[2] <- 1  # Point source at small size
-    initialN(params)[species, ] <- n_init
-
-    ## Solve the PDE ----
-
-    # fine‑age grid (centres) and widths  [years]
     t_max <- K_max + 2
-    age   <- seq(dt, t_max,  by = dt)
-    nsteps <- length(age)
-
-    n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
-
-    ## Convert to numbers from densities ----
-    G <- n_hist[-1, 1:m]
-    G <- sweep(G, 2, dw(params)[1:m], "*")
+    cohort_result <- simulateCohort(params, species, t_max, dt)
+    G <- cohort_result$G
+    age <- cohort_result$age
+    l <- cohort_result$l
+    sps <- cohort_result$sps
 
     # re-bin from survey bins to mizer bins
     B <- length_rebinning_matrix(l_model = l, l_survey = l_survey)
@@ -70,7 +105,7 @@ simulateAge <- function(params, species, observed_df, dt = 0.05) {
         P_model <- generate_model_predictions_for_date(
             survey_date_current, G, a = age, l = l_survey[1:s],
             mu = sps$spawning_mu, kappa = sps$spawning_kappa,
-            t_r = sps$t_r, a_min = sps$a_min
+            annuli_date = sps$annuli_date, annuli_min_age = sps$annuli_min_age
         )
 
         # 2. Simulate a sample from the model that mimics the real sampling effort
@@ -97,7 +132,6 @@ simulateAge <- function(params, species, observed_df, dt = 0.05) {
 #' @return A data frame with
 #' @export
 getLogLik <- function(params, species, observed_df, dt = 0.05) {
-    # TODO: remove code duplication from previous function
     params <- validParams(params)
     species <- valid_species_arg(params, species)
 
@@ -108,32 +142,12 @@ getLogLik <- function(params, species, observed_df, dt = 0.05) {
     s <- length(l_survey) - 1
 
     # Evolve a cohort over time in model ----
-
-    ## Set up initial pulse ----
-    sps <- species_params(params)[species, ]
-
-    # model length‑bin edges [cm]
-    w <- w(params)
-    l <- (w/sps$a)^(1/sps$b)
-    m <- length(l) - 1  # number of model bins
-
-    # Set initial condition
-    n_init <- rep(0, length(l))
-    n_init[2] <- 1  # Point source at small size
-    initialN(params)[species, ] <- n_init
-
-    ## Solve the PDE ----
-
-    # fine‑age grid (centres) and widths  [years]
     t_max <- K_max + 2
-    age   <- seq(dt, t_max,  by = dt)
-    nsteps <- length(age)
-
-    n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
-
-    ## Convert to numbers from densities ----
-    G <- n_hist[-1, 1:m]
-    G <- sweep(G, 2, dw(params)[1:m], "*")
+    cohort_result <- simulateCohort(params, species, t_max, dt)
+    G <- cohort_result$G
+    age <- cohort_result$age
+    l <- cohort_result$l
+    sps <- cohort_result$sps
 
     # re-bin from survey bins to mizer bins
     B <- length_rebinning_matrix(l_model = l, l_survey = l_survey)
@@ -145,5 +159,5 @@ getLogLik <- function(params, species, observed_df, dt = 0.05) {
     calculate_and_aggregate_likelihood(
         surveys, G, a = age, l = l_survey[1:s],
         mu = sps$spawning_mu, kappa = sps$spawning_kappa,
-        t_r = sps$t_r, a_min = sps$a_min)
+        annuli_date = sps$annuli_date, annuli_min_age = sps$annuli_min_age)
 }

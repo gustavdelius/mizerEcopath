@@ -43,25 +43,25 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 #' a survey date, an annual ring-formation day, and a minimum age threshold.
 #' @param age_in_years A numeric vector of true ages in years.
 #' @param survey_date The survey date as a numeric year (e.g., 2023.25).
-#' @param t_r Ring formation day as fraction of a year in \[0, 1).
-#' @param a_min The minimum age (years) required to form the first ring.
+#' @param annuli_date Ring formation day as fraction of a year in \[0, 1).
+#' @param annuli_min_age The minimum age (years) required to form the first ring.
 #' @return An integer vector with the calculated number of rings (K) for each age.
 #' @keywords internal
 #' @examples
-#' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5, t_r = 0.25, a_min = 0.5)
-calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
+#' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5, annuli_date = 0.25, annuli_min_age = 0.5)
+calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) {
     sapply(age_in_years, function(age) {
         if (age < 0) return(0)
         birth_date <- survey_date - age
         birth_year <- floor(birth_date)
-        next_ring_date <- birth_year + t_r
+        next_ring_date <- birth_year + annuli_date
         if (next_ring_date <= birth_date) {
-            next_ring_date <- (birth_year + 1) + t_r
+            next_ring_date <- (birth_year + 1) + annuli_date
         }
         k_count <- 0
         while (next_ring_date < survey_date) {
             age_at_ring_date <- next_ring_date - birth_date
-            if (age_at_ring_date >= a_min) {
+            if (age_at_ring_date >= annuli_min_age) {
                 k_count <- k_count + 1
             }
             next_ring_date <- next_ring_date + 1
@@ -79,8 +79,8 @@ calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
 #' @param l Numeric vector of length-class centers corresponding to columns of `G`.
 #' @param mu Mean spawning date as a fraction of a year in \[0, 1).
 #' @param kappa Spawning concentration parameter.
-#' @param t_r Ring formation day as fraction of a year in \[0, 1).
-#' @param a_min Minimum age (years) at which the first ring can form.
+#' @param annuli_date Ring formation day as fraction of a year in \[0, 1).
+#' @param annuli_min_age Minimum age (years) at which the first ring can form.
 #' @return A matrix of proportions with rows named by `l` and columns by K bins.
 #' @export
 #' @examples
@@ -88,16 +88,16 @@ calculate_K <- function(age_in_years, survey_date, t_r, a_min) {
 #' a <- seq(0, 3, length.out = 5)
 #' l <- seq(10, 30, length.out = 3)
 #' G <- matrix(abs(sin(outer(a, l, "+"))), nrow = length(a))
-#' generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3, t_r = 0.25, a_min = 0.5)
+#' generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3, annuli_date = 0.25, annuli_min_age = 0.5)
 generate_model_predictions_for_date <- function(
-        survey_date, G, a, l, mu, kappa, t_r, a_min) {
+        survey_date, G, a, l, mu, kappa, annuli_date, annuli_min_age) {
     # Population Convolution
     birth_dates <- survey_date - a
     spawning_weights <- spawning_density(birth_dates, mu, kappa)
     N_pop <- diag(spawning_weights) %*% G
 
     # Observation Convolution
-    k_for_each_age <- calculate_K(a, survey_date, t_r, a_min)
+    k_for_each_age <- calculate_K(a, survey_date, annuli_date, annuli_min_age)
     max_K <- max(k_for_each_age)
     k_bins <- 0:max_K
     N_model <- matrix(0, nrow = length(l), ncol = length(k_bins))
@@ -123,7 +123,7 @@ generate_model_predictions_for_date <- function(
 #' @param surveys A list of data frames, split by survey date.
 #' @inheritParams generate_model_predictions_for_date
 #' @return A data frame with the total NLL contribution for each Length-K bin.
-calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, t_r, a_min) {
+calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, annuli_date, annuli_min_age) {
 
     log_lik_contributions <- list()
 
@@ -134,7 +134,7 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, t_r,
 
         # 1. Generate model predictions for this date
         P_model <- generate_model_predictions_for_date(
-            survey_date_current, G, a, l, mu, kappa, t_r, a_min
+            survey_date_current, G, a, l, mu, kappa, annuli_date, annuli_min_age
         )
 
         # 2. Get observed counts and total sample sizes per length for this survey

@@ -23,8 +23,8 @@ prepare_params <- function(p) {
     p <- set_species_param_default(p, "d_over_g", 0.15)
     p <- set_species_param_default(p, "spawning_mu", 0.5)
     p <- set_species_param_default(p, "spawning_kappa", 5)
-    p <- set_species_param_default(p, "a_min", 0)
-    p <- set_species_param_default(p, "t_r", 0)
+    p <- set_species_param_default(p, "annuli_min_age", 0)
+    p <- set_species_param_default(p, "annuli_date", 0)
 
     p <- steadySingleSpecies(p)
     p <- matchBiomasses(p)
