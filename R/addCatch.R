@@ -84,8 +84,10 @@ addCatch <- function(params, landings, survey,step) {
     # Set fishing effort depending on step
     if (step == 1) {
         initial_effort(params)[unique(landings$gear)] <- 0
+        gear_params(params)$catchability<-1e-10
     } else if (step %in% c(2, 3)) {
         initial_effort(params)[unique(landings$gear)] <- 1
+        gear_params(params)$catchability<-1
     }
 
     # Survey effort is always on
