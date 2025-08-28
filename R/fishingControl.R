@@ -30,7 +30,7 @@ fishingControl <- function(input, output, session, params, params_old,
         p@gear_params[gp_idx, "catchability"]  <- input$catchability
         updateSliderInput(session, "catchability",
                           min = signif(max(input$catchability / 2 - 1, 0), 2),
-                          max = signif(max(input$catchability * 2, 2), 2))
+                          max = signif(max(input$catchability * 2, 0.1), 2))
 
         if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
             updateSliderInput(session, "knife_edge_size",
@@ -71,7 +71,8 @@ fishingControl <- function(input, output, session, params, params_old,
         updateSliderInput(session, "catchability",
                           value = catchability,
                           min = signif(max(catchability / 2 - 1, 0), 2),
-                          max = signif(max(catchability * 2, 2), 2))
+                          max = signif(max(catchability * 2, 0.1), 2))
+
         if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
             knife_edge_size <- p@gear_params[gp_idx, "knife_edge_size"]
             updateSliderInput(session, "knife_edge_size",
@@ -129,8 +130,8 @@ fishingControlUI <- function(params, input) {
                sliderInput("catchability", "Catchability",
                            value = gp$catchability,
                            min = signif(max(0, gp$catchability / 2 - 1), 5),
-                           max = signif(max(gp$catchability * 2, 2), 5),
-                           step = 1e-16)
+                           max = signif(max(gp$catchability * 2, 0.1), 5),
+                           step = 1e-6)
     )
 
     if (gp$sel_func == "knife_edge") {
