@@ -153,7 +153,7 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa,
         colnames(P_model_df) <- c("Length", "K", "Prob")
 
         # 4. Join all data together
-        likelihood_df <- obs_counts %>%
+        likelihood_df <- current_obs_df %>%
             left_join(sample_sizes, by = "Length") %>%
             left_join(P_model_df, by = c("Length", "K"))
 
