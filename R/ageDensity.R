@@ -28,7 +28,8 @@ von_mises_pdf <- function(x, mu, kappa) {
 #' @keywords internal
 #' @examples
 #' # Peak at mid-year with moderate spread
-#' spawning_density(numeric_dates = c(2020.45, 2020.50, 2020.55), mu = 0.5, kappa = 4)
+#' spawning_density(numeric_dates = c(2020.45, 2020.50, 2020.55),
+#'                  mu = 0.5, kappa = 4)
 spawning_density <- function(numeric_dates, mu, kappa) {
     day_fraction <- numeric_dates %% 1
     day_rad <- day_fraction * 2 * pi
@@ -48,7 +49,8 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 #' @return An integer vector with the calculated number of rings (K) for each age.
 #' @keywords internal
 #' @examples
-#' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5, annuli_date = 0.25, annuli_min_age = 0.5)
+#' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5,
+#'             annuli_date = 0.25, annuli_min_age = 0.5)
 calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) {
     sapply(age_in_years, function(age) {
         if (age < 0) return(0)
@@ -88,7 +90,8 @@ calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) 
 #' a <- seq(0, 3, length.out = 5)
 #' l <- seq(10, 30, length.out = 3)
 #' G <- matrix(abs(sin(outer(a, l, "+"))), nrow = length(a))
-#' generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3, annuli_date = 0.25, annuli_min_age = 0.5)
+#' generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3,
+#'                                     annuli_date = 0.25, annuli_min_age = 0.5)
 generate_model_predictions_for_date <- function(
         survey_date, G, a, l, mu, kappa, annuli_date, annuli_min_age) {
     # Population Convolution
@@ -123,7 +126,8 @@ generate_model_predictions_for_date <- function(
 #' @param surveys A list of data frames, split by survey date.
 #' @inheritParams generate_model_predictions_for_date
 #' @return A data frame with the total NLL contribution for each Length-K bin.
-calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, annuli_date, annuli_min_age) {
+calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa,
+                                               annuli_date, annuli_min_age) {
 
     log_lik_contributions <- list()
 
@@ -137,13 +141,11 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, annu
             survey_date_current, G, a, l, mu, kappa, annuli_date, annuli_min_age
         )
 
-        # 2. Get observed counts and total sample sizes per length for this survey
-        obs_counts <- as.data.frame(table(current_obs_df$Length, current_obs_df$K))
-        colnames(obs_counts) <- c("Length", "K", "Observed")
+        # 2. Get sample sizes per length for this survey
 
         sample_sizes <- current_obs_df %>%
             group_by(Length) %>%
-            summarise(N = n(), .groups = 'drop') %>%
+            summarise(N = sum(count, na.rm = TRUE), .groups = 'drop') %>%
             mutate(Length = as.factor(Length))
 
         # 3. Convert model probabilities to a long data frame for joining
@@ -160,8 +162,8 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, annu
         likelihood_df <- likelihood_df %>%
             mutate(
                 Expected = N * Prob,
-                NegLogLik = - (Observed * log(Prob + epsilon)),
-                SignedNegLogLik = sign(Observed - Expected) * NegLogLik
+                NegLogLik = - (count * log(Prob + epsilon)),
+                SignedNegLogLik = sign(count - Expected) * NegLogLik
             )
 
         log_lik_contributions[[survey_date_str]] <- likelihood_df
@@ -173,7 +175,7 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa, annu
     total_contributions <- all_contributions_df %>%
         group_by(Length, K) %>%
         summarise(
-            TotalObserved = sum(Observed, na.rm = TRUE),
+            TotalObserved = sum(count, na.rm = TRUE),
             TotalExpected = sum(Expected, na.rm = TRUE),
             TotalNegLogLik = sum(NegLogLik, na.rm = TRUE),
             .groups = 'drop'
