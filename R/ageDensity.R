@@ -121,13 +121,17 @@ generate_model_predictions_for_date <- function(
     return(P_model_K_given_l)
 }
 
-#' Calculate and Aggregate Signed Log-Likelihood Contributions
-#' Loops through surveys, calculates signed NLL for each, and aggregates the results.
-#' @param surveys A list of data frames, split by survey date.
+#' Calculate and Aggregate Signed Log-Likelihood Contributions Loops through
+#' surveys, calculates signed NLL for each, and aggregates the results.
+#' @param surveys A data frame with survey age-at-length observations with
+#'   columns `survey_date`, `Length`, `K`, and `count`.
 #' @inheritParams generate_model_predictions_for_date
 #' @return A data frame with the total NLL contribution for each Length-K bin.
 calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa,
                                                annuli_date, annuli_min_age) {
+
+    # Split the data frame by unique survey date
+    surveys <- split(surveys, surveys$survey_date)
 
     log_lik_contributions <- list()
 
@@ -145,12 +149,13 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa,
 
         sample_sizes <- current_obs_df %>%
             group_by(Length) %>%
-            summarise(N = sum(count, na.rm = TRUE), .groups = 'drop') %>%
-            mutate(Length = as.factor(Length))
+            summarise(N = sum(count, na.rm = TRUE), .groups = 'drop')
 
         # 3. Convert model probabilities to a long data frame for joining
         P_model_df <- as.data.frame.table(P_model)
         colnames(P_model_df) <- c("Length", "K", "Prob")
+        P_model_df$Length <- as.integer(P_model_df$Length)
+        P_model_df$K <- as.integer(P_model_df$K)
 
         # 4. Join all data together
         likelihood_df <- current_obs_df %>%

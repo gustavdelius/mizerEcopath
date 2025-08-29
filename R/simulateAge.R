@@ -5,17 +5,15 @@
 #'
 #' @param params A MizerParams object.
 #' @param species Name of the species to simulate.
+#' @param l_survey Survey length‑bin edges (cm)
 #' @param t_max Maximum time for simulation (years).
 #' @param dt Time step for the model simulation (years). Default is 0.05.
 #'
 #' @return A list containing:
 #'   - G: Matrix representing cohort size distribution over time
-#'   - age: Age grid (centres) [years]
-#'   - l: Model length-bin edges [cm]
-#'   - l_survey: Survey length-bin edges [cm]
-#'   - sps: Species parameters
+#'   - age: Age grid [years]
 #' @export
-simulateCohort <- function(params, species, t_max, dt = 0.05) {
+simulateCohort <- function(params, species, l_survey, t_max, dt = 0.05) {
     params <- validParams(params)
     species <- valid_species_arg(params, species)
 
@@ -44,117 +42,40 @@ simulateCohort <- function(params, species, t_max, dt = 0.05) {
     G <- n_hist[-1, 1:m]
     G <- sweep(G, 2, dw(params)[1:m], "*")
 
-    return(list(
-        G = G,
-        age = age,
-        l = l,
-        m = m,
-        sps = sps
-    ))
-}
-
-#' Simulate age-at-length data
-#'
-#' This function compares the mean age-at-length predicted by the model to
-#' observed survey data for a given species. It aggregates observed
-#' age-at-length data into length bins, simulates a cohort using the model, and
-#' plots the mean age-at-length with confidence intervals for the observed data.
-#'
-#' @param params A MizerParams object.
-#' @param species Name of the species to plot.
-#' @param observed_df A data frame with columns `survey_date`, `Length`, `K`,
-#'   and `count`
-#' @param dt Time step for the model simulation (years). Default is 0.05.
-#'
-#' @return A data frame with
-#' @export
-simulateAge <- function(params, species, observed_df, dt = 0.05) {
-    params <- validParams(params)
-    species <- valid_species_arg(params, species)
-
-    # highest survey age
-    K_max <- max(observed_df$K)
-    # survey length‑bin edges [cm]
-    l_survey <- min(observed_df$Length):(max(observed_df$Length) + 1)
-    s <- length(l_survey) - 1
-
-    # Evolve a cohort over time in model ----
-    t_max <- K_max + 2
-    cohort_result <- simulateCohort(params, species, t_max, dt)
-    G <- cohort_result$G
-    age <- cohort_result$age
-    l <- cohort_result$l
-    sps <- cohort_result$sps
-
-    # re-bin from survey bins to mizer bins
+    # re-bin from survey bins to mizer bins ----
     B <- length_rebinning_matrix(l_model = l, l_survey = l_survey)
     G <- G %*% B
 
-    # Split the data frame by unique survey date
-    surveys <- split(observed_df, observed_df$survey_date)
-    simulated_surveys <- list()
-
-    # Loop through each survey to generate simulated data ----
-    for (survey_date_str in names(surveys)) {
-        survey_date_current <- as.numeric(survey_date_str)
-
-        # Get the observations for this specific survey
-        current_obs_df <- surveys[[survey_date_str]]
-
-        # 1. Generate the model's predictions (proportions) for this specific date
-        P_model <- generate_model_predictions_for_date(
-            survey_date_current, G, a = age, l = l_survey[1:s],
-            mu = sps$spawning_mu, kappa = sps$spawning_kappa,
-            annuli_date = sps$annuli_date, annuli_min_age = sps$annuli_min_age
-        )
-
-        # 2. Simulate a sample from the model that mimics the real sampling effort
-        simulated_K_values <- simulate_sample_from_model(P_model, current_obs_df)
-
-        # 3. Store the results
-        sim_df <- current_obs_df
-        sim_df$K <- simulated_K_values
-        simulated_surveys[[survey_date_str]] <- sim_df
-    }
-
-    # Combine the lists of data frames back into single data frames
-    do.call(rbind, simulated_surveys)
+    return(list(
+        G = G,
+        age = age
+    ))
 }
 
 #' Get log likelihood of age observations
 #'
 #' @param params A MizerParams object.
 #' @param species Name of the species.
-#' @param observed_df A data frame with columns `survey_date`, `Length`, `K`,
-#'   and `count`
+#' @param surveys A data frame with survey age-at-length observations with
+#'   columns `survey_date`, `Length`, `K`, and `count`.
 #' @param dt Time step for the model simulation (years). Default is 0.05.
 #'
 #' @return A data frame with
 #' @export
-getLogLik <- function(params, species, observed_df, dt = 0.05) {
+getLogLik <- function(params, species, surveys, dt = 0.05) {
     params <- validParams(params)
     species <- valid_species_arg(params, species)
+    sps <- params@species_params[species, ]
 
-    # highest survey age
-    K_max <- max(observed_df$K)
     # survey length‑bin edges [cm]
-    l_survey <- min(observed_df$Length):(max(observed_df$Length) + 1)
+    l_survey <- min(surveys$Length):(max(surveys$Length) + 1)
     s <- length(l_survey) - 1
 
-    # Evolve a cohort over time in model ----
-    t_max <- K_max + 2
-    cohort_result <- simulateCohort(params, species, t_max, dt)
+    # Evolve a cohort over time in model
+    t_max <- max(surveys$K) + 2
+    cohort_result <- simulateCohort(params, species, l_survey, t_max, dt)
     G <- cohort_result$G
     age <- cohort_result$age
-    l <- cohort_result$l
-    sps <- cohort_result$sps
-
-    # re-bin from survey bins to mizer bins
-    B <- length_rebinning_matrix(l_model = l, l_survey = l_survey)
-    G <- G %*% B
-
-    # Split the data frame by unique survey date
-    surveys <- split(observed_df, observed_df$survey_date)
 
     calculate_and_aggregate_likelihood(
         surveys, G, a = age, l = l_survey[1:s],
