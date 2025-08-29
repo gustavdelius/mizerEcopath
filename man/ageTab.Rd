@@ -20,10 +20,19 @@ ageTabUI(...)
 
 \item{logs}{Environment holding the log of steady states.}
 
-\item{age_at_length}{A data frame with age at length observations.}
+\item{age_at_length}{A data frame with age-at-length observations for the
+selected species. See \code{preprocess_length_at_age()} for expected columns.}
 
 \item{...}{Unused}
 }
-\description{
-Age tab for tuning gadget
+\value{
+Invisibly returns \code{NULL}. Used for its side-effect of rendering plots.
+
+UI elements for the age tab.
 }
+\description{
+Server logic for the age-at-length tab in the tuning gadget. Renders
+a residual heatmap comparing observed and simulated annuli counts
+across length classes, via \code{plotAge()}.
+}
+\keyword{internal}

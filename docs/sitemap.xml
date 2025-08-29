@@ -1,80 +1,288 @@
-<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>/404.html</loc></url>
-<url><loc>/articles/diffusion.html</loc></url>
-<url><loc>/articles/ecopath_to_mizer.html</loc></url>
-<url><loc>/articles/index.html</loc></url>
-<url><loc>/articles/mizerEcopath.html</loc></url>
-<url><loc>/articles/todo.html</loc></url>
-<url><loc>/authors.html</loc></url>
-<url><loc>/index.html</loc></url>
-<url><loc>/reference/addEcopathCatchTotal.html</loc></url>
-<url><loc>/reference/addEcopathParams.html</loc></url>
-<url><loc>/reference/alignResource.html</loc></url>
-<url><loc>/reference/catchTab.html</loc></url>
-<url><loc>/reference/checkDietMatrix.html</loc></url>
-<url><loc>/reference/convertDietMatrix.html</loc></url>
-<url><loc>/reference/deathTab.html</loc></url>
-<url><loc>/reference/dietTab.html</loc></url>
-<url><loc>/reference/diet_matrix_example.html</loc></url>
-<url><loc>/reference/diffusionControl.html</loc></url>
-<url><loc>/reference/ecopath_diet_example.html</loc></url>
-<url><loc>/reference/exponentControl.html</loc></url>
-<url><loc>/reference/fillDefaultsFromFishBase.html</loc></url>
-<url><loc>/reference/fishingControl.html</loc></url>
-<url><loc>/reference/getConsumption.html</loc></url>
-<url><loc>/reference/getDietMatrix.html</loc></url>
-<url><loc>/reference/getDiffusion.html</loc></url>
-<url><loc>/reference/getEcotrophicEfficiency.html</loc></url>
-<url><loc>/reference/getGonadicProduction.html</loc></url>
-<url><loc>/reference/getM0B.html</loc></url>
-<url><loc>/reference/getM2B.html</loc></url>
-<url><loc>/reference/getMetabolicRespiration.html</loc></url>
-<url><loc>/reference/getOffspringProduction.html</loc></url>
-<url><loc>/reference/getProduction.html</loc></url>
-<url><loc>/reference/getReproductiveLoss.html</loc></url>
-<url><loc>/reference/getResourceEncounterRate.html</loc></url>
-<url><loc>/reference/getRespiration.html</loc></url>
-<url><loc>/reference/getSomaticProduction.html</loc></url>
-<url><loc>/reference/getTotalProduction.html</loc></url>
-<url><loc>/reference/getUnassimilated.html</loc></url>
-<url><loc>/reference/getZB.html</loc></url>
-<url><loc>/reference/growthTab.html</loc></url>
-<url><loc>/reference/index.html</loc></url>
-<url><loc>/reference/isAllometric.html</loc></url>
-<url><loc>/reference/makeInteracting.html</loc></url>
-<url><loc>/reference/makeNoninteracting.html</loc></url>
-<url><loc>/reference/matchCatch.html</loc></url>
-<url><loc>/reference/matchConsumption.html</loc></url>
-<url><loc>/reference/matchControl.html</loc></url>
-<url><loc>/reference/matchDiet.html</loc></url>
-<url><loc>/reference/matchEcopath.html</loc></url>
-<url><loc>/reference/matchExtMortOnce.html</loc></url>
-<url><loc>/reference/matchGonadicProportionOnce.html</loc></url>
-<url><loc>/reference/matchProduction.html</loc></url>
-<url><loc>/reference/matchRespirationOnce.html</loc></url>
-<url><loc>/reference/mizerEcopath-package.html</loc></url>
-<url><loc>/reference/newAllometricParams.html</loc></url>
-<url><loc>/reference/otherControl.html</loc></url>
-<url><loc>/reference/plotConsumptionVsSpecies.html</loc></url>
-<url><loc>/reference/plotProductionVsSpecies.html</loc></url>
-<url><loc>/reference/precompute_weights.html</loc></url>
-<url><loc>/reference/prepare_data.html</loc></url>
-<url><loc>/reference/project_diffusion.html</loc></url>
-<url><loc>/reference/reduceEcopathDiet.html</loc></url>
-<url><loc>/reference/reproTab.html</loc></url>
-<url><loc>/reference/reproductionControl.html</loc></url>
-<url><loc>/reference/setFeedingLevel.html</loc></url>
-<url><loc>/reference/setResourceInteraction.html</loc></url>
-<url><loc>/reference/solve_diffusion_ode.html</loc></url>
-<url><loc>/reference/solve_diffusion_pde.html</loc></url>
-<url><loc>/reference/solve_double_sweep.html</loc></url>
-<url><loc>/reference/species_params_example.html</loc></url>
-<url><loc>/reference/spectraTab.html</loc></url>
-<url><loc>/reference/steady_diffusion.html</loc></url>
-<url><loc>/reference/tuneEcopath.html</loc></url>
-<url><loc>/reference/update_params.html</loc></url>
-<url><loc>/reference/validEcopathCatch.html</loc></url>
-<url><loc>/reference/validEcopathParams.html</loc></url>
-<url><loc>/reference/valid_catch.html</loc></url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/404.html</loc>
+  </url>
+  <url>
+    <loc>/articles/diffusion.html</loc>
+  </url>
+  <url>
+    <loc>/articles/ecopath_to_mizer.html</loc>
+  </url>
+  <url>
+    <loc>/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>/articles/mizerEcopath.html</loc>
+  </url>
+  <url>
+    <loc>/articles/todo.html</loc>
+  </url>
+  <url>
+    <loc>/authors.html</loc>
+  </url>
+  <url>
+    <loc>/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/addCatch.html</loc>
+  </url>
+  <url>
+    <loc>/reference/addEcopathCatchTotal.html</loc>
+  </url>
+  <url>
+    <loc>/reference/addEcopathParams.html</loc>
+  </url>
+  <url>
+    <loc>/reference/ageTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/alignResource.html</loc>
+  </url>
+  <url>
+    <loc>/reference/calculate_K.html</loc>
+  </url>
+  <url>
+    <loc>/reference/calculate_and_aggregate_likelihood.html</loc>
+  </url>
+  <url>
+    <loc>/reference/catchSelectivity.html</loc>
+  </url>
+  <url>
+    <loc>/reference/catchTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/checkDietMatrix.html</loc>
+  </url>
+  <url>
+    <loc>/reference/convertDietMatrix.html</loc>
+  </url>
+  <url>
+    <loc>/reference/deathTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/dietTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/diet_matrix_example.html</loc>
+  </url>
+  <url>
+    <loc>/reference/diffusionControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/ecopath_diet_example.html</loc>
+  </url>
+  <url>
+    <loc>/reference/exponentControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/fillDefaultsFromFishBase.html</loc>
+  </url>
+  <url>
+    <loc>/reference/fishingControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/generate_model_predictions_for_date.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getConsumption.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getDietMatrix.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getDiffusion.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getEcotrophicEfficiency.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getGonadicProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getLogLik.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getM0B.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getM2B.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getMetabolicRespiration.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getOffspringProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getReproductiveLoss.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getResourceEncounterRate.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getRespiration.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getSomaticProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getTotalProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getUnassimilated.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getZB.html</loc>
+  </url>
+  <url>
+    <loc>/reference/growthControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/growthTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/isAllometric.html</loc>
+  </url>
+  <url>
+    <loc>/reference/length_rebinning_matrix.html</loc>
+  </url>
+  <url>
+    <loc>/reference/makeInteracting.html</loc>
+  </url>
+  <url>
+    <loc>/reference/makeNoninteracting.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchCatch.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchConsumption.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchDiet.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchEcopath.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchExtMortOnce.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchGonadicProportionOnce.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchProduction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/matchRespirationOnce.html</loc>
+  </url>
+  <url>
+    <loc>/reference/mizerEcopath-package.html</loc>
+  </url>
+  <url>
+    <loc>/reference/newAllometricParams.html</loc>
+  </url>
+  <url>
+    <loc>/reference/otherControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotAgeLikelihood.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotConsumptionVsSpecies.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotDeathX.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plotProductionVsSpecies.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plot_log_likelihood.html</loc>
+  </url>
+  <url>
+    <loc>/reference/precompute_weights.html</loc>
+  </url>
+  <url>
+    <loc>/reference/prepare_data.html</loc>
+  </url>
+  <url>
+    <loc>/reference/preprocess_length_at_age.html</loc>
+  </url>
+  <url>
+    <loc>/reference/project_diffusion.html</loc>
+  </url>
+  <url>
+    <loc>/reference/reduceEcopathDiet.html</loc>
+  </url>
+  <url>
+    <loc>/reference/reproTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/reproductionControl.html</loc>
+  </url>
+  <url>
+    <loc>/reference/setFeedingLevel.html</loc>
+  </url>
+  <url>
+    <loc>/reference/setResourceInteraction.html</loc>
+  </url>
+  <url>
+    <loc>/reference/simulateCohort.html</loc>
+  </url>
+  <url>
+    <loc>/reference/simulate_sample_from_model.html</loc>
+  </url>
+  <url>
+    <loc>/reference/solve_diffusion_ode.html</loc>
+  </url>
+  <url>
+    <loc>/reference/solve_diffusion_pde.html</loc>
+  </url>
+  <url>
+    <loc>/reference/solve_double_sweep.html</loc>
+  </url>
+  <url>
+    <loc>/reference/spawning_density.html</loc>
+  </url>
+  <url>
+    <loc>/reference/species_params_example.html</loc>
+  </url>
+  <url>
+    <loc>/reference/spectraTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/steady_diffusion.html</loc>
+  </url>
+  <url>
+    <loc>/reference/surveyTab.html</loc>
+  </url>
+  <url>
+    <loc>/reference/tuneEcopath.html</loc>
+  </url>
+  <url>
+    <loc>/reference/update_params.html</loc>
+  </url>
+  <url>
+    <loc>/reference/validEcopathCatch.html</loc>
+  </url>
+  <url>
+    <loc>/reference/validEcopathParams.html</loc>
+  </url>
+  <url>
+    <loc>/reference/valid_catch.html</loc>
+  </url>
+  <url>
+    <loc>/reference/von_mises_pdf.html</loc>
+  </url>
 </urlset>
-

@@ -42,6 +42,7 @@ reference:
     Interactive interface for tuning mizer model parameters.
   contents:
   - tuneEcopath
+  - ageTab
   - catchTab
   - deathTab
   - dietTab
@@ -50,6 +51,7 @@ reference:
   - spectraTab
   - exponentControl
   - fishingControl
+  - growthControl
   - matchControl
   - otherControl
   - diffusionControl
@@ -88,6 +90,8 @@ reference:
   - update_params
   - precompute_weights
   - valid_catch
+  - addCatch
+  - catchSelectivity
 - title: "Obsolete?"
   desc: >
     Functions retained for compatibility or reference but not in active use.
@@ -112,3 +116,12 @@ reference:
   - project_diffusion
   - solve_diffusion_ode
   - solve_diffusion_pde
+- title: "Age-at-length"
+  desc: >
+    Functions for working with age at size.
+  contents:
+  - calculate_and_aggregate_likelihood
+  - generate_model_predictions_for_date
+  - getLogLik
+  - simulateCohort
+  - preprocess_length_at_age
