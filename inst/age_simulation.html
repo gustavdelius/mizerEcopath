@@ -363,14 +363,21 @@ on any given survey day.</p>
 <h3>Cohort evolution</h3>
 <p>We describe the population density <span class="math inline">\(u(l,t)\)</span> for <span class="math inline">\(l&gt;l_0\)</span> (where <span class="math inline">\(l_0\)</span> is the egg size) with the PDE <span class="math display">\[ \frac{\partial u}{\partial t} = -\frac{\partial
 J}{\partial l} - \mu u\]</span> where the flux <span class="math inline">\(J\)</span> is <span class="math display">\[ J(l) =
-(c - r l) u - d l \frac{\partial u}{\partial l}\]</span> and the
-mortality <span class="math inline">\(\mu\)</span> is <span class="math inline">\(\mu_0 / l\)</span>. The positive parameters <span class="math inline">\(c, r, d\)</span> and <span class="math inline">\(\mu_0\)</span> need to be estimated from data.</p>
+k(L_\infty^{0} - l) u - \alpha l \frac{\partial u}{\partial l}\]</span>
+and the mortality <span class="math inline">\(\mu\)</span> is <span class="math inline">\(\mu_0 / l\)</span>. The positive parameters <span class="math inline">\(k, L_\infty^0, d\)</span> and <span class="math inline">\(\mu_0\)</span> need to be estimated from data. The
+superscript <span class="math inline">\(0\)</span> on <span class="math inline">\(L_\infty\)</span> indicates that this is the
+asymptotic length in the absence of diffusion. The average growth rate
+is given by <span class="math display">\[ g(l) = k(L_\infty^0 - l)
+\]</span> with <span class="math inline">\(L_\infty = L_\infty^0 +
+\alpha/k\)</span> being the asymptotic length when diffusion is
+included.</p>
 <p>This PDE allows us to calculate the temporal evolution of a single
 cohort of fish born at the same instant. To do this numerically we
-discretize the size into length bins ${l_1, l_2, , l_{n_l}} and at time
-zero place all individuals into the smallest size bin. From the output
-of this simulation we get the impulse response matrix <span class="math inline">\(\mathbf{G}\)</span>, where the element <span class="math inline">\(G(l, a) = n(l,a)dl\)</span> is the number of fish
-of size bin <span class="math inline">\(l\)</span> (with width <span class="math inline">\(dl\)</span>) that have survived to age <span class="math inline">\(a\)</span> from the initial pulse of <span class="math inline">\(N_0\)</span> recruits.</p>
+discretize the size into length bins <span class="math inline">\({l_1,
+l_2, \dots, l_{n_l}}\)</span> and at time zero place all individuals
+into the smallest size bin. From the output of this simulation we get
+the impulse response matrix <span class="math inline">\(\mathbf{G}\)</span>, where the element <span class="math display">\[G(l, a) = n(l,a)dl\]</span> is the number of fish
+of size bin <span class="math inline">\(l\)</span> (with width <span class="math inline">\(dl\)</span>) that have survived to age <span class="math inline">\(a\)</span> from the initial pulse of recruits.</p>
 </div>
 <div id="spawning-season" class="section level3">
 <h3>Spawning season</h3>

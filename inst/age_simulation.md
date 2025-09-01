@@ -7,13 +7,17 @@ This document explains how we model the length-stratified empirical dataset coll
 We describe the population density $u(l,t)$ for $l>l_0$ (where $l_0$ is the egg size) with the PDE
 $$ \frac{\partial u}{\partial t} = -\frac{\partial J}{\partial l} - \mu u$$
 where the flux $J$ is
-$$ J(l) = (c - r l) u - d l \frac{\partial u}{\partial l}$$
+$$ J(l) = k(L_\infty^{0} - l) u - \alpha l \frac{\partial u}{\partial l}$$
 and the mortality $\mu$ is $\mu_0 / l$.
-The positive parameters $c, r, d$ and $\mu_0$ need to be estimated from data.
+The positive parameters $k, L_\infty^0, d$ and $\mu_0$ need to be estimated from data. The superscript $0$ on $L_\infty$ indicates that this is the asymptotic length in the absence of diffusion. The average growth rate is given by
+$$ g(l) = k(L_\infty^0 - l) $$
+with $L_\infty = L_\infty^0 + \alpha/k$ being the asymptotic length when diffusion is included.
 
 This PDE allows us to calculate the temporal evolution of a single cohort of fish born at the same instant. To do this numerically we discretize
-the size into length bins ${l_1, l_2, \dots, l_{n_l}} and at time zero place all individuals into the smallest size bin. 
-From the output of this simulation we get the impulse response matrix $\mathbf{G}$, where the element $G(l, a) = n(l,a)dl$ is the number of fish of size bin $l$ (with width $dl$) that have survived to age $a$ from the initial pulse of $N_0$ recruits.
+the size into length bins ${l_1, l_2, \dots, l_{n_l}}$ and at time zero place all individuals into the smallest size bin. 
+From the output of this simulation we get the impulse response matrix $\mathbf{G}$, where the element
+$$G(l, a) = n(l,a)dl$$
+is the number of fish of size bin $l$ (with width $dl$) that have survived to age $a$ from the initial pulse of recruits.
 
 ### Spawning season
 
