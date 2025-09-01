@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # Modelling of age-at-size data
 
 This document explains how we model the length-stratified empirical dataset collected across multiple survey dates. The method convolves a single-cohort simulation with an annual spawning distribution and an age-to-ring mapping function to predict the age distribution at length on any given survey day. 
