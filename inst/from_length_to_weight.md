@@ -79,7 +79,7 @@ Now substitute this and the expressions for $w$ and $N$ into $J_w$:
 
 * **First part of $J_w$ (advection term):**
     $$(A w^n - B w) N = (A (al^b)^n - B (al^b)) \frac{u}{ab l^{b-1}}$$
-    Using $n=1-1/b \implies bn = b-1$:
+    Using $n=1-1/b \Leftrightarrow bn = b-1$:
     $$(A a^n l^{b-1} - B a l^b) \frac{u}{ab l^{b-1}} = \left(\frac{A a^{n-1}}{b} - \frac{B}{b} l\right) u$$
 
 * **Second part of $J_w$ (diffusion term):**
@@ -100,37 +100,87 @@ $$J_l = k (L_\infty^0 - l) u - \alpha l \frac{\partial u}{\partial l} = (k L_\in
 By setting $J_l = J_w$ and comparing the coefficients of the terms $u$, $lu$, and $l \frac{\partial u}{\partial l}$, we find the expressions for $k$, $L_\infty^0$, and $\alpha$.
 
 * **Coefficient of $l \frac{\partial u}{\partial l}$:**
-    $$-\alpha = - \frac{D a^{n-1}}{b^2} \implies \alpha = \frac{D a^{n-1}}{b^2}$$
+    $$-\alpha = - \frac{D a^{n-1}}{b^2} \Leftrightarrow \alpha = \frac{D a^{n-1}}{b^2}$$
 
 * **Coefficient of $lu$:**
-    $$-k = -\frac{B}{b} \implies k = \frac{B}{b}$$
+    $$-k = -\frac{B}{b} \Leftrightarrow k = \frac{B}{b}$$
 
 * **Coefficient of $u$:**
-    $$k L_\infty^0 = \frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}$$
-    $$L_\infty^0 = \frac{1}{k} \left(\frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\right) = \frac{b}{B} a^{n-1} \left(\frac{A}{b} + \frac{D(b-1)}{b^2}\right)$$
-    $$L_\infty^0 = \frac{a^{n-1}}{B} \left(A + \frac{D(b-1)}{b}\right)$$
+    $$\begin{split}
+    &k L_\infty^0 = \frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\\
+    \Leftrightarrow\qquad &L_\infty^0 = \frac{1}{k} \left(\frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\right) = \frac{b}{B} a^{n-1} \left(\frac{A}{b} + \frac{D(b-1)}{b^2}\right)\\
+    \Leftrightarrow\qquad &L_\infty^0 = \frac{a^{n-1}}{B} \left(A + \frac{D(b-1)}{b}\right)
+    \end{split}$$
 
 ### **Final Expressions**
 
 The expressions for $k$, $L_\infty^0$, and $\alpha$ in terms of $A$, $B$, $D$, and the transformation parameters $a$ and $b$ are:
 
-$$k = \frac{B}{b},$$
-
-$$\alpha = \frac{D a^{n-1}}{b^2},$$
-
-$$L_\infty^0 = \frac{a^{n-1}}{B} \left(A + D\frac{b-1}{b}\right),$$
+$$\begin{split}
+k &= \frac{B}{b},\\
+\alpha &= \frac{D a^{n-1}}{b^2},\\
+L_\infty^0 &= \frac{a^{n-1}}{B} \left(A + D\frac{b-1}{b}\right).
+\end{split}$$
 
 These can also be expressed in terms of $n$ by using the relations $n=1-1/b$, which implies $b = \frac{1}{1-n}$ and $n-1 = -1/b$. Also, the term $\frac{b-1}{b} = 1 - \frac{1}{b} = n$.
 
 Substituting these into the expressions gives:
 
-$$k = B(1-n),$$
-
-$$\alpha = D a^{-(1-n)} (1-n)^2,$$
-
-$$L_\infty^0 = \frac{a^{-(1-n)}}{B} (A + Dn).$$
+$$\begin{split}
+k &= B(1-n),\\
+\alpha &= D a^{-(1-n)} (1-n)^2,\\
+L_\infty^0 &= \frac{a^{-(1-n)}}{B} (A + Dn).
+\end{split}$$
 
 
 **Note:** The parameter $L_\infty^0$ is related to the asymptotic length $L_\infty$ in
 the expression for the average growth rate $$g(l) = k(L_\infty - l)$$ by
 $$L_\infty = L_\infty^0 + \frac{\alpha}{k}.$$
+
+
+### **Inverting the Relations**
+
+We will now solve express the parameters $A$, $B$, and $D$ in terms of
+$k$, $L_\infty^0$ and $\alpha$.
+
+**1. Solving for B**
+
+From the first equation, we can directly isolate $B$:
+$$\begin{split}
+&k = B(1-n)\\
+\Leftrightarrow\qquad & B = \frac{k}{1-n}
+\end{split}$$
+
+**2. Solving for D**
+
+From the second equation, we can directly isolate $D$:
+$$\begin{split}
+&\alpha = D a^{-(1-n)} (1-n)^2\\
+\Leftrightarrow\qquad & D = \frac{\alpha}{a^{-(1-n)} (1-n)^2}\\
+\Leftrightarrow \qquad & D = \frac{\alpha a^{1-n}}{(1-n)^2}
+\end{split}$$
+
+**3. Solving for A**
+
+From the third equation, we can isolate $A$:
+$$L_\infty^0 = \frac{a^{-(1-n)}}{B} (A + Dn)$$
+Rearranging the terms to solve for $A$:
+$$\begin{split}
+&B L_\infty^0 = a^{-(1-n)} (A + Dn),\\
+\Leftrightarrow \qquad &B L_\infty^0 a^{1-n} = A + Dn,\\
+\Leftrightarrow \qquad &A = B L_\infty^0 a^{1-n} - Dn.
+\end{split}$$
+Now, we substitute the expressions we found for $B$ and $D$:
+$$A = \left(\frac{k}{1-n}\right) L_\infty^0 a^{1-n} - \left(\frac{\alpha a^{1-n}}{(1-n)^2}\right) n$$
+We can factor out common terms to simplify the expression for $A$:
+$$A = \frac{a^{1-n}}{(1-n)} \left(k L_\infty^0 - \frac{n \alpha}{1-n}\right)$$
+
+### **Final Inverted Relations**
+
+The final expressions for $A$, $B$, and $D$ are:
+
+$$\begin{split}
+A &= \frac{a^{1-n}}{1-n} \left(k L_\infty^0 - \frac{n \alpha}{1-n}\right),\\
+B &= \frac{k}{1-n},\\
+D &= \frac{\alpha a^{1-n}}{(1-n)^2}.
+\end{split}$$
