@@ -18,9 +18,9 @@ $$\partial u / \partial t = - \partial J_l/\partial l - m / l u$$
 
 where
 
-$$J _l= k (L_\infty - l) u - \alpha l \partial u/\partial l .$$
+$$J _l= k (L_\infty^0 - l) u - \alpha l \partial u/\partial l .$$
 
-We would like to express the parameters $k$, $L_\infty$ and $\alpha$ in terms of the parameters $A$, $B$ and $D$.
+We would like to express the parameters $k$, $L_\infty^0$ and $\alpha$ in terms of the parameters $A$, $B$ and $D$.
 
 ### **Step 1: Relate the Densities using Conservation**
 
@@ -96,8 +96,8 @@ $$J_w = \left(\frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\right) u - \frac{
 We now have the transformed PDE:
 $$\frac{\partial u}{\partial t} = - \frac{\partial J_w}{\partial l} - \dots$$
 with $J_w$ as derived above. We compare this flux with the target flux $J_l$:
-$$J_l = k (L_\infty - l) u - \alpha l \frac{\partial u}{\partial l} = (k L_\infty) u - k l u - \alpha l \frac{\partial u}{\partial l}$$
-By setting $J_l = J_w$ and comparing the coefficients of the terms $u$, $lu$, and $l \frac{\partial u}{\partial l}$, we find the expressions for $k$, $L_\infty$, and $\alpha$.
+$$J_l = k (L_\infty^0 - l) u - \alpha l \frac{\partial u}{\partial l} = (k L_\infty^0) u - k l u - \alpha l \frac{\partial u}{\partial l}$$
+By setting $J_l = J_w$ and comparing the coefficients of the terms $u$, $lu$, and $l \frac{\partial u}{\partial l}$, we find the expressions for $k$, $L_\infty^0$, and $\alpha$.
 
 * **Coefficient of $l \frac{\partial u}{\partial l}$:**
     $$-\alpha = - \frac{D a^{n-1}}{b^2} \implies \alpha = \frac{D a^{n-1}}{b^2}$$
@@ -106,19 +106,19 @@ By setting $J_l = J_w$ and comparing the coefficients of the terms $u$, $lu$, an
     $$-k = -\frac{B}{b} \implies k = \frac{B}{b}$$
 
 * **Coefficient of $u$:**
-    $$k L_\infty = \frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}$$
-    $$L_\infty = \frac{1}{k} \left(\frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\right) = \frac{b}{B} a^{n-1} \left(\frac{A}{b} + \frac{D(b-1)}{b^2}\right)$$
-    $$L_\infty = \frac{a^{n-1}}{B} \left(A + \frac{D(b-1)}{b}\right)$$
+    $$k L_\infty^0 = \frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}$$
+    $$L_\infty^0 = \frac{1}{k} \left(\frac{A a^{n-1}}{b} + \frac{D a^{n-1}(b-1)}{b^2}\right) = \frac{b}{B} a^{n-1} \left(\frac{A}{b} + \frac{D(b-1)}{b^2}\right)$$
+    $$L_\infty^0 = \frac{a^{n-1}}{B} \left(A + \frac{D(b-1)}{b}\right)$$
 
 ### **Final Expressions**
 
-The expressions for $k$, $L_\infty$, and $\alpha$ in terms of $A$, $B$, $D$, and the transformation parameters $a$ and $b$ are:
+The expressions for $k$, $L_\infty^0$, and $\alpha$ in terms of $A$, $B$, $D$, and the transformation parameters $a$ and $b$ are:
 
 $$k = \frac{B}{b},$$
 
 $$\alpha = \frac{D a^{n-1}}{b^2},$$
 
-$$L_\infty = \frac{a^{n-1}}{B} \left(A + D\frac{b-1}{b}\right),$$
+$$L_\infty^0 = \frac{a^{n-1}}{B} \left(A + D\frac{b-1}{b}\right),$$
 
 These can also be expressed in terms of $n$ by using the relations $n=1-1/b$, which implies $b = \frac{1}{1-n}$ and $n-1 = -1/b$. Also, the term $\frac{b-1}{b} = 1 - \frac{1}{b} = n$.
 
@@ -128,4 +128,9 @@ $$k = B(1-n),$$
 
 $$\alpha = D a^{-(1-n)} (1-n)^2,$$
 
-$$L_\infty = \frac{a^{-(1-n)}}{B} (A + Dn).$$
+$$L_\infty^0 = \frac{a^{-(1-n)}}{B} (A + Dn).$$
+
+
+**Note:** The parameter $L_\infty^0$ is related to the asymptotic length $L_\infty$ in
+the expression for the average growth rate $$g(l) = k(L_\infty - l)$$ by
+$$L_\infty = L_\infty^0 + \frac{\alpha}{k}.$$
