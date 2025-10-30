@@ -40,7 +40,8 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 
 
 #' Age-to-Ring Mapping Function Calculate_K(a)
-#' Deterministically maps true age to the expected annuli count, given
+#'
+#' Deterministically maps true age to the expected annuli count \eqn{K}, given
 #' a survey date, an annual ring-formation day, and a minimum age threshold.
 #' @param age_in_years A numeric vector of true ages in years.
 #' @param survey_date The survey date as a numeric year (e.g., 2023.25).
@@ -72,8 +73,10 @@ calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) 
     })
 }
 
-#' Generate model predictions for a specific survey date
-#' Encapsulates the prediction pipeline to obtain P(K | length) for one survey.
+#' Generate age-at-length distribution for a specific survey date
+#'
+#' Calculates the model probability distribution \eqn{P(K | l)} for the number
+#' of anulli \eqn{K} in all length classes \eqn{l}  for a given survey.
 #' @param survey_date Numeric survey date (e.g., 2023.25).
 #' @param G Impulse-response matrix from the single-cohort simulation
 #'   (rows = ages, cols = length classes).
@@ -83,8 +86,9 @@ calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) 
 #' @param kappa Spawning concentration parameter.
 #' @param annuli_date Ring formation day as fraction of a year in \[0, 1).
 #' @param annuli_min_age Minimum age (years) at which the first ring can form.
-#' @return A matrix of proportions with rows named by `l` and columns by K bins.
+#' @return A matrix of proportions with rows named by `l` and columns by `K`.
 #' @export
+#' @concept age-at-length
 #' @examples
 #' # Minimal schematic example (using toy inputs)
 #' a <- seq(0, 3, length.out = 5)
