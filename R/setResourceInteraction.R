@@ -48,7 +48,10 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # Then calculate the ratio of the external encounter rate to the
     # encounter rate achieved with interaction_resource = 1
     ratio <- params@ext_encounter / encounter
-    ratio[is.nan(ratio)] <- 0
+    # This can have zeros if encounter is zero, which can happen at very large
+    # sizes that we are not interested in. Set these zeros to Inf so they do not
+    # affect the minimum calculation below.
+    ratio[ratio == 0] <- Inf
     # The minimum ratio is the maximum that can be absorbed from the external
     # encounter rate
     ratio <- apply(ratio, 1, min)
