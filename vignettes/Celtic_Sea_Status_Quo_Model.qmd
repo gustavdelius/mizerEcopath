@@ -1,0 +1,81 @@
+---
+title: "Celtic_Sea_Status_Quo_Model"
+author: "Jessica Westworth"
+format: pdf
+editor: visual
+---
+
+# Introduction
+
+Creating a model representing the average state of the Celtic Sea from 2012 to 2024. Composed of 15 species: herring (*Clupea harengus*), cod (*Gadus morhua*), haddock (*Melanogrammus aeglefinus*), whiting (*Merlangius merlangus*), blue whiting (*Micromesistius poutassou*), hake (*Merluccius merluccius*), monkfish (Lophius piscatorius), horse mackerel (*Trachurus trachurus*), mackerel (*Scomber scombrus*), plaice (*Pleuronectes platessa*), megrim (*Lepidorhombus whiffiagonis*), sole (*Solea solea*), boarfish (*Capros aper*), dragonet (Callionymus spp.), and red gurnard (Chelidonicthys cuculus).
+
+## Loading in Repository and Libraries
+
+```{r}
+#| warning: false
+#| message: false
+#| results: 'hide'
+
+#library(remotes)
+#install_github("sizespectrum/mizer", ref="diffusion") 
+#install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
+library(mizer)
+library(mizerEcopath)
+library(dplyr)
+library(here)
+```
+
+## Load in Data
+
+Data includes: life_history parameters (l_mat and age_mat calculated from DATRAS data; w_max and LWR from Fishbase); landing distributions form STECF; survey size distribution and age at length distribution data from DATRAS; Stomach contents data; Biomass estimates, yield estimates, interaction matrix, and diet matrix from Lauria (2016).
+
+```{r}
+#| warning: false
+#| message: false
+#| results: 'hide'
+
+#Life history data
+
+#Load in ecopath estimates
+
+    #Biomass
+
+    #Yield
+
+    #Interaction matrix
+
+    #Diet matrix
+
+#Landings size distibutions data
+
+#DATRAS size distribution
+
+#DATRAS age at length distribution
+
+```
+
+# Step 1
+
+## Species Parameters
+
+Assign species parameters from life history data
+
+```{r}
+# Set species and their scientific names
+species <- data.frame(
+    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake", 
+                "Monkfish", "Horse mackerel", "Mackerel", "Plaice", "Megrim", "Sole",
+                "Boarfish" , "Dragonets" , "Red Gurnard"),
+    
+    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus", 
+                        "Merlangius merlangus", "Micromesistius poutassou", 
+                        "Merluccius merluccius", "Lophius piscatorius", 
+                        "Trachurus trachurus", "Scomber scombrus", 
+                        "Pleuronectes platessa", "Lepidorhombus whiffiagonis", 
+                        "Solea solea", "Capros aper", "Callionymus spp.", 
+                        "Chelidonicthys cuculus")
+)
+
+#Add life-history parameters corresponding to species
+
+```
