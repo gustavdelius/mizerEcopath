@@ -34,14 +34,26 @@ Data includes: life_history parameters (l_mat and age_mat calculated from DATRAS
 #| message: false
 #| results: 'hide'
 
-#Life history data
+#Life history data from fishbase
+life_history_fishbase <- read.csv(here("inst","extdata","Celtic_Sea_Fishbase_life_History_Params.csv"))
 
-#Load in ecopath estimates
-
+#Load in ecopath data
+ecopath_estimates <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+ecopath_fishing <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+    
     #Biomass
-
+observed_biomass_ecopath<-ecopath_estimates[c('Group.name','Biomass..t.km.2.')]
+    
     #Yield
-
+colnames(ecopath_fishing)[2] <- "Group.name"
+ecopath_fishing$Total<-rowSums(ecopath_fishing[,3:29],na.rm=TRUE)
+observed_yield_ecopath <- left_join(observed_biomass_ecopath,
+                                    ecopath_fishing, 
+                                    by = c("Group.name" = "Group.name")
+                                    ) |>
+    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km.2.) |>
+    select(Group.name, TotalCatch..t.km..year.)
+    
     #Interaction matrix
 
     #Diet matrix
