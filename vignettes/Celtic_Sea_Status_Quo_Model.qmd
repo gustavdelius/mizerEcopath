@@ -46,7 +46,15 @@ observed_biomass_ecopath<-ecopath_estimates[c('Group.name','Biomass..t.km.2.')]
     
     #Yield
 colnames(ecopath_fishing)[2] <- "Group.name"
-ecopath_fishing$Total<-rowSums(ecopath_fishing[,3:29],na.rm=TRUE)
+ecopath_fishing$Otter_trawl<-rowSums(ecopath_fishing[,c(3,10,17,23)],na.rm=TRUE)
+ecopath_fishing$Pair_trawl<-rowSums(ecopath_fishing[,c(4,11,18,24)],na.rm=TRUE)
+ecopath_fishing$Beam_trawl<-rowSums(ecopath_fishing[,c(5,12,19,25)],na.rm=TRUE)
+ecopath_fishing$Gillnets<-rowSums(ecopath_fishing[,c(6,13,20,26)],na.rm=TRUE)
+ecopath_fishing$Pots<-rowSums(ecopath_fishing[,c(7,14,21,27)],na.rm=TRUE)
+ecopath_fishing$Dredge<-rowSums(ecopath_fishing[,c(8,15,22,28)],na.rm=TRUE)
+ecopath_fishing$Pelagics<-rowSums(ecopath_fishing[,c(9,16)],na.rm=TRUE)
+ecopath_fishing$Other<-replace_na(ecopath_fishing[,c(29)],0)
+
 observed_yield_ecopath <- left_join(observed_biomass_ecopath,
                                     ecopath_fishing, 
                                     by = c("Group.name" = "Group.name")
