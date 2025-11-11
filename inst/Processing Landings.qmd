@@ -324,7 +324,7 @@ cs_sub_region_landings<-rbind(cs_sub_region_landings,monkfish_27.3.a.20,herring_
 # Define a function to calculate catch by species, size class, and gear type
 catch_by_size_class_and_gear <- function(data) {
     data %>%
-        group_by(species, length, gear_type, target_assemblage, country) %>%
+        group_by(species, length, gear_type, target_assemblage, country, source) %>%
         summarise(total_catch = sum(no_length)) %>%
         ungroup()
 }
@@ -366,34 +366,6 @@ cs_discards_data <- cs_discards_data %>%
 
 ## Generating a size-distributed catch data frame
 
-### Create the total gear rows
-
-```{r}
-cs_catch_total_gear <- cs_catch_data %>%
-  group_by(species, length, Scientific_name, English_name) %>%
-  summarise(
-    gear = "total",                          # Create a new 'gear' category
-    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
-    .groups = "drop"
-  )
-
-cs_catch_combined_data <- bind_rows(cs_catch_data, cs_catch_total_gear)
-
-cs_catch_combined_data$gear <- as.factor(cs_catch_combined_data$gear)
-
-cs_discards_total_gear <- cs_discards_data %>%
-  group_by(species, length, Scientific_name, English_name) %>%
-  summarise(
-    gear = "total",                          # Create a new 'gear' category
-    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
-    .groups = "drop"
-  )
-
- cs_discards_combined_data <- bind_rows(cs_discards_data, cs_discards_total_gear)
-
-cs_discards_combined_data$gear <- as.factor(cs_discards_combined_data$gear)
-```
-
 ### Species filter
 
 cs_discards
@@ -414,13 +386,13 @@ subset_species <- function(data, species_list, match_by = "species") {
 species_list <- c("HER","COD","HAD","WHG","WHB","HKE","MON","HOM","MAC","PLE","MEG","SOL","GUR", "BOC", "LYY")
 
 cs_landings <- subset_species(
-  data = cs_catch_combined_data,
+  data = cs_catch_data,
   species_list = species_list,
   match_by = "species"
  )
 
 cs_discards <- subset_species(
-  data = cs_discards_combined_data,
+  data = cs_discards_data,
   species_list = species_list,
   match_by = "species"
  )
@@ -442,7 +414,10 @@ new_species_names <- c("Atlantic herring"="Herring",
 "Atlantic mackerel"="Mackerel",
 "European plaice"="Plaice",
 "Megrim"="Megrim",
-"Common sole"="Sole"
+"Common sole"="Sole",
+"Boarfish"="Boarfish",
+"Dragonet"="Dragonet",
+"Red gurnard"="Red gurnard"
 )
 
 # Add the new species column by matching English_name
@@ -455,179 +430,910 @@ cs_landings$dl <- 1
 cs_discards$dl <- 1
 
 #convert catch to per year per area (m^2): total area surveyed is area of celtic sea 6.174997e+11 (m^2) and number of years is 2013 to 2020 so 8 years
-cs_landings$catch<-cs_landings$catch/6.174997e+11/8
+#cs_landings$catch<-cs_landings$catch/6.174997e+11/8
 #saveRDS(cs_catch, here("inst","extdata","cs_catch.rds"))
-cs_discards$catch<-cs_discards$catch/6.174997e+11/8
+#cs_discards$catch<-cs_discards$catch/6.174997e+11/8
 ```
 
-Combining discards and landings data
+Combining gears to ecopath gears
 
 ```{r}
 #Discard rate for species from Demersal Atlas for discards
-cs_discards
+cs_landings <- cs_landings %>%
+  mutate(
+    gear_category = case_when(
+      gear %in% c("OTT","OTB","OTB-OTT-PTB","TBB") ~ "Trawl",
+      gear %in% c("GND-GNS-GNC","GNS","GTR","GTR-GTN") ~ "Gillnet",
+      gear %in% c("LHM-LHP","OTM","OTM-PTM","LLS","PS","PS-LA","SSC") ~ "Pelagic",
+      TRUE ~ "Misc") # default for everything else
+  )
 
+cs_discards <- cs_discards %>%
+  mutate(
+    gear_category = case_when(
+      gear %in% c("OTT","OTB","OTB-OTT-PTB","TBB") ~ "Trawl",
+      gear %in% c("GND-GNS-GNC","GNS","GTR","GTR-GTN") ~ "Gillnet",
+      gear %in% c("LHM-LHP","OTM","OTM-PTM","LLS","PS","PS-LA","SSC") ~ "Pelagic",
+      TRUE ~ "Misc") # default for everything else
+  )
 
-```
-
-# North Sea
-
-### Subset data for North Sea
-
-```{r}
-ns_sub_region_landings<-subset(length_landings, sub_region=="ns_sub_area")
-```
-
-### Fixes For Limited Data
-
-In this North Sea example the final data frame from processing has no data from the following species: N.pout and Sandeel
-
-Recommended steps:
-
-1\) Check the species filering and cross check that the calls used in species filtering match with the landings_length data frame.
-
-2\) Check the landings_length data frame and determine if there is any landings data from any region for the data limited species.
-
-3\) If data is present for a nearby region document which region you are taking data from for that species and follow the recommended code below. *Reference for checking proximity to desired area: <https://fish-commercial-names.ec.europa.eu/fish-names/fishing-areas/fao-area-27_en>*
-
-4\) If data is not present for that species in a nearby region utilize an alternative data source.
-
-#### Sprat
-
-There is data available for the region 27.3d
-
-```{r}
-#subset for sprat
-sprat<-subset(length_landings, species=="SPR")
-```
-
-#### Sandeel
-
-There is data available for the region 27.3.d.24 and 27.3.d.25
-
-```{r}
-#subset for sandeel
-sandeel<-subset(length_landings, species=="ABZ")
-```
-
-#### Bind data
-
-```{r}
-ns_sub_region_landings<-rbind(ns_sub_region_landings,sandeel,sprat)
-```
-
-### Calculate catch by species, size, and gear type
-
-```{r}
-# Define a function to calculate catch by species, size class, and gear type
-catch_by_size_class_and_gear <- function(data) {
-    data %>%
-        group_by(species, length, gear_type) %>%
-        summarise(total_catch = sum(no_length)) %>%
-        ungroup()
-}
-
-ns_catch_data <- catch_by_size_class_and_gear(ns_sub_region_landings)
-# Only if wider-area species required
-# catch_data_full_area <- catch_by_size_class_and_gear(full_area_landings)
-# catch_data_combined <- bind_rows(catch_data, catch_data_full_area)
-
-species_reference <- length_landings %>%
-    distinct(species, Scientific_name, English_name)
-```
-
-### Add species names and map gear categories
-
-```{r}
-ns_catch_data <- ns_catch_data %>%
-  left_join(species_reference, by = "species") %>%
-  rename(
-    gear = gear_type,  # Adjust as needed if `gear_type` is used elsewhere
-    catch = total_catch
-  ) %>%
-  drop_na()  # Remove rows with NA in any column
-```
-
-## Generating a size-distributed catch data frame
-
-### Create the total gear rows
-
-```{r}
-ns_total_gear <- ns_catch_data %>%
-  group_by(species, length, Scientific_name, English_name) %>%
+cs_landings <- cs_landings %>%
+  group_by(species, Scientific_name, length,gear_category, target_assemblage, source) %>%
   summarise(
-    gear = "total",                          # Create a new 'gear' category
     catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
     .groups = "drop"
   )
 
-ns_combined_data <- bind_rows(ns_catch_data, ns_total_gear)
-
-ns_combined_data$gear <- as.factor(ns_combined_data$gear)
+cs_discards <- cs_discards %>%
+  group_by(species, Scientific_name, length,gear_category, target_assemblage, source) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),       # Sum all catch across gears
+    .groups = "drop"
+  )
 ```
 
-### Species filter
+Normalise the catches
 
 ```{r}
-subset_species <- function(data, species_list, match_by = "species") {
-  # Validate match_by parameter
-  if (!match_by %in% c("species", "Scientific_name", "English_name")) {
-    stop("match_by must be one of 'species', 'Scientific_name', or 'English_name'")
-  }
-  
-  # Filter the data to include only the specified species
-  subset_data <- data %>% filter(!!sym(match_by) %in% species_list)
-  
-  return(subset_data)
-}
 
-species_list <- c("SPR", "ABZ", 
-                 # "NOP", 
-                  "HER", "DAB", "WHG", "SOL", "GUX", "GUR", "TUB", "PLE", "HAD", "COD", "POK")
+life_history_fishbase <- read.csv(here("inst","extdata","Celtic_Sea_Fishbase_life_History_Params.csv"))
 
-ns_catch <- subset_species(
-  data = ns_combined_data,
+cs_landings<-cs_landings%>%
+    left_join(life_history_fishbase, by=c("species","Scientific_name"))%>%
+    mutate(weight=a*length^b,
+           biomass=weight*catch)
+
+cs_discards<-cs_discards%>%
+    left_join(life_history_fishbase, by=c("species","Scientific_name"))%>%
+    mutate(weight=a*length^b,
+           biomass=weight*catch)
+
+cs_landings_normalised <- cs_landings %>%
+  group_by(species, Scientific_name, gear_category,target_assemblage) %>%         
+  mutate(
+    total_catch = sum(catch, na.rm = TRUE),
+    total_biomass = sum(biomass, na.rm = TRUE)) %>%
+  ungroup()%>%  
+    mutate(
+    catch_proportion = catch / total_catch,
+    biomass_proportion = biomass / total_biomass)%>%
+    select(-total_catch, -catch, -source, -total_biomass, -biomass, -a,-b,-l_mat,-l_max)
+
+cs_discards_normalised<- cs_discards %>%
+  group_by(species, Scientific_name, gear_category, target_assemblage) %>%         
+  mutate(
+    total_catch = sum(catch, na.rm = TRUE),
+    total_biomass = sum(biomass, na.rm = TRUE)) %>%
+  ungroup()%>%  
+    mutate(
+    catch_proportion = catch / total_catch,
+    biomass_proportion = biomass / total_biomass)%>%
+    select(-total_catch, -catch, -source, -total_biomass, -biomass, -a,-b,-l_mat,-l_max)
+```
+
+Combining discards and landings
+
+```{r}
+#Blue Whiting
+blue_whiting_cs_landings<-subset(cs_landings_normalised, species=="Blue whiting")
+blue_whiting_cs_discards<-subset(cs_discards_normalised, species=="Blue whiting")
+blue_whiting_cs_combined<-blue_whiting_cs_landings%>%
+    full_join(blue_whiting_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.261),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.261,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+blue_whiting_cs <- blue_whiting_cs_combined %>%
+  group_by(species, Scientific_name, gear_category, length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Boarfish
+boarfish_cs_landings<-subset(cs_landings_normalised, species=="Boarfish")
+boarfish_cs_discards<-subset(cs_discards_normalised, species=="Boarfish")
+#only discards for boarfish, can be added to the main data frame w/o scaling
+boarfish_cs_combined<-boarfish_cs_landings%>%
+    full_join(boarfish_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0)),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0)),
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+boarfish_cs <- boarfish_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Cod
+cod_cs_landings<-subset(cs_landings_normalised, species=="Cod")
+cod_cs_discards<-subset(cs_discards_normalised, species=="Cod")
+#assume discards for demersal fishing for cod is 11% and we assume a 50% survival rate
+cod_cs_combined<-cod_cs_landings%>%
+    full_join(cod_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.11),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.11,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+cod_cs <- cod_cs_combined %>%
+  group_by(species, Scientific_name, gear_category, length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Dragonet
+dragonet_cs_landings<-subset(cs_landings_normalised, species=="Dragonet")
+dragonet_cs_discards<-subset(cs_discards_normalised, species=="Dragonet")
+
+dragonet_cs_combined<-dragonet_cs_landings%>%
+    full_join(dragonet_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0)),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0)),
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+dragonet_cs <- dragonet_cs_combined %>%
+  group_by(species, Scientific_name,gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name,gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Haddock
+haddock_cs_landings<-subset(cs_landings_normalised, species=="Haddock")
+haddock_cs_discards<-subset(cs_discards_normalised, species=="Haddock")
+
+haddock_cs_combined<-haddock_cs_landings%>%
+    full_join(haddock_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.55),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.55,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+haddock_cs <- haddock_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Hake
+hake_cs_landings<-subset(cs_landings_normalised, species=="Hake")
+hake_cs_discards<-subset(cs_discards_normalised, species=="Hake")
+hake_cs_combined<-hake_cs_landings%>%
+    full_join(hake_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.34),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.34,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+hake_cs <- hake_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Herring
+herring_cs_landings<-subset(cs_landings_normalised, species=="Herring")
+herring_cs_discards<-subset(cs_discards_normalised, species=="Herring")
+
+herring_cs_combined<-herring_cs_landings%>%
+    full_join(herring_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.01),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.01,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+herring_cs <- herring_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Horse mackerel
+horse_mackerel_cs_landings<-subset(cs_landings_normalised, species=="Horse mackerel")
+horse_mackerel_cs_discards<-subset(cs_discards_normalised, species=="Horse mackerel")
+
+horse_mackerel_cs_combined<-horse_mackerel_cs_landings%>%
+    full_join(horse_mackerel_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.05),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.05,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+horse_mackerel_cs <- horse_mackerel_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Mackerel
+mackerel_cs_landings<-subset(cs_landings_normalised, species=="Mackerel")
+mackerel_cs_discards<-subset(cs_discards_normalised, species=="Mackerel")
+
+mackerel_cs_combined<-mackerel_cs_landings%>%
+    full_join(mackerel_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.01),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.01,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+mackerel_cs <- mackerel_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Megrim
+megrim_cs_landings<-subset(cs_landings_normalised, species=="Megrim")
+megrim_cs_discards<-subset(cs_discards_normalised, species=="Megrim")
+
+megrim_cs_combined<-megrim_cs_landings%>%
+    full_join(megrim_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.29),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.29,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+megrim_cs <- megrim_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Monkfish
+monkfish_cs_landings<-subset(cs_landings_normalised, species=="Monkfish")
+monkfish_cs_discards<-subset(cs_discards_normalised, species=="Monkfish")
+
+monkfish_cs_combined<-monkfish_cs_landings%>%
+    full_join(monkfish_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.18),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.18,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+monkfish_cs <- monkfish_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Plaice
+plaice_cs_landings<-subset(cs_landings_normalised, species=="Plaice")
+plaice_cs_discards<-subset(cs_discards_normalised, species=="Plaice")
+
+plaice_cs_combined<-plaice_cs_landings%>%
+    full_join(plaice_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.71),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.71,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+plaice_cs <- plaice_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name,gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Red gurnard
+red_gurnard_cs_landings<-subset(cs_landings_normalised, species=="Red gurnard")
+red_gurnard_cs_discards<-subset(cs_discards_normalised, species=="Red gurnard")
+
+red_gurnard_cs_combined<-red_gurnard_cs_landings%>%
+    full_join(red_gurnard_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.70),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.70,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+red_gurnard_cs <- red_gurnard_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Sole
+sole_cs_landings<-subset(cs_landings_normalised, species=="Sole")
+sole_cs_discards<-subset(cs_discards_normalised, species=="Sole")
+
+sole_cs_combined<-sole_cs_landings%>%
+    full_join(sole_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.05),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.05,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+sole_cs <- sole_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+
+#Whiting
+whiting_cs_landings<-subset(cs_landings_normalised, species=="Whiting")
+whiting_cs_discards<-subset(cs_discards_normalised, species=="Whiting")
+
+whiting_cs_combined<-whiting_cs_landings%>%
+    full_join(whiting_cs_discards, by=c("species","Scientific_name",
+                                             "length", "weight",
+                                             "gear_category","target_assemblage"))%>%
+    mutate(biomass_proportion.x = (replace_na(catch_proportion.x, 0))*(1-0.54),
+           biomass_proportion.y = (replace_na(catch_proportion.y, 0))*0.54,
+           catch_proportion.x = biomass_proportion.x/weight,
+           catch_proportion.y = (biomass_proportion.y/weight)*0.5,
+           catch = catch_proportion.x + catch_proportion.y)%>%
+    select(-biomass_proportion.x,-biomass_proportion.y,-catch_proportion.x,
+           -biomass_proportion.y,-target_assemblage)
+
+whiting_cs <- whiting_cs_combined %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch = sum(catch, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch / total_catch)%>%
+    select(-total_catch, -catch)
+```
+
+Combining countries
+
+```{r}
+Celtic_Sea_Fishing<-rbind(blue_whiting_cs, boarfish_cs,cod_cs, dragonet_cs, haddock_cs,hake_cs,herring_cs,horse_mackerel_cs,mackerel_cs,megrim_cs,monkfish_cs, plaice_cs,red_gurnard_cs,sole_cs,whiting_cs)
+
+Celtic_Sea_Fishing <- Celtic_Sea_Fishing %>%
+  group_by(species, Scientific_name, gear_category,length) %>%
+  summarise(
+    catch_proportion = sum(catch_proportion, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name, gear_category) %>%
+    mutate(total_catch = sum(catch_proportion, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    catch_proportion = catch_proportion / total_catch,
+    dl= 1)%>%
+    select(-total_catch)
+
+Celtic_Sea_Fishing_Mix <- Celtic_Sea_Fishing %>%
+    group_by(species, Scientific_name, length) %>%
+  summarise(
+    catch_proportion = sum(catch_proportion, na.rm = TRUE),
+    .groups = "drop")%>%
+    group_by(species, Scientific_name) %>%
+    mutate(total_catch = sum(catch_proportion, na.rm = TRUE))%>%
+    ungroup()%>%
+    mutate(
+    species=species,
+    Scientific_name=Scientific_name,
+    gear_category="Mix",
+    length=length,
+    catch_proportion = catch_proportion / total_catch,
+    dl= 1,
+    )%>%
+    select(-total_catch)
+
+Celtic_Sea_Fishing<-rbind(Celtic_Sea_Fishing,Celtic_Sea_Fishing_Mix)
+```
+
+Load in FDI landings data per species and gear and use to get proportion of total landings then multiply by total landings from ICES of the total landed multiply and add the percentage of weight surviving and the percentage survival
+
+```{r}
+FDI_EU_2013<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2013.csv")
+FDI_EU_2014<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2014.csv")
+FDI_EU_2015<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2015.csv")
+FDI_EU_2016<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2016.csv")
+FDI_EU_2017<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2017.csv")
+FDI_EU_2018<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2018.csv")
+FDI_EU_2019<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2019.csv")
+FDI_EU_2020<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2020.csv")
+FDI_EU_2021<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2021.csv")
+FDI_EU_2022<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2022.csv")
+FDI_EU_2023<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2023.csv")
+
+FDI_EU<-rbind(FDI_EU_2013,FDI_EU_2014,FDI_EU_2015,FDI_EU_2016,FDI_EU_2017,FDI_EU_2018,FDI_EU_2019,FDI_EU_2020,FDI_EU_2021,FDI_EU_2022,FDI_EU_2023)
+
+unique(FDI_EU$sub_region)
+
+FDI_EU <- FDI_EU %>%
+  mutate(
+    sub_region = case_when(
+      sub_region %in% c("27.7.B") ~ "cs",
+      sub_region %in% c("27.7.D") ~ "cs",
+      sub_region %in% c("27.7.E") ~ "cs",
+      sub_region %in% c("27.7.F") ~ "cs",
+      sub_region %in% c("27.7.G") ~ "cs",
+      sub_region %in% c("27.7.H") ~ "cs",
+      sub_region %in% c("27.7.J") ~ "cs",
+      TRUE ~ NA_character_),
+    total_live_weight_landed = case_when(
+        total_live_weight_landed %in% c("C") ~ NA_character_,
+        TRUE ~ total_live_weight_landed),
+    tot_discards_tonnes = case_when(
+        tot_discards_tonnes %in% c("C") ~ NA_character_,
+        TRUE ~ tot_discards_tonnes))
+
+FDI_EU<-subset(FDI_EU, sub_region=="cs")
+FDI_EU$tot_discards_tonnes<-as.numeric(FDI_EU$tot_discards_tonnes)
+FDI_EU<-FDI_EU[c("gear_type","species","total_live_weight_landed","tot_discards_tonnes")]
+FDI_EU$tot_discards_tonnes<-replace_na(FDI_EU$tot_discards_tonnes, 0)
+FDI_EU$total_live_weight_landed<-as.numeric(FDI_EU$total_live_weight_landed)
+FDI_EU<-na.omit(FDI_EU)
+
+FDI_EU<-FDI_EU %>%
+    group_by(gear_type, species)%>%
+    summarise(total_landings = sum(total_live_weight_landed),
+              tot_discards_tonnes = sum(tot_discards_tonnes))
+
+species_list <- c("HER","COD","HAD","WHG","WHB","HKE","MON","HOM","MAC","PLE","MEG","SOL","GUR", "BOC", "LYY")
+
+FDI_EU <- subset_species(
+  data = FDI_EU,
   species_list = species_list,
   match_by = "species"
  )
 
-# Rename the species column to species_code
-colnames(ns_catch)[colnames(ns_catch) == "species"] <- "species_code"
+FDI_EU <- FDI_EU%>%
+    mutate(
+        gear_category = case_when(
+             gear_type %in% c("OTT","OTB","OTB-OTT-PTB","PTB","TBB") ~ "Trawl",
+             gear_type %in% c("GND-GNS-GNC","GNS","GTR","GTR-GTN",
+                               "GND","GTN","GNC") ~ "Gillnet",
+             gear_type %in% c("LNB","LTL","LHM-LHP","LHM","LHP","LLD","OTM","OTM-PTM",
+                              "PTM","SB","SDN","SV","SPR","LLS","PS","PS-LA",
+                              "SSC","GEF") ~ "Pelagic",
+             TRUE ~ "Misc"))%>% # default for everything else
+    group_by(gear_category, species)%>%
+    summarise(total_landings = sum(total_landings),
+              tot_discards_tonnes =sum(tot_discards_tonnes))
 
-# Create a named vector for the new species names
-new_species_names <- c(
-  "European sprat" = "Sprat",
-  "Small sandeel" = "Sandeel",
-  #"Norway pout" = "N.pout",
-  "Atlantic herring" = "Herring",
-  "Common dab" = "Dab",
-  "Whiting" = "Whiting",
-  "Common sole" = "Sole",
-  "Gurnards, searobins nei" = "Grey Gurnard",
-  "Red gurnard" = "Red Gurnard",
-  "Tub Gurnard" = "Tub Gurnard",
-  "European plaice" = "Plaice",
-  "Haddock" = "Haddock",
-  "Atlantic cod" = "Cod",
-  "Saithe(=Pollock)" = "Saithe"
-)
+#get total f mort proportions
+FDI_EU <- FDI_EU%>%
+    group_by(gear_category, species)%>%
+    mutate(
+    total_weight_dead=total_landings+0.5*tot_discards_tonnes)
 
-# Add the new species column by matching English_name
-ns_catch$species <- new_species_names[ns_catch$English_name]
+FDI_EU <- FDI_EU %>%
+    group_by(species)%>%
+    mutate(
+    total_weight_dead_sp=sum(total_weight_dead))%>%
+    ungroup()%>%
+    mutate(
+    proportion_of_total_weight_dead = total_weight_dead / total_weight_dead_sp,
+    species_code=species)%>%
+    select(-total_weight_dead, -total_weight_dead_sp, -species)
 
-# Combine the gurnards
-ns_catch <- ns_catch %>%
-  # First, standardise species: Grey gurnard or Red gurnard => Gurnard
-  mutate(species = ifelse(species %in% c("Grey Gurnard", "Red Gurnard"), 
-                          "Gurnard", 
-                          species)) %>%
-  # Now group by length, gear, and the updated species, then sum the catches
-  group_by(length, gear, species, Scientific_name, English_name) %>%
-  summarise(catch = sum(catch), .groups = "drop")
+yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+colnames(yield)[2] <- "Group.name"
+yield$Total<-rowSums(yield[,3:29],na.rm=TRUE)
+yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |>
+    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km.2.) |>
+    select(Group.name, TotalCatch..t.km..year.)
 
-# Add the dl column
-ns_catch$dl <- 1
+yield<-yield%>%
+    mutate(
+        species = case_when(
+             Group.name %in% c("Cod","Juvenile cod") ~ "Cod",
+             Group.name %in% c("Blue whiting","Juvenile blue whiting") ~ "Blue whiting",
+             Group.name %in% c("Hake","Juvenile hake") ~ "Hake",
+             Group.name %in% c("Plaice","Juvenile plaice") ~ "Plaice",
+             Group.name %in% c("Megrim","Juvenile megrim") ~ "Megrim",
+             Group.name %in% c("Whiting","Juvenile whiting") ~ "Whiting",
+             Group.name %in% c("Monkfish","Juvenile monkfish") ~ "Monkfish",
+             Group.name %in% c("Haddock","Juvenile haddock") ~ "Haddock",
+             Group.name %in% c("Sole") ~ "Sole",
+             Group.name %in% c("Mackerel") ~ "Mackerel",
+             Group.name %in% c("Horse mackerel") ~ "Horse mackerel",
+             Group.name %in% c("Herring") ~ "Herring",
+             TRUE ~ NA_character_),
+        species_code = case_when(
+            species %in% c("Cod") ~ "COD",
+            species %in% c("Blue whiting") ~ "WHB",
+            species %in% c("Hake") ~ "HKE",
+            species %in% c("Plaice") ~ "PLE",
+            species %in% c("Megrim") ~ "MEG",
+            species %in% c("Whiting") ~ "WHG",
+            species %in% c("Monkfish") ~ "MON",
+            species %in% c("Haddock") ~ "HAD",
+            species %in% c("Sole") ~ "SOL",
+            species %in% c("Mackerel") ~ "MAC",
+            species %in% c("Horse mackerel") ~ "HOM",
+            species %in% c("Herring") ~ "HER",
+        ))%>%
+    group_by(species, species_code)%>%
+    summarise(total_weight_dead=sum(TotalCatch..t.km..year., na.rm=TRUE))
 
-#saveRDS(ns_catch,"/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ns_catch.rds")
+yield<-na.omit(yield)  
+Red_gurnard<-data.frame(species="Red gurnard",species_code="GUR", total_weight_dead=0.0223)
+Boarfish<-data.frame(species="Boarfish",species_code="BOC", total_weight_dead=0.01911)
+Dragonet<-data.frame(species="Dragonet",species_code="LYY",total_weight_dead=0.0047775)
+#assume dragonet deaths are approximately 1/4 of boarfish catches
+yield<-rbind(yield,Red_gurnard,Boarfish, Dragonet)
+
+
+total_weight_dead<-FDI_EU%>%
+    left_join(yield, by='species_code')%>%
+    mutate(total_weight_dead_gear_per_area=(proportion_of_total_weight_dead*total_weight_dead))
 ```
 
-# 
+compare total weight dead species and gear categories, if no size distribution is present for a category add the deaths to misc.
+
+```{r}
+#Blue whiting
+blue_whiting_distribution<-subset(Celtic_Sea_Fishing, species=="Blue whiting")
+blue_whiting_deaths<-subset(total_weight_dead, species=="Blue whiting")
+unique(blue_whiting_distribution$gear_category)
+unique(blue_whiting_deaths$gear_category)
+    #Gillnet not included in distribution, so place gillnet deaths into Mix
+blue_whiting_deaths<-blue_whiting_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Gillnet") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Boarfish
+boarfish_distribution<-subset(Celtic_Sea_Fishing, species=="Boarfish")
+boarfish_deaths<-subset(total_weight_dead, species=="Boarfish")
+unique(boarfish_distribution$gear_category)
+unique(boarfish_deaths$gear_category)
+    #Pelagic,Gillnet, and Misc not included in distribution, so place gillnet and pelagic deaths mix gear
+boarfish_deaths<-boarfish_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Pelagic") ~ "Mix",
+        gear_category %in% c("Gillnet") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+#Cod
+cod_distribution<-subset(Celtic_Sea_Fishing, species=="Cod")
+cod_deaths<-subset(total_weight_dead, species=="Cod")
+unique(cod_distribution$gear_category)
+unique(cod_deaths$gear_category)
+    #Misc not included in distribution, so Misc deaths into mix gear
+cod_deaths<-cod_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Dragonet
+dragonet_distribution<-subset(Celtic_Sea_Fishing, species=="Dragonet")
+dragonet_deaths<-subset(total_weight_dead, species=="Dragonet")
+unique(dragonet_distribution$gear_category)
+unique(dragonet_deaths$gear_category)
+    #Gillnet not included in distribution, so place gillnet and trawl deaths into mix
+dragonet_deaths<-dragonet_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Gillnet") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Haddock
+haddock_distribution<-subset(Celtic_Sea_Fishing, species=="Haddock")
+haddock_deaths<-subset(total_weight_dead, species=="Haddock")
+unique(haddock_distribution$gear_category)
+unique(haddock_deaths$gear_category)
+    #Misc and Pelagic not included in distribution, so place Misc and Pelagic deaths into mix
+haddock_deaths<-haddock_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        gear_category %in% c("Pelagic") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Hake
+hake_distribution<-subset(Celtic_Sea_Fishing, species=="Hake")
+hake_deaths<-subset(total_weight_dead, species=="Hake")
+unique(hake_distribution$gear_category)
+unique(hake_deaths$gear_category)
+    #Misc not included in distribution, so place Misc deaths into mix
+hake_deaths<-hake_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Herring
+herring_distribution<-subset(Celtic_Sea_Fishing, species=="Herring")
+herring_deaths<-subset(total_weight_dead, species=="Herring")
+unique(herring_distribution$gear_category)
+unique(herring_deaths$gear_category)
+    #Misc not included in distribution, so place Misc deaths into mix
+herring_deaths<-herring_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Horse mackerel
+horse_mackerel_distribution<-subset(Celtic_Sea_Fishing, species=="Horse mackerel")
+horse_mackerel_deaths<-subset(total_weight_dead, species=="Horse mackerel")
+unique(horse_mackerel_distribution$gear_category)
+unique(horse_mackerel_deaths$gear_category)
+    #Gillnet and Misc not included in distribution, so place Misc and Gillnet deaths into mix
+horse_mackerel_deaths<-horse_mackerel_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+         gear_category %in% c("Gillnet") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Mackerel
+mackerel_distribution<-subset(Celtic_Sea_Fishing, species=="Mackerel")
+mackerel_deaths<-subset(total_weight_dead, species=="Mackerel")
+unique(mackerel_distribution$gear_category)
+unique(mackerel_deaths$gear_category)
+    #All gears match remove miz gear from mackerel
+mackerel_distribution<-mackerel_distribution%>%
+    filter(gear_category !="Mix")
+mackerel_deaths<-mackerel_deaths%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Megrim
+megrim_distribution<-subset(Celtic_Sea_Fishing, species=="Megrim")
+megrim_deaths<-subset(total_weight_dead, species=="Megrim")
+unique(megrim_distribution$gear_category)
+unique(megrim_deaths$gear_category)
+    #Gillnet, Pelagic, and Misc not included in distribution, so place Misc, Pelagic, and Gillnet deaths into mix
+megrim_deaths<-megrim_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        gear_category %in% c("Gillnet") ~ "Mix",
+        gear_category %in% c("Pelagic") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Monkfish
+monkfish_distribution<-subset(Celtic_Sea_Fishing, species=="Monkfish")
+monkfish_deaths<-subset(total_weight_dead, species=="Monkfish")
+unique(monkfish_distribution$gear_category)
+unique(monkfish_deaths$gear_category)
+    #Gillnet and Pelagic not included in distribution, so place Pelagic and Gillnet deaths into mix
+monkfish_deaths<-monkfish_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Gillnet") ~ "Mix",
+        gear_category %in% c("Pelagic") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Plaice
+plaice_distribution<-subset(Celtic_Sea_Fishing, species=="Plaice")
+plaice_deaths<-subset(total_weight_dead, species=="Plaice")
+unique(plaice_distribution$gear_category)
+unique(plaice_deaths$gear_category)
+    #All gears shared, remove mix from distribution
+plaice_distribution<-plaice_distribution%>%
+    filter(gear_category !="Mix")
+plaice_deaths<-plaice_deaths%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Red gurnard
+red_gurnard_distribution<-subset(Celtic_Sea_Fishing, species=="Red gurnard")
+red_gurnard_deaths<-subset(total_weight_dead, species=="Red gurnard")
+unique(red_gurnard_distribution$gear_category)
+unique(red_gurnard_deaths$gear_category)
+    #Misc not included in distribution, so place Misc deaths into mix
+red_gurnard_deaths<-red_gurnard_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Sole
+sole_distribution<-subset(Celtic_Sea_Fishing, species=="Sole")
+sole_deaths<-subset(total_weight_dead, species=="Sole")
+unique(sole_distribution$gear_category)
+unique(sole_deaths$gear_category)
+    #Pelagic not included in distribution, so place Pelagic deaths into mix
+sole_deaths<-sole_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Pelagic") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+#Whiting
+whiting_distribution<-subset(Celtic_Sea_Fishing, species=="Whiting")
+whiting_deaths<-subset(total_weight_dead, species=="Whiting")
+unique(whiting_distribution$gear_category)
+unique(whiting_deaths$gear_category)
+    #Misc not included in distribution, so place Misc deaths into mix
+whiting_deaths<-whiting_deaths%>%
+    mutate(gear_category = case_when(
+        gear_category %in% c("Misc") ~ "Mix",
+        TRUE ~ gear_category))%>%
+    group_by(gear_category,species)%>%
+    summarise(total_weight_dead_gear_per_area=sum(total_weight_dead_gear_per_area),
+              .groups = "drop")
+
+
+#combine for final distribution and deaths
+catch_distribution<-rbind(blue_whiting_distribution,boarfish_distribution,cod_distribution,dragonet_distribution,haddock_distribution,hake_distribution,herring_distribution,horse_mackerel_distribution,mackerel_distribution,megrim_distribution,monkfish_distribution,plaice_distribution,red_gurnard_distribution,sole_distribution,whiting_distribution)
+
+fishing_deaths<-rbind(blue_whiting_deaths,boarfish_deaths,cod_deaths,dragonet_deaths, haddock_deaths,hake_deaths,herring_deaths,horse_mackerel_deaths,mackerel_deaths, megrim_deaths,monkfish_deaths,plaice_deaths,red_gurnard_deaths,sole_deaths,whiting_deaths)
+
+##
+#use_data(catch_distribution, overwrite = TRUE)
+#use_data(fishing_deaths, overwrite = TRUE)
+```
