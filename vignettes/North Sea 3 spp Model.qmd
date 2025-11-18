@@ -1,9 +1,13 @@
 ---
 title: "North Sea 3 Species Model"
-format:
-  html: default
-  pdf: default
-editor: visual
+format: 
+  html:
+    toc: true
+    html-math-method: mathjax
+vignette: >
+  %\VignetteIndexEntry{From Ecopath to Mizer}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
 ---
 
 # Introduction
@@ -16,9 +20,6 @@ Creating a simplified 3 species North Sea model.
 #| warning: false
 #| message: false
 #| results: 'hide'
-# Currently we still need a special branch of mizer
-
-remotes::install_github("sizespectrum/mizer", ref = "diffusion")
 
 library(mizerEcopath)
 library(dplyr)
@@ -70,6 +71,7 @@ ecopath_catch <- read.csv(here("inst", "extdata",
 ```
 
 We have extracted the size distribution of the landings data for the three species from STECF data. TODO: more info on this table.
+
 ```{r}
 #Load in catch data
 catch <- read.csv(here("inst", "extdata", "ns_3_spp_catch.csv"))
@@ -80,8 +82,7 @@ catch$catch <- catch$count
 
 ## Set l_max based on observed sizes in the landings data
 
-The `l_max` species parameter lets mizer know up to what size it needs to calculate species abundances. By setting it not too much larger than the largest observed size in the landings data, we can reduce the computational burden of the model and also choose the scale of the size axis in plots appropriately. We set `l_max` to 
-5% above the maximum observed weight in the landings data.
+The `l_max` species parameter lets mizer know up to what size it needs to calculate species abundances. By setting it not too much larger than the largest observed size in the landings data, we can reduce the computational burden of the model and also choose the scale of the size axis in plots appropriately. We set `l_max` to 5% above the maximum observed weight in the landings data.
 
 ```{r}
 sp <- catch %>%
@@ -106,8 +107,6 @@ species_to_groups <- list(
 # add biomass, production, and consumption to species parameters
 sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 ```
-
-
 
 # Initial Model
 
@@ -146,15 +145,11 @@ ns_3_spp_model_initial <- p
 
 ## Manual Tuning
 
-```{r}
-#| eval: false
+```r
 p_tuned <- tuneEcopath(
     p, 
     catch = catch, 
     diet = dm,
     preserve = c("reproduction_level")
 )
-#ns_3_spp_model_trial<-p_tuned
-#use_data(ns_3_spp_model_trial)
-
 ```
