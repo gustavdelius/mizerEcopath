@@ -21,6 +21,9 @@ steady_diffusion <- function(params, species) {
     sps <- species_params(params)[species, ]
     n <- sps$n
     d_over_g <- sps$d_over_g
+    if (is.null(d_over_g) || is.na(d_over_g)) {
+        d_over_g <- 0
+    }
     w <- w(params)
     x <- log(w / w[1])
     h <- x[2] - x[1]
@@ -83,7 +86,7 @@ solve_diffusion_ode <- function(d, g, mu, n0, h) {
     # \tilde{d}_{i+1/2} = (\tilde{d}_i+\tilde{d}_{i+1})/2 for i = 0,...,N
     # In R:
     # d_half[1] = \tilde{d}_{1/2}, ..., d_half[N+1] = \tilde{d}_{N+1/2}
-    d_half <- (d[1:(N+1)] + d[2:(N+2)]) / 2
+    d_half <- (d[1:(N + 1)] + d[2:(N + 2)]) / 2
 
     # Prepare diagonals for upwind scheme
     abs_g <- abs(g)

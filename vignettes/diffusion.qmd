@@ -26,9 +26,9 @@ library(dplyr)
 
 As was observed in [@datta2010], the variability in prey size leads to a diffusion term in the PDE for the abundance density $N(w,t)$. This term is neglected in mizer but will become important when matching mizer abundances to observed abundances, because it will account for fish that are larger than average. The PDE including the diffusion term is
 $$
-\frac{\partial N}{\partial t} = \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N-e
+\frac{\partial N}{\partial t} = \frac12 \frac{\partial^2}{\partial w^2}(d N) - \frac{\partial}{\partial w}(g N)-\mu N
 $$ {#eq-PDE}
-where $g$ is the growth rate, $\mu$ is the death rate, $e$ is an emigration rate and $d$ is a new diffusion rate.
+where $g$ is the growth rate, $\mu$ is the death rate and $d$ is a new diffusion rate.
 
 The diffusion rate has an expression that is similar to that of the growth rate. Recall that the growth rate is given by
 $$
@@ -127,7 +127,7 @@ However we see that the value of $d(w)$ is strongly influenced by the width of t
 
 In this section we will calculate the effect of the diffusion on the slope of the juvenile spectrum in the steady state. You can skip this section if you are not interested in the details of the calculation. The outcome is that the change in the juvenile slope is small. However, the change in the size spectrum of the adults is much larger, as we will see in @sec-diffusion-numerical.
 
-Without diffusion and emigration we find the juvenile spectrum by solving the steady-state equation
+Without diffusion we find the juvenile spectrum by solving the steady-state equation
 $$
 \frac{\partial}{\partial w}(g(w) N(w)) =-\mu(w) N(w).
 $$ {#eq-ss}
@@ -137,7 +137,7 @@ $$
 N(w) = \frac{g(w_0)}{g(w)}N(w_0)\exp\left(-\int_{w_0}^w\frac{\mu(w')}{g(w')}dw'\right).
 $$ {#eq-Nw}
 
-With allometic growth and death rates $g(w)=g_0w^n$ and $\mu(w)=\mu_0w^{n-1}$ this gives
+With allometric growth and death rates $g(w)=g_0w^n$ and $\mu(w)=\mu_0w^{n-1}$ this gives
 $$
 N(w)=\left(\frac{w}{w_0}\right)^{-n} N(w_0)\exp\left(-\frac{\mu_0}{g_0}\int_{w_0}^w\frac{1}{w'}dw'\right)=N(w_0)\left(\frac{w}{w_0}\right)^{-\mu_0/g_0-n}.
 $$ {#eq-Nwss}
@@ -429,7 +429,10 @@ We now demonstrate the use of the upwind finite-difference scheme by calculating
 ```{r}
 params <- celtic_params
 species <- "Herring"
+w <- params@w
 
+# Set nonzero diffusion rate
+species_params(params)[species, "d_over_g"] <- 0.15
 # Solve for steady state using the upwind scheme
 n_steady <- steady_diffusion(params, species)
 
@@ -483,6 +486,7 @@ using the same upwind finite-difference method as for the steady-state ODE, but 
 
 ```{r}
 params <- celtic_params
+species_params(params)$d_over_g <- 0.15  # Set nonzero diffusion rate
 species <- "Cod"
 sps <- species_params(params)[species, ]
 

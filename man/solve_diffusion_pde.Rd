@@ -4,7 +4,7 @@
 \alias{solve_diffusion_pde}
 \title{Function to solve a reaction-diffusion-advection PDE}
 \usage{
-solve_diffusion_pde(d, g, mu, emigration, n_init, h, dt, nsteps)
+solve_diffusion_pde(d, g, mu, n_init, h, dt, nsteps)
 }
 \arguments{
 \item{d}{A vector of diffusion rates.}
@@ -12,8 +12,6 @@ solve_diffusion_pde(d, g, mu, emigration, n_init, h, dt, nsteps)
 \item{g}{A vector of advection rates.}
 
 \item{mu}{A vector of reaction rates.}
-
-\item{emigration}{A vector of emigration rates.}
 
 \item{n_init}{Initial condition for the solution.}
 
