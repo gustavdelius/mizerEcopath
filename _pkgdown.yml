@@ -111,6 +111,7 @@ reference:
   desc: >
     Functions for solving diffusion equations in mizer models.
   contents:
+  - steadySingleSpecies
   - solve_double_sweep
   - steady_diffusion
   - project_diffusion

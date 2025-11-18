@@ -20,7 +20,7 @@ matrix. Default is 0.}
 matrix. Default is \code{Inf}.}
 }
 \value{
-A numeric matrix with dimensions \link{n_species x n_species}, giving
+A numeric matrix with dimensions (n_species x n_species), giving
 absolute consumption rates (g/year) for each predator–prey pair.
 }
 \description{

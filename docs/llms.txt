@@ -1,0 +1,263 @@
+## Introduction
+
+This package provides a framework for setting up and calibrating
+multi-species size spectrum models using the
+[mizer](https://sizespectrum.org/mizer/) package. It offers tools to
+assist in translating empirical observations, such as species-specific
+biomass, consumption, and production rates, into steady-state models
+that are ecologically coherent.
+
+The goal is to make the process of building, tuning, and validating
+mizer models more accessible, robust, and transparent.
+
+These methods are designed to support applications ranging from academic
+research to exploratory ecosystem analysis and policy-relevant fisheries
+modelling.
+
+# Package index
+
+## Building model
+
+Functions to prepare model parameters and control interaction states.
+
+- [`newAllometricParams()`](newAllometricParams.md) : Set up parameters
+  for a model with allometric encounter and mortality rates
+- [`isAllometric()`](isAllometric.md) : Test whether a model has
+  allometric encounter and mortality rates
+- [`makeInteracting()`](makeInteracting.md) : Enable predator–prey
+  interactions using an interaction matrix
+- [`makeNoninteracting()`](makeNoninteracting.md) : Make model
+  non-interacting
+- [`setFeedingLevel()`](setFeedingLevel.md) : Set constant feeding level
+  for each species in a non-interacting model
+
+## Calibrating model
+
+Tools to match model output to empirical observations.
+
+- [`matchCatch()`](matchCatch.md) : Match the observed catch and yield
+- [`matchConsumption()`](matchConsumption.md) : Match the model’s total
+  consumption to observed estimates
+- [`matchGonadicProportionOnce()`](matchGonadicProportionOnce.md) :
+  Match the gonadic proportion of a species to a given value.
+- [`matchDiet()`](matchDiet.md) : Match the diet matrix of the model to
+  an observed diet matrix
+- [`alignResource()`](alignResource.md) : Align resource abundance to
+  fish abundance
+- [`setResourceInteraction()`](setResourceInteraction.md) : Set resource
+  interaction to absorb external encounter rate
+
+## Working with Ecopath
+
+Functions for importing and validating data.
+
+- [`addEcopathParams()`](addEcopathParams.md) : Add Ecopath parameters
+  to species parameters
+- [`addEcopathCatchTotal()`](addEcopathCatchTotal.md) : Sets up gear
+  parameters from Ecopath catch data
+- [`reduceEcopathDiet()`](reduceEcopathDiet.md) : Reduce Ecopath diet
+  matrix to mizer species
+- [`validEcopathParams()`](validEcopathParams.md) : Validate Ecopath
+  parameter data frame
+- [`validEcopathCatch()`](validEcopathCatch.md) : Validate Ecopath Catch
+  data frame
+- [`fillDefaultsFromFishBase()`](fillDefaultsFromFishBase.md) : Fill
+  Species Traits Using FishBase
+
+## Shiny gadget
+
+Interactive interface for tuning mizer model parameters.
+
+- [`tuneEcopath()`](tuneEcopath.md) **\[experimental\]** : Launch shiny
+  gadget for matching mizer model to Ecopath data
+
+- [`ageTab()`](ageTab.md) [`ageTabUI()`](ageTab.md) : Age tab for tuning
+  gadget
+
+- [`catchTab()`](catchTab.md) [`catchTabUI()`](catchTab.md) : Serve tab
+  with catch data
+
+- [`deathTab()`](deathTab.md) [`deathTabUI()`](deathTab.md) : Serve tab
+  with death plots
+
+- [`dietTab()`](dietTab.md) [`dietTabUI()`](dietTab.md) : Serve tab with
+  diet plot
+
+- [`growthTab()`](growthTab.md) [`growthTabUI()`](growthTab.md) : Growth
+  tab for tuning gadget
+
+- [`reproTab()`](reproTab.md) [`reproTabUI()`](reproTab.md) : Serve tab
+  with plot of reproductive success rates
+
+- [`spectraTab()`](spectraTab.md) [`spectraTabUI()`](spectraTab.md) :
+  tuneParams tab showing size spectra
+
+- [`exponentControl()`](exponentControl.md)
+  [`exponentControlUI()`](exponentControl.md) : Controlling the
+  allometric exponents
+
+- [`fishingControl()`](fishingControl.md)
+  [`fishingControlUI()`](fishingControl.md) : Controlling the fishing
+  parameters in the tuning gadget
+
+- [`growthControl()`](growthControl.md)
+  [`growthControlUI()`](growthControl.md) :
+
+  A single slider that adjusts both `h` and `gamma`
+
+- [`matchControl()`](matchControl.md)
+  [`matchControlUI()`](matchControl.md) : Controlling the matching
+
+- [`otherControl()`](otherControl.md)
+  [`otherControlUI()`](otherControl.md) : Controlling the species
+  parameters not included in other controls
+
+- [`diffusionControl()`](diffusionControl.md)
+  [`diffusionControlUI()`](diffusionControl.md) : Controlling the
+  diffusion rate
+
+- [`reproductionControl()`](reproductionControl.md)
+  [`reproductionControlUI()`](reproductionControl.md) : Controlling the
+  reproduction parameters in the tuning gadget
+
+## Calculating rates
+
+Extract rates and other parameters from the model.
+
+- [`getConsumption()`](getConsumption.md) : Get consumption rate for
+  each species
+- [`getDiffusion()`](getDiffusion.md) : Get diffusion rate
+- [`getUnassimilated()`](getUnassimilated.md) : Get unassimilated food
+- [`getProduction()`](getProduction.md) : Get production rate as defined
+  by Ecopath
+- [`getTotalProduction()`](getTotalProduction.md) : Get total production
+  rate for each species
+- [`getSomaticProduction()`](getSomaticProduction.md) : Get somatic
+  production for each species
+- [`getGonadicProduction()`](getGonadicProduction.md) : Get gonadic
+  production for each species
+- [`getOffspringProduction()`](getOffspringProduction.md) : Get rate at
+  which offspring biomass is produced
+- [`getReproductiveLoss()`](getReproductiveLoss.md) : Get rate of
+  biomass loss due to reproduction
+- [`getRespiration()`](getRespiration.md) : Get respiration rate as
+  defined by Ecopath
+- [`getMetabolicRespiration()`](getMetabolicRespiration.md) : Get
+  metabolic respiration for each species
+- [`getEcotrophicEfficiency()`](getEcotrophicEfficiency.md) : Get
+  Ecotrophic Efficiency for each species
+- [`getM0B()`](getM0B.md) : Get rate at which biomass is lost due to
+  external mortality
+- [`getM2B()`](getM2B.md) : Get rate at which biomass is lost due to
+  predation mortality
+- [`getZB()`](getZB.md) : Get rate at which biomass is lost due to
+  mortality
+- [`getDietMatrix()`](getDietMatrix.md) : Get diet matrix
+- [`getResourceEncounterRate()`](getResourceEncounterRate.md) : Get
+  resource encounter rate
+
+## Plotting
+
+Basic visualisations
+
+- [`plotAgeLikelihood()`](plotAgeLikelihood.md) : Plot the likelihood of
+  the observed age at length data
+- [`plotConsumptionVsSpecies()`](plotConsumptionVsSpecies.md) : Plot the
+  Consumption against species
+- [`plotDeathX()`](plotDeathX.md) [`plotlyDeathX()`](plotDeathX.md) :
+  Plot the sources of external, predation and fishing mortality per
+  species and size
+- [`plotProductionVsSpecies()`](plotProductionVsSpecies.md) : Plot the
+  production against species
+- [`plot_log_likelihood()`](plot_log_likelihood.md) : Plot Signed
+  Negative Log-Likelihood Contributions with Mean K Lines Creates a
+  heatmap of the signed contribution of each cell to the NLL, and
+  overlays the mean observed and expected K values.
+
+## Helper functions
+
+Internal tools to support calibration and simulation.
+
+- [`prepare_data()`](prepare_data.md) : Prepare a TMB Objective Function
+  for Optimising Model Parameters
+- [`update_params()`](update_params.md) : Function that updates params
+  object with new parameter values
+- [`precompute_weights()`](precompute_weights.md) : Precompute weights
+  for integration of density over observed bins
+- [`valid_catch()`](valid_catch.md) : Validate and extract catch data
+  for a single species
+- [`addCatch()`](addCatch.md) : Sets up gear parameters from scaled
+  catch data
+- [`catchSelectivity()`](catchSelectivity.md) : Calculate catch
+  selectivity params from catch data
+
+## Obsolete?
+
+Functions retained for compatibility or reference but not in active use.
+
+- [`matchEcopath()`](matchEcopath.md)
+  [`isEcopathMatched()`](matchEcopath.md) : Match the model to the
+  Ecopath data
+- [`matchExtMortOnce()`](matchExtMortOnce.md) : Match the external
+  mortality to that required by the ecopath production rate.
+- [`matchProduction()`](matchProduction.md)
+  [`matchProductionOnce()`](matchProduction.md)
+  [`isProductionMatched()`](matchProduction.md) : Match the model's
+  production rate to empirical observations/estimates
+- [`matchRespirationOnce()`](matchRespirationOnce.md) : Match the
+  respiration rate to that required by the ecopath production rate.
+
+## Data sets
+
+Example input and output objects for illustrating functions.
+
+- [`species_params_example`](species_params_example.md) : Example
+  species parameters from a few Celtic Sea species.
+- [`ecopath_diet_example`](ecopath_diet_example.md) : Ecopath diet
+  matrix from Lauria et al. (2016)
+- [`diet_matrix_example`](diet_matrix_example.md) : Example reduced diet
+  matrix for mizer
+
+## Diffusion
+
+Functions for solving diffusion equations in mizer models.
+
+- [`steadySingleSpecies()`](steadySingleSpecies.md) **\[experimental\]**
+  : Set initial abundances to single-species steady state abundances
+- [`solve_double_sweep()`](solve_double_sweep.md) : Helper function for
+  double sweep method (Thomas algorithm)
+- [`steady_diffusion()`](steady_diffusion.md) : Solve steady-state
+  equation including diffusion
+- [`project_diffusion()`](project_diffusion.md) : Project forward in
+  time with diffusion
+- [`solve_diffusion_ode()`](solve_diffusion_ode.md) : Solve 2nd order
+  ODE
+- [`solve_diffusion_pde()`](solve_diffusion_pde.md) : Function to solve
+  a reaction-diffusion-advection PDE
+
+## Age-at-length
+
+Functions for working with age at size.
+
+- [`calculate_and_aggregate_likelihood()`](calculate_and_aggregate_likelihood.md)
+  : Calculate and Aggregate Signed Log-Likelihood Contributions Loops
+  through surveys, calculates signed NLL for each, and aggregates the
+  results.
+- [`generate_model_predictions_for_date()`](generate_model_predictions_for_date.md)
+  : Generate age-at-length distribution for a specific survey date
+- [`getLogLik()`](getLogLik.md) : Get log likelihood of age observations
+- [`simulateCohort()`](simulateCohort.md) : Simulate cohort evolution
+  and calculate matrix G
+- [`preprocess_length_at_age()`](preprocess_length_at_age.md) :
+  Pre-process length-at-age data frame
+
+# Articles
+
+### All vignettes
+
+- [Celtic Sea Model](Celtic%20Sea%20Model.md):
+- [Incorporating predation diffusion](diffusion.md):
+- [From Ecopath to Mizer](ecopath_to_mizer.md):
+- [mizerEcopath](mizerEcopath.md):
+- [North Sea 3 Species Model](North%20Sea%203%20spp%20Model.md):
+- [Todo list](todo.md):

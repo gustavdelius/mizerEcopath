@@ -1,6 +1,11 @@
-pandoc: '3.4'
-pkgdown: 2.0.7
+pandoc: 3.6.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
-articles: {}
-last_built: 2025-08-29T16:21Z
-
+articles:
+  Celtic Sea Model: Celtic Sea Model.html
+  diffusion: diffusion.html
+  ecopath_to_mizer: ecopath_to_mizer.html
+  mizerEcopath: mizerEcopath.html
+  North Sea 3 spp Model: North Sea 3 spp Model.html
+  todo: todo.html
+last_built: 2025-11-18T20:05Z
