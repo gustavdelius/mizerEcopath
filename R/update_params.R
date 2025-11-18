@@ -59,7 +59,7 @@ update_params <- function(params, species = 1, pars, data) {
     params <- setReproduction(params)
 
     # Calculate the new steady state ----
-    params <- steadySingleSpecies(params, species = species)
+    params <- mizerEcopath::steadySingleSpecies(params, species = species)
     # Rescale it to get the observed biomass
     params <- matchBiomasses(params, species = species)
     # Set the reproduction level to zero

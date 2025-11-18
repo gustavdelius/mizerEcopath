@@ -2,9 +2,7 @@
 % Please edit documentation in R/ageDensity.R
 \name{calculate_K}
 \alias{calculate_K}
-\title{Age-to-Ring Mapping Function Calculate_K(a)
-Deterministically maps true age to the expected annuli count, given
-a survey date, an annual ring-formation day, and a minimum age threshold.}
+\title{Age-to-Ring Mapping Function Calculate_K(a)}
 \usage{
 calculate_K(age_in_years, survey_date, annuli_date, annuli_min_age)
 }
@@ -21,8 +19,7 @@ calculate_K(age_in_years, survey_date, annuli_date, annuli_min_age)
 An integer vector with the calculated number of rings (K) for each age.
 }
 \description{
-Age-to-Ring Mapping Function Calculate_K(a)
-Deterministically maps true age to the expected annuli count, given
+Deterministically maps true age to the expected annuli count \eqn{K}, given
 a survey date, an annual ring-formation day, and a minimum age threshold.
 }
 \examples{

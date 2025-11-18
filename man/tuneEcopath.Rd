@@ -37,12 +37,12 @@ in the main section. See "Customisation" below.}
 
 \item{match}{A character vector. Determines which quantities should be
 matched to observations each time the "steady" button is pressed. Possible
-entries are \code{"growth"} (using \code{\link[=matchGrowth]{matchGrowth()}}), \code{"yield"} (using
-\code{\link[=matchYield]{matchYield()}}) and \code{"consumption"} (using \code{\link[=matchConsumption]{matchConsumption()}}).}
+entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{mizer::matchGrowth()}}), \code{"yield"} (using
+\code{\link[mizerExperimental:matchYield]{mizerExperimental::matchYield()}}) and \code{"consumption"} (using \code{\link[=matchConsumption]{matchConsumption()}}).}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive
-efficiency \code{erepro} (Default). See \code{\link[=setBevertonHolt]{setBevertonHolt()}} for an explanation
+efficiency \code{erepro} (Default). See \code{\link[mizer:setBevertonHolt]{mizer::setBevertonHolt()}} for an explanation
 of the \code{reproduction_level}.}
 
 \item{return_app}{Boolean. For testing purposes only. When set to TRUE will

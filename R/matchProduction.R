@@ -63,7 +63,7 @@ matchProduction <- function(params, tol = 0.1, max_iter = 10) {
 
 #' @rdname matchProduction
 #' @param steady Logical. If `TRUE` (default), returns the model to steady state
-#'   after parameter adjustment using [steadySingleSpecies()] and [matchBiomasses()].
+#'   after parameter adjustment using [mizerEcopath::steadySingleSpecies()] and [matchBiomasses()].
 #' @return A MizerParams object with updated parameters and optionally a new steady state.
 
 #' @export
@@ -120,8 +120,8 @@ matchProductionOnce <- function(params, steady = TRUE) {
 
     if (steady) {
         # Determine new steady state
-        params <- params |> steadySingleSpecies() |>
-            matchBiomasses() |> steadySingleSpecies()
+        params <- params |> mizerEcopath::steadySingleSpecies() |>
+            matchBiomasses() |> mizerEcopath::steadySingleSpecies()
     }
     return(params)
 }

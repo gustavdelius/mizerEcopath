@@ -100,8 +100,8 @@ ecopath_catch <- read_csv("inst/extdata/North Sea-Catch.csv")
 p <- addEcopathCatchTotal(p, ecopath_catch)
 
 # Get new steady state with desired biomass and growth
-p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
-    matchBiomasses() |> steadySingleSpecies()
+p <- p |> mizerEcopath::steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
+    matchBiomasses() |> mizerEcopath::steadySingleSpecies()
 
 ## Match catch ----
 p <- matchCatch(p, catch = catch)

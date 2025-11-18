@@ -22,7 +22,7 @@
 #' rate and set so that the juvenile biomass spectrum has a slope of –0.2.
 #'
 #' The function uses `matchBiomasses()` to match the biomass to the observations
-#' and `steadySingleSpecies()` to bring each species to steady state. It then
+#' and `mizerEcopath::steadySingleSpecies()` to bring each species to steady state. It then
 #' calls `setBevertonHolt()` to set the reproduction level to zero
 #'
 #' Because the model does not make use of the resource spectrum, the resource
@@ -86,7 +86,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
     # Match Biomasses
     p <- matchBiomasses(p)
     # Set to steady state
-    p <- steadySingleSpecies(p, keep = "biomass")
+    p <- mizerEcopath::steadySingleSpecies(p, keep = "biomass")
     p <- setBevertonHolt(p, reproduction_level = 0)
 
     return(p)

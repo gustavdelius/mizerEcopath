@@ -135,7 +135,7 @@ dm <- reduceEcopathDiet(sp, ecopath_diet, ecopath_params)
 ## Match Model to Observations
 
 ```{r}
-p <- p |> matchGrowth() |>steadySingleSpecies() |>matchBiomasses()
+p <- p |> matchGrowth() |>mizerEcopath::steadySingleSpecies() |>matchBiomasses()
 p <- p |> matchCatch(catch = catch, yield_lambda = 1) 
 #odd warning at match catch
 p <- p |>matchConsumption()

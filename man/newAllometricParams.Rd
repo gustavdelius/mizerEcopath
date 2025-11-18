@@ -38,7 +38,7 @@ species reaches its maturity weight \code{w_mat} by the age at maturity
 rate and set so that the juvenile biomass spectrum has a slope of –0.2.
 
 The function uses \code{matchBiomasses()} to match the biomass to the observations
-and \code{steadySingleSpecies()} to bring each species to steady state. It then
+and \code{mizerEcopath::steadySingleSpecies()} to bring each species to steady state. It then
 calls \code{setBevertonHolt()} to set the reproduction level to zero
 
 Because the model does not make use of the resource spectrum, the resource

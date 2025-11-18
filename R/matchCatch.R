@@ -85,7 +85,7 @@
 #' all.equal(getEReproAndGrowth(params),
 #'           getEReproAndGrowth(celtic_params))
 #' # The initial size spectrum is set to the steady state size spectrum
-#' params_steady <- steadySingleSpecies(params)
+#' params_steady <- mizerEcopath::steadySingleSpecies(params)
 #' all.equal(initialN(params), initialN(params_steady))
 #' @export
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,

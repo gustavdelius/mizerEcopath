@@ -26,7 +26,7 @@ prepare_params <- function(p) {
     p <- set_species_param_default(p, "annuli_min_age", 0)
     p <- set_species_param_default(p, "annuli_date", 0)
 
-    p <- steadySingleSpecies(p)
+    p <- mizerEcopath::steadySingleSpecies(p)
     p <- matchBiomasses(p)
     return(p)
 }
@@ -64,7 +64,7 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
         p_old <- params_old()
         p@initial_n <- p_old@initial_n
 
-        p <- steadySingleSpecies(p, species = sp)
+        p <- mizerEcopath::steadySingleSpecies(p, species = sp)
         p <- matchBiomasses(p, species = sp)
         # p <- setBevertonHolt(p, reproduction_level = 0)
 
@@ -147,7 +147,7 @@ tuneParams_update_abundance <- function(p, sp, params, params_old) {
     # # change in the changed species.
     # other_species <- setdiff(p@species_params$species, sp)
     # p@initial_n <- p_old@initial_n # Important to always start from params_old
-    # p <- steadySingleSpecies(p, species = other_species)
+    # p <- mizerEcopath::steadySingleSpecies(p, species = other_species)
 
     # Update the reactive params object
     tuneParams_update_params(p, params)

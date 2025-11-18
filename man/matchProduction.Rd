@@ -20,7 +20,7 @@ isProductionMatched(params, tol = 0.1)
 \item{max_iter}{The maximum number of iterations. Default is 10.}
 
 \item{steady}{Logical. If \code{TRUE} (default), returns the model to steady state
-after parameter adjustment using \code{\link[=steadySingleSpecies]{steadySingleSpecies()}} and \code{\link[=matchBiomasses]{matchBiomasses()}}.}
+after parameter adjustment using \code{\link[=steadySingleSpecies]{steadySingleSpecies()}} and \code{\link[mizer:matchBiomasses]{mizer::matchBiomasses()}}.}
 }
 \value{
 A MizerParams object with the adjusted metabolic and reproductive parameters

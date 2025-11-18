@@ -55,13 +55,13 @@ Here \eqn{N_j(w)} is the abundance density of species \eqn{j} and
 \eqn{N_R(w)} is the abundance density of resource.
 The overall prefactor \eqn{\gamma_i(w)} determines the predation power of the
 predator. It could be interpreted as a search volume and is set with the
-\code{\link[=setSearchVolume]{setSearchVolume()}} function. The predation kernel
-\eqn{\phi(w,w_p)} is set with the \code{\link[=setPredKernel]{setPredKernel()}} function. The
-species interaction matrix \eqn{\theta_{ij}} is set with \code{\link[=setInteraction]{setInteraction()}}
+\code{\link[mizer:setSearchVolume]{mizer::setSearchVolume()}} function. The predation kernel
+\eqn{\phi(w,w_p)} is set with the \code{\link[mizer:setPredKernel]{mizer::setPredKernel()}} function. The
+species interaction matrix \eqn{\theta_{ij}} is set with \code{\link[mizer:setInteraction]{mizer::setInteraction()}}
 and the resource interaction vector \eqn{\theta_{ip}} is taken from the
 \code{interaction_resource} column in \code{params@species_params}.
 \eqn{f(w)} is the feeding level calculated with
-\code{\link[=getFeedingLevel]{getFeedingLevel()}}. \eqn{\psi(w)} is the proportion of the available energy
+\code{\link[mizer:getFeedingLevel]{mizer::getFeedingLevel()}}. \eqn{\psi(w)} is the proportion of the available energy
 that is invested in reproduction instead of growth, as stored in \code{params@psi}.
 }
 \details{

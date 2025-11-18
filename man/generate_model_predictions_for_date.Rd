@@ -2,8 +2,7 @@
 % Please edit documentation in R/ageDensity.R
 \name{generate_model_predictions_for_date}
 \alias{generate_model_predictions_for_date}
-\title{Generate model predictions for a specific survey date
-Encapsulates the prediction pipeline to obtain P(K | length) for one survey.}
+\title{Generate age-at-length distribution for a specific survey date}
 \usage{
 generate_model_predictions_for_date(
   survey_date,
@@ -35,11 +34,11 @@ generate_model_predictions_for_date(
 \item{annuli_min_age}{Minimum age (years) at which the first ring can form.}
 }
 \value{
-A matrix of proportions with rows named by \code{l} and columns by K bins.
+A matrix of proportions with rows named by \code{l} and columns by \code{K}.
 }
 \description{
-Generate model predictions for a specific survey date
-Encapsulates the prediction pipeline to obtain P(K | length) for one survey.
+Calculates the model probability distribution \eqn{P(K | l)} for the number
+of anulli \eqn{K} in all length classes \eqn{l}  for a given survey.
 }
 \examples{
 # Minimal schematic example (using toy inputs)
@@ -49,3 +48,4 @@ G <- matrix(abs(sin(outer(a, l, "+"))), nrow = length(a))
 generate_model_predictions_for_date(2023.5, G, a, l, mu = 0.5, kappa = 3,
                                     annuli_date = 0.25, annuli_min_age = 0.5)
 }
+\concept{age-at-length}

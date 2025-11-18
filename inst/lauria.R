@@ -80,8 +80,8 @@ ecopath_catch <- left_join(ecopath_params, fmort, by = c("Group.name" = "Fleet.g
 p <- addEcopathCatchTotal(p, ecopath_catch)
 
 # Get new steady state with desired biomass and growth
-p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
-    matchBiomasses() |> steadySingleSpecies()
+p <- p |> mizerEcopath::steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
+    matchBiomasses() |> mizerEcopath::steadySingleSpecies()
 
 ## Match catch ----
 p <- matchCatch(p, catch = catch)
@@ -119,7 +119,7 @@ p <- matchDiet(p, dm)
 p <- setFeedingLevel(p, 0.6)
 
 # Check that steady state has not changed
-ps <- p |> steadySingleSpecies()
+ps <- p |> mizerEcopath::steadySingleSpecies()
 waldo::compare(initialN(p), initialN(ps), tolerance = 1e-9)
 # Check that ecopath is still matched
 isEcopathMatched(p)

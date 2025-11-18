@@ -82,8 +82,8 @@ catch <- read.csv(system.file("extdata/celtic_sea_hernvann_et_al/catch.csv",
 p <- addEcopathCatchTotal(p, catch)
 
 # Get new steady state
-p <- p |> steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
-    matchBiomasses() |> steadySingleSpecies()
+p <- p |> mizerEcopath::steadySingleSpecies() |> calibrateBiomass() |> matchGrowth() |>
+    matchBiomasses() |> mizerEcopath::steadySingleSpecies()
 
 plotlySpectra(p)
 p_backup <- p
@@ -120,7 +120,7 @@ p <- tuneEcopath(p, catch = catch, diet = dm,
 p <- matchDiet(p, dm)
 
 # Check that steady state has not changed
-ps <- p |> steadySingleSpecies()
+ps <- p |> mizerEcopath::steadySingleSpecies()
 waldo::compare(initialN(p), initialN(ps), tolerance = 1e-9)
 # Check that ecopath is still matched
 isEcopathMatched(p)

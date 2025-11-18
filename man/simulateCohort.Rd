@@ -21,7 +21,7 @@ simulateCohort(params, species, l_survey, t_max, dt = 0.05)
 A list containing:
 \itemize{
 \item G: Matrix representing cohort size distribution over time
-\item age: Age grid \link{years}
+\item age: Age grid \link[lubridate:period]{lubridate::years}
 }
 }
 \description{
