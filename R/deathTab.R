@@ -16,7 +16,7 @@ deathTab <- function(input, output, session, params, logs,
         if (!is.null(diet)) {
             p <- matchDiet(p, diet)
         }
-        p <- catchSelectivity(p, catch)
+        #p <- catchSelectivity(p, catch)
         plotlyDeathX(p, species = input$sp,
                   proportion = input$death_prop == "Proportion",
                   xtrans = input$death_xtrans,
