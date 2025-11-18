@@ -22,6 +22,9 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     sps <- species_params(params)[species, ]
     n <- sps$n
     d_over_g <- sps$d_over_g
+    if (is.null(d_over_g)) {
+        stop("The species parameter d_over_g has not been created.")
+    }
     w <- w(params)
     x <- log(w / w[1])
     h <- x[2] - x[1]

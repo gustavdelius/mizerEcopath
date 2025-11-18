@@ -16,20 +16,26 @@
 #' @export
 alignResource <- function(params) {
     # Set resource to a power law
-    N_resource <- params@w_full^(-params@resource_params$lambda)
+    N_R <- params@w_full^(-params@resource_params$lambda)
     # Set resource to be in line with fish
     total <- colSums(initialN(params))
     fish_sel <- params@w_full >= params@w[1]
-    ratio <- max(total / initialNResource(params)[fish_sel])
-    N_resource <- N_resource * ratio
+    # Find the amount by which the log of the resource abundance needs to be
+    # decreased to be tangent to the log of the fish abundance.
+    # log(N_R) <- log(N_R) - dist_log
+    dist_log <- min(log(N_R[fish_sel]) - log(total))
+    # So N_R <- N_R * exp(-dist_log)
+    ratio <- exp(-dist_log)
+    N_R <- N_R * ratio
     # Truncate resource
-    N_resource[params@w_full > params@resource_params$w_pp_cutoff] <- 0
+    N_R[params@w_full > params@resource_params$w_pp_cutoff] <- 0
     # Set initial resource abundance
-    initialNResource(params) <- N_resource
+    initialNResource(params) <- N_R
     # Set resource carrying capacity
-    resource_capacity(params) <- N_resource
+    resource_capacity(params) <- N_R
     # Update resource parameter
-    kappa <- N_resource[1] * params@w_full[1]^params@resource_params$lambda
-    params@resource_params$kappa <- kappa
+    # The initial coefficient of the N_R power law was 1, so after rescaling
+    # by `ration` the new coefficient is just `ratio`
+    params@resource_params$kappa <- ratio
     return(params)
 }

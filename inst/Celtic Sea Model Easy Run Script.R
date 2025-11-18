@@ -1,0 +1,231 @@
+##Celtic Sea Easy Run Model Script
+
+##load repositories
+library(remotes)
+#install_github("gustavdelius/mizerEcopath")
+library(mizerEcopath)
+library(dplyr)
+library(here)
+
+##Load in data
+#Load in ecopath parameters Consumption
+ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+
+#Ecopath yield data
+yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+colnames(yield)[2] <- "Group.name"
+yield$Total<-rowSums(yield[,3:29],na.rm=TRUE)
+yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |>
+    mutate(TotalCatch..t.km..year. = Total * Biomass..t.km.2.) |>
+    select(Group.name, TotalCatch..t.km..year.)
+
+#Scaled landings data
+cs_scaled_landings<- read.csv(here("inst","extdata", "cs_scaled_landings.csv"))
+cs_scaled_landings <- cs_scaled_landings[cs_scaled_landings$gear == "total", ] #only total gear
+cs_scaled_landings <- cs_scaled_landings %>%
+    mutate(length = floor(length)) %>%           # Round up lengths
+    group_by(species, gear, length, Scientific_name) %>%  # Group by relevant columns
+    summarise(catch = sum(scaled_catch, na.rm = TRUE),
+              biomass = sum(scaled_biomass, na.rm = TRUE), .groups = "drop")                                                          # Sum catch for duplicates
+cs_scaled_landings$count <- cs_scaled_landings$catch
+cs_scaled_landings$dl<-1
+cs_scaled_landings<-cs_scaled_landings[,c("species","Scientific_name","length","dl", "gear","catch","count", "biomass")]
+
+#Survey data
+cs_survey<- read.csv(here("inst","extdata", "cs_survey.csv"))
+
+cs_survey <- cs_survey %>%
+    group_by(species, Scientific_name, length, dl) %>%
+    summarise(
+        gear = "total",                          # Create a new 'gear' category
+        catch =sum(scaled_catch, na.rm = TRUE),       # Sum all catch across gears
+        count= catch,
+        biomass = sum(scaled_biomass, na.rm = TRUE),       # Sum all catch across gears
+        .groups = "drop"
+    )
+
+#For the time being cs_survey is going to be called catch but in future we will combine the landings and survey and have them as different gear types.
+catch<-cs_survey
+
+#Future addition: combine survey and landings as different gear types catch? call this dataframe catch.
+
+cs_survey$gear<-"survey"
+cs_scaled_landings$gear<-"landings"
+catch<-rbind(cs_survey,cs_scaled_landings)
+
+#Age Length Data
+age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
+
+#Species parameters from Fishbase
+#Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
+life_histories <- read.csv(here("inst","extdata", "life_histories.csv"))
+
+life_histories_summary <- life_histories %>%
+    filter(Sex %in% c("Unsexed", "Mixed")) %>%      # keep Unsexed or Mixed
+    mutate(Scientific_name = Species) %>%           # duplicate Species to match maturity data
+    group_by(Species) %>%
+    # Pick row with l_mat if possible, else any row
+    slice(
+        if (any(!is.na(l_mat))) {
+            which(!is.na(l_mat))[1]  # first non-NA
+        } else {
+            1                        # first row if all NA
+        }
+    ) %>%
+    rename(l_mat1 = l_mat) %>%
+    mutate(
+        Scientific_name = Species,
+        l_max = case_when(
+            l_max_type == "TL" ~ l_max_fishbase,
+            l_max_type == "FL" ~ La + Lb * l_max_fishbase,
+            l_max_type == "SL" ~ La + Lb * l_max_fishbase
+        ),
+        l_max = ifelse(!is.na(l_max), l_max, l_max_fishbase)
+    ) %>%
+    ungroup()
+
+#length maturity from processed size at age DATRAS data
+lm<-read.csv(here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
+lm<-rename(lm,l_mat2=l50)
+sp_params<-left_join(life_histories_summary, lm, by="Scientific_name")
+
+#assume life_histories summary l_mat1, lm l_mat2, l_mat is the new column
+sp_params <- sp_params %>%
+    mutate(
+        l_mat = ifelse(
+            !is.na(l_mat2),
+            l_mat2,
+            l_mat1
+        ))%>%
+    select(-l_mat2)%>%
+    select(-l_mat1)
+
+##Set species parameters
+# Mapping of all species to their scientific names
+species_map_lauria <- data.frame(
+    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake",
+                "Monkfish", "Horse mackerel", "Mackerel", "Plaice", "Megrim", "Sole"),
+    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
+                        "Merlangius merlangus", "Micromesistius poutassou", "Merluccius merluccius",
+                        "Lophius piscatorius", "Trachurus trachurus", "Scomber scombrus",
+                        "Pleuronectes platessa", "Lepidorhombus whiffiagonis", "Solea solea")
+)
+
+sp <- sp_params %>%
+    # add computed columns first
+    mutate(
+        SciName = Species,                # keep scientific name
+        t0      = ifelse(is.na(t0), 0, t0),
+        l_mat=l_mat,
+        l_max=l_max,
+        w_mat   = a * (l_mat ^ b),       # weight at maturity
+        w_max   = a * (l_max ^ b),       # max weight
+        n       = 0.7,
+        p       = 0.7,
+        d       = n - 1,
+        alpha   = 0.8
+    ) %>%
+    # join common names
+    left_join(
+        species_map_lauria,
+        by = c("SciName" = "Scientific_name")
+    ) %>%
+    # overwrite species with common name
+    mutate(species = species) %>%
+    # keep desired columns
+    transmute(
+        species,     # common name
+        SciName,     # scientific name
+        w_inf,
+        k_vb,
+        l_mat,
+        l_max,
+        w_max,
+        w_mat,
+        a, b, t0,
+        n, p, d, alpha
+    )
+sp$age_mat <- mizer:::age_mat_vB(sp)
+
+##Add Ecopath Parameters
+
+## 4.2 Map to Ecopath stanzas
+species_to_groups <- list(
+    Herring       = "Herring",
+    Cod           = c("Cod", "Juvenile cod"),
+    Haddock       = c("Haddock","Juvenile haddock"),
+    Whiting       = c("Whiting","Juvenile whiting"),
+    `Blue whiting`= c("Blue whiting","Juvenile blue whiting"),
+    Hake          = c("Hake","Juvenile hake"),
+    Monkfish      = c("Monkfish","Juvenile monkfish"),
+    `Horse mackerel` = "Horse mackerel",
+    Mackerel      = "Mackerel",
+    Plaice        = c("Plaice","Juvenile plaice"),
+    Megrim        = c("Megrim","Juvenile megrim"),
+    Sole          = "Sole"
+)
+
+# Use addEcopathParams to validate and add Ecopath parameters to Mizer species.
+sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
+
+##Update w_max from landings
+## 5.3 Update w_max from observed sizes
+observed_max <- cs_scaled_landings %>%
+    group_by(species) %>%
+    summarise(
+        obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
+    )
+
+sp1 <- sp %>%
+    left_join(observed_max, by = "species")%>%
+    mutate(
+        l_max      = pmax(obs_len, l_max),
+        w_max        = a * l_max^b,
+    )
+
+##Build non-interacting Model
+## 6.1 Initial model ----
+model_non_int <- newAllometricParams(sp, no_w = 200)
+
+## 6.2 Add survey ---
+model_non_int <- addCatch(model_non_int, landings= cs_scaled_landings, survey=cs_survey,step=1)
+
+# Match growth and biomass
+# We need species_params to get the adult biomass
+species_params <- species_params(model_non_int)
+
+# Populate observed adult biomasses from Ecopath
+for (i in seq_len(nrow(species_params))) {
+    species_name <- species_params$species[i]
+    stanza <- species_to_groups[[species_name]][1]  # leading (adult) stanza
+    species_params$biomass_observed[i] <- ecopath_params %>%
+        filter(Group.name == stanza) %>%
+        pull(Biomass..t.km.2.) %>%
+        sum(na.rm = TRUE)
+}
+
+# Set biomass_cutoff to maturation weight (w_mat)
+species_params$biomass_cutoff <- species_params$w_mat
+
+# Place biomass cutoff back into the species parameters
+species_params(model_non_int) <- species_params
+
+model_non_int <- model_non_int %>%
+    matchGrowth() %>%
+    steadySingleSpecies() %>%
+    matchBiomasses()
+
+model_non_int <- model_non_int %>%
+    matchConsumption()
+
+
+##Run in tune Ecopath
+model_non_int_1<-tuneEcopath(
+    model_non_int,
+    catch = cs_survey,
+    age_at_length = age_at_length
+)
+
+
+
+

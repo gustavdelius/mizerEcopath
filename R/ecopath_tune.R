@@ -85,12 +85,10 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                                      "diffusion",
                                      "fishing",
                                      "reproduction",
-                                     "other",
-                                     "exponent",
-                                     "match"),
-                        tabs = c("Spectra",
+                                     "other"),
+                        tabs = c("Survey",
+                                 "Spectra",
                                  "Catch",
-                                 "Age",
                                  "Growth",
                                  "Repro",
                                  "Diet",
@@ -504,6 +502,7 @@ tuneParams_match <- function(p, catch, params, params_old, logs, session, input)
         }
         if ("growth" %in% input$match) {
             p <- matchGrowth(p, species = input$sp, keep = "biomass")
+            p <- matchBiomasses(p, species = input$sp)
             pb <- matchBiomasses(p)
             if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
                                   getBiomass(pb, use_cutoff = TRUE)))) {

@@ -1,5 +1,5 @@
 #' @keywords internal
-#' @import mizer ggplot2 dplyr assertthat shiny rintrojs mizerExperimental
+#' @import mizer ggplot2 dplyr tidyr assertthat shiny rintrojs mizerExperimental
 #' @importFrom methods is validObject
 #' @importFrom utils hasName
 #' @importFrom stats runif

@@ -16,10 +16,11 @@ deathTab <- function(input, output, session, params, logs,
         if (!is.null(diet)) {
             p <- matchDiet(p, diet)
         }
-        p <- catchSelectivity(p, catch)
-        plotDeath(p, species = input$sp,
+        #p <- catchSelectivity(p, catch)
+        plotlyDeathX(p, species = input$sp,
                   proportion = input$death_prop == "Proportion",
-                  xtrans = input$death_xtrans)
+                  xtrans = input$death_xtrans,
+                  xvar = input$death_xvar)
     })
     # Plot Production
     output$plot_prod <- renderPlotly({
@@ -31,13 +32,27 @@ deathTab <- function(input, output, session, params, logs,
 deathTabUI <- function(...) {
     tagList(
         plotlyOutput("plot_mort"),
-        radioButtons("death_prop", "Show",
-                     choices = c("Proportion", "Rate"),
-                     selected = "Proportion",
-                     inline = TRUE),
-        radioButtons("death_xtrans", "x-axis scale:",
-                     choices = c("log10", "identity"),
-                     selected = "log10", inline = TRUE),
+        fluidRow(
+            column(
+                width = 4,
+                radioButtons("death_prop", "Show:",
+                             choices = c("Rate", "Proportion"),
+                             selected = "Rate",
+                             inline = TRUE)
+            ),
+            column(
+                width = 4,
+                radioButtons("death_xvar", "Show Size as:",
+                             choices = c("Length", "Weight"),
+                             selected = "Length", inline = TRUE)
+            ),
+            column(
+                width = 4,
+                radioButtons("death_xtrans", "x-axis scale:",
+                             choices = c("log10", "identity"),
+                             selected = "identity", inline = TRUE)
+            )
+        ),
         plotlyOutput("plot_prod")
     )
 }

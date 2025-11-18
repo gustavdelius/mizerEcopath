@@ -83,23 +83,31 @@ age_at_length <- readRDS(here("inst", "extdata", "Celtic_Sea_Size_at_Age_Data.rd
 #Species parameters from Fishbase
     #Fishbase growth parameters, growth parameters are chosen by list of studies     provided by fish base, study from which species growth parameters are taken were     selected by availability of data, and location proximity to the Celtic Sea. a     and b values are taken from the Bayesian length-weight ratio model estimated tab     in fishbase for each species.
 life_histories <- read.csv(here("inst","extdata", "life_histories.csv"))
+
 life_histories_summary <- life_histories %>%
-    filter(Sex %in% c("Unsexed", "Mixed"), # keep Unsexed or Mixed
-           !is.na(l_mat)) %>%            # keep data with non-NA values for l_mat
-    mutate(Scientific_name=Species)%>%   # Species = Scientific_name new column to match maturity data
-    group_by(Species) %>%                # group by Species
-    slice(1) %>%
-    rename(l_mat1=l_mat)%>%
-    mutate(Scientific_name=Species,
-           l_max=case_when(
-               l_max_type=="TL"~ l_max_fishbase,
-               l_max_type=="FL"~ La+Lb*l_max_fishbase,
-               l_max_type=="SL"~ La+Lb*l_max_fishbase))%>%
-      mutate(
-          l_max = ifelse(
-              !is.na(l_max),l_max,l_max_fishbase))%>%
-    # take the first row per group
-    ungroup()                            # remove grouping
+  filter(Sex %in% c("Unsexed", "Mixed")) %>%      # keep Unsexed or Mixed
+  mutate(Scientific_name = Species) %>%           # duplicate Species to match maturity data
+  group_by(Species) %>%
+  # Pick row with l_mat if possible, else any row
+  slice(
+    if (any(!is.na(l_mat))) {
+      which(!is.na(l_mat))[1]  # first non-NA
+    } else {
+      1                        # first row if all NA
+    }
+  ) %>%
+  rename(l_mat1 = l_mat) %>%
+  mutate(
+    Scientific_name = Species,
+    l_max = case_when(
+      l_max_type == "TL" ~ l_max_fishbase,
+      l_max_type == "FL" ~ La + Lb * l_max_fishbase,
+      l_max_type == "SL" ~ La + Lb * l_max_fishbase
+    ),
+    l_max = ifelse(!is.na(l_max), l_max, l_max_fishbase)
+  ) %>%
+  ungroup()
+
 #length maturity from processed size at age DATRAS data
 lm<-read.csv(here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
 lm<-rename(lm,l_mat2=l50)
@@ -197,14 +205,13 @@ sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 ```{r}
 ## 5.3 Update w_max from observed sizes
 observed_max <- cs_scaled_landings %>%
-    group_by(species) %>%
-    summarise(
-        obs_len = max(length + dl, na.rm = TRUE),
-        .groups = "drop"
-    )
+  group_by(species) %>%
+  summarise(
+    obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
+  )
 
-sp <- sp %>%
-    left_join(observed_max, by = "species") %>%
+sp1 <- sp %>%
+    left_join(observed_max, by = "species")%>%
     mutate(
         l_max      = pmax(obs_len, l_max),
         w_max        = a * l_max^b,
@@ -217,8 +224,8 @@ sp <- sp %>%
 ## 6.1 Initial model ----
 model_non_int <- newAllometricParams(sp, no_w = 200)
 
-## 6.2 Add total fishing mortality (not size specific)
-model_non_int <- addCatch(model_non_int, landings= cs_scaled_landings, survey=cs_survey)
+## 6.2 Add survey ---
+model_non_int <- addCatch(model_non_int, landings= cs_scaled_landings, survey=cs_survey,step=1)
 
 # Match growth and biomass
 # We need species_params to get the adult biomass
@@ -247,16 +254,18 @@ model_non_int <- model_non_int %>%
 
 model_non_int <- model_non_int %>%
     matchConsumption()
-```
 
-## View in Tune Ecopath
-
-```{r eval=FALSE}
-tuneEcopath(
+model_non_int_1<-tuneEcopath(
     model_non_int, 
-    catch = catch,
+    catch = cs_survey,
     age_at_length = age_at_length
 )
+```
+
+# Step 2 - Adding Landings
+
+```{r}
+model_non_int <- addFishingMort(model_non_int, cs_scaled_landings)
 ```
 
 # Step 3 - Diet Matching
