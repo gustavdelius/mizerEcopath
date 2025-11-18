@@ -34,9 +34,6 @@ initial abundances. Then it uses these growth and death rates to
 determine the steady-state abundances of the selected species.
 }
 \details{
-If a non-zero emigration rate is set for the species and is chosen so high
-that the species cannot sustain it, then an error is thrown.
-
 If the species parameters \code{d_over_g} is set, then the diffusion rate is
 calculated from the growth rate at the smallest size and the \code{d_over_g}
 parameter. If \code{d_over_g} is not set, then the diffusion is set to zero.
