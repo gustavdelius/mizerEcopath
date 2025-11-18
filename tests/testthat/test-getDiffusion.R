@@ -10,6 +10,13 @@ test_that("getDiffusion with order=1 can reproduce growth", {
     expect_equal(getDiffusion(params, order = 1), d1)
 })
 
+test_that("getDiffusion depends on n", {
+    n_doubled <- initialN(params) * 2
+    d_default <- getDiffusion(params)
+    d_modified <- getDiffusion(params, n = n_doubled)
+    expect_false(identical(d_default, d_modified))
+})
+
 test_that("Diffusion follows correct power law for juveniles", {
     # TODO
 })
