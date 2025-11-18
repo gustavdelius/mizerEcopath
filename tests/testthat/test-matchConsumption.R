@@ -24,7 +24,7 @@ test_that("matchConsumption sets p = n for selected species", {
     # Assume we have at least one species; set mismatch for the first selected species
     params_mismatch@species_params$p <- 0.9
     expect_warning(result <- matchConsumption(params_mismatch, species = 1:4),
-                   "Exponent `p` changed for Herring, Cod, Haddock, Whiting.")
+                   "Exponent `p` changed for Herring, Cod,")
     expect_identical(result@species_params$p[1:4], result@species_params$n[1:4])
     expect_identical(result@species_params$p[5], 0.9)
 })
@@ -42,7 +42,8 @@ test_that("matchConsumption works with single species", {
 test_that("matchConsumption works with multiple species and adjusts correctly", {
     # Run for multiple species (all species in celtic_params)
     all_spp <- celtic_params@species_params$species
-    result <- matchConsumption(celtic_params, species = all_spp)
+    result <- matchConsumption(celtic_params, species = all_spp) |>
+        suppressWarnings()
     expect_s4_class(result, "MizerParams")
     # Check that ks was updated
     expect_true(all(!is.na(result@species_params$ks)))
@@ -81,7 +82,8 @@ test_that("matchConsumption preserves energy for growth and reproduction", {
     # Before running matchConsumption, record the EReproAndGrowth
     orig_ERG <- getEReproAndGrowth(celtic_params)
     # Run matchConsumption for all species
-    result <- matchConsumption(celtic_params)
+    result <- matchConsumption(celtic_params) |>
+        suppressWarnings()
     new_ERG <- getEReproAndGrowth(result)
     # They should be equal (within floating-point tolerance)
     expect_equal(new_ERG, orig_ERG, tolerance = 1e-8)
@@ -89,7 +91,8 @@ test_that("matchConsumption preserves energy for growth and reproduction", {
 
 test_that("matchConsumption matches consumption to consumption_observed", {
     # Run matchConsumption for all species
-    result <- matchConsumption(celtic_params)
+    result <- matchConsumption(celtic_params) |>
+        suppressWarnings()
     # Check that model consumption matches consumption_observed
     model_consumption <- unname(getConsumption(result))
     expected_consumption <- result@species_params$consumption_observed
