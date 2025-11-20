@@ -84,6 +84,9 @@ plot_log_likelihood <- function(contributions_df) {
 #' # In practice provide a real `age_at_length` table for the species
 #' # p <- plotAge(params, species = "Cod", age_at_length = df)
 plotAgeLikelihood <- function(params, species, age_at_length) {
+    if (is.null(age_at_length)) {
+        return(NULL)
+    }
     params <- validParams(params)
     species <- valid_species_arg(params, species)
 
