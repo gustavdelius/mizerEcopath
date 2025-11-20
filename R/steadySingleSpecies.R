@@ -60,7 +60,7 @@ steadySingleSpecies <-
             N0 <- params@initial_n[sp, w_min_idx]
 
             d_over_g <- params@species_params[sp, "d_over_g"]
-            if (is.null(d_over_g)) {
+            if (is.null(d_over_g) || is.na(d_over_g) || d_over_g == 0) {
                 # If d_over_g is not given, we use the old method
                 idx <- w_min_idx:(w_max_idx - 1)
                 params@initial_n[sp, ] <- 0
