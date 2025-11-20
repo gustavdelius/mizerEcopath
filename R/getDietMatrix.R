@@ -31,9 +31,9 @@
 #' getDietMatrix(NS_params)["Cod", ]
 getDietMatrix <- function(params, min_w_pred = 0, max_w_pred = Inf) {
     w_sel <- params@w >= min_w_pred & params@w <= max_w_pred
-    N <- initialN(params)[, w_sel]
+    N <- initialN(params)[, w_sel, drop = FALSE]
     dw <- dw(params)[w_sel]
-    diet_matrix <- getDiet(params, proportion = FALSE)[, w_sel, ] |>
+    diet_matrix <- getDiet(params, proportion = FALSE)[, w_sel, , drop = FALSE] |>
         sweep(c(1, 2), N, "*") |>
         sweep(2, dw, "*") |>
         aperm(c(1, 3, 2)) |>

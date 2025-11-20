@@ -125,7 +125,7 @@ convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
                         max_w_pred = max_w_pred)
     dm <- diet_matrix * Q / rowSums(diet_matrix)
     # Keep only the part corresponding to species
-    D <- dm[sp$species, sp$species]
+    D <- dm[sp$species, sp$species, drop = FALSE]
     if (nrow(D) != no_sp || ncol(D) != no_sp) {
         stop("diet_matrix does not include all model species.")
     }
