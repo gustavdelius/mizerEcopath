@@ -8,9 +8,8 @@
 #' are set to zero.
 #'
 #' If the exponent `n` of the power-law encounter rate is not provided as a
-#' species parameter, it is set to 0.7.  The exponent `d` of the power-law
-#' mortality rate is always imposed as `n – 1`, regardless of any supplied
-#' value.
+#' species parameter, it is set to 0.7.  If the exponent `d` of the power-law
+#' mortality rate is  not provided as a species parameter, it is set to `n – 1`.
 #'
 #' If the species parameter `alpha`, which gives the proportion of the
 #' consumption that is assimilated, is not provided, it is set to 0.8, the
@@ -37,7 +36,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
 
     # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
-    sp$d <- sp$n - 1
+    sp <- set_species_param_default(sp, "d", sp$n - 1)
 
     # Set default assimilation efficiency
     sp <- set_species_param_default(sp, "alpha", 0.8)

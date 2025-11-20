@@ -24,9 +24,8 @@ are set to zero.
 }
 \details{
 If the exponent \code{n} of the power-law encounter rate is not provided as a
-species parameter, it is set to 0.7.  The exponent \code{d} of the power-law
-mortality rate is always imposed as \verb{n – 1}, regardless of any supplied
-value.
+species parameter, it is set to 0.7.  If the exponent \code{d} of the power-law
+mortality rate is  not provided as a species parameter, it is set to \verb{n – 1}.
 
 If the species parameter \code{alpha}, which gives the proportion of the
 consumption that is assimilated, is not provided, it is set to 0.8, the
