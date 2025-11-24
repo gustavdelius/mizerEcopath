@@ -126,48 +126,40 @@ Load in both the CA and HH data sets for each survey and join by Survey, Year, Q
 
 ```{r}
 #SCOROC
-SCOROC_CA <- getDATRAS(record = "CA", survey = "SCOROC", year = 2011:2024, quarter = 1:4) 
-SCOROC_HH <- getDATRAS(record = "HH", survey = "SCOROC", year = 1985:2024, quarter = 1:4)|>
+SCOROC_CA <- getDATRAS(record = "CA", survey = "SCOROC", year = 2012:2024, quarter = 1:4) 
+SCOROC_HH <- getDATRAS(record = "HH", survey = "SCOROC", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 SCOROC_HH_CA <- left_join(SCOROC_CA, SCOROC_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #BTS
-BTS_CA <- getDATRAS(record = "CA", survey = "BTS", year = 1985:2024, quarter = 1:4)
-BTS_HH <- getDATRAS(record = "HH", survey = "BTS", year = 1985:2024, quarter = 1:4)|>
+BTS_CA <- getDATRAS(record = "CA", survey = "BTS", year = 2012:2024, quarter = 1:4)
+BTS_HH <- getDATRAS(record = "HH", survey = "BTS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 BTS_HH_CA <- left_join(BTS_CA, BTS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
     
 #DYFS
-DYFS_CA <- getDATRAS(record = "CA", survey = "DYFS", year = 1985:2024, quarter = 1:4) 
-DYFS_HH <- getDATRAS(record = "HH", survey = "DYFS", year = 1985:2024, quarter = 1:4)|>
+DYFS_CA <- getDATRAS(record = "CA", survey = "DYFS", year = 2012:2024, quarter = 1:4) 
+DYFS_HH <- getDATRAS(record = "HH", survey = "DYFS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 DYFS_HH_CA <- left_join(DYFS_CA, DYFS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
   
-#ROCKALL
-ROCKALL_CA <- getDATRAS(record = "CA", survey = "ROCKALL", year = c(1999,2001:2003,2005:2009), quarter = 1:4) 
-ROCKALL_HH <- getDATRAS(record = "HH", survey = "ROCKALL", year = 1985:2024, quarter = 1:4)|>
-    filter(HaulVal == "V") |>
-    distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
-ROCKALL_HH_CA <- left_join(ROCKALL_CA, ROCKALL_HH,
-                 by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
-  
 #IE-IGFS
-IE_IGFS_CA <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2003:2024, quarter = 1:4) 
-IE_IGFS_HH <- getDATRAS(record = "HH", survey = "IE-IGFS", year = 1985:2024, quarter = 1:4)|>
+IE_IGFS_CA <- getDATRAS(record = "CA", survey = "IE-IGFS", year = 2012:2024, quarter = 1:4) 
+IE_IGFS_HH <- getDATRAS(record = "HH", survey = "IE-IGFS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 IE_IGFS_HH_CA <- left_join(IE_IGFS_CA, IE_IGFS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #FR-CGFS
-FR_CGFS_CA <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 1988:2024, quarter = 1:4) 
-FR_CGFS_HH <- getDATRAS(record = "HH", survey = "FR-CGFS", year = 1985:2024, quarter = 1:4)|>
+FR_CGFS_CA <- getDATRAS(record = "CA", survey = "FR-CGFS", year = 2012:2024, quarter = 1:4) 
+FR_CGFS_HH <- getDATRAS(record = "HH", survey = "FR-CGFS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 FR_CGFS_HH_CA <- left_join(FR_CGFS_CA, FR_CGFS_HH,
@@ -175,31 +167,31 @@ FR_CGFS_HH_CA <- left_join(FR_CGFS_CA, FR_CGFS_HH,
 
 #IE-IAMS
 IE_IAMS_CA <- getDATRAS(record = "CA", survey = "IE-IAMS", year = 2016:2024, quarter = 1:4) 
-IE_IAMS_HH <- getDATRAS(record = "HH", survey = "IE-IAMS", year = 1985:2024, quarter = 1:4)|>
+IE_IAMS_HH <- getDATRAS(record = "HH", survey = "IE-IAMS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 IE_IAMS_HH_CA <- left_join(IE_IAMS_CA, IE_IAMS_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #SP-PORC
-SP_PORC_CA <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2001:2024, quarter = 1:4)  
-SP_PORC_HH <- getDATRAS(record = "HH", survey = "SP-PORC", year = 1985:2024, quarter = 1:4)|>
+SP_PORC_CA <- getDATRAS(record = "CA", survey = "SP-PORC", year = 2012:2024, quarter = 1:4)  
+SP_PORC_HH <- getDATRAS(record = "HH", survey = "SP-PORC", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 SP_PORC_HH_CA <- left_join(SP_PORC_CA, SP_PORC_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #EVHOE
-EVHOE_CA <- getDATRAS(record = "CA", survey = "EVHOE", year = 1997:2024, quarter = 1:4) 
-EVHOE_HH <- getDATRAS(record = "HH", survey = "EVHOE", year = 1985:2024, quarter = 1:4)|>
+EVHOE_CA <- getDATRAS(record = "CA", survey = "EVHOE", year = 2012:2024, quarter = 1:4) 
+EVHOE_HH <- getDATRAS(record = "HH", survey = "EVHOE", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 EVHOE_HH_CA <- left_join(EVHOE_CA, EVHOE_HH,
                  by = c("Survey", "Year", "Quarter", "Ship", "HaulNo"))
 
 #NS-IBTS
-NS_IBTS_CA <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 1965:2025, quarter = 1:4) 
-NS_IBTS_HH <- getDATRAS(record = "HH", survey = "NS-IBTS", year = 1985:2024, quarter = 1:4)|>
+NS_IBTS_CA <- getDATRAS(record = "CA", survey = "NS-IBTS", year = 2012:2025, quarter = 1:4) 
+NS_IBTS_HH <- getDATRAS(record = "HH", survey = "NS-IBTS", year = 2012:2024, quarter = 1:4)|>
     filter(HaulVal == "V") |>
     distinct(Survey, Year, Quarter, Ship, HaulNo, .keep_all = TRUE)
 NS_IBTS_HH_CA <- left_join(NS_IBTS_CA, NS_IBTS_HH,
@@ -210,14 +202,14 @@ NS_IBTS_HH_CA <- left_join(NS_IBTS_CA, NS_IBTS_HH,
 
 ```{r}
 #rbind data together into singular dataset
-data<-rbind(SCOROC_HH_CA,BTS_HH_CA,DYFS_HH_CA,ROCKALL_HH_CA,IE_IGFS_HH_CA,FR_CGFS_HH_CA,IE_IAMS_HH_CA,SP_PORC_HH_CA,EVHOE_HH_CA,NS_IBTS_HH_CA)
+data<-rbind(SCOROC_HH_CA,BTS_HH_CA,DYFS_HH_CA,IE_IGFS_HH_CA,FR_CGFS_HH_CA,IE_IAMS_HH_CA,SP_PORC_HH_CA,EVHOE_HH_CA,NS_IBTS_HH_CA)
 ```
 
 ## Subset Desired Celtic Sea Species
 
 ```{r}
 #remove rows that do not contain the North Sea Desired Species
-clean_data<-subset(data, SpecCode %in% c(126417,126436,126437,126438,126439,126484,126555,126822,127023,127143,127146,127160))
+clean_data<-subset(data, SpecCode %in% c(126417,126436,126437,126438,126439,126484,126555,126822,127023,127143,127146,127160,126792,127259,127419))
 #SpecCode to scientific name dictionary is detailed below
 ```
 
@@ -283,7 +275,10 @@ SpecCode_to_Latinname<-c("126417"="Clupea harengus",
                          "127023"="Scomber scombrus",
                          "127143"="Pleuronectes platessa",
                          "127146"="Lepidorhombus whiffiagonis",
-                         "127160"="Solea solea")
+                         "127160"="Solea solea",
+                         "126792"="Callionymus lyra",
+                         "127259"="Chelidonichthys cuculus",
+                         "127419"="Capros aper")
 
 cs_data$Scientific_name <- SpecCode_to_Latinname[cs_data$SpecCode]
 ```
@@ -347,20 +342,13 @@ cs_age_size_corrected_weight <- cs_age_size %>%
 
 ```{r}
 ### Life history data
-life_histories <- read_csv(
-    "/Users/jessicawestworth/Desktop/Mizer Work/Projects/Mizer_FMP_EwE/Data/life_histories.csv",
-    locale = locale(encoding = "Latin1")
-)
+life_history_fishbase <- read.csv(here("inst","extdata","Celtic_Sea_Fishbase_life_History_Params.csv"))
 
-#Extract a and b values for each species
-life_histories_summary <- life_histories %>%
-    group_by(Species, a, b)%>%
-    summarise(.groups = "drop"  # ungroup the result
-  )
+life_history_fishbase[c("species", "Scientific_name", "a", "b")]
 
 #add a and b column to cs_age_size data
 cs_age_size_LWR <- cs_age_size_corrected_weight %>%
-  left_join(life_histories_summary, by = c("Scientific_name" = "Species"))
+  left_join(life_history_fishbase, by = "Scientific_name")
 ```
 
 ### Create new WgtClass column
@@ -386,7 +374,7 @@ cs_age_size <- cs_age_size_WgtClass %>%
     .groups = "drop"  # ungroup the result
   )
 
-#saveRDS(cs_age_size, "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/Celtic_Sea_Size_at_Age_Data.rds")
+#use_data(cs_age_size, overwrite = TRUE)
 ```
 
 ## Determining area of Celtic sea

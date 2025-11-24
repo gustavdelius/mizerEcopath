@@ -35,13 +35,54 @@ Data includes: life_history parameters (l_mat and age_mat calculated from DATRAS
 #| results: 'hide'
 
 #Life history data from fishbase
-life_history_fishbase <- read.csv(here("inst","extdata","Celtic_Sea_Fishbase_life_History_Params.csv"))
+data(life_history_fishbase)
+
+#maturity values calculated from survey data
+data(cs_calculated_histories)
+
+    #combine life_history_fishbase and calculated l_mat
+life_histories<-life_history_fishbase%>%
+    left_join(cs_calculated_histories, by="Scientific_name")%>%
+    mutate(
+        l_mat=case_when(
+        l_mat.y %in% c(NA_character_) ~ l_mat.x,
+        TRUE ~ l_mat.y),
+        age_mat=case_when(
+        age_mat.x %in% c(NA_character_) ~ age_mat.y,    
+        TRUE ~ age_mat.x))%>%
+    arrange(species)%>%
+    select(-l_mat.x, -l_mat.y, -age_mat.x, -age_mat.y)
 
 #Load in ecopath data
 ecopath_estimates <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
     #Biomass
-observed_biomass_ecopath<-ecopath_estimates[c('Group.name','Biomass..t.km.2.')]
-    #Interaction matrix
+observed_biomass_ecopath<-ecopath_estimates[c('Group.name','Biomass..t.km.2.')]%>%
+    mutate(species=case_when(
+        Group.name %in% c("Juvenile cod") ~ "Cod",
+        Group.name %in% c("Juvenile blue whiting") ~ "Blue whiting",
+        Group.name %in% c("Juvenile hake") ~ "Hake",
+        Group.name %in% c("Juvenile plaice") ~ "Plaice",
+        Group.name %in% c("Juvenile megrim") ~ "Megrim",
+        Group.name %in% c("Juvenile whiting") ~ "Whiting",
+        Group.name %in% c("Juvenile monkfish") ~ "Monkfish",
+        Group.name %in% c("Juvenile haddock") ~ "Haddock",
+        TRUE ~ Group.name))%>%
+    group_by(species)%>%
+    summarise(biomass_observed=sum(Biomass..t.km.2.,na.rm = TRUE))%>%
+    ungroup()%>%
+    filter(species %in% c("Blue whiting","Boarfish","Cod","Dragonet",
+                          "Haddock","Hake","Herring","Horse mackerel",
+                          "Mackerel","Megrim","Monkfish","Plaice",
+                          "Red gurnard","Sole","Whiting"))
+#Biomass from literature for Red gurnard, Boarfish, and dragonets
+Boarfish<-data.frame(species="Boarfish", biomass_observed=1.4126)
+Dragonet<-data.frame(species="Dragonet", biomass_observed=0.0289)
+Red_gurnard<-data.frame(species="Red gurnard", biomass_observed=0.0058)
+#combine the ecopath species and additional species
+observed_biomasses<-rbind(observed_biomass_ecopath,Boarfish,Dragonet,Red_gurnard)
+observed_biomasses<-arrange(observed_biomasses,species)
+
+#Interaction matrix
 
     #Diet matrix
 
@@ -52,33 +93,42 @@ data(fishing_deaths)
 data(catch_distribution)
 
 #DATRAS size distribution
+data(survey_length_distribution)
 
 #DATRAS age at length distribution
+data(cs_age_size)
 
+#determining l_max comparing landings max length versus fishbase max length recorded value
+observed_max <- catch_distribution %>%
+     group_by(species) %>%
+     summarise(
+         obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
+     )
+life_histories <- life_histories %>%
+    left_join(observed_max, by = "species")%>%
+    mutate(
+        l_max = pmax(obs_len, l_max))%>%
+    select(-obs_len)
 ```
-
-# Step 1
 
 ## Species Parameters
 
 Assign species parameters from life history data
 
 ```{r}
-# Set species and their scientific names
-species <- data.frame(
-    species = c("Herring", "Cod", "Haddock", "Whiting", "Blue whiting", "Hake", 
-                "Monkfish", "Horse mackerel", "Mackerel", "Plaice", "Megrim", "Sole",
-                "Boarfish" , "Dragonets" , "Red Gurnard"),
-    
-    Scientific_name = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus", 
-                        "Merlangius merlangus", "Micromesistius poutassou", 
-                        "Merluccius merluccius", "Lophius piscatorius", 
-                        "Trachurus trachurus", "Scomber scombrus", 
-                        "Pleuronectes platessa", "Lepidorhombus whiffiagonis", 
-                        "Solea solea", "Capros aper", "Callionymus spp.", 
-                        "Chelidonicthys cuculus")
-)
+#calculate w_mat and w_max and set n,p,d, and alpha parameter
+sp_params<-life_histories%>%
+    mutate(w_mat=a*l_mat^b,
+           w_max=a*l_max^b,
+           n=0.7,
+           p=0.7,
+           d=-0.3,
+           alpha=0.8)%>%
+    left_join(observed_biomasses, by="species")
+```
 
-#Add life-history parameters corresponding to species
+## Build Non-Interacting Model
 
+```{r}
+model_non_int <- newAllometricParams(sp_params, no_w = 200)
 ```

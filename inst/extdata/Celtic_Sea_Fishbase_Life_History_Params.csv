@@ -1,16 +1,16 @@
-﻿species,Scientific_name,l_mat,l_max,a,b
-Herring,Clupea harengus,16.7,45,0.0055,3.1
-Cod,Gadus morhua,65.4,200,0.00676,3.08
-Haddock,Melanogrammus aeglefinus,34.9,112,0.00661,3.08
-Whiting,Merlanguis merlangus,28.2,91.5,0.00617,3.06
-Blue whiting,Micromesistius poutassou,15,55.5,0.00417,3.12
-Hake,Merluccius merluccis,42.1,140,0.00468,3.12
-Monkfish,Lophius piscatorius,55,200,0.01698,2.91
-Horse mackerel,Trachurus trachurus,22.9,70,0.001813,2.96
-Mackerel,Scomber scombrus,28.7,60,0.00646,3.07
-Plaice,Pleuronectes platessa,32.7,100,0.00776,3.07
-Megrim,Lepidorhombus whiffiagonis,25.8,60,0.00479,3.1
-Sole,Solea solea,30.3,70,0.00724,3.07
-Boarfish,Capros aper,8.2,30,0.01905,2.82
-Dragonet,Callionymus lyra,17.4,30.5,0.00894,2.78
-Red gurnard,Chelidonicthys cuculus,26.6,70,0.00794,3.05
+﻿species,Scientific_name,age_mat,l_mat,l_max,a,b
+Herring,Clupea harengus,3.09,16.7,45,0.0055,3.1
+Cod,Gadus morhua,4.68,65.4,200,0.00676,3.08
+Haddock,Melanogrammus aeglefinus,3.24,34.9,112,0.00661,3.08
+Whiting,Merlanguis merlangus,1.7,28.2,91.5,0.00617,3.06
+Blue whiting,Micromesistius poutassou,2.04,15,55.5,0.00417,3.12
+Hake,Merluccius merluccius,3.16,42.1,140,0.00468,3.12
+Monkfish,Lophius piscatorius,4.5,55,200,0.01698,2.91
+Horse mackerel,Trachurus trachurus,2.69,22.9,70,0.001813,2.96
+Mackerel,Scomber scombrus,2.09,28.7,60,0.00646,3.07
+Plaice,Pleuronectes platessa,3.16,32.7,100,0.00776,3.07
+Megrim,Lepidorhombus whiffiagonis,2.45,25.8,60,0.00479,3.1
+Sole,Solea solea,2.63,30.3,70,0.00724,3.07
+Boarfish,Capros aper,3.78,8.2,30,0.01905,2.82
+Dragonet,Callionymus lyra,,17.4,30.5,0.00894,2.78
+Red gurnard,Chelidonicthys cuculus,2.62,26.6,70,0.00794,3.05

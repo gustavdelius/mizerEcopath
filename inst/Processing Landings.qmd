@@ -1099,7 +1099,7 @@ yield<-yield%>%
     summarise(total_weight_dead=sum(TotalCatch..t.km..year., na.rm=TRUE))
 
 yield<-na.omit(yield)  
-Red_gurnard<-data.frame(species="Red gurnard",species_code="GUR", total_weight_dead=0.0223)
+Red_gurnard<-data.frame(species="Red gurnard",species_code="GUR", total_weight_dead=0.00808)
 Boarfish<-data.frame(species="Boarfish",species_code="BOC", total_weight_dead=0.01911)
 Dragonet<-data.frame(species="Dragonet",species_code="LYY",total_weight_dead=0.0047775)
 #assume dragonet deaths are approximately 1/4 of boarfish catches
