@@ -4,7 +4,7 @@
 \alias{addCatch}
 \title{Sets up gear parameters from scaled catch data}
 \usage{
-addCatch(params, landings, survey, step)
+addCatch(params, landings, fishing_dead_biomass, survey, step)
 }
 \arguments{
 \item{params}{A MizerParams object.}

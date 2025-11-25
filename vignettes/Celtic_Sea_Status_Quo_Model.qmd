@@ -82,9 +82,8 @@ Red_gurnard<-data.frame(species="Red gurnard", biomass_observed=0.0058)
 observed_biomasses<-rbind(observed_biomass_ecopath,Boarfish,Dragonet,Red_gurnard)
 observed_biomasses<-arrange(observed_biomasses,species)
 
-#Interaction matrix
-
-    #Diet matrix
+#Diet matrix
+data(diets)
 
 #Deaths from fishing
 data(fishing_deaths)
@@ -131,4 +130,10 @@ sp_params<-life_histories%>%
 
 ```{r}
 model_non_int <- newAllometricParams(sp_params, no_w = 200)
+
+## 6.2 Add survey ---
+model_non_int_try <- addCatch(model_non_int, landings= catch_distribution,
+                              fishing_dead_biomass=fishing_deaths,
+                              survey= survey_length_distribution,step=1)
+
 ```

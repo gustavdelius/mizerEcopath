@@ -1333,7 +1333,14 @@ catch_distribution<-rbind(blue_whiting_distribution,boarfish_distribution,cod_di
 
 fishing_deaths<-rbind(blue_whiting_deaths,boarfish_deaths,cod_deaths,dragonet_deaths, haddock_deaths,hake_deaths,herring_deaths,horse_mackerel_deaths,mackerel_deaths, megrim_deaths,monkfish_deaths,plaice_deaths,red_gurnard_deaths,sole_deaths,whiting_deaths)
 
-##
-#use_data(catch_distribution, overwrite = TRUE)
+
+catch_distribution<-catch_distribution%>%
+    mutate(gear=gear_category)%>%
+    select(-gear_category)
+
+fishing_deaths<-fishing_deaths%>%
+    mutate(gear=gear_category)%>%
+    select(-gear_category)
+##use_data(catch_distribution, overwrite = TRUE)
 #use_data(fishing_deaths, overwrite = TRUE)
 ```

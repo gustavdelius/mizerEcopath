@@ -20,52 +20,49 @@
 #'
 #' @return A MizerParams object with updated gear parameters and effort turned on.
 #' @export
-addCatch <- function(params, landings, survey,step) {
+addCatch <- function(params, landings, fishing_dead_biomass, survey,step) {
     sp <- params@species_params
 
-    if (!hasName(sp, "ecopath_groups") || !hasName(sp, "biomass_observed")) {
-        stop("You must use `addEcopathParams()` before calling `addCatch()`.")
+    create_landing_gear_df <- function(landings,fishing_dead_biomass) {
+        # Keep only unique gear-species combinations
+        data_unique <- unique(landings[, c("gear", "species")])
+        # Build the dataframe
+        df <- data.frame(
+            species = data_unique$species,
+            gear = data_unique$gear)%>%
+            left_join(sp, by="species")%>%
+            left_join(fishing_dead_biomass, by=c("species", "gear"))%>%
+            mutate(sel_func = "sigmoid_length",
+                   l50 = l_mat,
+                   l25 = l_mat * 0.9,
+                   catchability = 0,
+                   yield_observed = total_weight_dead_gear_per_area)%>%
+            select(species, gear, sel_func,l50,l25,catchability, yield_observed)
+        return(df)
     }
 
-    # Helper to create gear param structure
-    create_gear_df <- function(gear_names) {
-        bind_rows(lapply(gear_names, function(gear) {
-            data.frame(
-                species = sp$species,
-                gear = gear,
-                sel_func = "sigmoid_length",
-                l50 = w2l(sp$w_mat, params),
-                l25 = w2l(sp$w_mat, params) * 0.9,
-                catchability = 0,
-                yield_observed = 0,
-                stringsAsFactors = FALSE
-            )
-        }))
+    create_survey_gear_df <- function(survey) {
+        # Keep only unique gear-species combinations
+        data_unique <- unique(survey[, c("gear", "species")])
+        # Build the dataframe
+        df <- data.frame(
+            species = data_unique$species,
+            gear = data_unique$gear)%>%
+            mutate(Scientific_name=species)%>%
+            select(-species)%>%
+            left_join(sp, by=c("Scientific_name"="Scientific_name"))%>%
+            mutate(sel_func = "sigmoid_length",
+                   l50 = l_mat,
+                   l25 = l_mat * 0.9,
+                   catchability = 0,
+                   yield_observed = 1e-10)%>%
+            select(species, gear, sel_func,l50,l25,catchability, yield_observed)
+        return(df)
     }
 
     # Create initial gear parameter templates
-    gp_landings <- create_gear_df(unique(landings$gear))
-    gp_survey <- create_gear_df("survey")
-
-    # Summarize biomass for landings
-    landings_summary <- landings %>%
-        group_by(species, gear) %>%
-        summarise(yield = sum(biomass, na.rm = TRUE), .groups = "drop")
-
-    gp_landings <- gp_landings %>%
-        left_join(landings_summary, by = c("species", "gear")) %>%
-        mutate(yield_observed = coalesce(yield, 0)) %>%
-        select(-yield)
-
-    # Summarize biomass for survey
-    survey_summary <- survey %>%
-        group_by(species, gear) %>%
-        summarise(yield = sum(biomass, na.rm = TRUE), .groups = "drop")
-
-    gp_survey <- gp_survey %>%
-        left_join(survey_summary, by = c("species", "gear")) %>%
-        mutate(yield_observed = coalesce(yield, 0)) %>%
-        select(-yield)
+    gp_landings <- create_landing_gear_df(landings, fishing_dead_biomass)
+    gp_survey <- create_survey_gear_df(survey)
 
     # Combine landings and survey
     gp <- bind_rows(gp_landings, gp_survey)

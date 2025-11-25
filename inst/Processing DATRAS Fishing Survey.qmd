@@ -293,5 +293,8 @@ total_survey <- survey %>%
     .groups = "drop"
   )
 survey_length_distribution<-total_survey
+
+survey_length_distribution<-survey_length_distribution%>%
+    mutate(gear="survey")
 #use_data(survey_length_distribution, overwrite=TRUE)
 ```
