@@ -20,7 +20,7 @@
 #'
 #' @return A MizerParams object with updated gear parameters and effort turned on.
 #' @export
-addCatch <- function(params, landings, fishing_dead_biomass, survey,step) {
+addCatch <- function(params, landings, fishing_dead_biomass, survey, step) {
     sp <- params@species_params
 
     create_landing_gear_df <- function(landings,fishing_dead_biomass) {
@@ -48,9 +48,7 @@ addCatch <- function(params, landings, fishing_dead_biomass, survey,step) {
         df <- data.frame(
             species = data_unique$species,
             gear = data_unique$gear)%>%
-            mutate(Scientific_name=species)%>%
-            select(-species)%>%
-            left_join(sp, by=c("Scientific_name"="Scientific_name"))%>%
+            left_join(sp, by=c("species"="species"))%>%
             mutate(sel_func = "sigmoid_length",
                    l50 = l_mat,
                    l25 = l_mat * 0.9,

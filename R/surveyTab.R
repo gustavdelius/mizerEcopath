@@ -56,6 +56,20 @@ surveyTab <- function(input, output, session, params, logs,
         plotAgeLikelihood(p, species = input$sp, age_at_length = age_at_length) +
             theme(text = element_text(size = 16))
     })
+    output$plotSpawningDensity <- renderPlot({
+        # Parameters (you could also hook these to input sliders if desired)
+        mu <- input$spawning_mu
+        kappa <- input$spawning_kappa       # concentration
+
+        # Smooth sequence across year
+        dates <- seq(0, 1, length.out = 200)
+        density <- spawning_density(dates, mu, kappa)
+
+        # Plot
+        plot(dates * 12, density, type = "l", lwd = 2, col = "lightblue4",
+             xlab = "Month", ylab = "Spawning probability density",
+             main = "Von Mises Spawning Distribution")
+    })
 }
 
 #' @rdname surveyTab
@@ -65,6 +79,7 @@ surveyTab <- function(input, output, session, params, logs,
 surveyTabUI <- function(...) {
     tagList(
         plotlyOutput("plotSurveyCatchDist"),
-        plotOutput("plotSurveyAge")
+        plotOutput("plotSurveyAge"),
+        plotOutput("plotSpawningDensity")
     )
 }
