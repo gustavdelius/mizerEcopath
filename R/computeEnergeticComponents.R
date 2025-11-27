@@ -11,7 +11,7 @@
 #' @return A MizerParams object with the adjusted max intake rate (h) and
 #' metablolic loss (k) parameters
 #' @export
-computeEncounterComponents<-function(params, fc = 0.2, f = 0.6) {
+computeEnergeticComponents<-function(params, fc = 0.2, f = 0.6) {
     if (!is(params, "MizerParams")) {
         stop("params must be a MizerParams object.")
     }
