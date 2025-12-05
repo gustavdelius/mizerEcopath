@@ -266,7 +266,7 @@ simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
 #' # Using package data would typically look like:
 #' # df <- preprocess_length_at_age(params, species = "Cod", age_at_length = your_df)
 preprocess_length_at_age <- function(params, species, age_at_length) {
-    sci_name <- species_params(params)[species, "SciName"]
+    sci_name <- species_params(params)[species, "Scientific_name"]
     survey_dates <- c(0.125, 0.375, 0.625, 0.875)
     age_at_length |>
         filter(.data$Scientific_name == sci_name) |>
