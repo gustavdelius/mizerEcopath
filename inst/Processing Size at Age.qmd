@@ -262,7 +262,7 @@ cs_data<- data_add_areas %>%
 Go to: <https://datras.ices.dk/Data_products/qryspec.aspx>
 
 ```{r}
-cs_data$SpecCode<-as.factor(cs_data$SpecCode)
+cs_data$SpecCode<-as.character(cs_data$SpecCode)
 
 SpecCode_to_Latinname<-c("126417"="Clupea harengus",
                          "126436"="Gadus morhua",
@@ -281,6 +281,71 @@ SpecCode_to_Latinname<-c("126417"="Clupea harengus",
                          "127419"="Capros aper")
 
 cs_data$Scientific_name <- SpecCode_to_Latinname[cs_data$SpecCode]
+cs_data <- cs_data[!is.na(cs_data$Age), ]
+
+df_clean<-cs_data
+#figure out the CANoAtLngt for each species if less than x amount, expand region to a and d
+sum((subset(df_clean, Scientific_name=="Clupea harengus"))$CANoAtLngt)
+#1514
+sum((subset(df_clean, Scientific_name=="Gadus morhua"))$CANoAtLngt)
+#1850
+sum((subset(df_clean, Scientific_name=="Melanogrammus aeglefinus"))$CANoAtLngt)
+#24913
+sum((subset(df_clean, Scientific_name=="Merlangius merlangus"))$CANoAtLngt)
+#20394
+sum((subset(df_clean, Scientific_name=="Merluccius merluccius"))$CANoAtLngt)
+#107
+sum((subset(df_clean, Scientific_name=="Lophius piscatorius"))$CANoAtLngt)
+#3414
+sum((subset(df_clean, Scientific_name=="Trachurus trachurus"))$CANoAtLngt)
+#6033
+sum((subset(df_clean, Scientific_name=="Scomber scombrus"))$CANoAtLngt)
+#3216
+sum((subset(df_clean, Scientific_name=="Pleuronectes platessa"))$CANoAtLngt)
+#20961
+sum((subset(df_clean, Scientific_name=="Lepidorhombus whiffiagonis"))$CANoAtLngt)
+#30892
+sum((subset(df_clean, Scientific_name=="Solea solea"))$CANoAtLngt)
+#10405
+sum((subset(df_clean, Scientific_name=="Capros aper"))$CANoAtLngt)
+#0
+sum((subset(df_clean, Scientific_name=="Callionymus lyra"))$CANoAtLngt)
+#0
+sum((subset(df_clean, Scientific_name=="Chelidonichthys cuculus"))$CANoAtLngt)
+#627
+
+#both Callionymus lyra and Capros aper have no age data for any area
+#anything that has less than 1000 expand range to 27.7.a and 27.7.d
+cs_subarea_expansion<-c('27.7.a','27.7.d')
+expanded<-data_add_areas %>%
+  filter(map_lgl(str_split(ICES_Area, "-"), ~ all(.x %in% cs_subarea_expansion)))
+df_clean_2 <- expanded[!is.na(expanded$Age), ]
+df_clean_2$SpecCode<-as.character(df_clean_2$SpecCode)
+df_clean_2$Scientific_name <- SpecCode_to_Latinname[df_clean_2$SpecCode]
+expanded_hake<-subset(df_clean_2, Scientific_name=="Merluccius merluccius")
+sum(expanded_hake$CANoAtLngt)
+#17
+expanded_red_gurnard<-subset(df_clean_2, Scientific_name=="Chelidonichthys cuculus")
+sum(expanded_red_gurnard$CANoAtLngt)
+#1391
+
+#expand range further
+cs_subarea_expansion_2<-c('27.4.b','27.4.c')
+expanded <- data_add_areas %>%
+  # split ICES_Area by "-" and check if all pieces are in cs_subarea_expansion_2
+  filter(map_lgl(str_split(ICES_Area, "-"), ~ all(.x %in% cs_subarea_expansion_2))) %>%
+  filter(!is.na(Age))
+
+# Add species info
+expanded$SpecCode <- as.character(expanded$SpecCode)
+expanded$Scientific_name <- SpecCode_to_Latinname[expanded$SpecCode]
+df_clean_3<-expanded
+
+expanded_2_hake<-subset(df_clean_3, Scientific_name=="Merluccius merluccius")
+sum(expanded_2_hake$CANoAtLngt)
+#396
+
+cs_data<-rbind(df_clean, expanded_hake, expanded_red_gurnard, expanded_2_hake)
 ```
 
 ### Simplify Maturity Code
