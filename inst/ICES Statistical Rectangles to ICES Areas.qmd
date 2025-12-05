@@ -54,6 +54,23 @@ ggplot() +
   theme_minimal() +
   guides(fill = "none") +
   labs(title = "ICES Areas and Statistical Rectangles")
+
+#Just the UK
+# Compute centroids for rects (label positions)
+rects_centroids <- st_centroid(rects)
+
+ggplot() +
+  geom_sf(data = areas, aes(fill = Area_Full), color = "black", alpha = 0.3) +
+  geom_sf(data = rects, fill = NA, color = "blue", linetype = "dashed", size = 0.5) +
+  geom_sf_text(data = rects_centroids, aes(label = ICESNAME), size = 2, color = "red") +
+  coord_sf(
+    xlim = c(-20, 10),   # 20W to 20E
+    ylim = c(47, 60),    # 47N to 65N
+    expand = FALSE
+  ) +
+  theme_minimal() +
+  labs(title = "ICES Areas and Statistical Rectangles")
+
 ```
 
 # Creating the Dictionary
