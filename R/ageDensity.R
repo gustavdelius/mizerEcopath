@@ -255,7 +255,8 @@ simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
 #' Filters and aggregates age-at-length data for a species, rounding lengths down
 #' to the nearest cm and aggregating counts by quarter. Returns a tidy data frame
 #' with columns `survey_date`, `Length`, `K`, and `count`.
-#' @param params A `mizer::MizerParams` object.
+#' @param params A `mizer::MizerParams` object, with scientific names contained
+#' in the species_params column "Scientific_name"
 #' @param species Species name as in `species_params(params)$species`.
 #' @param age_at_length Data frame with at least the columns `Scientific_name`,
 #'   `Quarter`, `LngtClass`, `Age`, and `CANoAtLngt`.
