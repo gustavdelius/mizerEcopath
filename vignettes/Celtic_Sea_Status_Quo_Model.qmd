@@ -107,11 +107,6 @@ survey_length_distribution<-survey_length_distribution%>%
     select(-species)%>%
     left_join(life_histories%>%select(species, Scientific_name), by = "Scientific_name")
 
-catch_distribution<-catch_distribution %>%
-    mutate(catch=catch_proportion)%>%
-    select(-catch_proportion)
-
-
 #combined survey fishing and STECF fishing
 all_fishing<-rbind(catch_distribution,survey_length_distribution)
 ```
