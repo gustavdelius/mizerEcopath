@@ -1,8 +1,8 @@
-﻿species,Scientific_name,age_mat,l_mat,l_max,a,b
+species,Scientific_name,age_mat,l_mat,l_max,a,b
 Herring,Clupea harengus,3.09,16.7,45,0.0055,3.1
 Cod,Gadus morhua,4.68,65.4,200,0.00676,3.08
 Haddock,Melanogrammus aeglefinus,3.24,34.9,112,0.00661,3.08
-Whiting,Merlanguis merlangus,1.7,28.2,91.5,0.00617,3.06
+Whiting,Merlangius merlangus,1.7,28.2,91.5,0.00617,3.06
 Blue whiting,Micromesistius poutassou,2.04,15,55.5,0.00417,3.12
 Hake,Merluccius merluccius,3.16,42.1,140,0.00468,3.12
 Monkfish,Lophius piscatorius,4.5,55,200,0.01698,2.91
