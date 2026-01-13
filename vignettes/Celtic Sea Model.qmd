@@ -225,7 +225,7 @@ sp1 <- sp %>%
 model_non_int <- newAllometricParams(sp, no_w = 200)
 
 ## 6.2 Add survey ---
-model_non_int <- addCatch(model_non_int, landings= cs_scaled_landings, survey=cs_survey,step=1)
+model_non_int <- addCatch(model_non_int, landings=cs_scaled_landings, survey=cs_survey,step=1)
 
 # Match growth and biomass
 # We need species_params to get the adult biomass
@@ -262,7 +262,7 @@ model_non_int_1<-tuneEcopath(
 )
 ```
 
-# Step 2 - Adding Landings
+# Step 2 - Tune Selectivity of Landings
 
 ```{r}
 model_non_int <- addFishingMort(model_non_int, cs_scaled_landings)

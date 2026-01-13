@@ -101,12 +101,6 @@ life_histories <- life_histories %>%
         l_max = pmax(obs_len, l_max))%>%
     select(-obs_len)
 
-#adding species names to survey
-survey_length_distribution<-survey_length_distribution%>%
-    mutate(Scientific_name=species)%>%
-    select(-species)%>%
-    left_join(life_histories%>%select(species, Scientific_name), by = "Scientific_name")
-
 #combined survey fishing and STECF fishing
 all_fishing<-rbind(catch_distribution,survey_length_distribution)
 ```
