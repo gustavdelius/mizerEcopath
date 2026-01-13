@@ -53,7 +53,7 @@ addCatch <- function(params, landings, fishing_dead_biomass, survey, step) {
                    l50 = l_mat,
                    l25 = l_mat * 0.9,
                    catchability = 0,
-                   yield_observed = 1e-10)%>%
+                   yield_observed = 1e-6)%>%
             select(species, gear, sel_func,l50,l25,catchability, yield_observed)
         return(df)
     }
@@ -67,11 +67,8 @@ addCatch <- function(params, landings, fishing_dead_biomass, survey, step) {
 
     # Safely match biomass observed
     gp <- gp %>%
-        left_join(sp %>% select(species, biomass_observed), by = "species") %>%
         mutate(
-            catchability = 1
-        ) %>%
-        select(-biomass_observed)
+            catchability = 1)
 
     # Set gear parameters
     gear_params(params) <- validGearParams(gp, sp)
