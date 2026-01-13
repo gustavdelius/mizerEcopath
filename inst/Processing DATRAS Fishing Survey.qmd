@@ -296,5 +296,26 @@ survey_length_distribution<-total_survey
 
 survey_length_distribution<-survey_length_distribution%>%
     mutate(gear="survey")
+
+new_species_names <- c("Herring"= "Clupea harengus", 
+                       "Cod"= "Gadus morhua", 
+                       "Haddock"= "Melanogrammus aeglefinus",
+                       "Whiting" = "Merlangius merlangus",
+                       "Blue whiting" = "Micromesistius poutassou",
+                       "Hake" = "Merluccius merluccius",
+                       "Monkfish" = "Lophius piscatorius",
+                       "Horse mackerel" ="Trachurus trachurus",
+                       "Mackerel" ="Scomber scombrus",
+                       "Plaice" = "Pleuronectes platessa",
+                       "Megrim" ="Lepidorhombus whiffiagonis",
+                       "Sole" = "Solea solea",
+                       "Boarfish" = "Capros aper",
+                       "Dragonet" = "Callionymus lyra",
+                       "Red gurnard" ="Chelidonicthys cuculus")
+
+survey_length_distribution<-survey_length_distribution%>%
+    mutate(species=Scientific_name,
+           Scientific_name = recode(Scientific_name, !!!new_species_names))
+
 #use_data(survey_length_distribution, overwrite=TRUE)
 ```
