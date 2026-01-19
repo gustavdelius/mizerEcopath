@@ -27,10 +27,10 @@ fishingControl <- function(input, output, session, params, params_old,
                             p@gear_params$gear == gear)
         # Update slider min/max so that they are a fixed proportion of the
         # parameter value
-        p@gear_params[gp_idx, "catchability"]  <- input$catchability
+        p@gear_params[gp_idx, "catchability"]  <- 10^input$catchability
         updateSliderInput(session, "catchability",
-                          min = signif(max(input$catchability / 2 - 1, 0), 2),
-                          max = signif(max(input$catchability * 2, 0.1), 2))
+                          min = signif(log10(max(1e-10,input$catchability / 5)),2),
+                          max = signif(log10(max(10^input$catchability * 10))),2)
 
         if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
             updateSliderInput(session, "knife_edge_size",
@@ -69,9 +69,9 @@ fishingControl <- function(input, output, session, params, params_old,
 
         catchability <- p@gear_params[gp_idx, "catchability"]
         updateSliderInput(session, "catchability",
-                          value = catchability,
-                          min = signif(max(catchability / 2 - 1, 0), 2),
-                          max = signif(max(catchability * 2, 0.1), 2))
+                          value = log10(catchability),
+                          min = signif(log10(max(1e-10,catchability/5)),2),
+                          max = signif(log10(catchability * 10),2))
 
         if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
             knife_edge_size <- p@gear_params[gp_idx, "knife_edge_size"]
@@ -128,10 +128,10 @@ fishingControlUI <- function(params, input) {
                selectInput("gear", "Gear to tune:", gears,
                            selected = gear),
                sliderInput("catchability", "Catchability",
-                           value = gp$catchability,
-                           min = signif(max(0, gp$catchability / 2 - 1), 5),
-                           max = signif(max(gp$catchability * 2, 0.1), 5),
-                           step = 1e-6)
+                           value = log10(gp$catchability),
+                           min = -14,
+                           max = 1,
+                           step=0.01)
     )
 
     if (gp$sel_func == "knife_edge") {
