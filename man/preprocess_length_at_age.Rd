@@ -8,7 +8,7 @@ preprocess_length_at_age(params, species, age_at_length)
 }
 \arguments{
 \item{params}{A \code{mizer::MizerParams} object, with scientific names contained
-in the species_paramsncolumn "Scientific_name"}
+in the species_params column "Scientific_name"}
 
 \item{species}{Species name as in \code{species_params(params)$species}.}
 
