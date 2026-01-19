@@ -628,9 +628,60 @@ new_species_names <- c("HER"="Herring",
 )
 
 FDI_EU <- FDI_EU %>%
-  mutate(
-    species = recode(species, !!!new_species_names)
-  )
+    mutate(species = recode(species, !!!new_species_names))%>%
+    group_by(species)%>%
+    mutate(agg_landings=sum(total_landings))%>%
+    ungroup()%>%
+    mutate(landings_proportion=total_landings/agg_landings)%>%
+    select(-agg_landings)
+
+yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+
+species_to_groups <- c(
+    "Herring"="Herring",
+    "Cod"="Cod",
+    "Juvenile cod"="Cod",
+    "Haddock"="Haddock",
+    "Juvenile haddock"="Haddock",
+    "Whiting"="Whiting",
+    "Juvenile whiting"="Whiting",
+    "Blue whiting"="Blue whiting",
+    "Juvenile blue whiting"="Blue whiting",
+    "Hake"="Hake",
+    "Juvenile hake"="Hake",
+    "Monkfish"="Monkfish",
+    "Juvenile monkfish"="Monkfish",
+    "Horse mackerel"="Horse mackerel",
+    "Mackerel"="Mackerel",
+    "Plaice"="Plaice",
+    "Juvenile plaice"="Plaice",
+    "Megrim"="Megrim",
+    "Juvenile megrim"="Megrim",
+    "Sole"="Sole",
+    "Small pelagic spp."="Boarfish",
+    "Gurnards"="Red gurnard")
+
+yield <- yield %>%
+    pivot_longer(cols = 3:29, 
+               names_to = "gear",  
+               values_to = "yield")%>%
+    mutate(species = recode(Fleet.group, !!!species_to_groups),
+           yield=case_when(
+               species %in% "Boarfish"~0.0371209,  #from ICES calculation
+               species %in% "Red gurnard"~0.37*yield,
+               TRUE ~ yield))%>%
+    select(-Fleet.group,-X)%>%
+    group_by(species)%>%
+    summarise(yield=sum(yield, na.rm=TRUE),.groups="drop")%>%
+    filter(species %in% c("Herring", "Cod","Haddock","Whiting","Blue whiting","Hake",
+                          "Monkfish","Horse mackerel","Mackerel","Plaice","Megrim",
+                          "Sole","Boarfish","Red gurnard"))
+
+
+FDI_EU<-FDI_EU%>%
+    left_join(yield, by="species")%>%
+    mutate(total_landings=landings_proportion*yield)%>%
+    select(-landings_proportion,-yield)
 
 #get total f mort proportions
 biomass_discard_rates_grouped<-biomass_discard_rates%>%
@@ -639,7 +690,8 @@ biomass_discard_rates_grouped<-biomass_discard_rates%>%
               total_discards=sum(tot_discards_tonnes))%>%
     mutate(discards_over_landings=total_discards/total_landings)%>%
     select(-total_landings,-total_discards)
-    
+
+
 FDI_EU_next <- FDI_EU%>%
     left_join(biomass_discard_rates_grouped, by=c("target_assemblage","gear_category","species"))%>%
     mutate(total_dead_flesh=
@@ -647,7 +699,6 @@ FDI_EU_next <- FDI_EU%>%
                coalesce(total_landings,0)*
                coalesce(discards_over_landings,0)*
                0.5)
-
 ```
 
 Now apply the amount of fishing to the normalized total catches from above using the proportions from FDI_next to aggregate the target assemblage column.
@@ -690,7 +741,7 @@ Calculate Yield\* (total biomass dead flesh per year per area)
 total_weight_dead<-FDI_EU_next%>%
     group_by(gear_category, species)%>%
     summarise(total_dead_flesh=sum(total_dead_flesh, na.rm=TRUE))%>%
-    mutate(total_weight_dead_gear_per_area=total_dead_flesh/11/617499.7)
+    mutate(total_weight_dead_gear_per_area=total_dead_flesh)
 ```
 
 compare total weight dead species and gear categories, if no size distribution is present for a category add the deaths to misc.
