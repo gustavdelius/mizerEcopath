@@ -8,6 +8,7 @@ editor: visual
 
 ```{r}
 library(here)
+library(dplyr)
 library(tidyr)
 data("cs_age_size")
 ```
@@ -56,6 +57,22 @@ lm_fin <- data.frame(
 )
 
 l_mat<-lm_fin
+
+library(ggplot2)
+
+# Base plot with points
+ggplot(maturity_testing_filtered, aes(x = LngtClass, y = Maturity, color = Scientific_name)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
+  # Add logistic regression curves for each species
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(
+    x = "Length class",
+    y = "Probability of being mature",
+    color = "Species",
+    title = "Maturity vs Length by Species"
+  ) +
+  theme_minimal()
+
 ```
 
 ## Calculate Age at Maturity
@@ -102,6 +119,19 @@ lm_fin <- data.frame(
   row.names = NULL
 )
 age_mat<-lm_fin
+
+# Base plot with points
+ggplot(maturity_testing_filtered, aes(x = Age, y = Maturity, color = Scientific_name)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
+  # Add logistic regression curves for each species
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(
+    x = "Age",
+    y = "Probability of being mature",
+    color = "Species",
+    title = "Maturity vs Length by Species"
+  ) +
+  theme_minimal()
 ```
 
 # Combine Parameters into single data frame
@@ -110,4 +140,112 @@ age_mat<-lm_fin
 cs_calculated_histories<-l_mat%>%
     left_join(age_mat, by="Scientific_name")
 use_data(cs_calculated_histories,overwrite=TRUE)
+```
+
+# ML is sensitive try a Biased reduced approach with confidence intervals via bootstrapping
+
+```{r}
+#Model
+fit <- glm(Maturity ~ Age * Scientific_name,
+             family = binomial(link = "logit"),
+             data = maturity_testing_filtered,
+             method = "brglmFit",
+             type = "AS_mixed")
+#Predict
+pred <- maturity_testing_filtered %>%
+    group_by(Scientific_name) %>%
+    summarise(
+        minL = min(Age),
+        maxL = max(Age),
+        .groups = "drop") %>%
+    rowwise() %>%
+    mutate(Age = list(seq(minL, maxL, by = 0.1))) %>%
+    unnest(Age)
+ 
+pred$p <- predict(fit, newdata = pred, type = "response")
+
+L50 <- pred %>%
+    group_by(Scientific_name) %>%
+    slice(which.min(abs(p - 0.5))) %>%
+    select(Scientific_name, L50 = Age)
+
+L50
+
+#Plot
+ggplot(pred, aes(Age, p, colour = Scientific_name)) +
+    geom_line(size = 1) +
+    geom_hline(yintercept = 0.5, linetype = "dashed") +
+    theme_bw() +
+    labs(y = "Probability mature", x = "Length class (cm)", title = "Species-specific maturity ogives")
+
+#Bootstrap for CI
+set.seed(123)  # for reproducibility
+nboot <- 200   # number of bootstrap samples
+
+# Create a list to store bootstrap L50 results
+boot_L50 <- vector("list", nboot)
+
+for(i in 1:nboot) {
+    #Resample each species with replacement
+    boot_data <- maturity_testing_filtered %>%
+        group_by(Scientific_name) %>%
+        sample_frac(replace = TRUE) %>%
+        ungroup()
+    
+    #Fit bias-reduced GLM with species-specific slopes
+    fit_boot <- glm(
+        Maturity ~ Age * Scientific_name,
+        family = binomial(link = "logit"),
+        data = boot_data,
+        method = "brglmFit",
+        type = "AS_mixed")
+    
+    #Create length sequence per species for prediction
+    pred_boot <- boot_data %>%
+        group_by(Scientific_name) %>%
+        summarise(
+            minL = min(Age),
+            maxL = max(Age),
+            .groups = "drop") %>%
+        rowwise() %>%
+        mutate(Age = list(seq(minL, maxL, by = 0.1))) %>%
+        unnest(Age)
+    
+    #Predict probability of maturity
+    pred_boot$p <- predict(fit_boot, newdata = pred_boot, type = "response")
+    
+    #Calculate L50 (length at 50% maturity) per species
+    L50_boot <- pred_boot %>%
+        group_by(Scientific_name) %>%
+        slice(which.min(abs(p - 0.5))) %>%
+        select(Scientific_name, L50 = Age)
+    
+    boot_L50[[i]] <- L50_boot
+}
+
+#Combine bootstrap results into a single dataframe
+boot_L50_df <- bind_rows(boot_L50, .id = "boot")
+ 
+#Compute 95% confidence intervals for L50
+L50_CI <- boot_L50_df %>%
+     group_by(Scientific_name) %>%
+     summarise(
+         L50_median = median(L50),
+         L50_lower = quantile(L50, 0.025),
+         L50_upper = quantile(L50, 0.975),
+         .groups = "drop"
+     )
+
+# A tibble: 9 × 4
+#  Scientific_name            L50_median L50_lower L50_upper
+#  <chr>                           <dbl>     <dbl>     <dbl>
+#1 Chelidonichthys cuculus          21.3      20.9      21.7
+#2 Gadus morhua                     42.3      34.4      47.1
+#3 Lepidorhombus whiffiagonis       20.6      20.5      20.8
+#4 Melanogrammus aeglefinus         23.5      21.8      25  
+#5 Merlangius merlangus             21.1      20.7      21.5
+#6 Merluccius merluccius            32.9      31.5      34.3
+#7 Pleuronectes platessa            17.7      15.5      19.1
+#8 Scomber scombrus                 28.1      27.1      29.1
+#9 Solea solea                      20.8      19.7      21.8
 ```
