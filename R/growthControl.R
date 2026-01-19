@@ -31,6 +31,11 @@ growthControl <- function(input, output, session, params, params_old, flags, ...
         # Save back to params
         p <- setExtEncounter(p, ext_encounter = ext_enc)
 
+        #Save new Eiw in species params
+        sps$Eiw[sp_sel]<-input$Eiw
+
+        species_params(p)<-sps
+
         # Update reactive params object
         tuneParams_update_species(sp, p, params, params_old)
     },
@@ -49,7 +54,7 @@ growthControlUI <- function(p, input) {
 
         popify(
             sliderInput("Eiw", "External encounter coefficient 'Eiw'",
-                        value = 1,  # starting value, could use initial_Eiw
+                        value = sp$Eiw,
                         min = 0,
                         max = 200,
                         step = 0.01,
