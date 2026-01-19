@@ -123,23 +123,6 @@ Example of treatment:
 | 27.4.a-27.7.h | NA          |
 
 ```{r}
-length_landings <- length_landings %>%
-  mutate(
-    # Standardize region_code format (uppercase)
-    region_code_upper = toupper(region_code),
-
-    # Split region_code into individual codes (handling multi-code entries)
-    region_parts = str_split(region_code_upper, "-"),
-
-    # Assign sub_region if ALL codes in a row match one region group
-    sub_region = case_when(
-      sapply(region_parts, function(rcs) all(rcs %in% sub_area_7)) ~ "cs_sub_area",
-      sapply(region_parts, function(rcs) all(rcs %in% ns_sub_area)) ~ "ns_sub_area",
-      TRUE ~ NA_character_
-    )
-  ) %>%
-  select(-region_code_upper, -region_parts)  # Clean up helper columns
-
 length_discards <- length_discards %>%
   mutate(
     # Standardize region_code format (uppercase)
