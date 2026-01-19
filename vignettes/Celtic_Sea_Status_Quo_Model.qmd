@@ -36,22 +36,22 @@ Data includes: life_history parameters (l_mat and age_mat calculated from DATRAS
 
 #Life history data from fishbase
 data(life_history_fishbase)
+life_history_fishbase$l_mat<-c(27.15, 42.36707, 23.473, 21.13458, 25.1, 32.87942, 55.0, 22.9, 28.06812, 17.73243, 20.62504, 20.8603,  9.2, 21.31807)
 
 #maturity values calculated from survey data
-data(cs_calculated_histories)
+#data(cs_calculated_histories)
 
     #combine life_history_fishbase and calculated l_mat
-life_histories<-life_history_fishbase%>%
-    left_join(cs_calculated_histories, by="Scientific_name")%>%
-    mutate(
-        l_mat=case_when(
-        l_mat.y %in% c(NA_character_) ~ l_mat.x,
-        TRUE ~ l_mat.y),
-        age_mat=case_when(
-        age_mat.x %in% c(NA_character_) ~ age_mat.y,    
-        TRUE ~ age_mat.x))%>%
-    arrange(species)%>%
-    select(-l_mat.x, -l_mat.y, -age_mat.x, -age_mat.y)
+#life_histories<-life_history_fishbase%>%
+#    mutate(
+#        l_mat=case_when(
+#        l_mat.y %in% c(NA_character_) ~ l_mat.x,
+#        TRUE ~ l_mat.y),
+#        age_mat=case_when(
+#        age_mat.x %in% c(NA_character_) ~ age_mat.y,    
+#        TRUE ~ age_mat.x))%>%
+#    arrange(species)%>%
+#    select(-l_mat.x, -l_mat.y, -age_mat.x, -age_mat.y)
 
 #Load in ecopath data
 ecopath_estimates <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
@@ -68,10 +68,9 @@ observed_biomass_ecopath<-na.omit(observed_biomass_ecopath)
 
 #Biomass from literature for Red gurnard, Boarfish, and dragonets
 Boarfish<-data.frame(species="Boarfish", biomass_observed=1.4126)
-Dragonet<-data.frame(species="Dragonet", biomass_observed=0.0289)
 Red_gurnard<-data.frame(species="Red gurnard", biomass_observed=0.0058)
 #combine the ecopath species and additional species
-observed_biomasses<-rbind(observed_biomass_ecopath,Boarfish,Dragonet,Red_gurnard)
+observed_biomasses<-rbind(observed_biomass_ecopath,Boarfish,Red_gurnard)
 observed_biomasses<-arrange(observed_biomasses,species)
 
 #Diet matrix
@@ -82,9 +81,12 @@ data(fishing_deaths)
 
 #Catch Distribution
 data(catch_distribution)
+catch_distribution<-catch_distribution%>%filter(!species=="Dragonet")
+
 
 #DATRAS size distribution
 data(survey_length_distribution)
+survey_length_distribution<-survey_length_distribution%>%filter(!species=="Dragonet")
 
 #DATRAS age at length distribution
 data(cs_age_size)
@@ -95,7 +97,7 @@ observed_max <- catch_distribution %>%
      summarise(
          obs_len = if (all(is.na(length + dl))) NA_real_ else max(length + dl, na.rm = TRUE)
      )
-life_histories <- life_histories %>%
+life_histories <- life_history_fishbase %>%
     left_join(observed_max, by = "species")%>%
     mutate(
         l_max = pmax(obs_len, l_max))%>%
@@ -145,8 +147,25 @@ model_non_int <- model_non_int %>%
     steadySingleSpecies() %>%
     matchBiomasses()
 
-model_non_int_1<-tuneEcopath(
-    model_non_int, 
+#model_non_int_1<-tuneEcopath(
+#    model_non_int, 
+#    catch = all_fishing,
+#    age_at_length = cs_age_size)
+
+#spawning_mort<-model_non_int_1
+#saveRDS(spawning_mort, "inst/extdata")
+
+spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
+
+sps<-species_params(spawning_mort)
+initial_Eiw<-array(dim=length(sps$species))
+for(i in 1:length(sps$species)){
+    initial_Eiw[i]<-getExtEncounter(params)[i,1]/(w(params)[1]^sp[i,]$n)}
+sps$Eiw<-initial_Eiw
+species_params(spawning_mort)<-sps
+
+tuning_blue_whiting<-tuneEcopath(
+    spawning_mort, 
     catch = all_fishing,
     age_at_length = cs_age_size)
 ```
