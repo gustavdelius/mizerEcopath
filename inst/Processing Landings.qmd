@@ -637,6 +637,8 @@ FDI_EU <- FDI_EU %>%
 
 yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
 
+ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+
 species_to_groups <- c(
     "Herring"="Herring",
     "Cod"="Cod",
@@ -665,18 +667,23 @@ yield <- yield %>%
     pivot_longer(cols = 3:29, 
                names_to = "gear",  
                values_to = "yield")%>%
-    mutate(species = recode(Fleet.group, !!!species_to_groups),
+    mutate(Group.name=Fleet.group)%>%
+    select(-X,-Fleet.group)%>%
+    group_by(Group.name)%>%
+    summarise(yield=sum(yield, na.rm=TRUE),.groups="drop")%>%
+    left_join(ecopath_params, by="Group.name")%>%
+    mutate(yield=yield*Biomass..t.km.2.,
+           species = recode(Group.name, !!!species_to_groups),
            yield=case_when(
                species %in% "Boarfish"~0.0371209,  #from ICES calculation
                species %in% "Red gurnard"~0.37*yield,
                TRUE ~ yield))%>%
-    select(-Fleet.group,-X)%>%
+    select(species,yield)%>%
     group_by(species)%>%
     summarise(yield=sum(yield, na.rm=TRUE),.groups="drop")%>%
     filter(species %in% c("Herring", "Cod","Haddock","Whiting","Blue whiting","Hake",
                           "Monkfish","Horse mackerel","Mackerel","Plaice","Megrim",
                           "Sole","Boarfish","Red gurnard"))
-
 
 FDI_EU<-FDI_EU%>%
     left_join(yield, by="species")%>%
