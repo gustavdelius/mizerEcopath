@@ -1,0 +1,56 @@
+---
+title: "Length Stratify boarfish data"
+format: html
+editor: visual
+---
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# Read data
+boarfish <- read.csv("/Users/jessicawestworth/Desktop/caprosaper_jessicawestworth.csv")
+
+bin_width <- 1
+
+length_age_ls <- boarfish %>%
+    #Create length classes
+  mutate(length = cut(
+    TL_cm,
+    breaks = seq(floor(min(TL_cm)), ceiling(max(TL_cm)), by = bin_width),
+    right = FALSE
+  )) %>%
+  
+    #Convert length class to lower bound
+  mutate(length = as.numeric(sub("\\[(\\d+),.*", "\\1", length))) %>%
+  
+    #Split CAPTURE_DATE into day/month/year
+  separate(CAPTURE_DATE, into = c("day", "month", "year"), sep = "-", convert = TRUE) %>%
+    
+    # Add Quarter
+  mutate(Quarter = case_when(
+    month %in% 1:3 ~ 1,
+    month %in% 4:6 ~ 2,
+    month %in% 7:9 ~ 3,
+    month %in% 10:12 ~ 4
+  )) %>%
+    
+    # Count number of fish per combination (long format)
+  count(day, month, year, Quarter, length, AGE_yrs, name = "N") %>%
+    
+    # Expand counts to individual rows for LS sampling
+  uncount(N) %>%
+    
+    # Length-stratified subsample: up to 10 fish per length class per date
+  group_by(day, month, year, length) %>%
+  slice_sample(n = 10, replace = FALSE) %>%
+  ungroup() %>%
+    
+    # Recount to get LS table: N per age
+  count(day, month, year, Quarter, length, AGE_yrs, name = "N") %>%
+  ungroup()
+```
