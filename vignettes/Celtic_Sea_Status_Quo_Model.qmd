@@ -86,7 +86,8 @@ catch_distribution<-catch_distribution%>%filter(!species=="Dragonet")
 
 #DATRAS size distribution
 data(survey_length_distribution)
-survey_length_distribution<-survey_length_distribution%>%filter(!species=="Dragonet")
+survey_length_distribution<-survey_length_distribution%>%
+    filter(!species=="Dragonet")
 
 #DATRAS age at length distribution
 data(cs_age_size)
@@ -147,25 +148,26 @@ model_non_int <- model_non_int %>%
     steadySingleSpecies() %>%
     matchBiomasses()
 
-#model_non_int_1<-tuneEcopath(
-#    model_non_int, 
-#    catch = all_fishing,
-#    age_at_length = cs_age_size)
-
-#spawning_mort<-model_non_int_1
-#saveRDS(spawning_mort, "inst/extdata")
-
-spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
-
-sps<-species_params(spawning_mort)
+params<-model_non_int
+sps<-species_params(model_non_int)
 initial_Eiw<-array(dim=length(sps$species))
 for(i in 1:length(sps$species)){
     initial_Eiw[i]<-getExtEncounter(params)[i,1]/(w(params)[1]^sp[i,]$n)}
 sps$Eiw<-initial_Eiw
-species_params(spawning_mort)<-sps
+species_params(model_non_int)<-sps
 
-tuning_blue_whiting<-tuneEcopath(
+#spawning_mort<-tuneEcopath(
+#    model_non_int, 
+#    catch = all_fishing,
+#    age_at_length = cs_age_size)
+
+#spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
+blue_whiting<-tuneEcopath(
     spawning_mort, 
     catch = all_fishing,
     age_at_length = cs_age_size)
+
+#saveRDS(blue_whiting,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
+
+#default<-load("/Users/jessicawestworth/Desktop/default_params.rda")
 ```
