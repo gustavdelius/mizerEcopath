@@ -17,22 +17,27 @@ data("cs_age_size")
 
 ```{r}
 # Filter to include only 'immature' and 'mature'
-maturity_testing_filtered <- cs_age_size%>%
-    filter(Maturity %in% c("immature", "mature"))%>%
-    mutate(Maturity=ifelse(Maturity == "mature", 1, 0))%>%
-    uncount(CANoAtLngt) %>%
-    mutate(CANoAtLngt = 1)
-
-# Remove rows where LngtClass is NA or not finite
-maturity_testing_filtered <- maturity_testing_filtered %>%
-  filter(!is.na(LngtClass), is.finite(LngtClass), !is.na(Maturity))
-
+maturity_agg <- cs_age_size %>%
+  filter(Maturity %in% c("immature", "mature")) %>%
+  mutate(Maturity = ifelse(Maturity == "mature", 1, 0)) %>%
+  filter(!is.na(LngtClass), is.finite(LngtClass)) %>%
+  group_by(Scientific_name, LngtClass) %>%
+  summarise(
+    n_mature = sum(CANoAtLngt * Maturity),
+    n_total  = sum(CANoAtLngt),
+    .groups = "drop"
+  )
 #species remaining after filtering
-unique(maturity_testing_filtered$Scientific_name)
+unique(maturity_agg$Scientific_name)
+
 #"Merluccius merluccius"      "Chelidonichthys cuculus"    "Gadus morhua"               #"Lepidorhombus whiffiagonis""Melanogrammus aeglefinus"   "Merlangius merlangus"       #"Pleuronectes platessa"      "Scomber scombrus"         "Solea solea"
 
 #Linear model
-fit <- glm(Maturity ~ LngtClass*Scientific_name, family = binomial, data = maturity_testing_filtered)
+fit <- glm(
+  cbind(n_mature, n_total - n_mature) ~ LngtClass * Scientific_name,
+  family = binomial,
+  data = maturity_agg
+)
 coefs <- coef(fit)
 #Coefs are in odd order to extract LM of each species 
 #need to put negative intercept over slope
@@ -61,15 +66,20 @@ l_mat<-lm_fin
 library(ggplot2)
 
 # Base plot with points
-ggplot(maturity_testing_filtered, aes(x = LngtClass, y = Maturity, color = Scientific_name)) +
-  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
-  # Add logistic regression curves for each species
-  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+ggplot(maturity_agg,
+       aes(x = LngtClass,
+           y = n_mature / n_total,
+           color = Scientific_name)) +
+  geom_point() +
+  stat_smooth(
+    method = "glm",
+    method.args = list(family = "binomial"),
+    se = FALSE
+  ) +
   labs(
     x = "Length class",
-    y = "Probability of being mature",
-    color = "Species",
-    title = "Maturity vs Length by Species"
+    y = "Proportion mature",
+    title = "Maturity ogives by species"
   ) +
   theme_minimal()
 
@@ -79,22 +89,27 @@ ggplot(maturity_testing_filtered, aes(x = LngtClass, y = Maturity, color = Scien
 
 ```{r}
 # Filter to include only 'immature' and 'mature'
-maturity_testing_filtered <- cs_age_size%>%
-    filter(Maturity %in% c("immature", "mature"))%>%
-    mutate(Maturity=ifelse(Maturity == "mature", 1, 0))%>%
-    uncount(CANoAtLngt) %>%
-    mutate(CANoAtLngt = 1)
-
-# Remove rows where LngtClass is NA or not finite
-maturity_testing_filtered <- maturity_testing_filtered %>%
-  filter(!is.na(LngtClass), is.finite(LngtClass), !is.na(Maturity), !is.na(Age))
-
+maturity_agg <- cs_age_size %>%
+  filter(Maturity %in% c("immature", "mature")) %>%
+  mutate(Maturity = ifelse(Maturity == "mature", 1, 0)) %>%
+  filter(!is.na(Age), is.finite(Age)) %>%
+  group_by(Scientific_name, Age) %>%
+  summarise(
+    n_mature = sum(CANoAtLngt * Maturity),
+    n_total  = sum(CANoAtLngt),
+    .groups = "drop"
+  )
 #species remaining after filtering
-unique(maturity_testing_filtered$Scientific_name)
+unique(maturity_agg$Scientific_name)
+
+#"Merluccius merluccius"      "Chelidonichthys cuculus"    "Gadus morhua"               #"Lepidorhombus whiffiagonis""Melanogrammus aeglefinus"   "Merlangius merlangus"       #"Pleuronectes platessa"      "Scomber scombrus"         "Solea solea"
 
 #Linear model
-fit <- glm(Maturity ~ Age*Scientific_name, family = binomial, 
-           data = maturity_testing_filtered)
+fit <- glm(
+  cbind(n_mature, n_total - n_mature) ~ Age * Scientific_name,
+  family = binomial,
+  data = maturity_agg
+)
 coefs <- coef(fit)
 #Coefs are in odd order to extract LM of each species 
 #need to put negative intercept over slope
@@ -110,26 +125,33 @@ lm<-c(
 -1*(coefs[1]+coefs[10]) / (coefs[2]+coefs[18]))
 
 lm_fin <- data.frame(
-  Scientific_name = (c("Chelidonichthys cuculus","Gadus morhua",
-                       "Lepidorhombus whiffiagonis", 
-                       "Melanogrammus aeglefinus", "Merlangius merlangus",
-                       "Merluccius merluccius","Pleuronectes platessa",
-                       "Scomber scombrus","Solea solea")),
+  Scientific_name = (c("Chelidonichthys cuculus","Gadus morhua","Lepidorhombus whiffiagonis",
+                       "Melanogrammus aeglefinus","Merlangius merlangus",
+                       "Merluccius merluccius","Pleuronectes platessa","Scomber scombrus",
+                       "Solea solea")),
   age_mat = as.numeric(lm),
   row.names = NULL
 )
+
 age_mat<-lm_fin
 
+library(ggplot2)
+
 # Base plot with points
-ggplot(maturity_testing_filtered, aes(x = Age, y = Maturity, color = Scientific_name)) +
-  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
-  # Add logistic regression curves for each species
-  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+ggplot(maturity_agg,
+       aes(x = Age,
+           y = n_mature / n_total,
+           color = Scientific_name)) +
+  geom_point() +
+  stat_smooth(
+    method = "glm",
+    method.args = list(family = "binomial"),
+    se = FALSE
+  ) +
   labs(
-    x = "Age",
-    y = "Probability of being mature",
-    color = "Species",
-    title = "Maturity vs Length by Species"
+    x = "Length class",
+    y = "Proportion mature",
+    title = "Maturity ogives by species"
   ) +
   theme_minimal()
 ```
@@ -248,4 +270,50 @@ L50_CI <- boot_L50_df %>%
 #7 Pleuronectes platessa            17.7      15.5      19.1
 #8 Scomber scombrus                 28.1      27.1      29.1
 #9 Solea solea                      20.8      19.7      21.8
+```
+
+Now for boarfish
+
+```{r}
+boarfish<-read.csv("/Users/jessicawestworth/Desktop/caprosaper_jessicawestworth.csv")
+boarfish<-boarfish%>%
+    filter(!MATURE_IMATURE=="I")
+boarfish$MATURE_IMATURE<-as.numeric(boarfish$MATURE_IMATURE)
+
+fit <- glm(MATURE_IMATURE ~ AGE_yrs, family = binomial, 
+           data = boarfish)
+coefs <- coef(fit)
+
+agem<-c(-coefs[1]/coefs[2])
+
+ggplot(boarfish, aes(x = AGE_yrs, y = MATURE_IMATURE)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
+  # Add logistic regression curves for each species
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(
+    x = "Age",
+    y = "Probability of being mature",
+    color = "Species",
+    title = "Maturity vs Length by Species"
+  ) +
+  theme_minimal()
+
+
+fit <- glm(MATURE_IMATURE ~ TL_cm, family = binomial, 
+           data = boarfish)
+coefs <- coef(fit)
+
+lm<-c(-coefs[1]/coefs[2])
+
+ggplot(boarfish, aes(x = TL_cm, y = MATURE_IMATURE)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
+  # Add logistic regression curves for each species
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(
+    x = "Length class",
+    y = "Probability of being mature",
+    color = "Species",
+    title = "Maturity vs Length by Species"
+  ) +
+  theme_minimal()
 ```
