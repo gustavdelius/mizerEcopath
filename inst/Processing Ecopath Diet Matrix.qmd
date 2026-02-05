@@ -8,7 +8,6 @@ editor: visual
 
 ```{r}
 ecopath_diet <- read.csv("/Users/jessicawestworth/Desktop/DM_250709.csv")
-ecopath_diet<-na.omit(ecopath_diet)
 ```
 
 # Redistribute species to create Boarfish and Red Gurnard specific columns
@@ -16,7 +15,7 @@ ecopath_diet<-na.omit(ecopath_diet)
 ```{r}
 #from Lauria 2012, we know that red gurnards compose 37% of the gurnards
 #Gurnard row
-Gurnard<-ecopath_diet[41, ]
+Gurnard<-ecopath_diet[42, ]
 num_cols <- 3:66
 Red_gurnard<-Gurnard
 Other_Gurnards<-Gurnard
@@ -27,7 +26,7 @@ Other_Gurnards[, num_cols] <- Gurnard[, num_cols] * 0.63
 
 #from Lauria 2012, we know that red gurnards compose 97% of the small pelagic fish spp.
 #Boarfish row
-Boarfish <- ecopath_diet[44, ]
+Boarfish <- ecopath_diet[45, ]
 Boarfish<-Boarfish
 Small_pelag<-Boarfish
 num_cols <- 3:66
@@ -51,7 +50,7 @@ ecopath_diet$`Red gurnard`<-Red_gurnard
 ecopath_diet$Boarfish<-Boarfish
 ecopath_diet$Small.pelagic.spp.<-Boarfish
 
-diet<-ecopath_diet[c(1:66,70:73,67:69),]
+diet<-ecopath_diet[c(1:67,71:74,68:70),]
 
 use_data(diet, overwrite = TRUE)
 ```
