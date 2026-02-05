@@ -1,0 +1,57 @@
+---
+title: "Processing Ecopath Diet Matrix"
+format: html
+editor: visual
+---
+
+# Install Diet Matrix from Lauria 2016
+
+```{r}
+ecopath_diet <- read.csv("/Users/jessicawestworth/Desktop/DM_250709.csv")
+ecopath_diet<-na.omit(ecopath_diet)
+```
+
+# Redistribute species to create Boarfish and Red Gurnard specific columns
+
+```{r}
+#from Lauria 2012, we know that red gurnards compose 37% of the gurnards
+#Gurnard row
+Gurnard<-ecopath_diet[41, ]
+num_cols <- 3:66
+Red_gurnard<-Gurnard
+Other_Gurnards<-Gurnard
+Red_gurnard[, num_cols] <- Gurnard[, num_cols] * 0.37
+Red_gurnard$Prey...predator<-"Red gurnard"
+Other_Gurnards[, num_cols] <- Gurnard[, num_cols] * 0.63
+
+
+#from Lauria 2012, we know that red gurnards compose 97% of the small pelagic fish spp.
+#Boarfish row
+Boarfish <- ecopath_diet[44, ]
+Boarfish<-Boarfish
+Small_pelag<-Boarfish
+num_cols <- 3:66
+Boarfish[, num_cols]<- Boarfish[, num_cols] * 0.97
+Boarfish$Prey...predator<-"Boarfish"
+Small_pelag[, num_cols]<- Boarfish[, num_cols] * 0.03
+
+#Combine rows into diet data
+ecopath_diet<-ecopath_diet[-c(41,44),]
+ecopath_diet<-rbind(ecopath_diet,Other_Gurnards, Red_gurnard, Boarfish, Small_pelag)
+
+#Now columns
+Red_gurnard<-ecopath_diet[, 43]
+Boarfish<-ecopath_diet[, 46]
+
+ecopath_diet<-ecopath_diet[,-43]
+ecopath_diet<-ecopath_diet[,-45]
+
+ecopath_diet$Gurnards<-Red_gurnard
+ecopath_diet$`Red gurnard`<-Red_gurnard
+ecopath_diet$Boarfish<-Boarfish
+ecopath_diet$Small.pelagic.spp.<-Boarfish
+
+diet<-ecopath_diet[c(1:66,70:73,67:69),]
+
+use_data(diet, overwrite = TRUE)
+```
