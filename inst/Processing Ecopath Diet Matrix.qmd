@@ -7,50 +7,52 @@ editor: visual
 # Install Diet Matrix from Lauria 2016
 
 ```{r}
-ecopath_diet <- read.csv("/Users/jessicawestworth/Desktop/DM_250709.csv")
+ecopath_diet <- read.csv("/Users/jessicawestworth/Desktop/Ecopath-Diet_updated_reformatted.csv")
+
 ```
 
 # Redistribute species to create Boarfish and Red Gurnard specific columns
 
 ```{r}
 #from Lauria 2012, we know that red gurnards compose 37% of the gurnards
-#Gurnard row
-Gurnard<-ecopath_diet[42, ]
-num_cols <- 3:66
+#Gurnard row #38
+Gurnard<-ecopath_diet[38, ]
+num_cols <- 3:67
 Red_gurnard<-Gurnard
 Other_Gurnards<-Gurnard
 Red_gurnard[, num_cols] <- Gurnard[, num_cols] * 0.37
-Red_gurnard$Prey...predator<-"Red gurnard"
+Red_gurnard$Group.name<-"Red gurnard"
+Red_gurnard$...1<-66
 Other_Gurnards[, num_cols] <- Gurnard[, num_cols] * 0.63
 
 
 #from Lauria 2012, we know that red gurnards compose 97% of the small pelagic fish spp.
 #Boarfish row
-Boarfish <- ecopath_diet[45, ]
+Boarfish <- ecopath_diet[41, ]
 Boarfish<-Boarfish
 Small_pelag<-Boarfish
-num_cols <- 3:66
+num_cols <- 3:67
 Boarfish[, num_cols]<- Boarfish[, num_cols] * 0.97
-Boarfish$Prey...predator<-"Boarfish"
+Boarfish$Group.name<-"Boarfish"
+Boarfish$...1<-67
 Small_pelag[, num_cols]<- Boarfish[, num_cols] * 0.03
 
 #Combine rows into diet data
-ecopath_diet<-ecopath_diet[-c(42,45),]
-ecopath_diet<-rbind(ecopath_diet,Other_Gurnards, Red_gurnard, Boarfish, Small_pelag)
+ecopath_diet<-ecopath_diet[-c(38,41),]
+ecopath_diet<-rbind(ecopath_diet, Red_gurnard, Boarfish, Other_Gurnards, Small_pelag)
+rownames(ecopath_diet) <- NULL
+
+diet<-ecopath_diet[c(1:37,66,38:39,67,40:65),]
+rownames(diet) <- NULL
 
 #Now columns
-Red_gurnard<-ecopath_diet[, 43]
-Boarfish<-ecopath_diet[, 46]
+Red_gurnard<-diet[, 40]
+Boarfish<-diet[, 43]
 
-ecopath_diet<-ecopath_diet[,-43]
-ecopath_diet<-ecopath_diet[,-45]
+diet$X66<-Red_gurnard
+diet$X67<-Boarfish
 
-ecopath_diet$Gurnards<-Red_gurnard
-ecopath_diet$`Red gurnard`<-Red_gurnard
-ecopath_diet$Boarfish<-Boarfish
-ecopath_diet$Small.pelagic.spp.<-Boarfish
-
-diet<-ecopath_diet[c(1:67,71:74,68:70),]
+rownames(diet) <- NULL
 
 use_data(diet, overwrite = TRUE)
 ```
