@@ -55,26 +55,26 @@ life_history_fishbase$l_mat<-c(27.15, 42.36707, 23.473, 21.13458, 25.1, 32.87942
 
 #Load in ecopath data
 ecopath_estimates <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
-    #Biomass
-observed_biomass_ecopath<-ecopath_estimates[c('Group.name','Biomass..t.km.2.')]%>%
-    mutate(species= Group.name,
-           biomass_observed = Biomass..t.km.2.)%>%
-    select(-Group.name,-Biomass..t.km.2.)%>%
-    filter(species %in% c("Blue whiting","Boarfish","Cod","Dragonet",
-                          "Haddock","Hake","Herring","Horse mackerel",
-                          "Mackerel","Megrim","Monkfish","Plaice",
-                          "Red gurnard","Sole","Whiting"))
-observed_biomass_ecopath<-na.omit(observed_biomass_ecopath)
 
-#Biomass from literature for Red gurnard, Boarfish, and dragonets
-Boarfish<-data.frame(species="Boarfish", biomass_observed=1.4126)
-Red_gurnard<-data.frame(species="Red gurnard", biomass_observed=0.0058)
-#combine the ecopath species and additional species
-observed_biomasses<-rbind(observed_biomass_ecopath,Boarfish,Red_gurnard)
-observed_biomasses<-arrange(observed_biomasses,species)
+Gurnards <- ecopath_estimates[46, ]
+Boarfish <- ecopath_estimates[49, ]
+num_cols <- sapply(Gurnards, is.numeric)
+Red_gurnard<-Gurnards
+Other_Gurnards<-Gurnards
+Boarfish<-Boarfish
+Small_pelag<-Boarfish
+Red_gurnard[num_cols] <- Gurnards[num_cols] * 0.37
+Red_gurnard$Group.name<-"Red gurnard"
+Other_Gurnards[num_cols] <- Gurnards[num_cols] * 0.63
+Boarfish[num_cols]<- Boarfish[num_cols] * 0.97
+Boarfish$Group.name<-"Boarfish"
+Small_pelag[num_cols]<- Boarfish[num_cols] * 0.03
+#doesn't matter that tropic level and hab area are being affected as they are not used in calculations
+ecopath_params<-ecopath_estimates[-c(46,49),]
+ecopath_params<-rbind(ecopath_params,Other_Gurnards, Red_gurnard, Boarfish, Small_pelag)
 
 #Diet matrix
-data(diets)
+data(diet)
 
 #Deaths from fishing
 data(fishing_deaths)
@@ -91,6 +91,8 @@ survey_length_distribution<-survey_length_distribution%>%
 
 #DATRAS age at length distribution
 data(cs_age_size)
+boar<-readRDS("/Users/jessicawestworth/Desktop/boarfish_struct_like_DATRAS.rds")
+cs_age_size<-rbind(cs_age_size,boar)
 
 #determining l_max comparing landings max length versus fishbase max length recorded value
 observed_max <- catch_distribution %>%
@@ -121,8 +123,27 @@ sp_params<-life_histories%>%
            p=0.7,
            d=-0.3,
            alpha=0.7,
-           biomass_cutoff=w_mat)%>%
-    left_join(observed_biomasses, by="species")
+           biomass_cutoff=w_mat)
+
+species_to_groups <- list(
+    Herring          = "Herring",
+    Cod              = c("Cod", "Juvenile cod"),
+    Haddock          = c("Haddock","Juvenile haddock"),
+    Whiting          = c("Whiting","Juvenile whiting"),
+    `Blue whiting`   = c("Blue whiting","Juvenile blue whiting"),
+    Hake             = c("Hake","Juvenile hake"),
+    Monkfish         = c("Monkfish","Juvenile monkfish"),
+    `Horse mackerel` = "Horse mackerel",
+    Mackerel         = "Mackerel",
+    Plaice           = c("Plaice","Juvenile plaice"),
+    Megrim           = c("Megrim","Juvenile megrim"),
+    Sole             = "Sole",
+    Boarfish         = "Boarfish",
+    `Red gurnard`      = "Red gurnard"
+)
+
+sp <- sp_params
+sp <- addEcopathParams(sp, ecopath_params, species_to_groups)
 ```
 
 ## Build Non-Interacting Model
@@ -156,18 +177,52 @@ for(i in 1:length(sps$species)){
 sps$Eiw<-initial_Eiw
 species_params(model_non_int)<-sps
 
+#set the spawning time, spawning concentration and mu mortality of species to predetermined values.
+
 #spawning_mort<-tuneEcopath(
 #    model_non_int, 
 #    catch = all_fishing,
 #    age_at_length = cs_age_size)
 
-#spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
+#saveRDS(spawning_mort,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
+```
+
+Add diets and predation kernel
+
+```{r}
+#Adjust diet matrix for integration into model using reduceEcopathDiet
+dm<-reduceEcopathDiet(
+    species_params = species_params(spawning_mort),
+    ecopath_diet   = diet,
+    ecopath_params = ecopath_params
+)
+
+# Stomach-fit parameters (keep separate; align by scientific name), cannot do right now because the new species are not in the processed file right now so... yeah...
+data("stomach_data_fit")
+stf<-stomach_data_fit
+sp  <- species_params(spawning_mort)
+idx <- match(sp$Scientific_name, stf$species)  # align order to species_params
+
+lambda <- 2
+sp$pred_kernel_type <- c("power_law","lognormal","power_law","power_law","power_law","power_law","power_law","power_law","power_law","power_law","power_law","lognormal","power_law","power_law")
+sp$kernel_exp <- stf$alpha[idx] + 4/3 - lambda
+sp$kernel_l_l <- stf$ll[idx]
+sp$kernel_u_l <- stf$ul[idx]
+sp$kernel_l_r <- stf$lr[idx]
+sp$kernel_u_r <- stf$ur[idx]
+
+species_params(spawning_mort) <- sp
+```
+
+Continuous re-tuning
+
+```{r}
+spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
 blue_whiting<-tuneEcopath(
     spawning_mort, 
     catch = all_fishing,
-    age_at_length = cs_age_size)
+    age_at_length = cs_age_size,
+    diet = dm)
 
 #saveRDS(blue_whiting,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
-
-#default<-load("/Users/jessicawestworth/Desktop/default_params.rda")
 ```
