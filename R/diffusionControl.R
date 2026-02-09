@@ -78,6 +78,6 @@ diffusionControlUI <- function(params, input) {
                     value = sp$d_over_g,
                     min = signif(sp$d_over_g / 2, 2),
                     max = signif((sp$d_over_g + 0.1) * 1.5, 2),
-                    step = 0.01)
+                    step = 0.0001)
     )
 }
