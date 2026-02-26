@@ -17,8 +17,8 @@ Creating a model representing the average state of the Celtic Sea from 2012 to 2
 #| results: 'hide'
 
 #library(remotes)
-#install_github("sizespectrum/mizer", ref="diffusion") 
-#install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
+install_github("sizespectrum/mizer", ref="diffusion_gemini")
+install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
 library(mizer)
 library(mizerEcopath)
 library(dplyr)
@@ -198,13 +198,13 @@ dm<-reduceEcopathDiet(
 )
 
 # Stomach-fit parameters (keep separate; align by scientific name), cannot do right now because the new species are not in the processed file right now so... yeah...
-data("stomach_data_fit")
+data(stomach_data_fit)
 stf<-stomach_data_fit
 sp  <- species_params(spawning_mort)
 idx <- match(sp$Scientific_name, stf$species)  # align order to species_params
 
 lambda <- 2
-sp$pred_kernel_type <- c("power_law","lognormal","power_law","power_law","power_law","power_law","power_law","power_law","power_law","power_law","power_law","lognormal","power_law","power_law")
+sp$pred_kernel_type <- "power_law"
 sp$kernel_exp <- stf$alpha[idx] + 4/3 - lambda
 sp$kernel_l_l <- stf$ll[idx]
 sp$kernel_u_l <- stf$ul[idx]
@@ -218,6 +218,7 @@ Continuous re-tuning
 
 ```{r}
 spawning_mort<-readRDS("/Users/jessicawestworth/Desktop/spawning_mort.rds")
+
 blue_whiting<-tuneEcopath(
     spawning_mort, 
     catch = all_fishing,
@@ -225,4 +226,7 @@ blue_whiting<-tuneEcopath(
     diet = dm)
 
 #saveRDS(blue_whiting,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
+
+p<-computeEnergeticComponents(blue_whiting)
+p<-matchDiet(p, diet_matrix=dm)
 ```
