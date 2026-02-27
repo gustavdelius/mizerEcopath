@@ -111,11 +111,8 @@ reference:
   desc: >
     Functions for solving diffusion equations in mizer models.
   contents:
-  - steadySingleSpecies
   - solve_double_sweep
-  - steady_diffusion
   - project_diffusion
-  - solve_diffusion_ode
   - solve_diffusion_pde
 - title: "Age-at-length"
   desc: >
