@@ -65,12 +65,12 @@ setEnergeticComponents <- function(params, feeding_level, critical_feeding_level
     }
 
     #Check that h is Inf
-    if(any(sp$h != Inf)) {
+    if (!all(is.infinite(sp$h))) {
         stop("h must be Inf before calling this function")
     }
 
     #Check that ks is 0
-    if(any(sp$ks)>0) {
+    if (!all(sp$ks == 0)) {
         stop("ks must be 0 before calling this function")
     }
 
