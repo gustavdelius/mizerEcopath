@@ -55,6 +55,11 @@
 setEnergeticComponents <- function(params, feeding_level, critical_feeding_level) {
     sp <- params@species_params
 
+    # Check that params describes a non-interacting model
+    if (!isTRUE(all.equal(getEncounter(params), getExtEncounter(params)))) {
+        stop("This function only works for models where all encounter is external encounter. Try calling `makeNoninteracting()` first.")
+    }
+
     # Check that n and p exponents are equal
     bad <- which(sp$n != sp$p)
     if (length(bad) > 0) {
@@ -74,18 +79,11 @@ setEnergeticComponents <- function(params, feeding_level, critical_feeding_level
         stop("ks must be 0 before calling this function")
     }
 
-    # Check that the params object is allometric
-    if (!isTRUE(isAllometric(spawning_mort))) {
-        stop("This function only works for models made up of allometric rates.")
-    }
-
-    # Check that params describes a non-interacting model
-    if (!isTRUE(all.equal(getEncounter(params), getExtEncounter(params)))) {
-        stop("This function only works for models where all encounter is external encounter. Try calling `makeNoninteracting()` first.")
-    }
+    # Check that feeding level is supplied
     if (missing(feeding_level)) {
             stop("You need to supply the desired feeding_level.")
     }
+
     if (missing(critical_feeding_level)) {
         critical_feeding_level<-0.2
         critical_feeding_level <- rep(critical_feeding_level, nrow(sp))
@@ -131,6 +129,11 @@ setEnergeticComponents <- function(params, feeding_level, critical_feeding_level
             "Critical feeding level must be less than the feeding level for species:",
             paste(rownames(sp)[bad], collapse = ", ")
         ))
+    }
+
+    # Check that the params object is allometric
+    if (!isTRUE(isAllometric(params))) {
+        stop("This function only works for models made up of allometric rates.")
     }
 
     # Save feeding level in species params
