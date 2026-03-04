@@ -70,15 +70,17 @@
 #' examples: (cannot be run yet because the model is not yet saved)
 #' results <- calculate_mizer_flux(params, c_value = 0.2)
 
-compute_flux <- function(params, c_value = 1) {
+compute_flux <- function(params, c_value = 1, n=initialN(params),
+                         n_pp=params@initial_n_pp,
+                         n_other=params@initial_n_other) {
     #Basic parameters
     w <- params@w
     species_names <- species_params(params)$species
     num_species <- length(species_names)
 
     #Growth and Population Density
-    g <- getEGrowth(params)
-    n <- initialN(params)
+    g <- getEGrowth(params, n = n, n_pp = n_pp, n_other = n_other)
+    n <- n
 
     #Advective Flux (J_adv)
     J_adv <- g[, -ncol(g)] * n[, -ncol(n)]
@@ -110,6 +112,9 @@ compute_flux <- function(params, c_value = 1) {
             J_diff[i, j] <- (0.5) * ((d_mat[i, j] * n[i, j] - d_mat[i, j-1] * n[i, j-1]) / (w[j] - w[j-1]))
         }
     }
+
+    # set the first size class to 0
+    J_diff[, 1] <- 0
 
     #Total Flux (J) and Fishing Mortality (f)
     J <- J_adv - J_diff
