@@ -21,13 +21,11 @@ mortality remains aligned with the ecosystem's natural energy flow.}
 }
 \value{
 A list containing:
-\itemize{
-\item \code{J_adv}: Advective flux (biomass flow from mean growth).
-\item \code{J_diff}: Diffusive flux (stochastic growth spread).
-\item \code{J}: Total flux (Net biomass production rate).
-\item \code{f}: Fishing mortality aligned with ssBH rules.
-\item \code{c_value}: The proportionality constant used.
-}
+\code{J_adv}: Advective flux (biomass flow from mean growth).
+\code{J_diff}: Diffusive flux (stochastic growth spread).
+\code{J}: Total flux (Net biomass production rate).
+\code{f}: Fishing mortality aligned with ssBH rules.
+\code{c_value}: The proportionality constant used.
 }
 \description{
 This function calculates the advective and diffusive fluxes through the size
@@ -78,6 +76,10 @@ where \emph{D_i(w)} is the diffusion coefficient calculated from the
 \strong{4. Resulting Fishing Mortality (\emph{f}):}
 \deqn{f_i(w) = c \cdot w \cdot J_i(w)}
 }
+}
+\examples{
+(cannot be run yet because the model is not yet saved)
+results <- calculate_mizer_flux(params, c_value = 0.2)
 }
 \references{
 Law, R., & Plank, M.J. (2022). Balanced exploitation and coexistence.

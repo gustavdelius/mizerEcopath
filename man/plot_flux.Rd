@@ -20,15 +20,6 @@ plot_flux(flux_list, variable = "f")
 \value{
 A ggplot object with facets for each species, allowing for
 comparison of biomass flow across different life histories.
-
-examples: (cannot be run yet because the model is not yet saved)Calculate fluxes for a Celtic Sea model
-
-fluxes <- calculate_mizer_flux(params, c_value = 0.05)Visualize the Total Flux (Production)
-
-plot_mizer_flux(fluxes, variable = "J")Visualize the resulting Balanced Harvest fishing mortality
-
-plot_mizer_flux(fluxes, variable = "f")
-}
 }
 \description{
 Visualizes the components of the size-spectrum flux. This is particularly
@@ -40,4 +31,18 @@ In a PssBH (Partial species-size-level Balanced Harvesting) model, one
 would expect the \code{"f"} plot to show zero mortality for weights
 below the 10cm threshold, and a curve mirroring the total flux \code{"J"}
 for larger individuals.
+}
+\examples{
+(cannot be run yet because the model is not yet saved)
+
+# Calculate fluxes for a Celtic Sea model
+fluxes <- calculate_mizer_flux(params, c_value = 0.05)
+
+# Visualize the Total Flux (Production)
+plot_mizer_flux(fluxes, variable = "J")
+
+# Visualize the resulting Balanced Harvest fishing mortality
+plot_mizer_flux(fluxes, variable = "f")
+
+
 }
