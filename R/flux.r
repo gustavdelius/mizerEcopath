@@ -53,21 +53,19 @@
 #' \deqn{f_i(w) = c \cdot w \cdot J_i(w)}
 #'
 #' @return A list containing:
-#' \itemize{
-#'   \item \code{J_adv}: Advective flux (biomass flow from mean growth).
-#'   \item \code{J_diff}: Diffusive flux (stochastic growth spread).
-#'   \item \code{J}: Total flux (Net biomass production rate).
-#'   \item \code{f}: Fishing mortality aligned with ssBH rules.
-#'   \item \code{c_value}: The proportionality constant used.
-#' }
+#'  \code{J_adv}: Advective flux (biomass flow from mean growth).
+#'  \code{J_diff}: Diffusive flux (stochastic growth spread).
+#'  \code{J}: Total flux (Net biomass production rate).
+#'  \code{f}: Fishing mortality aligned with ssBH rules.
+#'  \code{c_value}: The proportionality constant used.
+#'
 #'
 #' @references
 #' Law, R., & Plank, M.J. (2022). Balanced exploitation and coexistence.
 #' Zhou et al. (2019). Balanced harvest: Concept, policies and implementation.
-#'
 #' @export
 #'
-#' examples: (cannot be run yet because the model is not yet saved)
+#' @examples (cannot be run yet because the model is not yet saved)
 #' results <- calculate_mizer_flux(params, c_value = 0.2)
 
 compute_flux <- function(params, c_value = 1, n=initialN(params),
@@ -84,7 +82,7 @@ compute_flux <- function(params, c_value = 1, n=initialN(params),
 
     #Advective Flux (J_adv)
     J_adv <- g[, -ncol(g)] * n[, -ncol(n)]
-    RDD <- as.matrix(getRDD(params))
+    RDD <- as.matrix(getRDD(params, n = n, n_pp = n_pp, n_other = n_other))
     J_adv <- cbind(RDD, J_adv)
     colnames(J_adv) <- w
 
@@ -166,7 +164,7 @@ compute_flux <- function(params, c_value = 1, n=initialN(params),
 #' @return A ggplot object with facets for each species, allowing for
 #' comparison of biomass flow across different life histories.
 #'
-#' examples: (cannot be run yet because the model is not yet saved)
+#' @examples (cannot be run yet because the model is not yet saved)
 #'
 #' # Calculate fluxes for a Celtic Sea model
 #' fluxes <- calculate_mizer_flux(params, c_value = 0.05)
@@ -176,7 +174,7 @@ compute_flux <- function(params, c_value = 1, n=initialN(params),
 #'
 #' # Visualize the resulting Balanced Harvest fishing mortality
 #' plot_mizer_flux(fluxes, variable = "f")
-#' }
+#'
 #'
 #' @export
 
