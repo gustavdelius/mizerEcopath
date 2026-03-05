@@ -7,7 +7,8 @@
 steadySingleSpecies(
   params,
   species = NULL,
-  keep = c("egg", "biomass", "number")
+  keep = c("egg", "biomass", "number"),
+  ...
 )
 }
 \arguments{
@@ -23,22 +24,11 @@ choices are "egg" which keeps the egg density constant, "biomass" which
 keeps the total biomass of the species constant and "number" which keeps
 the total number of individuals constant.}
 }
-\value{
-A MizerParams object in which the initial abundances of the selected
-species are changed to their single-species steady state abundances.
-}
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
-This first calculates growth and death rates that arise from the current
-initial abundances. Then it uses these growth and death rates to
-determine the steady-state abundances of the selected species.
 }
 \details{
-If the species parameters \code{d_over_g} is set, then the diffusion rate is
-calculated from the growth rate at the smallest size and the \code{d_over_g}
-parameter. If \code{d_over_g} is not set, then the diffusion is set to zero.
-
-The result of applying this function is of course not a multi-species steady
-state, because after changing the abundances of the selected species the
-growth and death rates will have changed.
+This is a thin wrapper around \code{\link[mizer:steadySingleSpecies]{mizer::steadySingleSpecies()}} so that
+all \code{mizerEcopath} code uses the implementation provided by the
+installed version of \code{mizer}.
 }
