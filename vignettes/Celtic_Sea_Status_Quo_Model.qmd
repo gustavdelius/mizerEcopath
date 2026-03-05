@@ -17,8 +17,8 @@ Creating a model representing the average state of the Celtic Sea from 2012 to 2
 #| results: 'hide'
 
 #library(remotes)
-install_github("sizespectrum/mizer", ref="diffusion_gemini")
-install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
+#install_github("sizespectrum/mizer", ref="diffusion_gemini")
+#install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
 library(mizer)
 library(mizerEcopath)
 library(dplyr)
@@ -225,7 +225,7 @@ blue_whiting<-tuneEcopath(
     age_at_length = cs_age_size,
     diet = dm)
 
-#saveRDS(blue_whiting,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
+#saveRDS(spawning_mort,"/Users/jessicawestworth/Desktop/spawning_mort.rds")
 
 p<-computeEnergeticComponents(blue_whiting)
 p<-matchDiet(p, diet_matrix=dm)
