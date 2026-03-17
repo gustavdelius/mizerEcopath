@@ -212,7 +212,7 @@ species_params(model_non_int) <- species_params
 
 model_non_int <- model_non_int %>%
     matchGrowth() %>%
-    mizerEcopath::steadySingleSpecies() %>%
+    steadySingleSpecies() %>%
     matchBiomasses()
 
 model_non_int <- model_non_int %>%

@@ -101,7 +101,7 @@ species reaches its maturity weight <code>w_mat</code> by the age at maturity
 <code>age_mat</code>.  The mortality-rate coefficient is then derived from that growth
 rate and set so that the juvenile biomass spectrum has a slope of –0.2.</p>
 <p>The function uses <code>matchBiomasses()</code> to match the biomass to the observations
-and <code><a href="steadySingleSpecies.html">mizerEcopath::steadySingleSpecies()</a></code> to bring each species to steady state. It then
+and <code><a href="steadySingleSpecies.html">steadySingleSpecies()</a></code> to bring each species to steady state. It then
 calls <code>setBevertonHolt()</code> to set the reproduction level to zero</p>
 <p>Because the model does not make use of the resource spectrum, the resource
 dynamics is switched off.</p>
