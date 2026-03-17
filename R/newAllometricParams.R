@@ -36,6 +36,7 @@ newAllometricParams <- function(species_params, no_w = 200) {
 
     # Impose relation between exponents
     sp <- set_species_param_default(sp, "n", 0.7)
+    sp <- set_species_param_default(sp, "p", 0.7)
     sp <- set_species_param_default(sp, "d", sp$n - 1)
 
     # Set default assimilation efficiency
