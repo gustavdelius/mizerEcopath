@@ -8,7 +8,7 @@ tuneEcopath(
   params,
   catch = NULL,
   diet = NULL,
-  controls = c("growth", "diffusion", "fishing", "reproduction", "other"),
+  controls = c("growth", "diffusion", "fishing", "reproduction", "other", "match"),
   tabs = c("Survey", "Spectra", "Catch", "Growth", "Repro", "Diet", "Death"),
   match = c("growth", "yield", "catch", "consumption"),
   preserve = c("erepro", "reproduction_level", "R_max"),
