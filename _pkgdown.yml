@@ -17,6 +17,7 @@ reference:
   - makeInteracting
   - makeNoninteracting
   - setFeedingLevel
+  - setFeedingLevels
 - title: "Calibrating model"
   desc: >
     Tools to match model output to empirical observations.
@@ -92,6 +93,7 @@ reference:
   - valid_catch
   - addCatch
   - catchSelectivity
+  - has_concept("helper")
 - title: "Obsolete?"
   desc: >
     Functions retained for compatibility or reference but not in active use.
