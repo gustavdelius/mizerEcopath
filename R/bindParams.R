@@ -33,7 +33,7 @@ bindParams <- function(...) {
     if (length(params_list) < 2) {
         stop("bindParams() requires at least two MizerParams objects.")
     }
-    params_list <- lapply(params_list, validParams)
+    params_list <- params_list <- unname(lapply(params_list, validParams))
 
     # Check identical w and w_full ----
     w_ref <- params_list[[1]]@w

@@ -70,6 +70,15 @@ test_that("bindParams accepts a list of params", {
     expect_identical(pc_dots@psi, pc_list@psi)
 })
 
+test_that("bindParams named list does not corrupt linecolour names", {
+    p <- newTraitParams(no_sp = 4)
+    sp <- p@species_params$species
+    p1 <- removeSpecies(p, sp[3:4])
+    p2 <- removeSpecies(p, sp[1:2])
+    pc <- bindParams(list(A = p1, B = p2))
+    expect_identical(names(pc@linecolour)[1:4], sp)
+})
+
 test_that("bindParams combines gears correctly", {
     p <- newTraitParams(no_sp = 4)
     sp <- p@species_params$species
