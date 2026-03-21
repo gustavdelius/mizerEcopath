@@ -1,0 +1,33 @@
+---
+title: "Building a mizer model"
+format: html
+editor: visual
+---
+
+The important feature of mizer is that it captures the dependence of both the growth rate and mortality rate of a fish on the abundance of predators and prey of the appropriate sizes. These rates depend the size structure of the population. As a fish grows up, there is a change in the size at which it feeds and the size that its predators need to have. Mizer is able to capture this interesting interplay between the size structure of the different species making up the ecosystem.
+
+This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations. Here we will describe a way to avoid these difficulties.
+
+## Sheldon spectrum
+
+The first difficulty is that we do not want to model the details of all the species that make up the ecosystem. There are too many and about most of them we know too little. Most species are not undergoing stock assessment, so we do not even know how abundant they are. Given that the growth and death rates for the species that we do care about depend on the abundances of all their prey and predator species, we have a potential problem.
+
+The way we circumvent our lack of detailed knowledge of the abundances of all species in the ecosystem at all sizes is to make use of the observation by Sheldon that the total abundance of organisms in the ocean follows approximately a power law
+
+$$
+N_c(w) = N_c w^{-\lambda}
+$$
+
+with the exponent $\lambda\approx 2$.This, together with the allometric assumptions made for the physiological rates in mizer, leads to power-law encounter and mortality rates:
+
+$$
+E_i(w) = E_i w^n,\qquad\qquad \mu_i(w)=\mu_i w^{n-1},
+$$
+
+where the exponent $n$ is usually assumed to lie somewhere between $n=2/3$ and $n=3/4$.
+
+The species that we do model explicitly are forming part of this power-law community. So the predation encounter and predation mortality among the modelled species will be part of these power-law rates:
+
+$$
+E_i(w) = E_i w^n,\qquad\qquad \mu_i(w)=\mu_i w^{n-1},
+$$
