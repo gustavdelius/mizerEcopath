@@ -23,7 +23,7 @@ are set to zero."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,9 +90,8 @@ are set to zero.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>If the exponent <code>n</code> of the power-law encounter rate is not provided as a
-species parameter, it is set to 0.7.  The exponent <code>d</code> of the power-law
-mortality rate is always imposed as <code>n – 1</code>, regardless of any supplied
-value.</p>
+species parameter, it is set to 0.7.  If the exponent <code>d</code> of the power-law
+mortality rate is  not provided as a species parameter, it is set to <code>n – 1</code>.</p>
 <p>If the species parameter <code>alpha</code>, which gives the proportion of the
 consumption that is assimilated, is not provided, it is set to 0.8, the
 default value used by Ecopath.</p>
@@ -101,7 +100,7 @@ species reaches its maturity weight <code>w_mat</code> by the age at maturity
 <code>age_mat</code>.  The mortality-rate coefficient is then derived from that growth
 rate and set so that the juvenile biomass spectrum has a slope of –0.2.</p>
 <p>The function uses <code>matchBiomasses()</code> to match the biomass to the observations
-and <code><a href="steadySingleSpecies.html">steadySingleSpecies()</a></code> to bring each species to steady state. It then
+and <code>steadySingleSpecies()</code> to bring each species to steady state. It then
 calls <code>setBevertonHolt()</code> to set the reproduction level to zero</p>
 <p>Because the model does not make use of the resource spectrum, the resource
 dynamics is switched off.</p>

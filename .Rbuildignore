@@ -5,3 +5,5 @@
 ^docs$
 ^pkgdown$
 ^.lintr
+^\.positai$
+^\.claude$

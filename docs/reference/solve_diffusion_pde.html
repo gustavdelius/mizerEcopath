@@ -15,7 +15,7 @@ $$\dot{n}(x,t) = (d(x) n'(x,t))'-(g(x)n(x,t))'-\mu(x)n(x,t)$$"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,7 @@ $$\dot{n}(x,t) = (d(x) n'(x,t))'-(g(x)n(x,t))'-\mu(x)n(x,t)$$</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">solve_diffusion_pde</span><span class="op">(</span><span class="va">d</span>, <span class="va">g</span>, <span class="va">mu</span>, <span class="va">emigration</span>, <span class="va">n_init</span>, <span class="va">h</span>, <span class="va">dt</span>, <span class="va">nsteps</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">solve_diffusion_pde</span><span class="op">(</span><span class="va">d</span>, <span class="va">g</span>, <span class="va">mu</span>, <span class="va">n_init</span>, <span class="va">h</span>, <span class="va">dt</span>, <span class="va">nsteps</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -73,10 +73,6 @@ $$\dot{n}(x,t) = (d(x) n'(x,t))'-(g(x)n(x,t))'-\mu(x)n(x,t)$$</p>
 
 <dt id="arg-mu">mu<a class="anchor" aria-label="anchor" href="#arg-mu"></a></dt>
 <dd><p>A vector of reaction rates.</p></dd>
-
-
-<dt id="arg-emigration">emigration<a class="anchor" aria-label="anchor" href="#arg-emigration"></a></dt>
-<dd><p>A vector of emigration rates.</p></dd>
 
 
 <dt id="arg-n-init">n_init<a class="anchor" aria-label="anchor" href="#arg-n-init"></a></dt>
