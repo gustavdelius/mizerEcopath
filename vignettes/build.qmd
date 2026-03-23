@@ -8,7 +8,7 @@ The important feature of mizer is that it captures the dependence of both the gr
 
 This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations. Here we will describe a way to avoid these difficulties.
 
-## Sheldon spectrum
+## Sheldon Spectrum and Allometric Rates
 
 The first difficulty is that we do not want to model the details of all the species that make up the ecosystem. There are too many and about most of them we know too little. Most species are not undergoing stock assessment, so we do not even know how abundant they are. Given that the growth and death rates for the species that we do care about depend on the abundances of all their prey and predator species, we have a potential problem.
 
@@ -18,16 +18,74 @@ $$
 N_c(w) = N_c w^{-\lambda}
 $$
 
-with the exponent $\lambda\approx 2$.This, together with the allometric assumptions made for the physiological rates in mizer, leads to power-law encounter and mortality rates:
+with the exponent $\lambda\approx 2$. The $N_c$ on the right-hand side is just a constant that is independent of $w$. The subscript $c$ stands for "community". We are not disaggregating by species.
+
+All the individuals making up this community can be both predator on smaller individuals and prey for larger individuals. With the allometric assumptions made for the physiological rates in mizer, this leads to power-law encounter and natural mortality rates:
 
 $$
-E_i(w) = E_i w^n,\qquad\qquad \mu_i(w)=\mu_i w^{n-1},
+E_i(w) = E_i w^n,\qquad\qquad \mu_{nat.i}(w)=\mu_{nat.i} w^{n-1}.
 $$
 
-where the exponent $n$ is usually assumed to lie somewhere between $n=2/3$ and $n=3/4$.
+The metabolic exponent $n$ is usually assumed to lie somewhere between $n=2/3$ and $n=3/4$. The subscript $i$ labels the species. The subscript $nat$ on the mortality rate denotes that this is the mortality from natural sources.
 
-The species that we do model explicitly are forming part of this power-law community. So the predation encounter and predation mortality among the modelled species will be part of these power-law rates:
+## Internal and External Rates
+
+The species that we do model explicitly are forming part of the power-law community $N_c$. So the predation encounter and predation mortality among the modelled species gives a part of those rates. But there is also a part that comes from sources that are external to the model, so we split the rates into internal and external rates:
 
 $$
-E_i(w) = E_i w^n,\qquad\qquad \mu_i(w)=\mu_i w^{n-1},
+E_i(w) = E_{int.i}(w) + E_{ext.i}(w),\qquad\qquad \mu_{nat.i}(w)=\mu_{int.i}(w)+\mu_{ext.i}(w).
 $$
+
+To get the total mortality rate we need to add the fishing mortality:
+
+$$
+\mu_i(w)=\mu_{nat.i}(w)+F_i(w).
+$$
+
+## Growth Rate
+
+The rate $g_i(w)$ at which an individual of species $i$ and weight $w$ grows is determined by the rate $E_i(w)$ at which it encounters prey, but only part of the encountered prey contributes to the growth rate. In the mizer model
+
+$$
+g_i(w) = 
+$$
+
+We
+
+## Steady State Parameters
+
+We now need to determine the model parameters $g_i$ and $\mu_{nat.i}$ for each species which then determine the growth rates $g_i(w)$ and $\mu_i(w)$ as discussed above.
+
+We need to choose the model parameters so that the model predictions agree with observations. Observations however are highly variable from year to year and from place to place. Our mizer model is not complicated enough to capture all this variability. Instead we think of mizer as modelling an average.
+
+We now make the strong assumption that the averaged observations across the study area and across several years should be well-described by the steady state of the mizer model.
+
+To determine both $g_i$ and $\mu_{nat.i}$ we need two sets of observations: the observed age at length distribution and the observed size-resolved abundances.
+
+### Age at Length
+
+It is common for fisheries surveys to determine the age of individuals in a length-stratified subsamples of the survey catch. The model can predict the age distribution in such a sample. Because the sample consists of only those individuals that have survived to their current length, the model prediction will depend on both growth and mortality. Thus this data gives us information about both.
+
+### Size-resolved Abundances
+
+The steady state abundances $N_i(w)$ are determined by the growth and mortality rates according to the equation
+
+$$
+\frac{\partial g_i(w)N_i(w)}{\partial w}=\mu_i(w)N_i(w).
+$$
+
+## Predation
+
+### Species Interaction
+
+### Resource Interaction
+
+## Sources of Density Dependence
+
+### Reproduction Level
+
+### Resource Level
+
+### Feeding Level
+
+### Critical Feeding Level
