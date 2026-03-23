@@ -11,7 +11,7 @@ The important feature of mizer is that it captures the dependence of both the gr
 
 This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations. The size distribution of a fish species is determined by the balance between growth and mortality. Here we will recall the mizer parameters that determine these rates and describe how we go about estimating their values from observations.
 
-## Sheldon Spectrum and Allometric Rates  {#sec-sheldon}
+## Sheldon Spectrum and Allometric Rates {#sec-sheldon}
 
 The first difficulty is that we do not want to model the details of all the species that make up the ecosystem. There are too many and about most of them we know too little. Most species are not undergoing stock assessment, so we do not even know how abundant they are. Given that the growth and death rates for the species that we do care about depend on the abundances of all their prey and predator species, we have a potential problem.
 
@@ -45,7 +45,7 @@ The fishing mortality $F_i(w)$ is the sum over the mortality from all the differ
 
 Because of the size-selectivity of fishing, the fishing mortality rate is not an allometric rate, and hence neither is the total mortality rate.
 
-## Growth Rate  {#sec-growth}
+## Growth Rate {#sec-growth}
 
 The rate $g_i(w)$ at which an individual of species $i$ and weight $w$ grows is determined by the rate $E_i(w)$ at which it encounters prey, but only part of the encountered prey contributes to the growth rate. In the mizer model, the energy available for growth and reproduction is
 
@@ -70,15 +70,15 @@ $$
 This guarantees that the the energy available for growth and reproduction is also allometric:
 
 $$
-E_{r.i} = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{eff.i}w^n.
+E_{r.i} = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.
 $$
 
-At the first stage of estimating parameters we only need to estimate the effective rates $E_{eff.i}$. We will then discuss how to set $h_i$ in @sec-feeding-level and $k_i$ in @sec-critical-feeding-level.
+At the first stage of estimating parameters we only need to estimate the effective rates $E_{r.i}$. We will then discuss how to set $h_i$ and $k_i$ in @sec-feeding-levels.
 
 A proportion $\psi(w)$ of the total available energy is invested into reproduction instead of somatic growth, so that the resulting growth rate is
 
 $$
-g_i(w)=(1-\psi_i(w))E_{eff.i}w^n.
+g_i(w)=(1-\psi_i(w))E_{r.i}w^n.
 $$
 
 Because investment into reproduction only happens after individuals have reached maturity size, $\psi(w)$ is not allometric and hence neither is the growth rate $g_i(w)$.
@@ -97,7 +97,7 @@ The second factor involving the asymptotic size $w_{\infty,i}$ describes the rat
 
 We now need to determine the model parameters that determine the growth rates $g_i(w)$ and $\mu_i(w)$ as discussed above. Here is a list of the parameters:
 
--   For growth: $E_{eff.i}, w_{mat.i}, U_i, w_{\infty.i}, m_i$.
+-   For growth: $E_{r.i}, w_{mat.i}, U_i, w_{\infty.i}, m_i$.
 
 -   For mortality: $\mu_{nat.i}$, the selectivity parameters for each gear and species, the fishing effort for each gear.
 
@@ -188,7 +188,7 @@ $$
 \phi_{ij}(w,w')=\theta_{ij}\cdot\phi_i(w,w').
 $$
 
-### Size Preference  {#sec-size-dependent-predation}
+### Size Preference {#sec-size-dependent-predation}
 
 The size preference is given by the "predation kernel" $\phi_i(w,w')$. We assume that the size preference depends only on the relative size of predator and prey, i.e., $\phi_i(w,w')=\phi_i(w/w')$. Traditionally it was assumed that the distribution of predator/prey size ratios was a lognormal distribution,
 
@@ -210,18 +210,29 @@ $$
 DC_{ij} = 
 $$
 
-## Sources of Density Dependence  {sec-density-dependence=""}
+## Sources of Density Dependence {sec-density-dependence=""}
 
 So far we have made sure that the steady state of our model is consistent with averaged observations. We want to use our model to understand how the system reacts to changes. This could be changes in fishing or changes in the environment, for example due to global warming. Any such changes will also change the densities of the species. So we also need to tune the parameters in the mizer model that control how physiological rates depend on the densities of species away from their steady state densities.
 
 There are four such parameters that do not change the steady state but do affect the sensitivity of species to perturbations.
 
-### Reproduction Level  {#sec-reproduction-level}
+### Reproduction Level {#sec-reproduction-level}
 
-### Resource Level  {#sec-resource-level}
+### Resource Level {#sec-resource-level}
 
 The larvae of all fish species depend on either planktonic or benthic resources that mizer does not model in any detail. But we do want to give these resources some dynamic that reflects that if the abundance of their consumers goes up then the resource goes down. This allows us to capture the effects of competition between the larvae of different species.
 
-### Feeding Level  {#sec-feeding-level}
+### Feeding Levels {#sec-feeding-levels}
 
-### Critical Feeding Level  {#sec-critical-feeding-level}
+$$
+E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
+$$
+$$
+h = E_r\frac{1}{\alpha(f-f_c)}
+$$
+
+$$
+k = E_r\frac{f_c}{f-f_c}
+$$
+
+
