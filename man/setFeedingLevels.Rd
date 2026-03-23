@@ -4,17 +4,17 @@
 \alias{setFeedingLevels}
 \title{Set feeding levels while maintaining constant growth and reproduction}
 \usage{
-setFeedingLevels(params, feeding_level, critical_feeding_level)
+setFeedingLevels(params, f, f_c)
 }
 \arguments{
 \item{params}{A \linkS4class{MizerParams} object.}
 
-\item{feeding_level}{The target feeding level \eqn{f} for each
+\item{f}{The target feeding level \eqn{f} for each
 species. Must be a vector with one value for each species or a single
 value used for all. Defaults to species parameter \code{f0} if exists or else
 to 0.6.}
 
-\item{critical_feeding_level}{The feeding level \eqn{f_c} at which
+\item{f_c}{The feeding level \eqn{f_c} at which
 growth/repro is zero. Defaults to species parameter \code{fc} if exists or else
 to 0.2.}
 }
@@ -31,21 +31,13 @@ available for reproduction and growth remains unchanged, despite changes in
 the feeding level and critical feeding level.
 }
 \details{
-The function follows a three-step methodology to ensure that the consumption
-rate does not change in spite of the change of feeding level:
-\enumerate{
-\item Metabolic Loss Calculation: It uses the critical feeding level \eqn{f_c}
-(the level where energy for growth/repro is zero) and the old encounter rate
-\eqn{E^{old}} to find the new metabolic loss \eqn{k_{i,w}}:
-\deqn{k_{i}(w) = \alpha_i (1 - f_{c,i}) E_{i}^{old}(w)}
-\item Encounter Rate Adjustment: It calculates a new encounter rate (\eqn{E_{new}})
-required to maintain the original energy available for growth and reproduction
-(\eqn{E_{r,i}(w)}) at the target feeding level \eqn{f}:
-\deqn{E_{i}^{new}(w) = \frac{E_{r,i}(w) + k_{i}(w)}{\alpha_i (1 - f_i)}}
-\item Maximum Intake Back-calculation: Finally, the maximum intake rate \eqn{h}
-is back-calculated from the new encounter rate to achieve the desired feeding level:
-\deqn{h_{i}(w) = \frac{E_{i}^{new}(w) (1 - f_i)}{f_i}}
-}
+In order to keep the energy for growth and reproduction \eqn{E_r} unchanged,
+the function recalculates the encounter rate \eqn{E}, metabolic loss rate
+\eqn{k} and maximum intake rate \eqn{h} as follows:
+
+\deqn{E=E_r\frac{f}{\alpha(f-f_c)(1-f)}}
+\deqn{h = E_r\frac{1}{\alpha(f-f_c)}}
+\deqn{k_s = E_r\frac{f_c}{f-f_c}}
 
 This methodology allows you to set a desired feeding level for each species
 without altering the underlying energy balance established during the
