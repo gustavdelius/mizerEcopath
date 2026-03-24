@@ -14,6 +14,7 @@ deathTab <- function(input, output, session, params, logs,
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
+            p<-setFeedingLevels(params=p, feeding_level=0.6, critical_feeding_level=0.2)
             p <- matchDiet(p, diet)
         }
     plotlyDeathX(p, species = input$sp,
