@@ -64,9 +64,6 @@
 #' Law, R., & Plank, M.J. (2022). Balanced exploitation and coexistence.
 #' Zhou et al. (2019). Balanced harvest: Concept, policies and implementation.
 #' @export
-#'
-#' @examples (cannot be run yet because the model is not yet saved)
-#' results <- calculate_mizer_flux(params, c_value = 0.2)
 
 compute_flux <- function(params, c_value = 1, n=initialN(params),
                          n_pp=params@initial_n_pp,
@@ -163,17 +160,6 @@ compute_flux <- function(params, c_value = 1, n=initialN(params),
 #'
 #' @return A ggplot object with facets for each species, allowing for
 #' comparison of biomass flow across different life histories.
-#'
-#' @examples (cannot be run yet because the model is not yet saved)
-#'
-#' # Calculate fluxes for a Celtic Sea model
-#' fluxes <- calculate_mizer_flux(params, c_value = 0.05)
-#'
-#' # Visualize the Total Flux (Production)
-#' plot_mizer_flux(fluxes, variable = "J")
-#'
-#' # Visualize the resulting Balanced Harvest fishing mortality
-#' plot_mizer_flux(fluxes, variable = "f")
 #'
 #'
 #' @export
