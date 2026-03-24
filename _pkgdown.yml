@@ -17,6 +17,7 @@ reference:
   - makeInteracting
   - makeNoninteracting
   - setFeedingLevel
+  - setFeedingLevels
 - title: "Calibrating model"
   desc: >
     Tools to match model output to empirical observations.
@@ -107,6 +108,7 @@ reference:
     - species_params_example
     - ecopath_diet_example
     - diet_matrix_example
+    - age_mat_vB
 - title: "Diffusion"
   desc: >
     Functions for solving diffusion equations in mizer models.
@@ -126,3 +128,9 @@ reference:
   - getLogLik
   - simulateCohort
   - preprocess_length_at_age
+- title: "Flux computation and BH"
+  desc: >
+    Functions for computing flux and balanced harvest fishing.
+  contents:
+  - compute_flux
+  - make_blended_ssBH_FMort
