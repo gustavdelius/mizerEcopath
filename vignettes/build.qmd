@@ -181,8 +181,12 @@ $$
 where $h_i$ is the coefficient of the allometric maximum intake rate and $k_i$ is the coefficient of the allometric metabolic respiration rate. We have by now chosen a value for $E_{r.i}$, so we will use the above equation to determine
 
 $$
-E = 
+E_i=\frac{h_i(E_{r.i}+k_i)}{\alpha_ih_i-(E_{r.i}+k_i)}
 $$
+
+It is difficult to know what the right values are for the coefficient $h_i$ of the maximum intake rate or the coefficient $k_i$ of the metabolic respiration rate. So it may be useful to change from these two parameters to parameters that are more easily reasoned about: the feeding level $f_i$ and the critical feeding level $f_{c.i}$.
+
+The feeding level $f(w)$, already introduced in @eq-feeding-level, encodes the level of satiation of the fish that occurs if, due to the finite maximum intake rate, the fish can only take in a fraction $1-f(w)$ of the encountered prey. Perhaps the name "satiation level" would describe the situation better: $f=1$ would mean totally satiated and $f=0$ means
 
 $$
 E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
@@ -245,3 +249,5 @@ There are four such parameters that do not change the steady state but do affect
 ### Resource Level {#sec-resource-level}
 
 The larvae of all fish species depend on either planktonic or benthic resources that mizer does not model in any detail. But we do want to give these resources some dynamic that reflects that if the abundance of their consumers goes up then the resource goes down. This allows us to capture the effects of competition between the larvae of different species.
+
+So far the encounter rate for larvae is dominated by external encounter. We want to convert as much as this as possible into resource encounter.
