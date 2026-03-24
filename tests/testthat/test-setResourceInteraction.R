@@ -62,4 +62,11 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
 
     # Should scale linearly with interaction_resource
     expect_equal(encounter_rates2, 2 * encounter_rates)
+
+    # Should equal to total predation encounter when interaction matrix is 0
+    params2 <- params
+    params2@interaction[] <- 0
+    params2@other_encounter <- list()
+    params2@ext_encounter[] <- 0
+    expect_equal(getEncounter(params2), encounter_rates)
 })

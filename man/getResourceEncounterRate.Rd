@@ -10,7 +10,7 @@ getResourceEncounterRate(params)
 \item{params}{A mizer params object}
 }
 \value{
-A matrix (species x species) of resource encounter rates
+A matrix (species x size) of resource encounter rates
 }
 \description{
 This function returns the resource encounter rate for predators.
