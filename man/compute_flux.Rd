@@ -77,10 +77,6 @@ where \emph{D_i(w)} is the diffusion coefficient calculated from the
 \deqn{f_i(w) = c \cdot w \cdot J_i(w)}
 }
 }
-\examples{
-(cannot be run yet because the model is not yet saved)
-results <- calculate_mizer_flux(params, c_value = 0.2)
-}
 \references{
 Law, R., & Plank, M.J. (2022). Balanced exploitation and coexistence.
 Zhou et al. (2019). Balanced harvest: Concept, policies and implementation.
