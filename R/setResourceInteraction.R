@@ -40,10 +40,12 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     resource_level[resource_level >= 1] <- 0.99999999
     resource_level[resource_level <= 0] <- 1e-8
 
+    old_resource_encounter <- getResourceEncounterRate(params)
+    old_interaction_resource <- species_params(params)$interaction_resource
+
     # Calculate the encounter rate achieved with interaction_resource = 1
-    temp_params <- params
-    species_params(temp_params)$interaction_resource <- 1
-    encounter <- getResourceEncounterRate(temp_params)
+    species_params(params)$interaction_resource <- 1
+    encounter <- getResourceEncounterRate(params)
 
     # Then calculate the ratio of the external encounter rate to the
     # encounter rate achieved with interaction_resource = 1
@@ -55,14 +57,15 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # The minimum ratio is the maximum that can be absorbed from the external
     # encounter rate
     ratio <- apply(ratio, 1, min)
-    absorbed_encounter <- encounter * ratio
 
     # Increase the resource interaction
     params@species_params$interaction_resource <-
-        params@species_params$interaction_resource + ratio
+        old_interaction_resource + ratio
+    new_resource_encounter <- getResourceEncounterRate(params)
 
     # Subtract the absorbed encounter rate from the external encounter rate
-    params@ext_encounter <- params@ext_encounter - absorbed_encounter
+    params@ext_encounter <- params@ext_encounter - new_resource_encounter +
+        old_resource_encounter
 
     # Set the resource capacity so that the the steady-state resource
     # abundance stays the same
@@ -77,7 +80,7 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
 #' This function returns the resource encounter rate for predators.
 #'
 #' @param params A mizer params object
-#' @return A matrix (species x species) of resource encounter rates
+#' @return A matrix (species x size) of resource encounter rates
 #' @export
 getResourceEncounterRate <- function(params) {
     pred_kernel <- getPredKernel(params)
