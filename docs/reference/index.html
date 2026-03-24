@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,8 @@
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
     <li><a class="dropdown-item" href="../articles/North%20Sea%203%20spp%20Model.html">North Sea 3 Species Model</a></li>
@@ -89,6 +90,20 @@
 
         </dt>
         <dd>Set constant feeding level for each species in a non-interacting model</dd>
+
+        <dt>
+
+          <code><a href="setFeedingLevels.html">setFeedingLevels()</a></code>
+
+        </dt>
+        <dd>Set feeding levels while maintaining constant growth and reproduction</dd>
+
+        <dt>
+
+          <code><a href="bindParams.html">bindParams()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Combine several MizerParams objects</dd>
       </dl></div><div class="section level2">
       <h2 id="calibrating-model">Calibrating model<a class="anchor" aria-label="anchor" href="#calibrating-model"></a></h2>
 
@@ -528,6 +543,13 @@
 
         </dt>
         <dd>Calculate catch selectivity params from catch data</dd>
+
+        <dt>
+
+          <code><a href="age_mat_vB.html">age_mat_vB()</a></code>
+
+        </dt>
+        <dd>Calculate age at maturity from von Bertalanffy growth parameters</dd>
       </dl></div><div class="section level2">
       <h2 id="obsolete-">Obsolete?<a class="anchor" aria-label="anchor" href="#obsolete-"></a></h2>
 
@@ -607,13 +629,6 @@
 
       <dl><dt>
 
-          <code><a href="steadySingleSpecies.html">steadySingleSpecies()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Set initial abundances to single-species steady state abundances</dd>
-
-        <dt>
-
           <code><a href="solve_double_sweep.html">solve_double_sweep()</a></code>
 
         </dt>
@@ -621,24 +636,10 @@
 
         <dt>
 
-          <code><a href="steady_diffusion.html">steady_diffusion()</a></code>
-
-        </dt>
-        <dd>Solve steady-state equation including diffusion</dd>
-
-        <dt>
-
           <code><a href="project_diffusion.html">project_diffusion()</a></code>
 
         </dt>
         <dd>Project forward in time with diffusion</dd>
-
-        <dt>
-
-          <code><a href="solve_diffusion_ode.html">solve_diffusion_ode()</a></code>
-
-        </dt>
-        <dd>Solve 2nd order ODE</dd>
 
         <dt>
 

@@ -10,18 +10,18 @@ law $$N_R(w)=\kappa w^{-\lambda}$$, where $lambda$ is taken from
 resource_params(params)$lambda The coefficient kappa is chosen
 such that the resource abundance power law is tangent to the abundance
 density \(N_c(w)\) of the fish community in one point. It then truncates the
-resource abundance power law at resource_params(params)$w_pp_cutoff. The
+resource abundance power law at w_pp_cutoff. The
 function also sets the resource carrying capacity equal to this initial
-resource abundance and updates the resource parameter kappa in the
-MizerParams object."><meta property="og:description" content="This function sets the initial resource abundance density $N_R(w)$ to a power
+resource abundance and updates the resource parameter kappa and
+w_pp_cutoff in the MizerParams object."><meta property="og:description" content="This function sets the initial resource abundance density $N_R(w)$ to a power
 law $$N_R(w)=\kappa w^{-\lambda}$$, where $lambda$ is taken from
 resource_params(params)$lambda The coefficient kappa is chosen
 such that the resource abundance power law is tangent to the abundance
 density \(N_c(w)\) of the fish community in one point. It then truncates the
-resource abundance power law at resource_params(params)$w_pp_cutoff. The
+resource abundance power law at w_pp_cutoff. The
 function also sets the resource carrying capacity equal to this initial
-resource abundance and updates the resource parameter kappa in the
-MizerParams object."></head><body>
+resource abundance and updates the resource parameter kappa and
+w_pp_cutoff in the MizerParams object."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -29,7 +29,7 @@ MizerParams object."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,8 @@ MizerParams object."></head><body>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
     <li><a class="dropdown-item" href="../articles/North%20Sea%203%20spp%20Model.html">North Sea 3 Species Model</a></li>
@@ -69,15 +70,15 @@ law $$N_R(w)=\kappa w^{-\lambda}$$, where $lambda$ is taken from
 <code>resource_params(params)$lambda</code> The coefficient <code>kappa</code> is chosen
 such that the resource abundance power law is tangent to the abundance
 density \(N_c(w)\) of the fish community in one point. It then truncates the
-resource abundance power law at <code>resource_params(params)$w_pp_cutoff</code>. The
+resource abundance power law at <code>w_pp_cutoff</code>. The
 function also sets the resource carrying capacity equal to this initial
-resource abundance and updates the resource parameter <code>kappa</code> in the
-MizerParams object.</p>
+resource abundance and updates the resource parameter <code>kappa</code> and
+<code>w_pp_cutoff</code> in the MizerParams object.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">alignResource</span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">alignResource</span><span class="op">(</span><span class="va">params</span>, w_pp_cutoff <span class="op">=</span> <span class="va">params</span><span class="op">@</span><span class="va">resource_params</span><span class="op">$</span><span class="va">w_pp_cutoff</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -86,6 +87,10 @@ MizerParams object.</p>
 
 <dl><dt id="arg-params">params<a class="anchor" aria-label="anchor" href="#arg-params"></a></dt>
 <dd><p>A MizerParams object</p></dd>
+
+
+<dt id="arg-w-pp-cutoff">w_pp_cutoff<a class="anchor" aria-label="anchor" href="#arg-w-pp-cutoff"></a></dt>
+<dd><p>The largest size of the resource.</p></dd>
 
 </dl></div>
     <div class="section level2">
