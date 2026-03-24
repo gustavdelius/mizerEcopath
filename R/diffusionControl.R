@@ -42,6 +42,7 @@ diffusionControl <- function(input, output, session, params, params_old,
         p@species_params[[sp, "annuli_min_age"]] <- input$annuli_min_age
         p@species_params[[sp, "annuli_date"]] <- input$annuli_date
         p@species_params[[sp, "d_over_g"]] <- input$d_over_g
+        p<-setDiffusion(p, reset=TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })
 }
