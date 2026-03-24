@@ -63,13 +63,16 @@ make_blended_ssBH_FMort <- function(t_max_blend, target_c, alpha_max, t_steady){
 
         #identify species if negative mortality for species
         neg_species <- rownames(f_ssBH)[apply(f_ssBH < 0, 1, any)]
-        if(length(neg_species) > 0) {
-            message("Negative fishing mortality for species: ",
-                    paste(neg_species, collapse = ", "))
-        }
-
+        #if(length(neg_species) > 0) {
+        #    message("Negative fishing mortality for species: ",
+        #            paste(neg_species, collapse = ", "))
+        #}
         #set neg mortality to 0
         f_ssBH[f_ssBH < 0] <- 0
+
+        #Check that t_steady is less than t_max_blend
+        if(t_max_blend <= t_steady) stop("t_max_blend must be greater
+                                         than t_steady")
 
         # 3. Blend them based on the 'effort' parameter passed to project()
         # 'effort' here acts as our transition alpha (0 to 1)
