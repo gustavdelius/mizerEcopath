@@ -70,8 +70,8 @@ $$
 This guarantees that the the energy available for growth and reproduction is also allometric:
 
 $$
-E_{r.i} = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.
-$$
+E_{r.i}(w) = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.
+$$ {#eq-Er}
 
 At the first stage of estimating parameters we only need to estimate the effective rates $E_{r.i}$. We will then discuss how to set $h_i$ and $k_i$ in @sec-feeding-levels.
 
@@ -170,6 +170,30 @@ Reproductive efficiency.
 
 At this stage we have a model whose steady state agrees with averaged observations, but this model so far does not capture the predation interactions between the species or between the species and planktonic or benthic resources. We now want to switch on these interactions, so that when we perturb the system, the changes in one species can have knock-on effects on other species, through competition for common prey and through predator-prey interactions.
 
+### Feeding Levels {#sec-feeding-levels}
+
+So far we have only been concerned with estimating the rate $E_r(w)$ at which energy needs to be available for growth and reproduction. We did not have to worry about how this energy arises from the encounter of prey. But now that we want to switch on predator-prey interactions, we need to know the rate of prey encounter $E(w)$. We know from @sec-growth that both rates are allometric with exponent $n$, i.e., $E_r(w)=E_rw^n$ and $E(w)=Ew^n$. From @eq-Er we know how the coefficient of these power laws are related:
+
+$$
+E_{r.i} = \alpha_i\frac{E_i h_i}{E_i+h_i} - k_i.
+$$
+
+where $h_i$ is the coefficient of the allometric maximum intake rate and $k_i$ is the coefficient of the allometric metabolic respiration rate. We have by now chosen a value for $E_{r.i}$, so we will use the above equation to determine
+
+$$
+E = 
+$$
+
+$$
+E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
+$$ $$
+h = E_r\frac{1}{\alpha(f-f_c)}
+$$
+
+$$
+k = E_r\frac{f_c}{f-f_c}
+$$
+
 ### Internal and External Rates
 
 The species that we model explicitly are forming part of the power-law community $N_c$ that gave rise to the allometric encounter and natural mortality rates. The predation encounter and predation mortality among the modelled species represents a part of those rates. But there is also a part that comes from sources that are external to the model, so we split the rates into internal and external rates:
@@ -221,18 +245,3 @@ There are four such parameters that do not change the steady state but do affect
 ### Resource Level {#sec-resource-level}
 
 The larvae of all fish species depend on either planktonic or benthic resources that mizer does not model in any detail. But we do want to give these resources some dynamic that reflects that if the abundance of their consumers goes up then the resource goes down. This allows us to capture the effects of competition between the larvae of different species.
-
-### Feeding Levels {#sec-feeding-levels}
-
-$$
-E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
-$$
-$$
-h = E_r\frac{1}{\alpha(f-f_c)}
-$$
-
-$$
-k = E_r\frac{f_c}{f-f_c}
-$$
-
-
