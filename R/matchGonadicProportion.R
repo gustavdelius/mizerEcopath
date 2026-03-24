@@ -32,8 +32,8 @@ matchGonadicProportionOnce <- function(params, steady = TRUE) {
 
     if (steady) {
         # Determine new steady state
-        params <- params |> mizerEcopath::steadySingleSpecies() |>
-            matchBiomasses() |> mizerEcopath::steadySingleSpecies()
+        params <- params |> steadySingleSpecies() |>
+            matchBiomasses() |> steadySingleSpecies()
     }
     params@time_modified <- lubridate::now()
     return(params)

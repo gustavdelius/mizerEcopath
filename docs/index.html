@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9014</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,12 +62,57 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="mizerecopath-extending-ecopath-to-mizer">mizerEcopath: Extending Ecopath to Mizer<a class="anchor" aria-label="anchor" href="#mizerecopath-extending-ecopath-to-mizer"></a>
+</h1></div>
+<!-- badges: start -->
+
+<p>The <code>mizerEcopath</code> package provides a framework for setting up and calibrating multi-species size spectrum models using the <a href="https://sizespectrum.org/mizer/" class="external-link">mizer</a> package. The size spectra are obtained by balancing the effects of growth and mortality. In that sense it is similar to the <a href="https://ecopath.org/" class="external-link">Ecopath</a> model, but where Ecopath is only concerned with balancing at the species level, mizerEcopath balances at each size class of each species.</p>
+<p>mizerEcopath offers tools to assist in translating empirical observations into steady-state size spectrum models that are ecologically coherent. If one already has an Ecopath model, it is possible to start from parameters of that model.</p>
+<div class="section level2">
+<h2 id="goal">Goal<a class="anchor" aria-label="anchor" href="#goal"></a>
 </h2>
-<p>This package provides a framework for setting up and calibrating multi-species size spectrum models using the <a href="https://sizespectrum.org/mizer/" class="external-link">mizer</a> package. It offers tools to assist in translating empirical observations, such as species-specific biomass, consumption, and production rates, into steady-state models that are ecologically coherent.</p>
-<p>The goal is to make the process of building, tuning, and validating mizer models more accessible, robust, and transparent.</p>
-<p>These methods are designed to support applications ranging from academic research to exploratory ecosystem analysis and policy-relevant fisheries modelling.</p>
+<p>The goal is to make the process of building, tuning, and validating mizer models more accessible, robust, and transparent. These methods support applications ranging from academic research to exploratory ecosystem analysis and policy-relevant fisheries modelling.</p>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>You can install the development version of mizerEcopath from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"gustavdelius/mizerEcopath"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="workflow">Workflow<a class="anchor" aria-label="anchor" href="#workflow"></a>
+</h2>
+<p>The typical workflow for creating a mizer model from Ecopath data involves the following steps:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Export Ecopath Parameters</strong>: Open your Ecopath model in “Ecopath with Ecosim” and export the parameters to CSV files.</p></li>
+<li>
+<p><strong>Prepare Species Table</strong>: Create a table in R with one row for each species you want to include in the mizer model. This table must contain:</p>
+<ul>
+<li>
+<code>species</code>: The name of the species.</li>
+<li>
+<code>w_max</code>: The largest observed size of the species.</li>
+<li>
+<code>w_mat</code>: The weight at maturity.</li>
+<li>
+<code>ecopath_groups</code>: The corresponding Ecopath group(s).</li>
+</ul>
+</li>
+<li><p><strong>Initialize Model</strong>: Use <code><a href="reference/newAllometricParams.html">newAllometricParams()</a></code> to create a mizer model based on these parameters. This sets up a model with allometric encounter and mortality rates, initially with no interactions. <code>r     params &lt;- newAllometricParams(species_params)</code></p></li>
+<li><p><strong>Match Observations</strong>: Use various functions provided by the package to <code>matchBiomass()</code> to match the total biomass for each species, <code>matchGrowth()</code> to match the growth rates, <code><a href="reference/matchCatch.html">matchCatch()</a></code> to match the total yield and the size distribution of the catch, and <code><a href="reference/matchConsumption.html">matchConsumption()</a></code> to match the total consumption for each species.</p></li>
+<li><p><strong>Tune the Model</strong>: Use the interactive Shiny gadget <code><a href="reference/tuneEcopath.html">tuneEcopath()</a></code> to fine-tune the model to reproduce the observed size structure and other Ecopath parameters. <code>r     params &lt;- tuneEcopath(params)</code> This gadget allows you to interactively adjust parameters and see the effects on growth, yield, and consumption in real-time.</p></li>
+<li><p><strong>Set predation preferences</strong>: Use <code><a href="reference/matchDiet.html">matchDiet()</a></code> to set predation preferences in the model to match the observed diet compositions. <code>r     params &lt;- matchDiet(params)</code></p></li>
+</ol>
+</div>
+<div class="section level2">
+<h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
+</h2>
+<p>Ecopath models are based on biomass pools, while mizer models are based on size spectra. <code>mizerEcopath</code> bridges this gap by using the Ecopath parameters (Biomass, Consumption, Production, Catch) to constrain and inform the size-dependent parameters required by mizer.</p>
+<p>For a detailed explanation of the theoretical background and the translation of parameters, see the vignette <code>vignettes/ecopath_to_mizer.qmd</code>.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
@@ -99,7 +144,12 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>

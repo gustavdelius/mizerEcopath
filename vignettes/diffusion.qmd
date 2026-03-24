@@ -427,19 +427,33 @@ This is the same as the scheme we are currently using for calculating the steady
 We now demonstrate the use of the upwind finite-difference scheme by calculating and plotting a steady state solution for a realistic species (Herring) from the North Sea model.
 
 ```{r}
-params <- celtic_params
+params <- validParams(celtic_params)
 species <- "Herring"
 w <- params@w
 
-# Set nonzero diffusion rate
-species_params(params)[species, "d_over_g"] <- 0.15
-# Solve for steady state using the upwind scheme
-n_steady <- steady_diffusion(params, species)
-
 # Without diffusion
 params_no_diffusion <- params
-species_params(params_no_diffusion)[species, "d_over_g"] <- 0
-n_steady_no_diffusion <- steady_diffusion(params_no_diffusion, species)
+ps_no_diffusion <- mizer::steadySingleSpecies(params_no_diffusion, species)
+n_steady_no_diffusion <- ps_no_diffusion@initial_n[species, ]
+
+# Set nonzero diffusion rate
+species_params(params)$d_over_g <- 0.15
+
+# Set diffusion from d_over_g
+# d(w) = d_over_g * g(w) * w
+for (s in species_params(params)$species) {
+    d_over_g <- species_params(params)[s, "d_over_g"]
+    w <- params@w
+    growth <- getEGrowth(params)[s, ]
+    n <- params@species_params[s, "n"]
+    g_0 <- growth[1] / w[1]^n
+    d_0 <- d_over_g * g_0
+    diffusion(params)[s, ] <- d_0 * w^(n + 1)
+}
+
+# Solve for steady state using the upwind scheme
+ps <- mizer::steadySingleSpecies(params, species)
+n_steady <- ps@initial_n[species, ]
 
 # Plot the resulting abundance density versus size
 plot(w, n_steady, log = "xy", type = "l", lwd = 2,
@@ -480,53 +494,3 @@ $$
 $$
 using the same upwind finite-difference method as for the steady-state ODE, but now with time-stepping. We use an implicit Euler method for time integration, which is unconditionally stable for this kind of equation. At each time step, we solve a tridiagonal linear system using the double-sweep (Thomas) algorithm.
 
-
-
-## Example: Initial condition with only the first entry nonzero
-
-```{r}
-params <- celtic_params
-species_params(params)$d_over_g <- 0.15  # Set nonzero diffusion rate
-species <- "Cod"
-sps <- species_params(params)[species, ]
-
-# Set initial condition
-n_init <- rep(0, length(w))
-n_init[2] <- 1  # Point source at small size
-initialN(params)[species, ] <- n_init
-# Solve the PDE
-dt <- 0.05
-nsteps <- 200
-n_hist <- project_diffusion(params, species, dt = dt, nsteps = nsteps)
-```
-
-Plot the evolution of n(w, t) at selected time points
-```{r}
-# Select time points to plot
-plot_steps <- c(21,41,61,81,101,201)
-plot_times <- (plot_steps - 1) * dt
-plot_labels <- paste0("age=", round(plot_times, 2))
-
-# Prepare data frame for ggplot2
-N <- length(n_hist[1, ])
-w <- w(params)
-l <- (w/sps$a)^(1/sps$b)
-plot_df <- data.frame(
-  Weight = rep(w, times = length(plot_steps)),
-  Length = rep(l, times = length(plot_steps)),
-  Abundance = as.vector(t(n_hist[plot_steps, ]) + 1e-10),
-  t = rep(plot_times, each = N),
-  Time = factor(rep(plot_labels, each = N), levels = plot_labels)
-)
-
-# Plot
-p <- ggplot(plot_df, aes(x = Length, y = Abundance*exp(t*0.5), color = Time)) +
-  geom_line(linewidth = 1) +
-  #scale_x_log10() +
-  #scale_y_log10() +
-    xlim(1e-3, 120) +
-  labs(x = "Length (cm)", y = "Abundance density",
-       title = "Evolution of n(l, t) from point source at small size") +
-  theme_minimal()
-print(p)
-```

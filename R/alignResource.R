@@ -5,16 +5,19 @@
 #' `resource_params(params)$lambda` The coefficient `kappa` is chosen
 #' such that the resource abundance power law is tangent to the abundance
 #' density \eqn{N_c(w)} of the fish community in one point. It then truncates the
-#' resource abundance power law at `resource_params(params)$w_pp_cutoff`. The
+#' resource abundance power law at `w_pp_cutoff`. The
 #' function also sets the resource carrying capacity equal to this initial
-#' resource abundance and updates the resource parameter `kappa` in the
-#' MizerParams object.
+#' resource abundance and updates the resource parameter `kappa` and
+#' `w_pp_cutoff` in the MizerParams object.
 #'
 #' @param params A MizerParams object
+#' @param w_pp_cutoff The largest size of the resource.
 #' @return A MizerParams object with the resource abundance scaled up or down
 #'   to match the fish abundance
 #' @export
-alignResource <- function(params) {
+alignResource <- function(params,
+                          w_pp_cutoff = params@resource_params$w_pp_cutoff) {
+    params@resource_params$w_pp_cutoff <- w_pp_cutoff
     # Set resource to a power law
     N_R <- params@w_full^(-params@resource_params$lambda)
     # Set resource to be in line with fish

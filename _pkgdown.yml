@@ -18,6 +18,7 @@ reference:
   - makeNoninteracting
   - setFeedingLevel
   - setFeedingLevels
+  - bindParams
 - title: "Calibrating model"
   desc: >
     Tools to match model output to empirical observations.
@@ -93,6 +94,7 @@ reference:
   - valid_catch
   - addCatch
   - catchSelectivity
+  - has_concept("helper")
 - title: "Obsolete?"
   desc: >
     Functions retained for compatibility or reference but not in active use.
@@ -113,11 +115,8 @@ reference:
   desc: >
     Functions for solving diffusion equations in mizer models.
   contents:
-  - steadySingleSpecies
   - solve_double_sweep
-  - steady_diffusion
   - project_diffusion
-  - solve_diffusion_ode
   - solve_diffusion_pde
 - title: "Age-at-length"
   desc: >

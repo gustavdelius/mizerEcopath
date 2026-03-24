@@ -4,10 +4,12 @@
 \alias{alignResource}
 \title{Align resource abundance to fish abundance}
 \usage{
-alignResource(params)
+alignResource(params, w_pp_cutoff = params@resource_params$w_pp_cutoff)
 }
 \arguments{
 \item{params}{A MizerParams object}
+
+\item{w_pp_cutoff}{The largest size of the resource.}
 }
 \value{
 A MizerParams object with the resource abundance scaled up or down
@@ -19,8 +21,8 @@ law \deqn{N_R(w)=\kappa w^{-\lambda}}, where $lambda$ is taken from
 \code{resource_params(params)$lambda} The coefficient \code{kappa} is chosen
 such that the resource abundance power law is tangent to the abundance
 density \eqn{N_c(w)} of the fish community in one point. It then truncates the
-resource abundance power law at \code{resource_params(params)$w_pp_cutoff}. The
+resource abundance power law at \code{w_pp_cutoff}. The
 function also sets the resource carrying capacity equal to this initial
-resource abundance and updates the resource parameter \code{kappa} in the
-MizerParams object.
+resource abundance and updates the resource parameter \code{kappa} and
+\code{w_pp_cutoff} in the MizerParams object.
 }

@@ -13,3 +13,4 @@ docs/*/*.md
 docs/*/*.html
 
 /.quarto/
+.positai

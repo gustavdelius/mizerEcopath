@@ -38,7 +38,7 @@ objective_fn <- function(pars) {
     # sp$m <- pars[7]
     species_params(p) <- sp
     gear_params(p) <- gp
-    p <- mizerEcopath::steadySingleSpecies(p)
+    p <- steadySingleSpecies(p)
 
     Q <- getConsumption(p)
     P <- getProduction(p)

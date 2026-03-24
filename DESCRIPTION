@@ -39,7 +39,7 @@ Suggests:
     spelling
 Remotes:
     sizespectrum/mizerExperimental,
-    sizespectrum/mizer@diffusion
+    sizespectrum/mizer@diffusion_gemini
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
