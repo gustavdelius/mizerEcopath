@@ -10,6 +10,27 @@ test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params 
     expect_equal(result, celtic_params)
 })
 
+test_that("matchDiet achieves the target diet matrix", {
+    sp <- celtic_params@species_params$species
+    dm <- getDietMatrix(celtic_params)
+
+    # Reduce predation on species 2 by 20%, leaving other columns unchanged.
+    # matchDiet normalises rows internally, so this shifts the proportion of
+    # species 2 in each predator's diet downward.
+    dm_target <- dm
+    dm_target[, sp[2]] <- dm_target[, sp[2]] * 0.8
+
+    result <- matchDiet(celtic_params, diet_matrix = dm_target)
+
+    # Expected absolute flows: normalise rows of dm_target then scale by Q
+    Q <- getConsumption(celtic_params)
+    expected <- sweep(
+        dm_target[sp, sp] / rowSums(dm_target[sp, , drop = FALSE]),
+        1, Q, "*"
+    )
+    expect_equal(getDietMatrix(result)[sp, sp], expected, tolerance = 1e-6)
+})
+
 test_that("matchDiet aggregates non-species prey columns into other", {
     dm <- getDietMatrix(celtic_params)
     sp <- celtic_params@species_params$species
