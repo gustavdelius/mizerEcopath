@@ -23,9 +23,11 @@ recover information from log files left over from aborted previous runs.}
 \item{catch}{A data frame containing the observed binned catch data. It must
 contain the following columns:
 \itemize{
+\item \code{species}: The species for which the catch is recorded.
+\item \code{gear}: The gear used to collect the catch.
 \item \code{length}: The start of each bin.
 \item \code{dl}: The width of each bin.
-\item \code{count}: The observed count for each bin.
+\item \code{catch}: The observed count for each bin.
 }}
 
 \item{controls}{A character vector of names of input parameter control

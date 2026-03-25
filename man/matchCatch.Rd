@@ -26,9 +26,11 @@ species whether it is to be selected (TRUE) or not.}
 \item{catch}{A data frame containing the observed binned catch data. It must
 contain the following columns:
 \itemize{
+\item \code{species}: The species for which the catch is recorded.
+\item \code{gear}: The gear used to collect the catch.
 \item \code{length}: The start of each bin.
 \item \code{dl}: The width of each bin.
-\item \code{count}: The observed count for each bin.
+\item \code{catch}: The observed count for each bin.
 }}
 
 \item{lambda}{The slope of the community spectrum. Default is 2.05.}

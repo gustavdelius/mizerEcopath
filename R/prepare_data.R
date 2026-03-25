@@ -12,9 +12,11 @@
 #'   the first species in the model.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
+#'   * `gear`: The gear used to collect the catch (optional if there is only a
+#'             single gear).
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
-#'   * `count`: The observed count for each bin.
+#'   * `catch`: The observed count for each bin.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #'

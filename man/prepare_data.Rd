@@ -21,9 +21,11 @@ the first species in the model.}
 \item{catch}{A data frame containing the observed binned catch data. It must
 contain the following columns:
 \itemize{
+\item \code{gear}: The gear used to collect the catch (optional if there is only a
+single gear).
 \item \code{length}: The start of each bin.
 \item \code{dl}: The width of each bin.
-\item \code{count}: The observed count for each bin.
+\item \code{catch}: The observed count for each bin.
 }}
 
 \item{yield_lambda}{A parameter that controls the strength of the penalty for
