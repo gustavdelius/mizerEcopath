@@ -14,7 +14,7 @@
 #' "resource_semichemostat" or "resource_constant") by setting the
 #' resource_dynamics argument. This allows you to switch between dynamic and
 #' constant resource regimes directly through this function. For example:
-#'   params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
+#' `params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")`
 #' will set the resource dynamics to semichemostat.
 #'
 #' Note: The function ensures that the resource level passed to setResource()
@@ -24,7 +24,8 @@
 #' positive value (1e-8). This prevents errors and ensures biological realism.
 #'
 #' @param params A mizer params object
-#' @param resource_dynamics Optional. Character string specifying the resource dynamics to use. If NULL (default), does not change the current resource dynamics.
+#' @param resource_dynamics Optional. Character string specifying the resource
+#'   dynamics to use. If NULL (default), the current resource dynamics are kept.
 #' @return The modified mizer params object with increased `interaction_resource`
 #'   species parameters and correspondingly decreased external encounter rate.
 #' @export
@@ -42,21 +43,24 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
 
     old_resource_encounter <- getResourceEncounterRate(params)
     old_interaction_resource <- species_params(params)$interaction_resource
+    old_encounter <- getEncounter(params)
 
     # Calculate the encounter rate achieved with interaction_resource = 1
-    species_params(params)$interaction_resource <- 1
+    params@species_params$interaction_resource <- 1
     encounter <- getResourceEncounterRate(params)
 
     # Then calculate the ratio of the external encounter rate to the
     # encounter rate achieved with interaction_resource = 1
     ratio <- params@ext_encounter / encounter
-    # This can have zeros if encounter is zero, which can happen at very large
+    # This can fail if encounter is zero, which can happen at very large
     # sizes that we are not interested in. Set these zeros to Inf so they do not
     # affect the minimum calculation below.
-    ratio[ratio == 0] <- Inf
+    ratio[!is.finite(ratio) | ratio == 0] <- Inf
     # The minimum ratio is the maximum that can be absorbed from the external
     # encounter rate
     ratio <- apply(ratio, 1, min)
+    # If a species did not have any ext_encounter at any size:
+    ratio[ratio == Inf] <- 0
 
     # Increase the resource interaction
     params@species_params$interaction_resource <-
@@ -66,6 +70,14 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # Subtract the absorbed encounter rate from the external encounter rate
     params@ext_encounter <- params@ext_encounter - new_resource_encounter +
         old_resource_encounter
+    # Rounding errors could give negative values
+    params@ext_encounter[params@ext_encounter < 0] <- 0
+
+    rel_diff <- abs(getEncounter(params) - old_encounter) / old_encounter
+    if (max(rel_diff[is.finite(rel_diff)], 0) > 1e-10) {
+        print(max(rel_diff[is.finite(rel_diff)], 0))
+        stop("Encounter rate changed significantly")
+}
 
     # Set the resource capacity so that the the steady-state resource
     # abundance stays the same
