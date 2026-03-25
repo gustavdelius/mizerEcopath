@@ -26,6 +26,7 @@ are set to zero.
 If the exponent \code{n} of the power-law encounter rate is not provided as a
 species parameter, it is set to 0.7.  If the exponent \code{d} of the power-law
 mortality rate is  not provided as a species parameter, it is set to \verb{n – 1}.
+The exponent \code{p} of the metabolic loss rate is set equal to \code{n}.
 
 If the species parameter \code{alpha}, which gives the proportion of the
 consumption that is assimilated, is not provided, it is set to 0.8, the

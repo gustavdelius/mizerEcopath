@@ -29,7 +29,9 @@ The \code{species_params}, \code{given_species_params} and \code{gear_params} da
 are combined with \code{rbind()}. The per-species arrays from the various slots
 are stacked along the species dimension. The interaction matrix is set to
 all zeros. All other slots (resource spectrum, rates functions, etc.) are
-taken from the first params object.
+taken from the first params object. Any \code{comment} attributes on slots are
+preserved; if multiple input objects carry comments on the same slot, the
+comments are combined after removing duplicates.
 }
 \seealso{
 \code{\link[mizer:addSpecies]{mizer::addSpecies()}}, \code{\link[mizer:removeSpecies]{mizer::removeSpecies()}}

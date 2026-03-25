@@ -31,7 +31,8 @@ interaction matrix of the combined object is set to all zeros."></head><body>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
     <li><a class="dropdown-item" href="../articles/North%20Sea%203%20spp%20Model.html">North Sea 3 Species Model</a></li>
@@ -87,7 +88,9 @@ and identical <code>resource_params</code>. No duplicate species names are allow
 are combined with <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code>. The per-species arrays from the various slots
 are stacked along the species dimension. The interaction matrix is set to
 all zeros. All other slots (resource spectrum, rates functions, etc.) are
-taken from the first params object.</p>
+taken from the first params object. Any <code>comment</code> attributes on slots are
+preserved; if multiple input objects carry comments on the same slot, the
+comments are combined after removing duplicates.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

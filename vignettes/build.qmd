@@ -1,0 +1,255 @@
+---
+title: "Building a mizer model"
+format:
+  html:
+    number-sections: true
+    toc: true
+editor: visual
+---
+
+The important feature of mizer is that it captures the dependence of both the growth rate and mortality rate of a fish on the abundance of predators and prey of the appropriate sizes. These rates determine the size structure of the population.
+
+This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations.
+
+The size distribution of a fish species is determined by the balance between growth and mortality. Here we will recall the mizer parameters that determine these rates and describe how we go about estimating their values from observations.
+
+## Sheldon Spectrum and Allometric Rates {#sec-sheldon}
+
+The first difficulty is that we do not want to model the details of all the species that make up the ecosystem. There are too many and about most of them we know too little. Most species are not undergoing stock assessment, so we do not even know how abundant they are. Given that the growth and death rates for the species that we do care about depend on the abundances of all their prey and predator species, we have a potential problem.
+
+The way we circumvent our lack of detailed knowledge of the abundances of all species in the ecosystem at all sizes is to make use of the observation by Sheldon that the total abundance of organisms in the ocean follows approximately a power law
+
+$$
+N_c(w) = N_c w^{-\lambda}
+$$
+
+with the exponent $\lambda\approx 2$. The $N_c$ on the right-hand side is just a constant that is independent of $w$. The subscript $c$ stands for "community", i.e., we are not disaggregating by species.
+
+All the individuals making up this community can be both predator on smaller individuals and prey for larger individuals. With the allometric assumptions made for the physiological rates in mizer, this leads to power-law encounter and natural mortality rates:
+
+$$
+E_i(w) = E_i w^n,\qquad\qquad \mu_{nat.i}(w)=\mu_{nat.i} w^{d}.
+$$
+
+The subscript $i$ labels the species. The subscript $nat$ on the mortality rate denotes that this is the mortality from natural sources. Metabolic scaling theory suggests that the metabolic exponent $n$ lies somewhere between $n=2/3$ and $n=3/4$ and the mortality exponent is $d=n-1$, but neither is crucial for our methodology. We could even have species-specific values for $n$ and $d$.
+
+The fact that we assume that the total encounter rate and the natural mortality rate are allometric (i.e., described by a power law) does not mean that the growth and total mortality rates that determine the species size spectra are also allometric, as we will now see.
+
+## Growth Rate {#sec-growth}
+
+The rate $g_i(w)$ at which an individual of species $i$ and weight $w$ grows is determined by the rate $E_i(w)$ at which it encounters prey, but only part of the encountered prey contributes to the growth rate. In the mizer model, the energy available for growth and reproduction is
+
+$$
+E_{r.i}(w) = \alpha_i(1-f_i(w))E_i(w) - k_i(w)
+$$
+
+where $k_i(w)$ is the metabolic respiration rate, $\alpha_i$ is the proportion of the consumed food that is assimilated and $f_i(w)$ is the feeding level
+
+$$
+f_i(w)=\frac{E_i(w)}{E_i(w)+h_i(w)}
+$$
+
+that takes into account that the fish have a maximum consumption rate $h_i(w)$.
+
+We now assume that the maximum consumption rate and the metabolic respiration rate both are allometric rates with the same metabolic exponent as the encounter rate:
+
+$$
+h_i(w)=h_i w^n,\qquad\qquad k_i(w)=k_iw^n.
+$$
+
+This guarantees that the the energy available for growth and reproduction is also allometric:
+
+$$
+E_{r.i}(w) = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.
+$$ {#eq-Er}
+
+At the first stage of estimating parameters we only need to estimate the effective rates $E_{r.i}$. We will then discuss how to set $h_i$ and $k_i$ in @sec-feeding-levels.
+
+A proportion $\psi(w)$ of the total available energy is invested into reproduction instead of somatic growth, so that the resulting growth rate is
+
+$$
+g_i(w)=(1-\psi_i(w))E_{r.i}w^n.
+$$
+
+Because investment into reproduction only happens after individuals have reached maturity size, $\psi(w)$ is not allometric and hence neither is the growth rate $g_i(w)$.
+
+In mizer, the proportion $\psi_i(w)$ has two factors:
+
+$$
+\psi_i(w) = \left(1-\left(\frac{w}{w_{mat.i}}\right)^{-U}\right)^{-1}\cdot\left(\frac{w}{w_{\infty.i}}\right)^{m_i-n}.
+$$
+
+The first factor, involving the maturity size $w_{mat.i}$ is a sigmoidal maturity ogive that represents the proportion of individuals that are mature at size $w$. The parameter $U$ determines the steepness of the sigmoid and thus for example the size at which 25% of individuals are mature.
+
+The second factor involving the asymptotic size $w_{\infty,i}$ describes the rate at which mature individuals increase their investment into reproduction as they grow. A choice of $m_i=1$ corresponds to an investment that scales linearly with weight. The above expression for $\psi_i(w)$ is valid for $w\leq w_{\infty.i}$. Beyond $w_{\infty.i}$ all energy is invested into reproduction and growth stops.
+
+## Mortality Rate
+
+To get the total mortality rate we need to add the fishing mortality:
+
+$$
+\mu_i(w)=\mu_{nat.i}(w)+F_i(w).
+$$
+
+The fishing mortality $F_i(w)$ is the sum over the mortality from all the different gears from all the different fishing fleets that target a species, each of which has its own selectivity parameters. These parameters have to be tuned later using landings data from these fleets.
+
+Because of the size-selectivity of fishing, the fishing mortality rate is not an allometric rate, and hence neither is the total mortality rate.
+
+## Optimising Growth and Mortality Parameters
+
+We now need to determine the model parameters that determine the growth rates $g_i(w)$ and $\mu_i(w)$ as discussed above. Here is a list of the parameters:
+
+-   For growth: $E_{r.i}, w_{mat.i}, U_i, w_{\infty.i}, m_i$.
+
+-   For mortality: $\mu_{nat.i}$, the selectivity parameters for each gear and species, the fishing effort for each gear.
+
+We need to choose the model parameters so that the model predictions agree with observations. Observations however are highly variable from year to year and from place to place. We are currently interested in estimating average growth and mortality rates.
+
+Some parameters are comparatively easy to observe directly or you may be happy to take parameter values estimated by others and posted on [Fishbase](fishbase.org). The maturity size $w_{mat}$ is an example where there are many observations of maturity at size from surveys. Others do not have such a large impact on the model so that you are happy to stick with mizer's default value. Those parameters you can fix and do not need to optimise over. But most parameters are not directly observable because of how difficult it is to observe fish in the wild.
+
+We now make the strong assumption that the averaged observations across the study area and across several years should be well-described by the steady state of the mizer model.
+
+To determine all growth and mortality parameters, we need several sets of observations. The more observations the better. We then want to choose the parameters by the principle of maximum likelihood, i.e., we choose the parameter values that make the observations most likely. We are combining different sources of data, each of which has its own likelihood function. We do this by creating an objective function that add the different likelihood functions multiplied by different weights that reflect the relative strength of the data sources.
+
+### Size distribution in Surveys and Landings
+
+The steady state abundances $N_i(w)$ are determined by the growth and mortality rates according to the equation
+
+$$
+\frac{\partial g_i(w)N_i(w)}{\partial w}=\mu_i(w)N_i(w).
+$$
+
+The abundance densities $N_i(w)$ are of course not directly observable. What is observed is the size distribution of catches. These could be either the catches from surveys or those from fishing, where survey data is often better if the surveys are designed to avoid biases towards particular sizes. This data is usually available in the form of numbers of fish caught in different size classes. Let $C_{g,i,l}$ denote the number of fish of species $i$ in length class $l$ caught by a gear $g$.
+
+The choice of size classes differ. Let us assume that after conversion to weight classes, class $l$ spans the weight range from $w_l^-$ to $w_l^+$. In the model we calculate the rates $Cr_{g,i,l}$ at which fish are caught in size class $l$ are related to abundance densities $N_i(w)$ multiplied by the fishing mortality rates:\
+$$
+R_{g,i,l} = \int_{w_l^-}^{w_l^+}F_{g,i}(w)N_i(w)dw.
+$$
+
+These rates can now be normalised to probabilities $p_{g,i,l} = R_{g,i,l} / Z_{g,i}$ where $Z_{g,i}=\sum_l R_{g,i,l}$.
+
+The counts $C_{g,i,l}$ should be viewed as draws from a multinormal distribution with those probabilities. This gives us the likelihood function
+
+$$
+L_{C} = 
+$$
+
+### Yield and Biomass
+
+Note that due to the normalisation, the probabilities above do not change if we rescale the abundance $N_i(w)$ or the fishing mortalities $F_{g,i}(w)$ by size-independent factors. Also the equation for the $N_i(w)$ is invariant under a size-independent rescaling of $N_i(w)$.
+
+If we have knowledge of the total biomass $B_i$ of all individuals of a species above a certain size $w_{cutoff}$ (this cutoff could be the maturity size $w_{mat}$ if we have information about the spawning stock biomass only) then we can use that to fix the scale of $N_i(w)$ because
+
+$$
+B_i = \int_{w_{cutoff}}^\infty w N_i(w)dw.
+$$
+
+If we have knowledge of the total yields $Y_{g,i}$, i.e., the total biomass caught of species $i$ by gear $g$ per year, then we can determine the scale of $F_{g,i}(w)$ because
+
+$$
+Y_{g,i} = \int w F_{g,i}(w)N_i(w)dw.
+$$
+
+### Age at Length
+
+It is common for fisheries surveys to determine the age of individuals in a length-stratified subsamples of the survey catch. The model can predict the age distribution in such a sample. Because the sample consists of only those individuals that have survived to their current length, the model prediction will depend on both growth and mortality. Thus this data gives us information about both. For details of the contribution of this data to the objective function see ...
+
+### Production and Consumption
+
+Sometimes one might have independent estimates of a species total production rate $P_i$and/or total consumption rate $Q_i$. These estimates are for example used when constructing an Ecopath model. These species-level quantities can also be calculated in the mizer model.
+
+One could add a penalty to the objective function proportional to the squared difference between model values and estimated values for these quantities. The strength of these penalties should encode that not too much trust should be placed in these estimates, because neither of these quantities is directly observable.
+
+### Other Expert Knowledge
+
+On can incorporate other bits of expert knowledge, for example one might have information about both total biomass and spawning stock biomass of a species. As long as it is knowledge about quantities that can be calculated in the model one can add a penalty for deviation between model and expert knowledge to the objective function.
+
+### Consistency Checks
+
+Reproductive efficiency.
+
+## Predation {#sec-predation}
+
+At this stage we have a model whose steady state agrees with averaged observations, but this model so far does not capture the predation interactions between the species or between the species and planktonic or benthic resources. We now want to switch on these interactions, so that when we perturb the system, the changes in one species can have knock-on effects on other species, through competition for common prey and through predator-prey interactions.
+
+### Feeding Levels {#sec-feeding-levels}
+
+So far we have only been concerned with estimating the rate $E_r(w)$ at which energy needs to be available for growth and reproduction. We did not have to worry about how this energy arises from the encounter of prey. But now that we want to switch on predator-prey interactions, we need to know the rate of prey encounter $E(w)$. We know from @sec-growth that both rates are allometric with exponent $n$, i.e., $E_r(w)=E_rw^n$ and $E(w)=Ew^n$. From @eq-Er we know how the coefficient of these power laws are related:
+
+$$
+E_{r.i} = \alpha_i\frac{E_i h_i}{E_i+h_i} - k_i.
+$$
+
+where $h_i$ is the coefficient of the allometric maximum intake rate and $k_i$ is the coefficient of the allometric metabolic respiration rate. We have by now chosen a value for $E_{r.i}$, so we will use the above equation to determine
+
+$$
+E_i=\frac{h_i(E_{r.i}+k_i)}{\alpha_ih_i-(E_{r.i}+k_i)}
+$$
+
+It is difficult to know what the right values are for the coefficient $h_i$ of the maximum intake rate or the coefficient $k_i$ of the metabolic respiration rate. So it may be useful to change from these two parameters to parameters that are more easily reasoned about: the feeding level $f_i$ and the critical feeding level $f_{c.i}$.
+
+The feeding level $f(w)$, already introduced in @eq-feeding-level, encodes the level of satiation of the fish that occurs if, due to the finite maximum intake rate, the fish can only take in a fraction $1-f(w)$ of the encountered prey. Perhaps the name "satiation level" would describe the situation better: $f=1$ would mean totally satiated and $f=0$ means
+
+$$
+E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
+$$ $$
+h = E_r\frac{1}{\alpha(f-f_c)}
+$$
+
+$$
+k = E_r\frac{f_c}{f-f_c}
+$$
+
+### Internal and External Rates
+
+The species that we model explicitly are forming part of the power-law community $N_c$ that gave rise to the allometric encounter and natural mortality rates. The predation encounter and predation mortality among the modelled species represents a part of those rates. But there is also a part that comes from sources that are external to the model, so we split the rates into internal and external rates:
+
+$$
+E_i(w) = E_{int.i}(w) + E_{ext.i}(w),\qquad\qquad \mu_{nat.i}(w)=\mu_{int.i}(w)+\mu_{ext.i}(w).
+$$
+
+As we turn on the predation interactions and hence the internal rates, the external rates are reduced, keeping the total rates unchanged. This is important, because that means that the steady state size distribution does not change as we switch on the interactions, so the match to observations that we have achieved by optimising the parameters in the previous section is preserved.
+
+### Predation Rate
+
+In mizer, the rate at which a predator predates on particular prey is proportional to the product the predator's preference for that kind of prey and the abundance of that prey. We have already discussed the prey abundance. We now need to model the predation preferences. In mizer the predation preference depends both on the relative size of the prey and on its species identity. In fact, the preference function factorises into the predation kernel $\phi_i(w, w')$ that expresses the preference of a predator of species $i$ and size $w$ for prey of size $w'$ and an interaction matrix $\theta_{ij}$ that expresses the preference of a predator of species $i$ on prey of species $j$:
+
+$$
+\phi_{ij}(w,w')=\theta_{ij}\cdot\phi_i(w,w').
+$$
+
+### Size Preference {#sec-size-dependent-predation}
+
+The size preference is given by the "predation kernel" $\phi_i(w,w')$. We assume that the size preference depends only on the relative size of predator and prey, i.e., $\phi_i(w,w')=\phi_i(w/w')$. Traditionally it was assumed that the distribution of predator/prey size ratios was a lognormal distribution,
+
+$$
+\phi_i(w/w') \propto \exp\left(-\frac{(\log(w/w'/\beta))^2}{2\sigma_i^2}\right),
+$$
+
+with $\beta$ being the most preferred predator/prey size ratio and $\sigma$ describing how willing the predator is to eat prey of different sizes.
+
+However for some species the assumption of a lognormal predation kernel is in conflict with observational data, in particular stomach data. This applies for example for filter feeders whose size preference is determined by its morphology: it filters everything in the size range from the smallest items that are retained by the gill rakers to the largest items that fit into its mouth. In this case a truncated exponential distribution often fits well. Some species switch between two different predation modes, at attack mode where they go after larger prey and one where they just go after the most convenient prey. In this case a lognormal mixture model might be appropriate.
+
+There is a sister package [mizerStomach](https://gustavdelius.github.io/mizerStomach/) that, given stomach data, helps with determining the most appropriate predation kernel, under the assumption that the prey abundance is described by the Sheldon spectrum $N_c(w)=N_c w^{-\lambda}$.
+
+### Species Preference {#sec-species-interaction}
+
+One way to determine the species interaction matrix $\theta_{ij}$ is to use diet information. If one knows the rate $D_{ij}$ at which species $i$ consumes biomass from species $j$ then one can compare that to the prediction from the mizer model:
+
+$$
+DC_{ij} = 
+$$
+
+## Sources of Density Dependence {sec-density-dependence=""}
+
+So far we have made sure that the steady state of our model is consistent with averaged observations. We want to use our model to understand how the system reacts to changes. This could be changes in fishing or changes in the environment, for example due to global warming. Any such changes will also change the densities of the species. So we also need to tune the parameters in the mizer model that control how physiological rates depend on the densities of species away from their steady state densities.
+
+There are four such parameters that do not change the steady state but do affect the sensitivity of species to perturbations.
+
+### Reproduction Level {#sec-reproduction-level}
+
+### Resource Level {#sec-resource-level}
+
+The larvae of all fish species depend on either planktonic or benthic resources that mizer does not model in any detail. But we do want to give these resources some dynamic that reflects that if the abundance of their consumers goes up then the resource goes down. This allows us to capture the effects of competition between the larvae of different species.
+
+So far the encounter rate for larvae is dominated by external encounter. We want to convert as much as this as possible into resource encounter.
