@@ -7,9 +7,8 @@ inst/doc
 *.rds
 *.so
 *.o
-
 docs/*.md
 docs/*/*.md
-
 /.quarto/
 .positai
+.claude
