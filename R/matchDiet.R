@@ -44,6 +44,9 @@ matchDiet <- function(params, diet_matrix,
                            min_w_pred = min_w_pred,
                            max_w_pred = max_w_pred)
 
+    # Save resource interaction strengths before zeroing them
+    interaction_resource_orig <- params@species_params$interaction_resource
+
     # Make the model non-interacting
     params <- makeNoninteracting(params)
 
@@ -70,7 +73,8 @@ matchDiet <- function(params, diet_matrix,
     theta <- D / E
     theta[is.nan(theta)] <- 1  # Avoid NaNs when E is zero
 
-    params <- makeInteracting(params, theta)
+    params <- makeInteracting(params, theta,
+                              interaction_resource = interaction_resource_orig)
 
     return(params)
 }

@@ -8,6 +8,14 @@ test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params 
     result <- matchDiet(celtic_params, diet_matrix = dm)
     result@time_modified <- celtic_params@time_modified
     expect_equal(result, celtic_params)
+
+    # Same with North Sea model
+    params <- NS_params
+    params@ext_encounter <- getEncounter(NS_params)
+    dm <- getDietMatrix(params)
+    result <- matchDiet(params, diet_matrix = dm)
+    result@time_modified <- params@time_modified
+    expect_equal(result, params)
 })
 
 test_that("matchDiet achieves the target diet matrix", {
