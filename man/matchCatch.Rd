@@ -10,7 +10,9 @@ matchCatch(
   catch,
   lambda = 2.05,
   yield_lambda = 1,
-  production_lambda = 1
+  production_lambda = 1,
+  mu_mat_lim = 5,
+  map = NULL
 )
 }
 \arguments{
@@ -55,6 +57,8 @@ The function sets new values for the following parameters:
 \itemize{
 \item \code{l50}: The size at which the gear selectivity is 50\%.
 \item \code{l25}: The size at which the gear selectivity is 25\%.
+\item \code{l50_right}: The size at which the gear selectivity is 50\% (right side for double_sigmoid_length selectivity).
+\item \code{l25_right}: The size at which the gear selectivity is 25\% (right side for double_sigmoid_length selectivity).
 \item \code{catchability}: The catchability of the gear.
 \item \code{mu_mat}: The external mortality at maturity.
 }

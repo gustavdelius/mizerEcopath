@@ -62,9 +62,11 @@
 #'   species whether it is to be selected (TRUE) or not.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
+#'   * `species`: The species for which the catch is recorded.
+#'   * `gear`: The gear used to collect the catch.
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
-#'   * `count`: The observed count for each bin.
+#'   * `catch`: The observed count for each bin.
 #' @param lambda The slope of the community spectrum. Default is 2.05.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
@@ -235,12 +237,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
     # Prepare the objective function.
 
-    # TMB::compile("./src/objective_function.cpp", flags = "-O3", clean = TRUE, verbose = TRUE)
-
-    dyn.load( TMB::dynlib("./src/objective_function"))
-
     obj <- TMB::MakeADFun(data = data, parameters = initial_params, map = map,
-                          DLL = "objective_function", silent = TRUE, debug = FALSE)
+                          DLL = "mizerEcopath", silent = TRUE, debug = FALSE)
 
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,

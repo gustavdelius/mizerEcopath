@@ -36,10 +36,6 @@ prepare_data <- function(params, species = 1, catch,
     gp <- params@gear_params
     gp_select <- gp$species == species
     gps <- gp[gp_select, ]
-    # if (nrow(gps) > 1) {
-    #   stop("The code currently assumes that there is only a single gear for each species.")
-    # }
-    # catch <- valid_catch(catch, species)              # Not true now
 
     # Validate catch data frame and extract data for the selected species
     if (nrow(catch) == 0) {
@@ -95,7 +91,9 @@ prepare_data <- function(params, species = 1, catch,
             mutate(count = tidyr::replace_na(count, 0))  # different fill for missing data
 
         # Extract counts, bin boundaries and widths
-        counts <- full_bins |> tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
+        counts <- full_bins |>
+            select(gear, bin_start, bin_end, length, count) |>
+            tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
         counts <- as.matrix(counts)[,-c(1:2)]    # for different gears
         l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
         w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
@@ -162,8 +160,8 @@ prepare_data <- function(params, species = 1, catch,
 
     ergr <- getEReproAndGrowth(params)[sp_select, w_select]
     matur <- params@maturity[sp_select, w_select]
-    n <- params@species_params$n
-    w_max <- params@species_params$w_max
+    n <- sps$n
+    w_max <- sps$w_max
 
 
     # Prepare data list for TMB

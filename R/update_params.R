@@ -42,9 +42,6 @@ update_params <- function(params, species = 1, pars, data) {
     gp <- params@gear_params
     gp_select <- gp$species == species
     gps <- gp[gp_select, ]
-    # if (nrow(gps) > 1) {
-    #   stop("The code currently assumes that there is only a single gear for each species.")
-    # }   # not true now
 
     # Update the gear parameters
     gplist <- list()
@@ -66,6 +63,8 @@ update_params <- function(params, species = 1, pars, data) {
     gps[,'l50_right'] <- ifelse(gps$sel_func=='double_sigmoid_length', gp_res$l50_right, NA)
     gps[,'l25_right'] <- ifelse(gps$sel_func=='double_sigmoid_length', gp_res$l25_right, NA)
     gps[,'catchability'] <- gp_res$catchability
+
+    if(nrow(gps) == 1 && gps$sel_func!='double_sigmoid_length'){gps[,'l50_right'] <- gps[,'l25_right'] <- NULL}
 
     gear_params(params)[gp_select, ] <- gps
 
