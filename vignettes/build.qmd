@@ -7,9 +7,11 @@ format:
 editor: visual
 ---
 
-The important feature of mizer is that it captures the dependence of both the growth rate and mortality rate of a fish on the abundance of predators and prey of the appropriate sizes. These rates depend the size structure of the population. As a fish grows up, there is a change in the size at which it feeds and the size that its predators need to have. Mizer is able to capture this interesting interplay between the size structure of the different species making up the ecosystem.
+The important feature of mizer is that it captures the dependence of both the growth rate and mortality rate of a fish on the abundance of predators and prey of the appropriate sizes. These rates determine the size structure of the population.
 
-This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations. The size distribution of a fish species is determined by the balance between growth and mortality. Here we will recall the mizer parameters that determine these rates and describe how we go about estimating their values from observations.
+This complicated interplay between all the fish of all the different species and different sizes as well as between the fish and the plankton or benthic resources, while very interesting, has also made it very difficult in the past to construct a mizer model that matches the observed fish populations.
+
+The size distribution of a fish species is determined by the balance between growth and mortality. Here we will recall the mizer parameters that determine these rates and describe how we go about estimating their values from observations.
 
 ## Sheldon Spectrum and Allometric Rates {#sec-sheldon}
 
@@ -21,7 +23,7 @@ $$
 N_c(w) = N_c w^{-\lambda}
 $$
 
-with the exponent $\lambda\approx 2$. The $N_c$ on the right-hand side is just a constant that is independent of $w$. The subscript $c$ stands for "community". We are not disaggregating by species.
+with the exponent $\lambda\approx 2$. The $N_c$ on the right-hand side is just a constant that is independent of $w$. The subscript $c$ stands for "community", i.e., we are not disaggregating by species.
 
 All the individuals making up this community can be both predator on smaller individuals and prey for larger individuals. With the allometric assumptions made for the physiological rates in mizer, this leads to power-law encounter and natural mortality rates:
 
@@ -29,21 +31,9 @@ $$
 E_i(w) = E_i w^n,\qquad\qquad \mu_{nat.i}(w)=\mu_{nat.i} w^{d}.
 $$
 
-The subscript $i$ labels the species. The subscript $nat$ on the mortality rate denotes that this is the mortality from natural sources. Metabolic scaling theory suggests that the metabolic exponent $n$ lies somewhere between $n=2/3$ and $n=3/4$ and the mortality exponent is $d=n-1$ but neither is crucial for our methodology. We could even have species specific values for $n$ and $d$.
+The subscript $i$ labels the species. The subscript $nat$ on the mortality rate denotes that this is the mortality from natural sources. Metabolic scaling theory suggests that the metabolic exponent $n$ lies somewhere between $n=2/3$ and $n=3/4$ and the mortality exponent is $d=n-1$, but neither is crucial for our methodology. We could even have species-specific values for $n$ and $d$.
 
 The fact that we assume that the total encounter rate and the natural mortality rate are allometric (i.e., described by a power law) does not mean that the growth and total mortality rates that determine the species size spectra are also allometric, as we will now see.
-
-## Mortality Rate
-
-To get the total mortality rate we need to add the fishing mortality:
-
-$$
-\mu_i(w)=\mu_{nat.i}(w)+F_i(w).
-$$
-
-The fishing mortality $F_i(w)$ is the sum over the mortality from all the different gears from all the different fishing fleets that target a species, each of which has its own selectivity parameters. These parameters have to be tuned later using landings data from these fleets.
-
-Because of the size-selectivity of fishing, the fishing mortality rate is not an allometric rate, and hence neither is the total mortality rate.
 
 ## Growth Rate {#sec-growth}
 
@@ -92,6 +82,18 @@ $$
 The first factor, involving the maturity size $w_{mat.i}$ is a sigmoidal maturity ogive that represents the proportion of individuals that are mature at size $w$. The parameter $U$ determines the steepness of the sigmoid and thus for example the size at which 25% of individuals are mature.
 
 The second factor involving the asymptotic size $w_{\infty,i}$ describes the rate at which mature individuals increase their investment into reproduction as they grow. A choice of $m_i=1$ corresponds to an investment that scales linearly with weight. The above expression for $\psi_i(w)$ is valid for $w\leq w_{\infty.i}$. Beyond $w_{\infty.i}$ all energy is invested into reproduction and growth stops.
+
+## Mortality Rate
+
+To get the total mortality rate we need to add the fishing mortality:
+
+$$
+\mu_i(w)=\mu_{nat.i}(w)+F_i(w).
+$$
+
+The fishing mortality $F_i(w)$ is the sum over the mortality from all the different gears from all the different fishing fleets that target a species, each of which has its own selectivity parameters. These parameters have to be tuned later using landings data from these fleets.
+
+Because of the size-selectivity of fishing, the fishing mortality rate is not an allometric rate, and hence neither is the total mortality rate.
 
 ## Optimising Growth and Mortality Parameters
 
