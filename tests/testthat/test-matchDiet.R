@@ -31,6 +31,83 @@ test_that("matchDiet achieves the target diet matrix", {
     expect_equal(getDietMatrix(result)[sp, sp], expected, tolerance = 1e-6)
 })
 
+# checkDietMatrix errors ---------------------------------------------------
+
+test_that("checkDietMatrix errors on non-matrix input", {
+    dm <- getDietMatrix(celtic_params)
+    expect_error(matchDiet(celtic_params, diet_matrix = as.data.frame(dm)),
+                 "`diet_matrix` must be a matrix.")
+})
+
+test_that("checkDietMatrix errors on non-numeric matrix", {
+    dm <- getDietMatrix(celtic_params)
+    dm_char <- matrix(as.character(dm), nrow = nrow(dm), ncol = ncol(dm),
+                      dimnames = dimnames(dm))
+    expect_error(matchDiet(celtic_params, diet_matrix = dm_char),
+                 "`diet_matrix` must be numeric.")
+})
+
+test_that("checkDietMatrix errors on NaN entries", {
+    dm <- getDietMatrix(celtic_params)
+    dm[1, 1] <- NaN
+    expect_error(matchDiet(celtic_params, diet_matrix = dm),
+                 "`diet_matrix` contains NaNs.")
+})
+
+test_that("checkDietMatrix errors on NA entries", {
+    dm <- getDietMatrix(celtic_params)
+    dm[1, 1] <- NA
+    expect_error(matchDiet(celtic_params, diet_matrix = dm),
+                 "`diet_matrix` contains NAs.")
+})
+
+test_that("checkDietMatrix errors on negative entries", {
+    dm <- getDietMatrix(celtic_params)
+    dm[1, 1] <- -0.1
+    expect_error(matchDiet(celtic_params, diet_matrix = dm),
+                 "`diet_matrix` contains negative values.")
+})
+
+test_that("checkDietMatrix errors when a predator row sums to zero", {
+    dm <- getDietMatrix(celtic_params)
+    dm[1, ] <- 0
+    expect_error(matchDiet(celtic_params, diet_matrix = dm),
+                 "some species do not eat anything.")
+})
+
+# convertDietMatrix errors -------------------------------------------------
+
+test_that("convertDietMatrix errors when model species are missing from rows", {
+    dm <- getDietMatrix(celtic_params)
+    sp <- celtic_params@species_params$species
+    # Drop the first species row
+    expect_error(matchDiet(celtic_params, diet_matrix = dm[-1, , drop = FALSE]),
+                 "diet_matrix does not include all model species as rows.")
+})
+
+# Edge cases ---------------------------------------------------------------
+
+test_that("matchDiet works with a single species", {
+    sp <- celtic_params@species_params$species
+    params1 <- removeSpecies(celtic_params, sp[-1])
+    dm <- getDietMatrix(params1)
+    result <- matchDiet(params1, diet_matrix = dm)
+    result@time_modified <- params1@time_modified
+    expect_equal(result, params1)
+})
+
+test_that("matchDiet handles a predator whose diet is entirely non-species", {
+    dm <- getDietMatrix(celtic_params)
+    sp <- celtic_params@species_params$species
+    # Zero out all species-species entries for the first predator so it eats
+    # only "other" prey; theta should become 0 (not NaN) for that row.
+    dm[sp[1], sp] <- 0
+    result <- matchDiet(celtic_params, diet_matrix = dm)
+    expect_equal(interaction_matrix(result)[sp[1], ], setNames(rep(0, length(sp)), sp))
+})
+
+# matchDiet aggregates non-species prey columns into other -----------------
+
 test_that("matchDiet aggregates non-species prey columns into other", {
     dm <- getDietMatrix(celtic_params)
     sp <- celtic_params@species_params$species

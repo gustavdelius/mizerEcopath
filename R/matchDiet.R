@@ -57,7 +57,7 @@ matchDiet <- function(params, diet_matrix,
     params_E <- params
     ext_encounter(params_E) <- 2 * ext_encounter(params_E) - getEncounter(params_E)
     E <- getDietMatrix(params_E, min_w_pred = min_w_pred,
-                       max_w_pred = max_w_pred)[1:no_sp, 1:no_sp]
+                       max_w_pred = max_w_pred)[1:no_sp, 1:no_sp, drop = FALSE]
     interaction_matrix(params)[] <- 0
 
     # If the encounter matrix has zeros where the Ecopath diet does not, then
@@ -97,6 +97,9 @@ checkDietMatrix <- function(diet_matrix) {
     }
     if (any(is.na(diet_matrix))) {
         stop("`diet_matrix` contains NAs.")
+    }
+    if (any(diet_matrix < 0)) {
+        stop("`diet_matrix` contains negative values.")
     }
     if (any(rowSums(diet_matrix) == 0)) {
         stop("According to the diet matrix, some species do not eat anything.")
@@ -148,10 +151,10 @@ convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
     Q <- getConsumption(params,
                         min_w_pred = min_w_pred,
                         max_w_pred = max_w_pred)
-    dm <- diet_matrix[sp$species, , drop = FALSE] * Q
-    if (nrow(dm) != no_sp) {
+    if (!all(sp$species %in% rownames(diet_matrix))) {
         stop("diet_matrix does not include all model species as rows.")
     }
+    dm <- diet_matrix[sp$species, , drop = FALSE] * Q
     # Keep only the species-on-species part
     D <- dm[, sp$species, drop = FALSE]
     return(D)
