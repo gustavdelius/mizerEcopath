@@ -44,13 +44,19 @@ matchDiet <- function(params, diet_matrix,
                            min_w_pred = min_w_pred,
                            max_w_pred = max_w_pred)
 
-    # Make the interaction matrix non-interacting
+    # Make the model non-interacting
     params <- makeNoninteracting(params)
 
-    # Get diet matrix when interaction matrix is all 1. This is also the
-    # Encounter matrix because we have switched off satiation.
+    # Get diet matrix when interaction matrix is all 1, keeping the total
+    # encounter rate unchanged. Setting interaction_matrix[] <- 1 would add
+    # species-species encounter on top of the already-full ext_encounter, so we
+    # subtract that excess to hold the total constant. This makes the diet
+    # exactly linear in theta, so that theta = D / E recovers the original
+    # interaction strengths when D is the current diet matrix.
     interaction_matrix(params)[] <- 1
-    E <- getDietMatrix(params, min_w_pred = min_w_pred,
+    params_E <- params
+    ext_encounter(params_E) <- 2 * ext_encounter(params_E) - getEncounter(params_E)
+    E <- getDietMatrix(params_E, min_w_pred = min_w_pred,
                        max_w_pred = max_w_pred)[1:no_sp, 1:no_sp]
     interaction_matrix(params)[] <- 0
 

@@ -3,15 +3,11 @@ test_that("matchDiet throws error for non-MizerParams input", {
                  "params must be a MizerParams object.")
 })
 
-test_that("matchDiet with getDietMatrix leaves diet unchanged", {
-    # Apply matchDiet once to obtain a result in a known state
+test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params unchanged", {
     dm <- getDietMatrix(celtic_params)
-    result1 <- matchDiet(celtic_params, diet_matrix = dm)
-    # Apply matchDiet again using its own diet matrix
-    dm1 <- getDietMatrix(result1)
-    result2 <- matchDiet(result1, diet_matrix = dm1)
-    result2@time_modified <- result1@time_modified
-    expect_equal(result1, result2)
+    result <- matchDiet(celtic_params, diet_matrix = dm)
+    result@time_modified <- celtic_params@time_modified
+    expect_equal(result, celtic_params)
 })
 
 test_that("matchDiet aggregates non-species prey columns into other", {
