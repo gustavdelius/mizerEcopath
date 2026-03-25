@@ -19,8 +19,11 @@
 #' is incompatible with other model parameters.
 #'
 #' @param params A MizerParams object
-#' @param diet_matrix The Ecopath diet matrix as produced by
-#'   `reduceEcopathDiet()`.
+#' @param diet_matrix The diet matrix to match. Rows correspond to predator
+#'   species and columns to prey species. Values give the diet composition of
+#'   each predator. Any prey columns whose names do not match species in
+#'   `params` are summed into an "other" category. Rows are normalised to sum
+#'   to 1, so the entries need not be pre-normalised proportions.
 #' @inheritParams getDietMatrix
 #'
 #' @return A MizerParams object with the interaction matrix set so that the
@@ -97,21 +100,20 @@ checkDietMatrix <- function(diet_matrix) {
 
 #' Convert a proportional diet matrix to absolute consumption
 #'
-#' This internal helper function converts a diet matrix expressed in proportions
-#' (i.e. each row summing to 1) into a matrix of absolute consumption
-#' (i.e. biomass consumed per year), based on the species' total consumption
-#' rates. It also restricts the matrix to include only the modelled species
-#' (i.e. drops the "other" column and any unmatched rows). The conversion is done
-#' by multiplying each row of the input diet matrix by the total consumption of the
-#' corresponding predator species. This gives the absolute biomass consumed by each
-#' predator from each prey.
+#' This internal helper function converts a diet matrix into a matrix of
+#' absolute consumption (i.e. biomass consumed per year), based on the species'
+#' total consumption rates. Any prey columns not matching model species are
+#' summed into an "other" category, rows are normalised to sum to 1, and then
+#' each row is scaled by the total consumption of the corresponding predator.
+#' The result is restricted to the modelled species on both axes.
 #'
 #' This functions is intended for internal use and is called by `matchDiet()`.
 #'
 #' @inheritParams getDietMatrix
 #' @param diet_matrix A numeric matrix where rows correspond to predator species
-#'   and columns to prey species (plus an optional "other" column). Rows must sum
-#'   to 1. Should include all model species as both row and column names.
+#'   and columns to prey species. Any prey columns whose names do not match
+#'   species in `params` are summed into a single "other" column. Rows are
+#'   normalised to sum to 1. Should include all model species as row names.
 #' @return A numeric matrix with dimensions (n_species x n_species), giving
 #'   absolute consumption rates (g/year) for each predator–prey pair.
 #' @keywords internal
@@ -119,15 +121,32 @@ convertDietMatrix <- function(diet_matrix, params, min_w_pred, max_w_pred) {
     sp <- params@species_params
     no_sp <- nrow(sp)
     checkDietMatrix(diet_matrix)
+
+    # Sum all prey columns not matching model species into "other"
+    species_prey_cols <- intersect(colnames(diet_matrix), sp$species)
+    other_prey_cols <- setdiff(colnames(diet_matrix), sp$species)
+    other_sum <- if (length(other_prey_cols) > 0) {
+        rowSums(diet_matrix[, other_prey_cols, drop = FALSE])
+    } else {
+        rep(0, nrow(diet_matrix))
+    }
+    diet_matrix <- cbind(
+        diet_matrix[, species_prey_cols, drop = FALSE],
+        other = other_sum
+    )
+
+    # Normalise rows to sum to 1
+    diet_matrix <- diet_matrix / rowSums(diet_matrix)
+
     # Convert diet matrix from proportions to absolute consumption
     Q <- getConsumption(params,
                         min_w_pred = min_w_pred,
                         max_w_pred = max_w_pred)
-    dm <- diet_matrix * Q / rowSums(diet_matrix)
-    # Keep only the part corresponding to species
-    D <- dm[sp$species, sp$species, drop = FALSE]
-    if (nrow(D) != no_sp || ncol(D) != no_sp) {
-        stop("diet_matrix does not include all model species.")
+    dm <- diet_matrix[sp$species, , drop = FALSE] * Q
+    if (nrow(dm) != no_sp) {
+        stop("diet_matrix does not include all model species as rows.")
     }
+    # Keep only the species-on-species part
+    D <- dm[, sp$species, drop = FALSE]
     return(D)
 }
