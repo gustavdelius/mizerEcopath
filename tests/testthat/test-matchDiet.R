@@ -37,6 +37,22 @@ test_that("matchDiet achieves the target diet matrix", {
         1, Q, "*"
     )
     expect_equal(getDietMatrix(result)[sp, sp], expected, tolerance = 1e-6)
+
+    # Same as above but with North Sea model
+    params <- NS_params
+    sp <- params@species_params$species
+    params@ext_encounter <- getEncounter(NS_params)
+    dm <- getDietMatrix(params)
+    dm_target <- dm
+    dm_target[, sp[2]] <- dm_target[, sp[2]] * 0.9
+    result <- matchDiet(params, diet_matrix = dm_target)
+    # Expected absolute flows: normalise rows of dm_target then scale by Q
+    Q <- getConsumption(params)
+    expected <- sweep(
+        dm_target[sp, sp] / rowSums(dm_target[sp, , drop = FALSE]),
+        1, Q, "*"
+    )
+    expect_equal(getDietMatrix(result)[sp, sp], expected, tolerance = 1e-6)
 })
 
 # checkDietMatrix errors ---------------------------------------------------
