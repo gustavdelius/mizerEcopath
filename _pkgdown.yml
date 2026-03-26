@@ -93,7 +93,6 @@ reference:
   - precompute_weights
   - valid_catch
   - addCatch
-  - catchSelectivity
   - has_concept("helper")
 - title: "Obsolete?"
   desc: >
