@@ -4,29 +4,69 @@ format: html
 editor: visual
 ---
 
+-   newAllometricParams() should set resource n to species n
+
+-   
+
+-   Need to allow people to use von Bertalanffy parameters somehow. But not via existing growth tab.
+
+-   matchYield can lead to overfishing
+
+-   tuneEcopath should untick match buttons
+
+-   Jess reports that the mean K lines aren't helpful in most cases.
+
+-   Should always display likelihood values
+
+-   preprocess_length_at_age if we want to sharing it should document its requirements.
+
+-   Add example data frames and use them in the example section of the docs.
+
+-   what plotDeathX is for
+
+-   Remove sliders for things that don't change steady state also from tuneParams.
+
+-   Make things work also for James
+
+-   Compare the fixes for gear switching in the app
+
+-   catchSelectivity() tried to set the selectivity not from gear parameters but exactly representing the observed landings. This proved problematic when starting with a model that was not already pretty well tuned. Also the code is not yet up to scratch. Archive into a branch for future development.
+
+-   Remove steps from addCatch(). Make old biomass column in landings continue to work. Update docs. Potentially use single helper.
+
+-   Add species params for external rates and for diffusion to core mizer. Can build on `setDiffusion()` in this package. change from d_over_g
+
+-   Remove all these erepro warnings
+
+-   Convenience function for adding kernel parameters
+
 ## Improvements to the shiny gadget
 
 There should be a tab where the current match to all the data can be seen at the same time. This would be an extension of the current "catch" tab where below the fit to the catch size distribution one can also see all the other data that is being used in the parameter estimation. Currently that is the yield and the production, but we may add the reproductive success and the consumption later.
+
+For example death of all species on Death tab. Jess has nice survey tab and lots of ideas.
 
 On this tab it should be possible to change the penalty factors `yield_lambda` and `production_lambda`, which currently can not be changed from within the shiny gadget.
 
 If there are multiple gears per species, all the gears for the current species
 
+Should have slimmed-down versions for specific tasks, building on Jess's experience.
+
 ## Multiple gears per species
 
 The parameter estimation should be extended to estimate the selectivity and catchability parameters of multiple gears for each species.
 
-Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will need a selectivity gear that decreases again at larger sizes. We need to experiment to find a suitable functional form for the selectivity curve. One possibility would be sigmoid times power law. But we should also ask the experts in Spain.
+Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will usually need a selectivity gear that decreases again at larger sizes. There should be the possibility of selecting a different penalty factor `yield_lambda` for each gear, initially chosen proportional to observed yield. The gear that selects fish up to the largest size may need to get increased weight in order to force the size spectrum to drop of appropriately.
+
+We use double-sigmoid but could in the distant future experiment to find another suitable functional form for the selectivity curve. One possibility would be sigmoid times power law. But we should also ask the experts in Spain.
 
 It might be easiest to use the generalised selectivity curve for all species but put a penalty on the amount of decrease at larger sizes. That way as much as possible of the decrease in catches at large sizes will be modelled through a decrease in abundance and a decrease in selectivity will be used only when needed.
 
-Should there be the possibility of selecting a different penalty factor `yield_lambda` for each gear?
-
-## Interacting case
+## Fusion with tuneParams
 
 As much as possible of the automatic parameter estimation should work also for an interacting model, where the mortality is not given entirely through a power law external mortality.
 
-This can probably be achieved easily by also passing the total current natural mortality to the objective function where it is added to the estimated power law mortality. The lower limit on the coefficient of the added power law mortality should be set so that the existing external mortality plus the estimated power law mortality does not go negative anywhere.
+This can probably be achieved easily (really?) by also passing the total current natural mortality to the objective function where it is added to the estimated power law mortality. The lower limit on the coefficient of the added power law mortality should be set so that the existing external mortality plus the estimated power law mortality does not go negative anywhere.
 
 Of course in an interacting model the result of the adjustment of the parameters will not again be a multi-species steady state.
 
@@ -38,10 +78,8 @@ This will mean that matching consumption estimates will not be as straighforward
 
 ## Estimate reproduction parameters
 
-Currently the reproduction parameters `w_repro_max` and `m` need to be tuned by hand. Instead they could be tuned by giving a target value for the reproductive success.
+Currently the reproduction parameters `w_repro_max` and `m`need to be tuned by hand. Instead they could be tuned by giving a target value for the reproductive success. Already done for `m`
 
-## Fit to size at age data
+## Fit to age at size data
 
-We should also use size at age data to pin down the growth after maturity. This will help with the estimation of the reproduction parameters and, once n != p, the metabolic respiration.
-
-If size at age data is not available but only von Bertalanffy parameters, we could create synthetic data by adding noise to the length, using the same model that was used to estimate the von Bertalanffy parameters.
+Would be so great to incorporate this into the optimiser.

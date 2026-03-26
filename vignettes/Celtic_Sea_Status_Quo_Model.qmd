@@ -266,9 +266,9 @@ blue_whiting<-tuneEcopath(
 
 ```{r}
 #| eval: false
-s<-mizer::steadySingleSpecies(blue_whiting)
-g<-setFeedingLevels(params=s, feeding_level=0.6, critical_feeding_level=0.2)
-p<-mizer::steadySingleSpecies(g)
+s <- steadySingleSpecies(final)
+g <- setFeedingLevels(params=s, f=0.6, f_c=0.2)
+
 plotSpectra2(p,s)
 
 params <- p
