@@ -132,6 +132,33 @@ test_that("bindParams errors on mismatched resource_params", {
     expect_error(bindParams(p1, p2), "identical `resource_params`")
 })
 
+test_that("bindParams preserves slot comments", {
+    p <- newTraitParams(no_sp = 4)
+    sp <- p@species_params$species
+    p1 <- removeSpecies(p, sp[3:4])
+    p2 <- removeSpecies(p, sp[1:2])
+
+    # comment on p1 only
+    comment(p1@psi) <- "from p1"
+    # comment on p2 only
+    comment(p2@metab) <- "from p2"
+    # same comment on both -> no duplication
+    comment(p1@intake_max) <- "shared"
+    comment(p2@intake_max) <- "shared"
+    # different comments on same slot -> both preserved
+    comment(p1@search_vol) <- "vol p1"
+    comment(p2@search_vol) <- "vol p2"
+
+    pc <- bindParams(p1, p2)
+
+    expect_identical(comment(pc@psi), "from p1")
+    expect_identical(comment(pc@metab), "from p2")
+    expect_identical(comment(pc@intake_max), "shared")
+    expect_identical(comment(pc@search_vol), c("vol p1", "vol p2"))
+    # slot with no comments in either should remain NULL
+    expect_null(comment(pc@maturity))
+})
+
 test_that("bindParams errors with fewer than two params", {
     p1 <- newSingleSpeciesParams()
     expect_error(bindParams(p1), "at least two")

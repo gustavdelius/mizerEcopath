@@ -1,8 +1,8 @@
-test_that("setResourceInteraction preserves resource levels and modifies encounters", {
+test_that("setResourceInteraction works", {
     # Create a simple test params object
     params <- newMultispeciesParams(
         species_params = data.frame(
-            species = "species1",
+            species = c("species1", "species2"),
             w_inf = 100,
             interaction_resource = 0.5,
             stringsAsFactors = FALSE
@@ -10,8 +10,8 @@ test_that("setResourceInteraction preserves resource levels and modifies encount
     ) |> suppressWarnings() |> suppressMessages() |>
         setResource(resource_level = 0.5)
 
-    power_encounter <- params@w ^ params@species_params$n
-    ext_encounter(params) <- matrix(power_encounter, nrow = 1)
+    power_encounter <- params@w ^ params@species_params$n[1]
+    ext_encounter(params)[1, ] <- power_encounter
 
     # Store initial values
     initial_resource <- resource_level(params)
@@ -30,8 +30,10 @@ test_that("setResourceInteraction preserves resource levels and modifies encount
     expect_equal(getEGrowth(params_new), getEGrowth(params))
     expect_equal(getMort(params_new), getMort(params))
 
-    # Test interaction_resource increased
-    expect_true(params_new@species_params$interaction_resource > initial_interaction)
+    # Test interaction_resource increased for first species
+    expect_true(params_new@species_params$interaction_resource[1] > initial_interaction[1])
+    # but stayed the same for the second
+    expect_identical(params_new@species_params$interaction_resource[2], initial_interaction[2])
 
     # Test external encounter rate decreased
     expect_true(all(params_new@ext_encounter <= initial_ext_encounter))
@@ -62,4 +64,11 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
 
     # Should scale linearly with interaction_resource
     expect_equal(encounter_rates2, 2 * encounter_rates)
+
+    # Should equal to total predation encounter when interaction matrix is 0
+    params2 <- params
+    params2@interaction[] <- 0
+    params2@other_encounter <- list()
+    params2@ext_encounter[] <- 0
+    expect_equal(getEncounter(params2), encounter_rates)
 })

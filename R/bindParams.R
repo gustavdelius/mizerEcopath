@@ -19,7 +19,9 @@
 #'   are combined with `rbind()`. The per-species arrays from the various slots
 #'   are stacked along the species dimension. The interaction matrix is set to
 #'   all zeros. All other slots (resource spectrum, rates functions, etc.) are
-#'   taken from the first params object.
+#'   taken from the first params object. Any `comment` attributes on slots are
+#'   preserved; if multiple input objects carry comments on the same slot, the
+#'   comments are combined after removing duplicates.
 #'
 #' @seealso [addSpecies()], [removeSpecies()]
 #' @export
@@ -184,6 +186,17 @@ bindParams <- function(...) {
         lt[!(names(lt) %in% special)]
     }))
     p@linetype <- c(species_lt, p@linetype[intersect(special, names(p@linetype))])
+
+    # Preserve slot comments ----
+    for (sn in slotNames(p)) {
+        all_comments <- unique(unlist(lapply(params_list,
+                                             function(x) comment(slot(x, sn)))))
+        if (length(all_comments) > 0) {
+            s <- slot(p, sn)
+            comment(s) <- all_comments
+            slot(p, sn) <- s
+        }
+    }
 
     p@time_modified <- lubridate::now()
     validObject(p)

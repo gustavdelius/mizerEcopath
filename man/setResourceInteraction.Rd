@@ -9,7 +9,8 @@ setResourceInteraction(params, resource_dynamics = NULL)
 \arguments{
 \item{params}{A mizer params object}
 
-\item{resource_dynamics}{Optional. Character string specifying the resource dynamics to use. If NULL (default), does not change the current resource dynamics.}
+\item{resource_dynamics}{Optional. Character string specifying the resource
+dynamics to use. If NULL (default), the current resource dynamics are kept.}
 }
 \value{
 The modified mizer params object with increased \code{interaction_resource}
@@ -31,7 +32,7 @@ Optionally, you can specify the resource dynamics to use (e.g.,
 "resource_semichemostat" or "resource_constant") by setting the
 resource_dynamics argument. This allows you to switch between dynamic and
 constant resource regimes directly through this function. For example:
-params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")
+\code{params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")}
 will set the resource dynamics to semichemostat.
 
 Note: The function ensures that the resource level passed to setResource()
