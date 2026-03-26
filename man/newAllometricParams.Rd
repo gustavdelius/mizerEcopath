@@ -42,5 +42,9 @@ and \code{steadySingleSpecies()} to bring each species to steady state. It then
 calls \code{setBevertonHolt()} to set the reproduction level to zero
 
 Because the model does not make use of the resource spectrum, the resource
-dynamics is switched off.
+dynamics is switched off. Even though it isn't being used yet, an initial
+resource abundance power law is set up that stretches over the entire size
+range with an exponent of $\lambda = 2.05$ and an arbitrary coefficient of
+$\kappa = 10^{11}$. The exponent of the resource replenishment rate is
+set to $n = 0.7$.
 }
