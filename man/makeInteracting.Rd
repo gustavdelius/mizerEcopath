@@ -4,13 +4,18 @@
 \alias{makeInteracting}
 \title{Enable predator–prey interactions using an interaction matrix}
 \usage{
-makeInteracting(params, interaction)
+makeInteracting(params, interaction, interaction_resource = NULL)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
 \item{interaction}{An interaction  matrix where entry \emph{(i, j)} gives the strength
 with which species \emph{i} preys on \emph{j}.}
+
+\item{interaction_resource}{A numeric vector of length equal to the number of
+species giving the interaction strength of each species with the resource.
+Defaults to zero (no resource interaction). Pass the original values when
+reinstating resource interactions that were zeroed by \code{\link[=makeNoninteracting]{makeNoninteracting()}}.}
 }
 \value{
 The modified MizerParams object

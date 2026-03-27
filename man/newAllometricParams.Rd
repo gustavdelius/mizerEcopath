@@ -44,7 +44,7 @@ calls \code{setBevertonHolt()} to set the reproduction level to zero
 Because the model does not make use of the resource spectrum, the resource
 dynamics is switched off. Even though it isn't being used yet, an initial
 resource abundance power law is set up that stretches over the entire size
-range with an exponent of $\lambda = 2.05$ and an arbitrary coefficient of
-$\kappa = 10^{11}$. The exponent of the resource replenishment rate is
-set to $n = 0.7$.
+range with an exponent of \code{lambda = 2.05} and an arbitrary coefficient of
+\code{kappa = 10^11}. The exponent of the resource replenishment rate is
+set to \code{n = 0.7}.
 }

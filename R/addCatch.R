@@ -23,8 +23,8 @@
 addCatch <- function(params, landings, survey,step) {
     sp <- params@species_params
 
-    if (!hasName(sp, "ecopath_groups") || !hasName(sp, "biomass_observed")) {
-        stop("You must use `addEcopathParams()` before calling `addCatch()`.")
+    if (!hasName(sp, "biomass_observed")) {
+        stop("You must set the `biomass_observed` species parameter before calling `addCatch()`.")
     }
 
     # Helper to create gear param structure

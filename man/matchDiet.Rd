@@ -9,8 +9,11 @@ matchDiet(params, diet_matrix, min_w_pred = 0, max_w_pred = Inf)
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{diet_matrix}{The Ecopath diet matrix as produced by
-\code{reduceEcopathDiet()}.}
+\item{diet_matrix}{The diet matrix to match. Rows correspond to predator
+species and columns to prey species. Values give the diet composition of
+each predator. Any prey columns whose names do not match species in
+\code{params} are summed into an "other" category. Rows are normalised to sum
+to 1, so the entries need not be pre-normalised proportions.}
 
 \item{min_w_pred}{The minimum weight of predators to include in the diet
 matrix. Default is 0.}

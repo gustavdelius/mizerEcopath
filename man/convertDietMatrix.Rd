@@ -8,8 +8,9 @@ convertDietMatrix(diet_matrix, params, min_w_pred, max_w_pred)
 }
 \arguments{
 \item{diet_matrix}{A numeric matrix where rows correspond to predator species
-and columns to prey species (plus an optional "other" column). Rows must sum
-to 1. Should include all model species as both row and column names.}
+and columns to prey species. Any prey columns whose names do not match
+species in \code{params} are summed into a single "other" column. Rows are
+normalised to sum to 1. Should include all model species as row names.}
 
 \item{params}{A MizerParams object}
 
@@ -24,14 +25,12 @@ A numeric matrix with dimensions (n_species x n_species), giving
 absolute consumption rates (g/year) for each predator–prey pair.
 }
 \description{
-This internal helper function converts a diet matrix expressed in proportions
-(i.e. each row summing to 1) into a matrix of absolute consumption
-(i.e. biomass consumed per year), based on the species' total consumption
-rates. It also restricts the matrix to include only the modelled species
-(i.e. drops the "other" column and any unmatched rows). The conversion is done
-by multiplying each row of the input diet matrix by the total consumption of the
-corresponding predator species. This gives the absolute biomass consumed by each
-predator from each prey.
+This internal helper function converts a diet matrix into a matrix of
+absolute consumption (i.e. biomass consumed per year), based on the species'
+total consumption rates. Any prey columns not matching model species are
+summed into an "other" category, rows are normalised to sum to 1, and then
+each row is scaled by the total consumption of the corresponding predator.
+The result is restricted to the modelled species on both axes.
 }
 \details{
 This functions is intended for internal use and is called by \code{matchDiet()}.
