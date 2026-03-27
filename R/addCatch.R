@@ -20,7 +20,7 @@
 #'
 #' @return A MizerParams object with updated gear parameters and effort turned on.
 #' @export
-addCatch <- function(params, landings, survey,step) {
+addCatch <- function(params, landings, survey) {
     sp <- params@species_params
 
     if (!hasName(sp, "biomass_observed")) {
@@ -80,15 +80,6 @@ addCatch <- function(params, landings, survey,step) {
 
     # Set gear parameters
     gear_params(params) <- validGearParams(gp, sp)
-
-    # Set fishing effort depending on step
-    if (step == 1) {
-        initial_effort(params)[unique(landings$gear)] <- 0
-        gear_params(params)$catchability<-1e-7
-    } else if (step %in% c(2, 3)) {
-        initial_effort(params)[unique(landings$gear)] <- 1
-        gear_params(params)$catchability<-1
-    }
 
     # Survey effort is always on
     initial_effort(params)["survey"] <- 1
