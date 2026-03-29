@@ -10,11 +10,11 @@ test_that("setFeedingLevels works", {
     ### Test Prerequisites / Errors ------------------------------------------
     #Check with interacting model NS
     expect_error(setFeedingLevels(NS_params, f = 0.6, f_c = 0.2),
-                regexp = "This function only works for models where all encounter is external encounter")
+                 regexp = "This function only works for models where all encounter is external encounter")
 
     # Check exponents n and p values are the same
     expect_error(setFeedingLevels(params, f = 0.6, f_c = 0.2),
-        regexp = "Exponents n and p must be equal")
+                 regexp = "Exponents n and p must be equal")
 
     params@species_params$n <- 0.7
 

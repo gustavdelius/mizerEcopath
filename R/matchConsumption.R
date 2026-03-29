@@ -63,15 +63,18 @@ matchConsumption <- function(params, species = NULL) {
 
     # Calculate R = alpha * Q - P for each selected species
     total_production <- getTotalProduction(params)
-    R <- sp$alpha[sp_select] * sp$consumption_observed[sp_select] - total_production[sp_select]
+    R <- sp$alpha[sp_select] * sp$consumption_observed[sp_select] -
+        total_production[sp_select]
 
-    # If the needed ks value is below the minimal acceptable value, set it to the
-    # minimal acceptable value and issue a warning.
-    problem_species <- sp$species[sp_select][R < 0.1 * total_production[sp_select]]
+    # If the needed ks value is below the minimal acceptable value, set it to
+    # the minimal acceptable value and issue a warning.
+    is_R_small <- R < 0.1 * total_production[sp_select]
+    problem_species <- sp$species[sp_select][is_R_small]
     if (length(problem_species) > 0) {
         warning("Perfect match to Ecopath consumption not possible for: ",
                 paste(problem_species, collapse = ", "),
-                " because it would lead to a low metabolic rate of less than 10% of the production rate.")
+                " because it would lead to a low metabolic rate of less ",
+                "than 10% of the production rate.")
         R <- pmax(R, 0.1 * total_production[sp_select])
     }
 
@@ -81,7 +84,8 @@ matchConsumption <- function(params, species = NULL) {
     # Reset metabolic rate to w^n for each selected species
     w <- params@w
     n_vals <- sp$n[sp_select]
-    # Create a matrix of w^(n) for each species (rows = species, cols = size classes)
+    # Create a matrix of w^(n) for each species
+    # (rows = species, cols = size classes)
     w_matrix <- matrix(w, nrow = sum(sp_select), ncol = length(w), byrow = TRUE)
     n_matrix <- matrix(n_vals, nrow = sum(sp_select), ncol = length(w))
     metab_unit <- w_matrix ^ n_matrix
@@ -100,7 +104,8 @@ matchConsumption <- function(params, species = NULL) {
     metab_new <- sweep(metab_unit, 1, ks, "*")
     params@metab[sp_select, ] <- metab_new
 
-    # Increase the encounter rate to compensate: ext_encounter + (metab_new - metab_old) / alpha
+    # Increase the encounter rate to compensate
+    # to ext_encounter + (metab_new - metab_old) / alpha
     ext_en <- ext_encounter(params)
     met_diff <- metab_new - metab_old
     alpha_vec <- sp$alpha[sp_select]

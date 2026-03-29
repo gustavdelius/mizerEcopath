@@ -42,6 +42,7 @@ diffusionControl <- function(input, output, session, params, params_old,
         p@species_params[[sp, "annuli_min_age"]] <- input$annuli_min_age
         p@species_params[[sp, "annuli_date"]] <- input$annuli_date
         p@species_params[[sp, "d_over_g"]] <- input$d_over_g
+        p <- setDiffusion(p, reset = TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })
 }
@@ -55,7 +56,7 @@ diffusionControlUI <- function(params, input) {
     tagList(
         tags$h3(tags$a(id = "cohorts"), "Cohorts"),
         sliderInput("spawning_mu", "Mean time of spawning",
-                    value = sp$spawning_mu ,
+                    value = sp$spawning_mu,
                     min = 0,
                     max = 0.99,
                     step = 0.01),
@@ -78,6 +79,6 @@ diffusionControlUI <- function(params, input) {
                     value = sp$d_over_g,
                     min = signif(sp$d_over_g / 2, 2),
                     max = signif((sp$d_over_g + 0.1) * 1.5, 2),
-                    step = 0.01)
+                    step = 0.0001)
     )
 }

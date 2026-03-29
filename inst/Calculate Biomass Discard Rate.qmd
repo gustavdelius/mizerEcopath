@@ -1,0 +1,126 @@
+---
+title: "Calculate Biomass Discard Rate"
+format: html
+editor: visual
+---
+
+## Load Libraries
+
+```{r}
+# Load required libraries
+library(tidyverse)
+library(here)
+library(mizer)
+library(here)
+library(mizerExperimental)
+```
+
+Processing
+
+```{r}
+FDI_EU_2013<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2013.csv")
+FDI_EU_2014<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2014.csv")
+FDI_EU_2015<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2015.csv")
+FDI_EU_2016<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2016.csv")
+FDI_EU_2017<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2017.csv")
+FDI_EU_2018<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2018.csv")
+FDI_EU_2019<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2019.csv")
+FDI_EU_2020<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2020.csv")
+FDI_EU_2021<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2021.csv")
+FDI_EU_2022<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2022.csv")
+FDI_EU_2023<-read.csv("/Users/jessicawestworth/Desktop/Data we might want/Catches/FDI Catches by country2023.csv")
+
+FDI_EU<-rbind(FDI_EU_2013,FDI_EU_2014,FDI_EU_2015,FDI_EU_2016,FDI_EU_2017,FDI_EU_2018,FDI_EU_2019,FDI_EU_2020,FDI_EU_2021,FDI_EU_2022,FDI_EU_2023)
+
+unique(FDI_EU$sub_region)
+
+FDI_EU <- FDI_EU %>%
+  mutate(
+    sub_region = case_when(
+      sub_region %in% c("27.7.B") ~ "cs",
+      sub_region %in% c("27.7.D") ~ "cs",
+      sub_region %in% c("27.7.E") ~ "cs",
+      sub_region %in% c("27.7.F") ~ "cs",
+      sub_region %in% c("27.7.G") ~ "cs",
+      sub_region %in% c("27.7.H") ~ "cs",
+      sub_region %in% c("27.7.J") ~ "cs",
+      TRUE ~ NA_character_),
+    total_live_weight_landed = case_when(
+        total_live_weight_landed %in% c("C") ~ NA_character_,
+        TRUE ~ total_live_weight_landed),
+    tot_discards_tonnes = case_when(
+        tot_discards_tonnes %in% c("C") ~ NA_character_,
+        TRUE ~ tot_discards_tonnes))%>%
+    filter(!is.na(total_live_weight_landed),
+           !is.na(tot_discards_tonnes))
+    
+
+FDI_EU<-subset(FDI_EU, sub_region=="cs")
+FDI_EU$tot_discards_tonnes<-as.numeric(FDI_EU$tot_discards_tonnes)
+FDI_EU<-FDI_EU[c("gear_type","species","country","target_assemblage","total_live_weight_landed","tot_discards_tonnes")]
+FDI_EU$tot_discards_tonnes<-replace_na(FDI_EU$tot_discards_tonnes, 0)
+FDI_EU$total_live_weight_landed<-as.numeric(FDI_EU$total_live_weight_landed)
+FDI_EU<-na.omit(FDI_EU)
+
+FDI_EU<-FDI_EU %>%
+    group_by(gear_type, species,country,target_assemblage)%>%
+    summarise(total_landings = sum(total_live_weight_landed),
+              tot_discards_tonnes = sum(tot_discards_tonnes))
+
+species_list <- c("HER","COD","HAD","WHG","WHB","HKE","MON","HOM","MAC","PLE","MEG","SOL","GUR", "BOC", "LYY")
+
+FDI_EU <- subset_species(
+  data = FDI_EU,
+  species_list = species_list,
+  match_by = "species"
+ )
+
+FDI_EU <- FDI_EU%>%
+    mutate(
+        gear_category = case_when(
+             gear_type %in% c("OTT","OTB","OTB-OTT-PTB","PTB","TBB") ~ "Trawl",
+             gear_type %in% c("GND-GNS-GNC","GNS","GTR","GTR-GTN",
+                               "GND","GTN","GNC") ~ "Gillnet",
+             gear_type %in% c("LNB","LTL","LHM-LHP","LHM","LHP","LLD","OTM","OTM-PTM",
+                              "PTM","SB","SDN","SV","SPR","LLS","PS","PS-LA",
+                              "SSC","GEF") ~ "Pelagic",
+             TRUE ~ "Misc"))%>% # default for everything else
+    group_by(gear_category, species, country, target_assemblage)%>%
+    summarise(total_landings = sum(total_landings),
+              tot_discards_tonnes =sum(tot_discards_tonnes))%>%
+    mutate(discard_rate = tot_discards_tonnes/total_landings)
+
+new_species_names <- c("HER"="Herring",
+"COD"="Cod", 
+"HAD"="Haddock",
+"WHG"="Whiting",
+"WHB"="Blue whiting",
+"HKE"="Hake",
+"MON"="Monkfish",
+"HOM"="Horse mackerel",
+"MAC"="Mackerel",
+"PLE"="Plaice",
+"MEG"="Megrim",
+"SOL"="Sole",
+"BOC"="Boarfish",
+"LYY"="Dragonet",
+"GUR"="Red gurnard"
+)
+
+FDI_EU <- FDI_EU %>%
+  mutate(
+    species = recode(species, !!!new_species_names)
+  )
+
+#figure out which categories of species/gear/country/target assemblage fishing is composed of essentially only discards (no landings)
+
+all_discards<-subset(FDI_EU, discard_rate>1e2)
+
+#remove columns from the discard rate
+biomass_discard_rates<-FDI_EU%>%
+    filter(!is.na(discard_rate),
+           !is.infinite(discard_rate))
+
+#use_data(biomass_discard_rates, overwrite=TRUE)
+
+```
