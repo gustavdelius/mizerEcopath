@@ -42,10 +42,19 @@ vector<Type> calculate_F_mort(Type sel_func, Type logit_l50, Type log_ratio_left
 
 template<class Type>
 vector<Type> calculate_growth(vector<Type> w, vector<Type> ergr,
-                              vector<Type> matur, Type m, Type n, Type w_max)
+                              vector<Type> matur, Type m, Type n, Type w_repro_max)
 {
-    vector<Type> phi = matur * pow( w/w_max, m-n);
-    vector<Type> growth = (1- phi) * ergr;
+    // Matches mizer's psi formula: repro_prop = pmin(1, (w/w_repro_max)^(m-n))
+    // then psi = maturity * repro_prop, also capped at 1
+    vector<Type> repro_prop = pow(w / w_repro_max, m - n);
+    for (int i = 0; i < repro_prop.size(); i++) {
+        if (repro_prop(i) > Type(1.0)) repro_prop(i) = Type(1.0);
+    }
+    vector<Type> phi = matur * repro_prop;
+    for (int i = 0; i < phi.size(); i++) {
+        if (phi(i) > Type(1.0)) phi(i) = Type(1.0);
+    }
+    vector<Type> growth = (Type(1.0) - phi) * ergr;
 
     return growth;
 }
@@ -92,7 +101,7 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(matur);
     DATA_VECTOR(ergr);
     DATA_SCALAR(n);
-    DATA_SCALAR(w_max);
+    DATA_SCALAR(w_repro_max);
 
     PARAMETER_VECTOR(logit_l50);
     PARAMETER_VECTOR(log_ratio_left);
@@ -126,7 +135,7 @@ Type objective_function<Type>::operator() ()
 
     vector<Type> mort = mu_mat * pow(w / w_mat, d) + total_F_mort;
 
-    vector<Type> growth = calculate_growth(w, ergr, matur, m, n, w_max);
+    vector<Type> growth = calculate_growth(w, ergr, matur, m, n, w_repro_max);
 
     vector<Type> N = calculate_N(mort, growth, dw);
 

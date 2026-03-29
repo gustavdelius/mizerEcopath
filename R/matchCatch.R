@@ -209,6 +209,30 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         map <- list()
     }
 
+    # Fix m to its current species_params value by default, keeping the C++
+    # growth formula consistent with mizer's getEGrowth. Users can override
+    # by explicitly including "m" in their map argument.
+    if (!"m" %in% names(map)) {
+        map$m <- factor(NA)
+    }
+
+    # Fix right-side parameters for non-double-sigmoid gears. The C++ does not
+    # use log_l50_right_offset/log_ratio_right for sigmoid gears (sel_func==2),
+    # so leaving them free gives zero-gradient "phantom" parameters that corrupt
+    # nlminb's Hessian approximation and shift convergence for other parameters.
+    is_double <- data$sel_func == 1  # sel_func 1 = double_sigmoid_length
+    if (any(!is_double)) {
+        right_map_vec <- integer(length(data$sel_func))
+        right_map_vec[is_double] <- seq_len(sum(is_double))
+        right_map_vec[!is_double] <- NA
+        if (is.null(map$log_l50_right_offset)) {
+            map$log_l50_right_offset <- factor(right_map_vec)
+        }
+        if (is.null(map$log_ratio_right)) {
+            map$log_ratio_right <- factor(right_map_vec)
+        }
+    }
+
     if (!data$use_counts) {
         map$logit_l50 <- factor(rep(NA, length(data$sel_func)))
         map$log_ratio_left <- factor(rep(NA, length(data$sel_func)))

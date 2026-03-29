@@ -167,7 +167,13 @@ prepare_data <- function(params, species = 1, catch,
     ergr <- getEReproAndGrowth(params)[sp_select, w_select]
     matur <- params@maturity[sp_select, w_select]
     n <- sps$n
-    w_max <- sps$w_max
+    # mizer uses w_repro_max (not w_max) in the psi/growth formula, defaulting
+    # to w_max when w_repro_max is not set
+    w_repro_max <- if (!is.null(sps$w_repro_max) && !is.na(sps$w_repro_max)) {
+        sps$w_repro_max
+    } else {
+        sps$w_max
+    }
 
 
     # Prepare data list for TMB
@@ -196,7 +202,7 @@ prepare_data <- function(params, species = 1, catch,
         matur = matur,
         ergr = ergr,
         n = n,
-        w_max = w_max
+        w_repro_max = w_repro_max
     )
 
     return(data)

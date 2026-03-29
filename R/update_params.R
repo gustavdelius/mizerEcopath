@@ -70,7 +70,6 @@ update_params <- function(params, species = 1, pars, data) {
 
     # recalculate the power-law mortality rate
     sps$mu_mat <- pars[["mu_mat"]]
-    sps$m <- pars[["m"]]
     # Note that `mu_mat` is the mortality at the w just below w_mat
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
