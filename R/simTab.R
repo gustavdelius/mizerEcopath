@@ -1,9 +1,19 @@
+#' @rdname simTab
 simTabUI <- function(...) {
     tagList(
         plotlyOutput("plot_sim")
     )
 }
 
+#' Simulation tab for tuning gadget
+#'
+#' This tab shows the results of running the model to steady state. It
+#' displays the biomass dynamics during the simulation, helping to
+#' identify if the system reaches a stable equilibrium.
+#'
+#' @inheritParams spectraTab
+#' @family gadget tabs
+#' @export
 simTab <- function(input, output, session, params, params_old, logs, ...) {
     
     ## Plot run to steady ####

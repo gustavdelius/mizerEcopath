@@ -37,16 +37,38 @@ species parameter sliders.}
 \item{...}{Unused}
 }
 \description{
-The Number tab shows:
+This tab provides a comparison between model numbers (individuals)
+and observed numbers for each species. It features:
 \itemize{
-\item A plot of total number for each species, compared to
-observed numbers when available, using \code{\link[mizerExperimental:plotNumberVsSpecies]{mizerExperimental::plotNumberVsSpecies()}}.
-\item Buttons "Calibrate" and "Match" that trigger a call to
-\code{\link[mizer:calibrateNumber]{mizer::calibrateNumber()}} or \code{\link[mizer:matchNumbers]{mizer::matchNumbers()}} respectively.
+\item \strong{Total number plot}: Visualization of model total numbers
+(circles) vs observed total numbers (squares).
+\item \strong{Calibrate button}: Rescales the whole model so that the total
+observed numbers match the model total.
+\item \strong{Match button}: Adjusts each species' abundance to match its
+individual observed number.
 }
 }
-\details{
-Clicking on a species in the number plot makes that species the selected
-species. Double-clicking on a species selects that species \strong{and}
-changes its number.
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
 }
+\concept{gadget tabs}

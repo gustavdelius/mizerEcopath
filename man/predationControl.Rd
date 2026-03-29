@@ -27,5 +27,33 @@ predationControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Controlling the predation parameters in the tuning gadget
+This control allows the user to adjust parameters that define the
+feeding and predation behavior of the selected species:
+\itemize{
+\item \strong{gamma}: Predation rate coefficient.
+\item \strong{h}: Maximum intake rate coefficient.
+\item \strong{q}: Allometric exponent for the search volume.
+\item \strong{n}: Allometric exponent for the maximum intake rate.
+\item \strong{beta}: Preferred predator-prey mass ratio (the peak of the
+log-normal predation kernel).
+\item \strong{sigma}: The width of the log-normal predation kernel.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

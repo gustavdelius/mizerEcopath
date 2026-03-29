@@ -28,5 +28,25 @@ ecopathExponentControlUI(params, input)
 A tagList with sliders for the exponents
 }
 \description{
-Ecopath-specific allometric exponent control
+This control adjusts the allometric exponents for consumption (n),
+metabolism (p), and mortality (d). Changing these exponents allows
+for fine-tuning how these rates scale with body size.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

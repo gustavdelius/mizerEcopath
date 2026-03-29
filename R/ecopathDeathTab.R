@@ -1,5 +1,12 @@
 #' Ecopath death tab
 #'
+#' This tab provides diagnostic plots for mortality and production. It
+#' allows the user to explore:
+#' *   **Mortality density**: Breakdown of various mortality sources by size
+#'     and species.
+#' *   **Production vs Species**: Comparison of biomass produced across
+#'     all species in the model.
+#'
 #' @param input Reactive holding the inputs
 #' @param output Reactive holding the outputs
 #' @param session Shiny session
@@ -7,6 +14,8 @@
 #' @param logs Environment holding the log of steady states.
 #' @param diet A diet matrix to match the diet of the model to.
 #' @param ... Unused
+#' @family gadget tabs
+#' @export
 ecopathDeathTab <- function(input, output, session, params, logs,
                      diet = NULL, ...) {
     # Plot mortality

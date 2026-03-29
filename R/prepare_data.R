@@ -24,6 +24,7 @@
 #'
 #' @return A list with the data to be passed to the TMB objective function. If
 #'   there is no catch data for the species, the function returns NULL.
+#' @keywords internal
 #' @export
 prepare_data <- function(params, species = 1, catch,
                          yield_lambda = 1, production_lambda = 1) {
@@ -226,7 +227,7 @@ prepare_data <- function(params, species = 1, catch,
 #' @param w A numeric vector of weights at which the density is available.
 #' @return A list with vectors `bin_index`, `f_index`, `coeff_fj`, and `coeff_fj1`
 #'   used for efficient linear interpolation of density values over bins.
-
+#' @keywords internal
 precompute_weights <- function(w_bin_boundaries, w) {
     # Precompute overlaps and weights
     num_bins <- length(w_bin_boundaries) - 1

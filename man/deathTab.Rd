@@ -3,7 +3,7 @@
 \name{deathTab}
 \alias{deathTab}
 \alias{deathTabUI}
-\title{Serve tab with death plots}
+\title{Death tab for tuning gadget}
 \usage{
 deathTab(input, output, session, params, logs, ...)
 
@@ -23,5 +23,37 @@ deathTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Serve tab with death plots
+This tab displays the breakdown of mortality for the selected species.
+It shows:
+\itemize{
+\item \strong{Mortality plot}: A plotly visualization showing different
+sources of mortality (predation, fishing, background) across
+the size spectrum.
+\item \strong{Controls}: Options to display mortality as either a rate or
+a proportion, and to switch the x-axis between log and identity scales.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

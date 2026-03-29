@@ -5,7 +5,7 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Match the observed catch and yield — matchCatch"><meta name="description" content="This function adjusts various model parameters for the selected species so
+</script><script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Match the observed catch and yield — matchCatch"><meta name="description" content="This function adjusts various model parameters for the selected species so
 that the model in steady state reproduces the observed catch size
 distribution, the observed yield and the observed production, if available."><meta property="og:description" content="This function adjusts various model parameters for the selected species so
 that the model in steady state reproduces the observed catch size
@@ -17,7 +17,7 @@ distribution, the observed yield and the observed production, if available."></h
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9016</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,10 +29,10 @@ distribution, the observed yield and the observed production, if available."></h
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Celtic%20Sea%20Model.html">Celtic Sea Model</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
-    <li><a class="dropdown-item" href="../articles/North%20Sea%203%20spp%20Model.html">North Sea 3 Species Model</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -65,7 +65,9 @@ distribution, the observed yield and the observed production, if available.</p>
 <span>  <span class="va">catch</span>,</span>
 <span>  lambda <span class="op">=</span> <span class="fl">2.05</span>,</span>
 <span>  yield_lambda <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  production_lambda <span class="op">=</span> <span class="fl">1</span></span>
+<span>  production_lambda <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  mu_mat_lim <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  map <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -86,14 +88,17 @@ species whether it is to be selected (TRUE) or not.</p></dd>
 
 <dt id="arg-catch">catch<a class="anchor" aria-label="anchor" href="#arg-catch"></a></dt>
 <dd><p>A data frame containing the observed binned catch data. It must
-contain the following columns:</p><ul><li><p><code>length</code>: The start of each bin.</p></li>
+contain the following columns:</p><ul><li><p><code>species</code>: The species for which the catch is recorded.</p></li>
+<li><p><code>gear</code>: The gear used to collect the catch.</p></li>
+<li><p><code>length</code>: The start of each bin.</p></li>
 <li><p><code>dl</code>: The width of each bin.</p></li>
-<li><p><code>count</code>: The observed count for each bin.</p></li>
+<li><p><code>catch</code>: The observed count for each bin.</p></li>
 </ul></dd>
 
 
 <dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
-<dd><p>The slope of the community spectrum. Default is 2.05.</p></dd>
+<dd><p>The slope of the community spectrum, used to set the upper
+bound on <code>mu_mat</code>. Default is 2.05.</p></dd>
 
 
 <dt id="arg-yield-lambda">yield_lambda<a class="anchor" aria-label="anchor" href="#arg-yield-lambda"></a></dt>
@@ -105,6 +110,21 @@ deviation from the observed yield.</p></dd>
 <dd><p>A parameter that controls the strength of the penalty
 for deviation from the observed production.</p></dd>
 
+
+<dt id="arg-mu-mat-lim">mu_mat_lim<a class="anchor" aria-label="anchor" href="#arg-mu-mat-lim"></a></dt>
+<dd><p>Upper bound on the optimised <code>mu_mat</code> value. The hard
+upper bound derived from <code>lambda</code> and growth rate is further capped at
+this value. Default is 5.</p></dd>
+
+
+<dt id="arg-map">map<a class="anchor" aria-label="anchor" href="#arg-map"></a></dt>
+<dd><p>An optional named list that fixes specific parameters during
+optimisation. Use the user-facing parameter names (<code>"l50"</code>, <code>"l25"</code>,
+<code>"l50_right"</code>, <code>"l25_right"</code>, <code>"catchability"</code>, <code>"mu_mat"</code>, <code>"m"</code>).
+Each element should be a <code>factor</code> vector where <code>NA</code> entries fix the
+corresponding parameter at its initial value; see <code><a href="https://rdrr.io/pkg/TMB/man/MakeADFun.html" class="external-link">TMB::MakeADFun()</a></code>.
+By default <code>m</code> (the metabolic-rate exponent) is fixed.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -114,16 +134,24 @@ species.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Currently this function is implemented only for the case where there is a
-single gear catching each species.</p>
-<p>The function sets new values for the following parameters:</p><ul><li><p><code>l50</code>: The size at which the gear selectivity is 50%.</p></li>
-<li><p><code>l25</code>: The size at which the gear selectivity is 25%.</p></li>
+    <p>The function sets new values for the following parameters:</p><ul><li><p><code>l50</code>: The length at which the gear selectivity is 50%.</p></li>
+<li><p><code>l25</code>: The length at which the gear selectivity is 25%.</p></li>
+<li><p><code>l50_right</code>: The length at which the gear selectivity is 50% on the right
+side (only for <code>double_sigmoid_length</code> selectivity).</p></li>
+<li><p><code>l25_right</code>: The length at which the gear selectivity is 25% on the right
+side (only for <code>double_sigmoid_length</code> selectivity).</p></li>
 <li><p><code>catchability</code>: The catchability of the gear.</p></li>
-<li><p><code>mu_mat</code>: The external mortality at maturity.</p></li>
-</ul><p>Only the parameters of the selected species are adjusted. The function then
+<li><p><code>mu_mat</code>: The coefficient of the power-law external mortality
+<code>mu(w) = mu_mat * (w / w_mat)^d</code>, where <code>d</code> is taken from
+<code>species_params$d</code> and <code>w_mat</code> is the weight at maturity.</p></li>
+</ul><p>The observed yield per gear is taken from the <code>yield_observed</code> column of
+<code>gear_params(params)</code>. The observed production is taken from the
+<code>production_observed</code> column of <code>species_params(params)</code>.</p>
+<p>Only the parameters of the selected species are adjusted. The function then
 recalculates the corresponding rate arrays in the params object. It sets the
 initial size spectrum to the steady state size spectrum. The total biomass of
-each species remains unchanged.</p>
+each species is then rescaled to match the observed biomass and the
+reproduction level is set to zero via <code><a href="https://sizespectrum.org/mizer/reference/setBevertonHolt.html" class="external-link">mizer::setBevertonHolt()</a></code>.</p>
 <p>The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch
 size distribution given the probabilities predicted by the model plus the sum
@@ -132,14 +160,17 @@ the predicted yield, multiplied by <code>yield_lambda</code>, as well as the sum
 squares difference between the log of the observed production and the log of
 the predicted production, multiplied by <code>production_lambda</code>.</p>
 <p>The function deals with missing data in the following way, for each species
-individually:</p><ul><li><p>If the observed yield is not available, the function will only match the
-observed catch size distribution and the observed production.</p></li>
-<li><p>If the observed production is not available, the function will only match the
-observed catch size distribution and the observed yield.</p></li>
-<li><p>If the observed catch size distribution is not available, the function will
-only match the observed yield and the observed production.</p></li>
-<li><p>If neither the observed yield nor the observed production are available, the
-function raises an error.</p></li>
+individually:</p><ul><li><p>If the observed yield is not available (no positive <code>yield_observed</code> in
+<code>gear_params</code>), <code>yield_lambda</code> is set to 0 and only the catch size
+distribution and production are matched.</p></li>
+<li><p>If the observed production is not available (no <code>production_observed</code> in
+<code>species_params</code>), <code>production_lambda</code> is set to 0 and only the catch size
+distribution and yield are matched.</p></li>
+<li><p>If the observed catch size distribution is not available (empty <code>catch</code>),
+only the observed yield and the observed production are matched. The
+selectivity parameters are held fixed.</p></li>
+<li><p>If neither catch size data nor observed production are available, the
+function issues a warning and returns <code>params</code> unchanged.</p></li>
 </ul><p>The catch predicted by the model is calculated by integrating the
 catchability and the gear selectivity over the size distribution of the
 species. The size distribution itself is shaped by the model through the
@@ -165,8 +196,8 @@ objective function.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu">matchCatch</span><span class="op">(</span><span class="va">celtic_params</span>, species <span class="op">=</span> <span class="st">"Hake"</span>, catch <span class="op">=</span> <span class="va">celtic_catch</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Your MizerParams object was created with an earlier version of mizer. You can upgrade it with `params &lt;- validParams(params)` where you should replace `params` by the name of the variable that holds your MizerParams object.</span>
-<span class="r-in"><span><span class="fu">plot_catch</span><span class="op">(</span><span class="va">params</span>, species <span class="op">=</span> <span class="st">"Hake"</span>, catch <span class="op">=</span> <span class="va">celtic_catch</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Hake has zero growth rate after maturity size</span>
+<span class="r-in"><span><span class="fu"><a href="plot_catch.html">plot_catch</a></span><span class="op">(</span><span class="va">params</span>, species <span class="op">=</span> <span class="st">"Hake"</span>, catch <span class="op">=</span> <span class="va">celtic_catch</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="matchCatch-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># The function leaves the biomass of the species unchanged</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">getBiomass</span><span class="op">(</span><span class="va">params</span>, use_cutoff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
@@ -177,12 +208,22 @@ objective function.</p>
 <span class="r-in"><span><span class="co"># and growth unchanged</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">getEReproAndGrowth</span><span class="op">(</span><span class="va">params</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>          <span class="fu">getEReproAndGrowth</span><span class="op">(</span><span class="va">celtic_params</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Your MizerParams object was created with an earlier version of mizer. You can upgrade it with `params &lt;- validParams(params)` where you should replace `params` by the name of the variable that holds your MizerParams object.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span><span class="co"># The initial size spectrum is set to the steady state size spectrum</span></span></span>
 <span class="r-in"><span><span class="va">params_steady</span> <span class="op">&lt;-</span> <span class="fu">steadySingleSpecies</span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Herring has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Cod has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Megrim has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Monkfish has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Haddock has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Whiting has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Hake has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Blue whiting has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Plaice has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Mackerel has zero growth rate after maturity size</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Sole has zero growth rate after maturity size</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">initialN</span><span class="op">(</span><span class="va">params</span><span class="op">)</span>, <span class="fu">initialN</span><span class="op">(</span><span class="va">params_steady</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Mean relative difference: 0.01873681"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Mean relative difference: 0.01874523"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

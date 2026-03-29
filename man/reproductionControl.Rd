@@ -27,5 +27,31 @@ reproductionControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Controlling the reproduction parameters in the tuning gadget
+This control allows the user to adjust parameters that define the maturity
+ogive and the maximum size of a species:
+\itemize{
+\item \strong{w_mat}: Maturity size (50\% maturity).
+\item \strong{w_mat25/w_mat}: Ratio between size at 25\% and 50\% maturity,
+defining the sharpness of the maturity curve.
+\item \strong{w_max}: Maximum size reachable by the species.
+\item \strong{m}: Allometric exponent for the reproductive effort.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

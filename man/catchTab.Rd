@@ -3,7 +3,7 @@
 \name{catchTab}
 \alias{catchTab}
 \alias{catchTabUI}
-\title{Serve tab with catch data}
+\title{Catch tab for tuning gadget}
 \usage{
 catchTab(
   input,
@@ -32,19 +32,44 @@ catchTabUI(...)
 \item{trigger_update}{Reactive value used for triggering update of
 species parameter sliders.}
 
-\item{catch}{Data frame holding binned observed catch data. The data can be
-binned either into length bins or weight bins. In the former case the data
-frame should have columns \code{length} and \code{dl} holding the start of
-the size bins in cm and the width of the size bins in cm respectively. In
-the latter case the data frame should have columns \code{weight} and
-\code{dw} holding the start of the size bins in grams and the width of the
-size bins in grams. The data frame also needs to have the columns
-\code{species} (the name of the species), \code{gear} (the name of the
-gear) and \code{catch} (the number of individuals of a particular species
-caught by a particular gear in a size bin).}
+\item{catch}{Data frame holding binned observed catch data.}
 
 \item{...}{Unused}
 }
 \description{
-Serve tab with catch data
+This tab focuses on comparing model yield with observed catch data.
+It includes:
+\itemize{
+\item \strong{Total yield plot}: Comparison of yearly model yield vs
+observed yield for each species.
+\item \strong{Catch size distribution}: Plotly visualization of model yield
+density vs size, compared with observed binned catch data if
+available.
+\item \strong{Calibration and Matching}: Buttons to scale either the
+entire model or individual species abundance to match observed yields.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

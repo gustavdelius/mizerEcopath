@@ -34,3 +34,4 @@ This function is called when the user clicks the "Steady" button in
 \code{\link[=tuneParams]{tuneParams()}}. It runs the model to steady state and updates the params
 object.
 }
+\keyword{internal}

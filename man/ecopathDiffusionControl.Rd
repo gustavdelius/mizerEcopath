@@ -28,5 +28,32 @@ ecopathDiffusionControlUI(params, input)
 A tagList with sliders for the exponents
 }
 \description{
-Ecopath-specific diffusion control
+This control adjusts parameters related to age-based diffusion and cohort
+dynamics in an Ecopath-aligned mizer model. It includes settings for:
+\itemize{
+\item \strong{Mean time/concentration of spawning}: Controls the seasonal timing and
+duration of reproduction.
+\item \strong{Annulus date/age}: Specifies when and at what age annual growth
+markers (annuli) are formed.
+\item \strong{Diffusion strength}: Adjusts \code{d_over_g}, which determines how much
+individuals of the same age can vary in size.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

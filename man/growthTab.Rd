@@ -33,3 +33,27 @@ is used.}
 Growth tab for tuning gadget
 inheritParams biomassTab
 }
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

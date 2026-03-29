@@ -1,8 +1,16 @@
 #' Ecopath growth tab
 #'
+#' This tab displays growth-related information for the model:
+#' *   **Growth curves**: Plot size against age for either all species
+#'     or the selected species, optionally with `size_at_age` data.
+#' *   **Consumption rate**: Plot comparing model consumption with
+#'     Ecopath-estimated consumption values.
+#'
 #' @inheritParams ecopathDeathTab
 #' @param size_at_age A data frame with columns 'species', 'age' and 'size'
 #'   giving the size of individuals of each species at each age.
+#' @family gadget tabs
+#' @export
 ecopathGrowthTab <- function(input, output, session, params, logs,
                       size_at_age = NULL, ...) {
     # Help button ----

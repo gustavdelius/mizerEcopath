@@ -1,5 +1,16 @@
 #' Controlling the reproduction parameters in the tuning gadget
+#'
+#' This control allows the user to adjust parameters that define the maturity
+#' ogive and the maximum size of a species:
+#' *   **w_mat**: Maturity size (50% maturity).
+#' *   **w_mat25/w_mat**: Ratio between size at 25% and 50% maturity,
+#'     defining the sharpness of the maturity curve.
+#' *   **w_max**: Maximum size reachable by the species.
+#' *   **m**: Allometric exponent for the reproductive effort.
+#'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 reproductionControl <- function(input, output, session, params, params_old,
                                 flags, ...) {
     observeEvent(

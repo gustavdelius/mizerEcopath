@@ -28,5 +28,25 @@ ecopathMatchControlUI(params, input)
 A tagList with sliders for the matching strength
 }
 \description{
-Ecopath-specific match control
+This control adjusts the matching strength for production and yield.
+These parameters determine how strongly the model is attracted to
+its Ecopath-aligned targets during the tuning process.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

@@ -3,7 +3,7 @@
 \name{resourceTab}
 \alias{resourceTab}
 \alias{resourceTabUI}
-\title{Serve tab with resource plots}
+\title{Resource tab for tuning gadget}
 \usage{
 resourceTab(input, output, session, params, logs, ...)
 
@@ -23,5 +23,36 @@ resourceTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Serve tab with resource plots
+This tab displays information on the resource spectrum and its
+consumption. It features:
+\itemize{
+\item \strong{Resource predators}: Plot showing the sources of mortality for
+each size bin of the resource spectrum.
+\item \strong{Resource level}: Shows the resource density relative to its
+carrying capacity (kappa).
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

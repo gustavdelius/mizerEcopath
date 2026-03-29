@@ -30,5 +30,25 @@ abundanceControlUI(p, input)
 A tagList with a slider for the egg density
 }
 \description{
-Controlling egg abundance in the tuning gadget
+This control allows the user to adjust the egg density of the selected
+species. Each time the slider is moved, the entire size spectrum for that
+species is rescaled so that the initial density matches the new value.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

@@ -1,6 +1,15 @@
-#' Serve tab with resource plots
+#' Resource tab for tuning gadget
+#'
+#' This tab displays information on the resource spectrum and its
+#' consumption. It features:
+#' *   **Resource predators**: Plot showing the sources of mortality for
+#'     each size bin of the resource spectrum.
+#' *   **Resource level**: Shows the resource density relative to its
+#'     carrying capacity (kappa).
 #'
 #' @inheritParams biomassTab
+#' @family gadget tabs
+#' @export
 resourceTab <- function(input, output, session, params, logs, ...) {
     
     # Plot resource ----

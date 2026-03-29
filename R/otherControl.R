@@ -1,20 +1,18 @@
-#' Controlling the species parameters not included in other controls
+#' Other parameters control for tuning gadget
 #'
-#'   Adds controls for the parameters that did not fit into other categories.
+#' This control provides sliders for species parameters that do not fit into
+#' the other categories. It includes:
+#' *   **ks and p**: Metabolic rate coefficient and exponent. Changing `p`
+#'     automatically adjusts `ks` to keep the metabolic rate at maturity
+#'     size constant.
+#' *   **k**: Activity rate coefficient.
+#' *   **mu_mat**: External mortality at maturity size. Changing this scales
+#'     the external mortality at all other sizes by the same factor.
+#' *   **alpha**: Assimilation efficiency.
 #'
-#'   The parameters included are:
-#' *  conversion efficiency `alpha`
-#' *  metabolic rate coefficient `ks` and exponent `p`
-#' *  activity rate coefficient `k`
-#' *  external mortality at maturity size
-#'
-#'   If the external mortality at maturity size is changed, then the
-#'   external mortality at all other sizes is scaled by the same factor.
-#'
-#'   If the metabolism exponent `p` is changed, this also changes `ks` so
-#'   that metabolic rate at maturity stays the same.
-#'   
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 otherControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observe({

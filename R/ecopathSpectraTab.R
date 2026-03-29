@@ -1,6 +1,15 @@
 #' Ecopath spectra tab
 #'
+#' This tab displays the size spectra of the forground and background
+#' species. It provides controls for:
+#' *   **Scaling the background**: Adjusting the resource and background
+#'     species' biomass.
+#' *   **Adjusting/removing background species**: Fine-tuning the
+#'     background community to align with the foreground.
+#'
 #' @inheritParams ecopathDeathTab
+#' @family gadget tabs
+#' @export
 ecopathSpectraTab <- function(input, output, session,
                        params, logs, trigger_update, ...) {
 

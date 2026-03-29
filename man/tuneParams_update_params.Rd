@@ -17,3 +17,4 @@ you also need to write it to the logs, in which case call
 \code{tuneParams_add_to_logs()} instead.
 It indicates that the params have changed and updates the reactive params object.
 }
+\keyword{internal}

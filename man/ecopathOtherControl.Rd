@@ -28,5 +28,25 @@ ecopathOtherControlUI(params, input)
 A tagList with sliders for the exponents
 }
 \description{
-Ecopath-specific other parameter control
+This control adjusts the external mortality at maturity and the metabolic
+rate. If the external mortality at maturity size is changed, then the
+external mortality at all other sizes is scaled by the same factor.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

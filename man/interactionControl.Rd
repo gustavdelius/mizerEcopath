@@ -27,5 +27,31 @@ interactionControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Controlling the interaction matrix in the tuning gadget
+This control allows the user to adjust the interaction strengths between
+the selected species and its prey, including the resource:
+\itemize{
+\item \strong{Resource}: Interaction strength with the resource spectrum.
+\item \strong{Prey species}: Drop-down to select a prey species and a slider
+to adjust the interaction strength.
+\item \strong{Predator species}: Drop-down to select a predator species and
+a slider to adjust the interaction strength with that predator.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

@@ -5,6 +5,8 @@
 #'   used in the model), `age` (in years) and either `weight` (in grams) or
 #'   `length` (in cm). If both `weight` and `length` are provided, only `weight`
 #'   is used.
+#' @family gadget tabs
+#' @export
 growthTab <- function(input, output, session, params, logs,
                       size_at_age = NULL, ...) {
     # Help button ----

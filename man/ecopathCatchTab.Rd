@@ -25,5 +25,35 @@ ecopathCatchTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Ecopath catch tab
+This tab provides diagnostic plots for comparison with catch data:
+\itemize{
+\item \strong{Total yield plot}: A bar-like plot showing circles (model)
+and squares (observed) for each species caught by the gear.
+\item \strong{Catch size distribution}: Detailed size breakdown of
+yield for the selected species and gear.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

@@ -11,6 +11,7 @@ tuning_env <- new.env(parent = emptyenv())
 #' @param hook An optional function `(p) -> p` called after the shared
 #'   preparation to apply package-specific defaults.
 #' @return The prepared params object
+#' @keywords internal
 #' @export
 prepare_params <- function(p, hook = NULL) {
     p@species_params$species <- as.character(p@species_params$species)
@@ -39,6 +40,7 @@ prepare_params <- function(p, hook = NULL) {
 #'
 #' @param p The params object
 #' @return The finalised params object
+#' @keywords internal
 #' @export
 finalise_params <- function(p) {
     # Clear attribute that was only needed for the undo functionality
@@ -75,6 +77,7 @@ finalise_params <- function(p) {
 #' @param p The params object
 #' @param params The reactive params object
 #' @param params_old The reactive params object before the change
+#' @keywords internal
 #' @export
 tuneParams_update_species <- function(sp, p, params, params_old) {
     # wrap the code in trycatch so that when there is a problem we can
@@ -116,6 +119,7 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
 #' @param session The Shiny session object
 #' @param input The Shiny input object
 #' @param return_sim Whether to return the simulation object
+#' @keywords internal
 #' @export
 tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
                                   return_sim = FALSE) {
@@ -175,6 +179,7 @@ tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
 #' @param sp The species to update
 #' @param params The reactive params object
 #' @param params_old The reactive params object before the change
+#' @concept helper
 #' @export
 tuneParams_update_abundance <- function(p, sp, params, params_old) {
 
@@ -197,6 +202,7 @@ tuneParams_update_abundance <- function(p, sp, params, params_old) {
 #'
 #' @param p The params object
 #' @param params The reactive params object
+#' @keywords internal
 #' @export
 tuneParams_update_params <- function(p, params) {
 
@@ -222,6 +228,7 @@ tuneParams_update_params <- function(p, params) {
 #' @param logs The logs object
 #' @param p The params object
 #' @param params The reactive params object
+#' @keywords internal
 #' @export
 tuneParams_add_to_logs <- function(logs, p, params) {
 
@@ -255,6 +262,7 @@ tuneParams_add_to_logs <- function(logs, p, params) {
 #' This function is called when an error occurs. It shows a modal dialog with the error message.
 #'
 #' @param e The error object
+#' @keywords internal
 #' @export
 error_fun <- function(e) {
     showModal(modalDialog(
@@ -272,6 +280,7 @@ error_fun <- function(e) {
 #'
 #' @param tab The tab name
 #' @return The tab name in lower case
+#' @keywords internal
 #' @export
 tab_name <- function(tab) {
     tabname <- tab
@@ -286,6 +295,7 @@ tab_name <- function(tab) {
 #'
 #' @param tab The tab name
 #' @return The tab title
+#' @keywords internal
 #' @export
 tab_title <- function(tab) {
     tabname <- tab_name(tab)

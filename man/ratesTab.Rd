@@ -3,7 +3,7 @@
 \name{ratesTab}
 \alias{ratesTab}
 \alias{ratesTabUI}
-\title{Serve tab with rates plots}
+\title{Rates tab for tuning gadget}
 \usage{
 ratesTab(input, output, session, params, logs, ...)
 
@@ -23,5 +23,36 @@ ratesTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Serve tab with rates plots
+This tab provides a detailed look at the energy budget and mortality
+rates for the selected species. It includes:
+\itemize{
+\item \strong{Energy budget plot}: Visualizes how much energy is allocated
+to growth vs reproduction, compared with metabolic costs.
+\item \strong{Mortality rates plot}: Shows the total mortality rate and
+the contributions from predation, fishing, and background mortality.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

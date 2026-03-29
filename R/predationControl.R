@@ -1,5 +1,18 @@
 #' Controlling the predation parameters in the tuning gadget
+#'
+#' This control allows the user to adjust parameters that define the
+#' feeding and predation behavior of the selected species:
+#' *   **gamma**: Predation rate coefficient.
+#' *   **h**: Maximum intake rate coefficient.
+#' *   **q**: Allometric exponent for the search volume.
+#' *   **n**: Allometric exponent for the maximum intake rate.
+#' *   **beta**: Preferred predator-prey mass ratio (the peak of the
+#'     log-normal predation kernel).
+#' *   **sigma**: The width of the log-normal predation kernel.
+#'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 predationControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     ## Adjust predation kernel ####

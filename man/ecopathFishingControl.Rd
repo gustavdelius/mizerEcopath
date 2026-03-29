@@ -28,5 +28,31 @@ ecopathFishingControlUI(params, input)
 A tagList with sliders for the gear parameters
 }
 \description{
-Ecopath-specific fishing control
+This control allows for fine-tuning of fishing parameters for each gear
+capturing a given species. It allows adjusting:
+\itemize{
+\item \strong{Catchability}: A global scaling factor for the fishing mortality of
+the gear.
+\item \strong{Selectivity}: Depending on the selection function (knife-edge,
+sigmoid, or double-sigmoid), users can adjust the size at which
+individuals become vulnerable to the gear.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

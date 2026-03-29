@@ -1,8 +1,15 @@
 #' Ecopath age tab
 #'
+#' This tab displays the age distribution of the selected species. It
+#' allows the user to compare the model's age-at-length distribution
+#' with provided observations (`age_at_length`) to verify growth
+#' and cohort dynamics.
+#'
 #' @inheritParams ecopathDeathTab
 #' @param age_at_length A data frame with age-at-length observations.
 #' @keywords internal
+#' @family gadget tabs
+#' @export
 ecopathAgeTab <- function(input, output, session, params, logs,
                       age_at_length = NULL, ...) {
     # Help button ----

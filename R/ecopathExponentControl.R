@@ -1,6 +1,12 @@
 #' Ecopath-specific allometric exponent control
 #'
+#' This control adjusts the allometric exponents for consumption (n),
+#' metabolism (p), and mortality (d). Changing these exponents allows
+#' for fine-tuning how these rates scale with body size.
+#'
 #' @inheritParams ecopathOtherControl
+#' @family gadget controls
+#' @export
 ecopathExponentControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     ## Adjust consumption exponent ####

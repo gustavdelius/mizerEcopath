@@ -24,3 +24,4 @@ If an \code{update_species_hook} was set by \code{\link[=tuningGadget]{tuningGad
 \code{steadySingleSpecies()} to allow package-specific post-processing (e.g.,
 \code{matchBiomasses()} in mizerEcopath).
 }
+\keyword{internal}

@@ -1,15 +1,21 @@
 #' Biomass tab for tuning gadget
 #'
-#' The Biomass tab shows:
-#' * A plot of total biomass for each species, compared to
-#' observed biomasses when available, using [plotBiomassVsSpecies()].
-#' * Buttons "Calibrate" and "Match" that trigger a call to
-#' [calibrateBiomass()] or [matchBiomasses()] respectively.
+#' This tab provides a comparison between model biomass and observed 
+#' biomass for each species. It features:
+#' *   **Total biomass plot**: A bar-like plot showing circles (model) 
+#'     and squares (observed) for each species.
+#' *   **Calibrate button**: Rescales the whole model so that the total of 
+#'     all observed biomasses matches the model total.
+#' *   **Match button**: Adjusts each species' abundance to match its 
+#'     individual observed biomass.
 #'
-#' Clicking on a species in the biomass plot makes that species the selected
-#' species. Double-clicking on a species selects that species __and__
-#' changes its biomass.
+#' Clicking on a species in the biomass plot selects it. Double-clicking 
+#' on a species selects it and scales its abundance to match the clicked 
+#' value on the y-axis.
+#'
 #' @inheritParams spectraTab
+#' @family gadget tabs
+#' @export
 biomassTab <- function(input, output, session,
                        params, logs, trigger_update, ...) {
     # Select clicked species ----
@@ -119,8 +125,6 @@ biomassTab <- function(input, output, session,
 
 #' @rdname biomassTab
 biomassTabUI <- function(params, ...) {
-    p <- isolate(params())
-
     tl <- tagList()
     # plot Biomass ----
     tl <- tagList(tl,

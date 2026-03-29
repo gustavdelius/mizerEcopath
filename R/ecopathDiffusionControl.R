@@ -1,6 +1,17 @@
 #' Ecopath-specific diffusion control
 #'
+#' This control adjusts parameters related to age-based diffusion and cohort
+#' dynamics in an Ecopath-aligned mizer model. It includes settings for:
+#' *   **Mean time/concentration of spawning**: Controls the seasonal timing and
+#'     duration of reproduction.
+#' *   **Annulus date/age**: Specifies when and at what age annual growth
+#'     markers (annuli) are formed.
+#' *   **Diffusion strength**: Adjusts `d_over_g`, which determines how much
+#'     individuals of the same age can vary in size.
+#'
 #' @inheritParams ecopathOtherControl
+#' @family gadget controls
+#' @export
 ecopathDiffusionControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     observe({

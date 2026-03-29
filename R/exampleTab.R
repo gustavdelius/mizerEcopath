@@ -16,6 +16,8 @@ exampleTabUI <- function(...) {
     )
 }
 
+#' @family gadget tabs
+#' @export
 exampleTab <- function(input, output, session, params, logs, ...) {
     
     ## Plot ####

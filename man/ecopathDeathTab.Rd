@@ -25,5 +25,36 @@ ecopathDeathTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Ecopath death tab
+This tab provides diagnostic plots for mortality and production. It
+allows the user to explore:
+\itemize{
+\item \strong{Mortality density}: Breakdown of various mortality sources by size
+and species.
+\item \strong{Production vs Species}: Comparison of biomass produced across
+all species in the model.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

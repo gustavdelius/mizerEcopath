@@ -1,5 +1,13 @@
 #' Ecopath-specific fishing control
 #'
+#' This control allows for fine-tuning of fishing parameters for each gear
+#' capturing a given species. It allows adjusting:
+#' *   **Catchability**: A global scaling factor for the fishing mortality of
+#'     the gear.
+#' *   **Selectivity**: Depending on the selection function (knife-edge,
+#'     sigmoid, or double-sigmoid), users can adjust the size at which
+#'     individuals become vulnerable to the gear.
+#'
 #' @param input Reactive holding the inputs
 #' @param output Reactive holding the outputs
 #' @param session Shiny session
@@ -7,6 +15,8 @@
 #' @param params_old Reactive value holding non-updated MizerParams object
 #' @param flags Environment holding flags to skip certain observers
 #' @param ... Unused
+#' @family gadget controls
+#' @export
 ecopathFishingControl <- function(input, output, session, params, params_old,
                            flags, ...) {
 

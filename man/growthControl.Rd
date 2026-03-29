@@ -3,7 +3,7 @@
 \name{growthControl}
 \alias{growthControl}
 \alias{growthControlUI}
-\title{A single slider that adjusts both \code{h} and \code{gamma}}
+\title{Adjusting predation parameters for growth}
 \usage{
 growthControl(input, output, session, params, params_old, flags, ...)
 
@@ -27,5 +27,27 @@ growthControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-A single slider that adjusts both \code{h} and \code{gamma}
+This control provides a single slider for the search volume coefficient
+\code{gamma}. Each time \code{gamma} is changed, the maximum intake rate coefficient
+\code{h} is also adjusted by the same factor. This maintains the same growth
+rate at small sizes while allowing for tuning of the overall growth
+potential.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

@@ -1,12 +1,19 @@
-#' A single slider that adjusts both `h` and `gamma`
+#' Adjusting predation parameters for growth
+#'
+#' This control provides a single slider for the search volume coefficient
+#' `gamma`. Each time `gamma` is changed, the maximum intake rate coefficient
+#' `h` is also adjusted by the same factor. This maintains the same growth
+#' rate at small sizes while allowing for tuning of the overall growth
+#' potential.
 #'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 growthControl <- function(input, output, session, params, params_old, flags,
                                     ...) {
     observeEvent(input$gamma, {
         p <- params()
         sp <- input$sp
-        sp_sel <- p@species_params$species == sp
         if (!identical(sp, flags$sp_old_pred)) {
             flags$sp_old_pred <- sp
             return()

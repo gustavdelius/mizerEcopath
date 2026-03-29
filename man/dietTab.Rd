@@ -3,7 +3,7 @@
 \name{dietTab}
 \alias{dietTab}
 \alias{dietTabUI}
-\title{Serve tab with diet plot}
+\title{Diet tab for tuning gadget}
 \usage{
 dietTab(input, output, session, params, logs, ...)
 
@@ -23,5 +23,39 @@ dietTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Serve tab with diet plot
+This tab displays the diet composition for the selected species and
+the prey available to it. It includes:
+\itemize{
+\item \strong{Diet plot}: A plotly visualization showing what the species
+is eating by prey category.
+\item \strong{Prey availability plot}: Shows the feeding kernel, number
+density, and biomass density of the available prey for a
+given predator size.
+\item \strong{Predator size slider}: Allows the user to select the predator
+size for which prey availability is shown.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

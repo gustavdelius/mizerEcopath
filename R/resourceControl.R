@@ -1,5 +1,14 @@
 #' Controlling the resource parameters in the tuning gadget
+#'
+#' This control allows the user to adjust the global resource parameters:
+#' *   **Sheldon exponent 'lambda'**: The slope of the resource spectrum.
+#' *   **Resource coefficient 'kappa'**: The overall abundance of
+#'     the resource.
+#' *   **Largest resource**: The size cutoff for the resource spectrum.
+#'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 resourceControl <- function(input, output, session, params, flags, ...) {
     observe({
         req(input$kappa,

@@ -1,5 +1,16 @@
 #' Controlling the interaction matrix in the tuning gadget
+#'
+#' This control allows the user to adjust the interaction strengths between
+#' the selected species and its prey, including the resource:
+#' *   **Resource**: Interaction strength with the resource spectrum.
+#' *   **Prey species**: Drop-down to select a prey species and a slider
+#'     to adjust the interaction strength.
+#' *   **Predator species**: Drop-down to select a predator species and
+#'     a slider to adjust the interaction strength with that predator.
+#'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 interactionControl <- function(input, output, session, params,
                                params_old, flags, ...) {
     observe({ # change in prey or predator slider

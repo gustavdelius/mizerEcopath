@@ -1,5 +1,9 @@
 #' Ecopath-specific other parameter control
 #'
+#' This control adjusts the external mortality at maturity and the metabolic
+#' rate. If the external mortality at maturity size is changed, then the
+#' external mortality at all other sizes is scaled by the same factor.
+#'
 #' @param input Reactive holding the inputs
 #' @param output Reactive holding the outputs
 #' @param session Shiny session
@@ -7,6 +11,8 @@
 #' @param params_old Reactive value holding non-updated MizerParams object
 #' @param flags Environment holding flags to skip certain observers
 #' @param ... Unused
+#' @family gadget controls
+#' @export
 ecopathOtherControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observe({

@@ -1,6 +1,13 @@
 #' Ecopath diet tab
 #'
+#' This tab displays the diet composition of the selected species. It
+#' allows the user to visualize how much each prey group contributes
+#' to the predator's diet, either of the model alone or compared with
+#' provided `diet` observations.
+#'
 #' @inheritParams ecopathDeathTab
+#' @family gadget tabs
+#' @export
 ecopathDietTab <- function(input, output, session, params, logs,
                     diet = NULL, ...) {
 

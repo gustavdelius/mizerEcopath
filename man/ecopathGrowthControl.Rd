@@ -27,5 +27,26 @@ ecopathGrowthControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Ecopath-specific encounter control
+This control allows for manual adjustment of the external encounter rate
+coefficient \code{Eiw} for a species. Increasing this value increases the
+available food from outside the model, thereby boosting growth without
+changing the internal predation dynamics.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

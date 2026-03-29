@@ -1,4 +1,9 @@
 #' Controlling egg abundance in the tuning gadget
+#'
+#' This control allows the user to adjust the egg density of the selected
+#' species. Each time the slider is moved, the entire size spectrum for that
+#' species is rescaled so that the initial density matches the new value.
+#'
 #' @param input Reactive holding the inputs
 #' @param output Reactive holding the outputs
 #' @param session Shiny session
@@ -6,6 +11,8 @@
 #' @param params_old Reactive value holding non-updated MizerParams object
 #' @param flags Environment holding flags to skip certain observers
 #' @param ... Unused
+#' @family gadget controls
+#' @export
 abundanceControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     observe({

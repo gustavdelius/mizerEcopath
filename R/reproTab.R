@@ -1,6 +1,17 @@
-#' Serve tab with plot of reproductive success rates
+#' Reproduction tab for tuning gadget
+#'
+#' This tab displays parameters related to species maturity and
+#' reproductive success. It includes:
+#' *   **Reproductive success plot**: Compares the realized recruitment
+#'     (RDD) with the potential recruitment (RDI) for each species.
+#'     A value of 1 (red line) indicates that recruitment is
+#'     primarily density-independent.
+#' *   **Maturity ogive plot**: Shows the proportion of energy allocated
+#'     to reproduction (psi) vs size for the selected species.
 #'
 #' @inheritParams biomassTab
+#' @family gadget tabs
+#' @export
 reproTab <- function(input, output, session, params, logs, ...) {
     # erepro plot ----
     output$plot_erepro <- renderPlotly({

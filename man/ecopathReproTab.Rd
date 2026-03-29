@@ -23,5 +23,38 @@ ecopathReproTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Ecopath reproduction tab
+This tab displays parameters related to species maturity and
+reproductive success. It includes:
+\itemize{
+\item \strong{Reproductive success plot}: Compares the realized recruitment
+(RDD) with the potential recruitment (RDI) for each species.
+A value of 1 (red line) indicates that recruitment is
+primarily density-independent.
+\item \strong{Maturity ogive plot}: Shows the proportion of energy allocated
+to reproduction (psi) vs size for the selected species.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

@@ -20,3 +20,4 @@ This function is called once when a tuning gadget is started. It prepares
 the params object for tuning by setting defaults for the species parameters
 that the tuning gadget uses but which may not be set in the params object.
 }
+\keyword{internal}

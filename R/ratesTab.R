@@ -1,6 +1,15 @@
-#' Serve tab with rates plots
+#' Rates tab for tuning gadget
+#'
+#' This tab provides a detailed look at the energy budget and mortality
+#' rates for the selected species. It includes:
+#' *   **Energy budget plot**: Visualizes how much energy is allocated
+#'     to growth vs reproduction, compared with metabolic costs.
+#' *   **Mortality rates plot**: Shows the total mortality rate and
+#'     the contributions from predation, fishing, and background mortality.
 #'
 #' @inheritParams biomassTab
+#' @family gadget tabs
+#' @export
 ratesTab <- function(input, output, session, params, logs, ...) {
     # Plot growth rates ----
     output$plotGrowth <- renderPlotly({

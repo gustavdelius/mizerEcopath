@@ -1,9 +1,20 @@
 #' Ecopath survey tab
 #'
+#' This tab provides diagnostic plots for comparing the model with
+#' survey-style observations:
+#' *   **Catch size distribution**: Comparison of the model catch size
+#'     spectrum with the provided `catch` observations.
+#' *   **Age-at-length**: Visualization of age-at-length likelihood if
+#'     `age_at_length` data is provided.
+#' *   **Spawning density**: Plot of the von Mises spawning distribution
+#'     based on the `spawning_mu` and `spawning_kappa` parameters.
+#'
 #' @inheritParams ecopathDeathTab
 #' @param age_at_length A data frame with age-at-length observations.
 #' @param catch Data frame holding binned observed catch data.
 #' @keywords internal
+#' @family gadget tabs
+#' @export
 ecopathSurveyTab <- function(input, output, session, params, logs,
                       age_at_length = NULL, catch = NULL, ...) {
 

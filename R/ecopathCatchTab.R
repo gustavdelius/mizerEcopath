@@ -1,7 +1,15 @@
 #' Ecopath catch tab
 #'
+#' This tab provides diagnostic plots for comparison with catch data:
+#' *   **Total yield plot**: A bar-like plot showing circles (model)
+#'     and squares (observed) for each species caught by the gear.
+#' *   **Catch size distribution**: Detailed size breakdown of
+#'     yield for the selected species and gear.
+#'
 #' @inheritParams ecopathDeathTab
 #' @param catch Data frame holding binned observed catch data.
+#' @family gadget tabs
+#' @export
 ecopathCatchTab <- function(input, output, session, params, logs,
                      catch = NULL, ...) {
 

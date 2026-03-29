@@ -25,5 +25,29 @@ resourceControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Controlling the resource parameters in the tuning gadget
+This control allows the user to adjust the global resource parameters:
+\itemize{
+\item \strong{Sheldon exponent 'lambda'}: The slope of the resource spectrum.
+\item \strong{Resource coefficient 'kappa'}: The overall abundance of
+the resource.
+\item \strong{Largest resource}: The size cutoff for the resource spectrum.
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()}
+}
+\concept{gadget controls}

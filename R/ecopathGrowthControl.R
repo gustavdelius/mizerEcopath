@@ -1,6 +1,13 @@
 #' Ecopath-specific encounter control
 #'
+#' This control allows for manual adjustment of the external encounter rate
+#' coefficient `Eiw` for a species. Increasing this value increases the
+#' available food from outside the model, thereby boosting growth without
+#' changing the internal predation dynamics.
+#'
 #' @inheritParams ecopathOtherControl
+#' @family gadget controls
+#' @export
 ecopathGrowthControl <- function(input, output, session, params, params_old, flags, ...) {
 
     observeEvent(input$Eiw, {

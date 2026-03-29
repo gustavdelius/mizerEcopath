@@ -26,16 +26,43 @@ species parameter sliders.}
 \item{...}{Unused}
 }
 \description{
-The Biomass tab shows:
+This tab provides a comparison between model biomass and observed
+biomass for each species. It features:
 \itemize{
-\item A plot of total biomass for each species, compared to
-observed biomasses when available, using \code{\link[mizerExperimental:plotBiomassVsSpecies]{mizerExperimental::plotBiomassVsSpecies()}}.
-\item Buttons "Calibrate" and "Match" that trigger a call to
-\code{\link[mizer:calibrateBiomass]{mizer::calibrateBiomass()}} or \code{\link[mizer:matchBiomasses]{mizer::matchBiomasses()}} respectively.
+\item \strong{Total biomass plot}: A bar-like plot showing circles (model)
+and squares (observed) for each species.
+\item \strong{Calibrate button}: Rescales the whole model so that the total of
+all observed biomasses matches the model total.
+\item \strong{Match button}: Adjusts each species' abundance to match its
+individual observed biomass.
 }
 }
 \details{
-Clicking on a species in the biomass plot makes that species the selected
-species. Double-clicking on a species selects that species \strong{and}
-changes its biomass.
+Clicking on a species in the biomass plot selects it. Double-clicking
+on a species selects it and scales its abundance to match the clicked
+value on the y-axis.
 }
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

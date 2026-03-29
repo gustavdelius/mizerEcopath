@@ -1,6 +1,18 @@
-#' Serve tab with diet plot
+#' Diet tab for tuning gadget
+#'
+#' This tab displays the diet composition for the selected species and
+#' the prey available to it. It includes:
+#' *   **Diet plot**: A plotly visualization showing what the species
+#'     is eating by prey category.
+#' *   **Prey availability plot**: Shows the feeding kernel, number
+#'     density, and biomass density of the available prey for a
+#'     given predator size.
+#' *   **Predator size slider**: Allows the user to select the predator
+#'     size for which prey availability is shown.
 #'
 #' @inheritParams biomassTab
+#' @family gadget tabs
+#' @export
 dietTab <- function(input, output, session, params, logs, ...) {
     
     # Plot diet ----

@@ -27,5 +27,34 @@ fishingControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Controlling the fishing parameters in the tuning gadget
+This control allows the user to adjust the fishing mortality for the
+selected species by changing the effort of the gears that capture it and
+the parameters of those gears:
+\itemize{
+\item \strong{Gear to tune}: Drop-down to select which gear's parameters to
+adjust (if multiple gears catch the species).
+\item \strong{Catchability}: A scaling factor for the fishing mortality of
+the selected gear.
+\item \strong{Effort}: The fishing effort allocated to the selected gear.
+\item \strong{Selectivity}: Sliders to adjust the parameters of the gear's
+selection function (e.g., L50, L25, or knife-edge size).
 }
+}
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{otherControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

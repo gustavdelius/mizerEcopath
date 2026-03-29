@@ -17,3 +17,4 @@ tuneParams_add_to_logs(logs, p, params)
 This function is called when the params object needs to be written to the logs.
 It updates the params object and writes it to the logs.
 }
+\keyword{internal}

@@ -1,16 +1,18 @@
 #' Number tab for tuning gadget
 #'
-#' The Number tab shows:
-#' * A plot of total number for each species, compared to
-#' observed numbers when available, using [plotNumberVsSpecies()].
-#' * Buttons "Calibrate" and "Match" that trigger a call to
-#' [calibrateNumber()] or [matchNumbers()] respectively.
+#' This tab provides a comparison between model numbers (individuals)
+#' and observed numbers for each species. It features:
+#' *   **Total number plot**: Visualization of model total numbers
+#'     (circles) vs observed total numbers (squares).
+#' *   **Calibrate button**: Rescales the whole model so that the total
+#'     observed numbers match the model total.
+#' *   **Match button**: Adjusts each species' abundance to match its
+#'     individual observed number.
 #'
-#' Clicking on a species in the number plot makes that species the selected
-#' species. Double-clicking on a species selects that species __and__
-#' changes its number.
 #' @inheritParams spectraTab
 #' @param params_old Reactive value holding non-updated MizerParams object
+#' @family gadget tabs
+#' @export
 numberTab <- function(input, output, session,
                        params, params_old, logs, trigger_update, ...) {
     # Select clicked species ----
@@ -122,8 +124,6 @@ numberTab <- function(input, output, session,
 
 #' @rdname numberTab
 numberTabUI <- function(params, ...) {
-    p <- isolate(params())
-
     tl <- tagList()
     # plot Number ----
     tl <- tagList(tl,

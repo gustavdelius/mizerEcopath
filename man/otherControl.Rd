@@ -3,7 +3,7 @@
 \name{otherControl}
 \alias{otherControl}
 \alias{otherControlUI}
-\title{Controlling the species parameters not included in other controls}
+\title{Other parameters control for tuning gadget}
 \usage{
 otherControl(input, output, session, params, params_old, flags, ...)
 
@@ -27,20 +27,33 @@ otherControlUI(p, input)
 \item{p}{The MizerParams object currently being tuned.}
 }
 \description{
-Adds controls for the parameters that did not fit into other categories.
-}
-\details{
-The parameters included are:
+This control provides sliders for species parameters that do not fit into
+the other categories. It includes:
 \itemize{
-\item conversion efficiency \code{alpha}
-\item metabolic rate coefficient \code{ks} and exponent \code{p}
-\item activity rate coefficient \code{k}
-\item external mortality at maturity size
+\item \strong{ks and p}: Metabolic rate coefficient and exponent. Changing \code{p}
+automatically adjusts \code{ks} to keep the metabolic rate at maturity
+size constant.
+\item \strong{k}: Activity rate coefficient.
+\item \strong{mu_mat}: External mortality at maturity size. Changing this scales
+the external mortality at all other sizes by the same factor.
+\item \strong{alpha}: Assimilation efficiency.
 }
-
-If the external mortality at maturity size is changed, then the
-external mortality at all other sizes is scaled by the same factor.
-
-If the metabolism exponent \code{p} is changed, this also changes \code{ks} so
-that metabolic rate at maturity stays the same.
 }
+\seealso{
+Other gadget controls: 
+\code{\link{abundanceControl}()},
+\code{\link{ecopathDiffusionControl}()},
+\code{\link{ecopathExponentControl}()},
+\code{\link{ecopathFishingControl}()},
+\code{\link{ecopathGrowthControl}()},
+\code{\link{ecopathMatchControl}()},
+\code{\link{ecopathOtherControl}()},
+\code{\link{ecopathReproductionControl}()},
+\code{\link{fishingControl}()},
+\code{\link{growthControl}()},
+\code{\link{interactionControl}()},
+\code{\link{predationControl}()},
+\code{\link{reproductionControl}()},
+\code{\link{resourceControl}()}
+}
+\concept{gadget controls}

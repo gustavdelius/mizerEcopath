@@ -12,3 +12,4 @@ error_fun(e)
 \description{
 This function is called when an error occurs. It shows a modal dialog with the error message.
 }
+\keyword{internal}

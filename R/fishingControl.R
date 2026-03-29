@@ -1,5 +1,19 @@
 #' Controlling the fishing parameters in the tuning gadget
+#'
+#' This control allows the user to adjust the fishing mortality for the
+#' selected species by changing the effort of the gears that capture it and
+#' the parameters of those gears:
+#' *   **Gear to tune**: Drop-down to select which gear's parameters to
+#'     adjust (if multiple gears catch the species).
+#' *   **Catchability**: A scaling factor for the fishing mortality of
+#'     the selected gear.
+#' *   **Effort**: The fishing effort allocated to the selected gear.
+#' *   **Selectivity**: Sliders to adjust the parameters of the gear's
+#'     selection function (e.g., L50, L25, or knife-edge size).
+#'
 #' @inheritParams abundanceControl
+#' @family gadget controls
+#' @export
 fishingControl <- function(input, output, session, params, params_old, 
                            flags, ...) {
     observe({
@@ -8,10 +22,9 @@ fishingControl <- function(input, output, session, params, params_old,
         sp <- isolate(input$sp)
         req(input$catchability,
             input$effort)
-        # The following line makes sure this observer gets triggered by
-        # any of the inputs
-        l <- input$l50 + input$ldiff + input$l50_right + input$ldiff_right +
-            input$knife_edge_size
+        # Trigger by any of the inputs
+        input$l50; input$ldiff; input$l50_right; input$ldiff_right;
+        input$knife_edge_size
         
         if (!identical(sp, flags$sp_old_fishing)) {
             flags$sp_old_fishing <- sp

@@ -16,3 +16,4 @@ The tab name in lower case
 This function is used to convert the tab name given by the user to lower case,
 because the names of the tab functions will always start with lower case.
 }
+\keyword{internal}

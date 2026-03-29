@@ -36,6 +36,39 @@ ecopathSurveyTabUI(...)
 \item{...}{Unused}
 }
 \description{
-Ecopath survey tab
+This tab provides diagnostic plots for comparing the model with
+survey-style observations:
+\itemize{
+\item \strong{Catch size distribution}: Comparison of the model catch size
+spectrum with the provided \code{catch} observations.
+\item \strong{Age-at-length}: Visualization of age-at-length likelihood if
+\code{age_at_length} data is provided.
+\item \strong{Spawning density}: Plot of the von Mises spawning distribution
+based on the \code{spawning_mu} and \code{spawning_kappa} parameters.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}
 \keyword{internal}

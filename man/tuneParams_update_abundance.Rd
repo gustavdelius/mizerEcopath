@@ -20,3 +20,4 @@ This function is called when the abundance of a species is changed directly
 i.e., not when it is changed as a consequence of a parameter change.
 It will make the change permanent by also saving it in params_old.
 }
+\concept{helper}

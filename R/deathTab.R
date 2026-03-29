@@ -1,6 +1,16 @@
-#' Serve tab with death plots
+#' Death tab for tuning gadget
+#'
+#' This tab displays the breakdown of mortality for the selected species.
+#' It shows:
+#' *   **Mortality plot**: A plotly visualization showing different
+#'     sources of mortality (predation, fishing, background) across
+#'     the size spectrum.
+#' *   **Controls**: Options to display mortality as either a rate or
+#'     a proportion, and to switch the x-axis between log and identity scales.
 #'
 #' @inheritParams biomassTab
+#' @family gadget tabs
+#' @export
 deathTab <- function(input, output, session, params, logs, ...) {
     
     # Plot predators ----

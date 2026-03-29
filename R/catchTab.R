@@ -1,16 +1,19 @@
-#' Serve tab with catch data
+#' Catch tab for tuning gadget
+#'
+#' This tab focuses on comparing model yield with observed catch data.
+#' It includes:
+#' *   **Total yield plot**: Comparison of yearly model yield vs
+#'     observed yield for each species.
+#' *   **Catch size distribution**: Plotly visualization of model yield
+#'     density vs size, compared with observed binned catch data if
+#'     available.
+#' *   **Calibration and Matching**: Buttons to scale either the
+#'     entire model or individual species abundance to match observed yields.
 #'
 #' @inheritParams biomassTab
-#' @param catch Data frame holding binned observed catch data. The data can be
-#'   binned either into length bins or weight bins. In the former case the data
-#'   frame should have columns \code{length} and \code{dl} holding the start of
-#'   the size bins in cm and the width of the size bins in cm respectively. In
-#'   the latter case the data frame should have columns \code{weight} and
-#'   \code{dw} holding the start of the size bins in grams and the width of the
-#'   size bins in grams. The data frame also needs to have the columns
-#'   \code{species} (the name of the species), \code{gear} (the name of the
-#'   gear) and \code{catch} (the number of individuals of a particular species
-#'   caught by a particular gear in a size bin).
+#' @param catch Data frame holding binned observed catch data.
+#' @family gadget tabs
+#' @export
 catchTab <- function(input, output, session, params, logs, trigger_update,
                      catch = NULL, ...) {
 

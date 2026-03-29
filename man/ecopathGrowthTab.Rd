@@ -26,5 +26,35 @@ giving the size of individuals of each species at each age.}
 \item{...}{Unused}
 }
 \description{
-Ecopath growth tab
+This tab displays growth-related information for the model:
+\itemize{
+\item \strong{Growth curves}: Plot size against age for either all species
+or the selected species, optionally with \code{size_at_age} data.
+\item \strong{Consumption rate}: Plot comparing model consumption with
+Ecopath-estimated consumption values.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

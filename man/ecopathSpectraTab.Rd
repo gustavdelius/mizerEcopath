@@ -23,5 +23,36 @@ ecopathSpectraTabUI(params, help = TRUE, ...)
 \item{...}{Unused}
 }
 \description{
-Ecopath spectra tab
+This tab displays the size spectra of the forground and background
+species. It provides controls for:
+\itemize{
+\item \strong{Scaling the background}: Adjusting the resource and background
+species' biomass.
+\item \strong{Adjusting/removing background species}: Fine-tuning the
+background community to align with the foreground.
 }
+}
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()},
+\code{\link{stomachTab}()}
+}
+\concept{gadget tabs}

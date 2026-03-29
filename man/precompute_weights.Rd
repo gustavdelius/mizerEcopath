@@ -26,3 +26,4 @@ segments. In this function we want to
 precompute the weights with which we need to add up the density values to
 approximate the integral over each bin.
 }
+\keyword{internal}

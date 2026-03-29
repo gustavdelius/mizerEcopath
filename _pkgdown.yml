@@ -1,4 +1,4 @@
-url: ~
+url: https://gustavdelius.github.io/mizerEcopath/
 template:
   bootstrap: 5
   math-rendering: mathjax
@@ -44,20 +44,11 @@ reference:
     Interactive interface for tuning mizer model parameters.
   contents:
   - tuneEcopath
-  - ageTab
-  - catchTab
-  - deathTab
-  - dietTab
-  - growthTab
-  - reproTab
-  - spectraTab
-  - exponentControl
-  - fishingControl
-  - growthControl
-  - matchControl
-  - otherControl
-  - diffusionControl
-  - reproductionControl
+  - tuneParams
+  - tuneGrowth
+  - tuningGadget
+  - has_concept("gadget tabs")
+  - has_concept("gadget controls")
 - title: "Calculating rates"
   desc: >
     Extract rates and other parameters from the model.
@@ -106,9 +97,7 @@ reference:
   desc: >
     Example input and output objects for illustrating functions.
   contents:
-    - species_params_example
-    - ecopath_diet_example
-    - diet_matrix_example
+    - has_keyword("datasets")
 - title: "Diffusion"
   desc: >
     Functions for solving diffusion equations in mizer models.

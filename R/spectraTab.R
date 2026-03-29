@@ -14,6 +14,8 @@
 #' @param trigger_update Reactive value used for triggering update of
 #'   species parameter sliders.
 #' @param ... Unused
+#' @family gadget tabs
+#' @export
 spectraTab <- function(input, output, session,
                        params, logs, trigger_update, ...) {
     

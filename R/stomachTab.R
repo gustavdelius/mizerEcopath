@@ -1,16 +1,14 @@
-#' Serve tab with stomach data
+#' Stomach tab for tuning gadget
+#'
+#' This tab displays the stomach content breakdown for the selected
+#' species, allowing for a comparison between model-predicted
+#' diet and `stomach` observations.
 #'
 #' @inheritParams catchTab
 #' @param stomach Data frame holding observations of prey items in predator
-#'   stomachs. The required columns are
-#'   \itemize{
-#'   \item \code{species} holding the name of the predator species,
-#'   \item \code{wpredator} with the weight in grams of the predator,
-#'   \item \code{wprey} with the weight of the prey item.
-#'   }
-#'   In case prey items of the same weight have been aggregated in the data
-#'   frame then there should be a column \code{Nprey} saying how many prey
-#'   items have been aggregated in each row.
+#'   stomachs.
+#' @family gadget tabs
+#' @export
 stomachTab <- function(input, output, session, params, logs, stomach, ...) {
     if (!is.null(stomach)) {
         assert_that(

@@ -2,7 +2,7 @@
 % Please edit documentation in R/stomachTab.R
 \name{stomachTab}
 \alias{stomachTab}
-\title{Serve tab with stomach data}
+\title{Stomach tab for tuning gadget}
 \usage{
 stomachTab(input, output, session, params, logs, stomach, ...)
 }
@@ -18,18 +18,36 @@ stomachTab(input, output, session, params, logs, stomach, ...)
 \item{logs}{Environment holding the log of steady states.}
 
 \item{stomach}{Data frame holding observations of prey items in predator
-stomachs. The required columns are
-\itemize{
-\item \code{species} holding the name of the predator species,
-\item \code{wpredator} with the weight in grams of the predator,
-\item \code{wprey} with the weight of the prey item.
-}
-In case prey items of the same weight have been aggregated in the data
-frame then there should be a column \code{Nprey} saying how many prey
-items have been aggregated in each row.}
+stomachs.}
 
 \item{...}{Unused}
 }
 \description{
-Serve tab with stomach data
+This tab displays the stomach content breakdown for the selected
+species, allowing for a comparison between model-predicted
+diet and \code{stomach} observations.
 }
+\seealso{
+Other gadget tabs: 
+\code{\link{abundanceTab}()},
+\code{\link{biomassTab}()},
+\code{\link{catchTab}()},
+\code{\link{deathTab}()},
+\code{\link{dietTab}()},
+\code{\link{ecopathAgeTab}()},
+\code{\link{ecopathCatchTab}()},
+\code{\link{ecopathDeathTab}()},
+\code{\link{ecopathDietTab}()},
+\code{\link{ecopathGrowthTab}()},
+\code{\link{ecopathReproTab}()},
+\code{\link{ecopathSpectraTab}()},
+\code{\link{ecopathSurveyTab}()},
+\code{\link{growthTab}()},
+\code{\link{numberTab}()},
+\code{\link{ratesTab}()},
+\code{\link{reproTab}()},
+\code{\link{resourceTab}()},
+\code{\link{simTabUI}()},
+\code{\link{spectraTab}()}
+}
+\concept{gadget tabs}

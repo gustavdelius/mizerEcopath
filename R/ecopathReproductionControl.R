@@ -1,6 +1,14 @@
 #' Ecopath-specific reproduction control
 #'
+#' This control adjusts reproduction parameters using length-based inputs:
+#' *   **l_mat**: Length at 50% maturity.
+#' *   **l_mat25/l_mat**: Ratio between length at 25% and 50% maturity.
+#' *   **l_repro_max**: Maximum length for reproduction.
+#' *   **m**: Allometric exponent for reproductive effort.
+#'
 #' @inheritParams ecopathOtherControl
+#' @family gadget controls
+#' @export
 ecopathReproductionControl <- function(input, output, session, params, params_old,
                                 flags, ...) {
     observeEvent(

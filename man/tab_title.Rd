@@ -16,3 +16,4 @@ The tab title
 This function is used to return the title for the tab. This is either defined
 by the tab author or otherwise is the tab name supplied by the user.
 }
+\keyword{internal}

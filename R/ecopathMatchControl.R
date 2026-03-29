@@ -1,6 +1,12 @@
 #' Ecopath-specific match control
 #'
+#' This control adjusts the matching strength for production and yield.
+#' These parameters determine how strongly the model is attracted to
+#' its Ecopath-aligned targets during the tuning process.
+#'
 #' @inheritParams ecopathOtherControl
+#' @family gadget controls
+#' @export
 ecopathMatchControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observeEvent(
