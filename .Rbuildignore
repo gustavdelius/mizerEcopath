@@ -7,3 +7,5 @@
 ^.lintr
 ^\.positai$
 ^\.claude$
+^vignettes/Celtic Sea Model\.qmd$
+^CLAUDE.md

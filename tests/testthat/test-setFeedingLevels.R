@@ -2,10 +2,10 @@ test_that("setFeedingLevels works", {
     # Setup: Create a base model that does not meet the requirements
     sp_params <- species_params(NS_params)
     sp_params$n <- 0.6
-    sp_params$p <- 0.7
     params <- newAllometricParams(sp_params, no_w = 200)
     params@species_params$h <- 2
     params@species_params$ks <- 2
+    params@species_params$p <- 0.7
 
     ### Test Prerequisites / Errors ------------------------------------------
     #Check with interacting model NS
