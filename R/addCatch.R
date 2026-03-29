@@ -21,7 +21,7 @@
 #'   determine which gear-species combinations to add. `yield_observed` is set
 #'   to a negligible value (1e-6) for all survey gears.
 #'
-#' @return A MizerParams object with updated gear parameters and effort turned on.
+#' @return A MizerParams object with updated gear parameters.
 #' @export
 addCatch <- function(params, landings, survey, fishing_dead_biomass = NULL) {
     sp <- params@species_params
@@ -34,17 +34,18 @@ addCatch <- function(params, landings, survey, fishing_dead_biomass = NULL) {
     }
 
     if (!is.null(fishing_dead_biomass)) {
-        landing_yield <- fishing_dead_biomass %>%
-            rename(yield_observed = total_weight_dead_gear_per_area) %>%
+        landing_yield <- fishing_dead_biomass |>
+            rename(yield_observed = total_weight_dead_gear_per_area) |>
             select(species, gear, yield_observed)
     } else {
-        landing_yield <- landings %>%
-            group_by(species, gear) %>%
-            summarise(yield_observed = sum(biomass, na.rm = TRUE), .groups = "drop")
+        landing_yield <- landings |>
+            group_by(species, gear) |>
+            summarise(yield_observed = sum(biomass, na.rm = TRUE),
+                      .groups = "drop")
     }
 
-    survey_yield <- survey %>%
-        distinct(species, gear) %>%
+    survey_yield <- survey |>
+        distinct(species, gear) |>
         mutate(yield_observed = 1e-6)
 
     # Create initial gear parameter templates
@@ -52,7 +53,7 @@ addCatch <- function(params, landings, survey, fishing_dead_biomass = NULL) {
     gp_survey <- create_gear_df(survey, l_mat_vals, survey_yield)
 
     # Combine landings and survey
-    gp <- bind_rows(gp_landings, gp_survey) %>%
+    gp <- bind_rows(gp_landings, gp_survey) |>
         mutate(catchability = 1)
 
     # Set gear parameters
@@ -68,15 +69,15 @@ addCatch <- function(params, landings, survey, fishing_dead_biomass = NULL) {
 # yield_observed values. `yield_df` must have columns `species`, `gear`,
 # `yield_observed`. Missing combinations are filled with 0.
 create_gear_df <- function(data, l_mat_vals, yield_df) {
-    unique(data[, c("gear", "species")]) %>%
-        data.frame(stringsAsFactors = FALSE) %>%
+    unique(data[, c("gear", "species")]) |>
+        data.frame(stringsAsFactors = FALSE) |>
         mutate(
             l50 = l_mat_vals[species],
             l25 = l50 * 0.9,
             sel_func = "sigmoid_length",
             catchability = 0
-        ) %>%
-        left_join(yield_df, by = c("species", "gear")) %>%
-        mutate(yield_observed = coalesce(yield_observed, 0)) %>%
+        ) |>
+        left_join(yield_df, by = c("species", "gear")) |>
+        mutate(yield_observed = coalesce(yield_observed, 0)) |>
         select(species, gear, sel_func, l50, l25, catchability, yield_observed)
 }

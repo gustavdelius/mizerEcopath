@@ -14,13 +14,13 @@ deathTab <- function(input, output, session, params, logs,
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
-            p<-setFeedingLevels(params=p, f=0.6, f_c=0.2)
+            p <- setFeedingLevels(params = p, f = 0.6, f_c = 0.2)
             p <- matchDiet(p, diet)
         }
-    plotlyDeathX(p, species = input$sp,
-                  proportion = input$death_prop == "Proportion",
-                  xtrans = input$death_xtrans,
-                  xvar = input$death_xvar)
+        plotlyDeathX(p, species = input$sp,
+                     proportion = input$death_prop == "Proportion",
+                     xtrans = input$death_xtrans,
+                     xvar = input$death_xvar)
     })
     # Plot Production
     output$plot_prod <- renderPlotly({
