@@ -2,7 +2,7 @@
 % Please edit documentation in R/matchConsumption.R
 \name{matchConsumption}
 \alias{matchConsumption}
-\title{Match the model’s total consumption to observed estimates}
+\title{Match the model's total consumption to observed estimates}
 \usage{
 matchConsumption(params, species = NULL)
 }
@@ -10,40 +10,38 @@ matchConsumption(params, species = NULL)
 \item{params}{A MizerParams object}
 
 \item{species}{A vector of species names or indices. If NULL,
-applies to all species with a provided \code{consumption_observed}.
-#' @return A \code{MizerParams} object with adjusted encounter and metabolic
-respiration rates.}
+applies to all species with a provided \code{consumption_observed}.}
+}
+\value{
+A \code{MizerParams} object with adjusted encounter and metabolic
+respiration rates.
 }
 \description{
-This function sets the metabolic respiration rate so that the total consumption
-matches the parameter \code{consumption_observed} for each species. The function preserves
-the energy available for growth and reproduction by increasing external encounter
-rates to compensate for changes in metabolic loss.
+This function sets the metabolic respiration rate so that the total
+consumption matches the parameter \code{consumption_observed} for each species.
+The function preserves the energy available for growth and reproduction by
+adjusting external encounter rates to compensate for changes in metabolic
+loss.
 }
 \details{
-Thus the function also adjusts the external encounter rate to compensate for the
-changed respiration rate. To do this the function assumes that both the encounter rate
-and the metabolic respiration rate are given by power laws with the same exponent
-\code{n}, so it sets the species parameter \code{p} to the same value as \code{n}. A warning
-is issued if the exponent \code{p} had to be changed for any species.
+To adjust both the encounter rate and the metabolic respiration rate the
+function assumes that they are given by power laws with the same exponent
+\code{n}, so it sets the species parameter \code{p} to the same value as \code{n}. A
+warning is issued if the exponent \code{p} had to be changed for any species.
 
 Any of the selected species for which \code{consumption_observed} is NA will be
 quietly ignored.
 
-If the resulting metabolic loss rate is less than 10\% of the production rate,
-the function will set the metabolic loss rate to 10\% of the production rate
-and issue a warning.
+If the resulting total metabolic respiration would be less than 10\% of
+total production, the function clamps it to 10\% of total production and
+issues a warning. In that case the consumption will not perfectly match
+\code{consumption_observed} for those species.
 
-Unless the function issues a warning that it has changed \code{p}, the energy
-available for growth and reproduction is not changed and hence the steady
-state spectra are also unchanged.
+The energy available for growth and reproduction is always preserved, so
+the steady state spectra are unchanged.
 }
 \examples{
-params <- matchConsumption(celtic_params)
-# The consumption now matches the observation
-all.equal(getConsumption(params),
-          species_params(params)$consumption_observed,
-          check.attributes = FALSE)
+params <- suppressWarnings(matchConsumption(celtic_params))
 # The energy available for growth and reproduction is not changed
 all.equal(getEReproAndGrowth(params),
           getEReproAndGrowth(celtic_params))

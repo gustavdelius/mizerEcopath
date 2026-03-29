@@ -2,19 +2,19 @@ test_that("setFeedingLevels works", {
     # Setup: Create a base model that does not meet the requirements
     sp_params <- species_params(NS_params)
     sp_params$n <- 0.6
-    sp_params$p <- 0.7
     params <- newAllometricParams(sp_params, no_w = 200)
     params@species_params$h <- 2
     params@species_params$ks <- 2
+    params@species_params$p <- 0.7
 
     ### Test Prerequisites / Errors ------------------------------------------
     #Check with interacting model NS
     expect_error(setFeedingLevels(NS_params, f = 0.6, f_c = 0.2),
-                regexp = "This function only works for models where all encounter is external encounter")
+                 regexp = "This function only works for models where all encounter is external encounter")
 
     # Check exponents n and p values are the same
     expect_error(setFeedingLevels(params, f = 0.6, f_c = 0.2),
-        regexp = "Exponents n and p must be equal")
+                 regexp = "Exponents n and p must be equal")
 
     params@species_params$n <- 0.7
 

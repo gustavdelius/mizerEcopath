@@ -4,17 +4,22 @@
 \alias{addCatch}
 \title{Sets up gear parameters from scaled catch data}
 \usage{
-addCatch(params, landings, survey, step)
+addCatch(params, landings, survey, fishing_dead_biomass = NULL)
 }
 \arguments{
 \item{params}{A MizerParams object.}
 
-\item{landings}{A data frame with columns \code{species}, \code{gear}, \code{biomass}.}
+\item{landings}{A data frame with columns \code{species}, \code{gear}, and (if
+\code{fishing_dead_biomass} is not provided) \code{biomass}, which is summed per
+species and gear to compute \code{yield_observed}.}
 
-\item{survey}{A data frame with columns \code{species}, \code{gear}, \code{biomass}.}
+\item{survey}{A data frame with columns \code{species} and \code{gear}, used only to
+determine which gear-species combinations to add. \code{yield_observed} is set
+to a negligible value (1e-6) for all survey gears.}
 
-\item{step}{sets effort depending on step, landing effort set to 0 if step =
-1 and 1 if step = 2 or 3.}
+\item{fishing_dead_biomass}{Optional data frame with columns \code{species},
+\code{gear}, \code{total_weight_dead_gear_per_area}. If provided, this is used as
+\code{yield_observed} instead of summing \code{biomass} from \code{landings}.}
 }
 \value{
 A MizerParams object with updated gear parameters and effort turned on.
@@ -26,10 +31,8 @@ individuals selected at maturity weight, and 25\% selected at 90\% of maturity
 weight (measured in length).
 }
 \details{
-\code{yield_observed} is set from the data, and \code{catchability} is estimated as
-yield divided by observed biomass. This initial estimate is usually too low,
-since not all biomass is fully selected by the gear. Use \code{matchCatch()} to
-refine catchability after running this function.
+\code{yield_observed} is set from the data and \code{catchability} is initialised to 1.
+Use \code{matchCatch()} to refine catchability after running this function.
 
-Fishing is turned on with an initial effort of 1.
+Survey effort is turned on with an initial effort of 1.
 }

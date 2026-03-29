@@ -8,38 +8,42 @@ editor: visual
 
 ```{r}
 library(here)
+library(dplyr)
 library(tidyr)
-cs_age_size<-readRDS(here("inst","extdata", "Celtic_Sea_Size_at_Age_Data.rds"))
+library(purrr)
+data("cs_age_size")
 ```
 
 ## Calculate Length at Maturity
 
 ```{r}
-maturity_testing <- cs_age_size %>%
-  group_by(Scientific_name, LngtClass, Maturity) %>%
-  mutate(LngtClass = floor(LngtClass)) %>%
-    summarise(
-    CANoAtLngt = sum(CANoAtLngt, na.rm = TRUE),  # sum ignoring NAs
-    .groups = "drop"  # ungroup the result
-  )
-
 # Filter to include only 'immature' and 'mature'
-maturity_testing_filtered <- maturity_testing%>%
-    filter(Maturity %in% c("immature", "mature"))%>%
-    mutate(Maturity=ifelse(Maturity == "mature", 1, 0))%>%
-    uncount(CANoAtLngt) %>%
-    mutate(CANoAtLngt = 1)
-
-# Remove rows where LngtClass is NA or not finite
-maturity_testing_filtered <- maturity_testing_filtered %>%
-  filter(!is.na(LngtClass), is.finite(LngtClass))
-
+maturity_agg <- cs_age_size %>%
+  filter(Maturity %in% c("immature", "mature")) %>%
+  mutate(Maturity = ifelse(Maturity == "mature", 1, 0)) %>%
+  filter(!is.na(LngtClass), is.finite(LngtClass)) %>%
+  mutate(LngtClass = floor(LngtClass)) %>%
+  group_by(Scientific_name, LngtClass,Maturity) %>%
+  summarize(CANoAtLngt = sum(CANoAtLngt))%>%
+  group_by(Scientific_name, LngtClass) %>%
+  summarise(
+    n_mature = sum(CANoAtLngt * Maturity),
+    n_total  = sum(CANoAtLngt),
+    .groups = "drop"
+  )
 #species remaining after filtering
-unique(maturity_testing_filtered$Scientific_name)
-#Gadus morhua,Lepidorhombus whiffiagonis","Lophius piscatorius","Melanogrammus aeglefinus","Merlangius merlangus","Merluccius merluccius","Pleuronectes platessa","Scomber scombrus","Solea solea"
+unique(maturity_agg$Scientific_name)
+
+#"Chelidonichthys cuculus"    "Gadus morhua"              "Lepidorhombus whiffiagonis"
+#"Melanogrammus aeglefinus"   "Merlangius merlangus"       "Merluccius merluccius" "Pleuronectes platessa"      "Scomber scombrus"         "Solea solea"
 
 #Linear model
-fit <- glm(Maturity ~ LngtClass*Scientific_name, family = binomial, data = maturity_testing_filtered)
+fit <- glm(
+  cbind(n_mature, n_total - n_mature) ~ LngtClass*Scientific_name,
+  family = binomial,
+  data = maturity_agg
+)
+
 coefs <- coef(fit)
 #Coefs are in odd order to extract LM of each species 
 #need to put negative intercept over slope
@@ -55,10 +59,118 @@ lm<-c(
 -1*(coefs[1]+coefs[10]) / (coefs[2]+coefs[18]))
 
 lm_fin <- data.frame(
-  Scientific_name = (c("Gadus morhua","Lepidorhombus whiffiagonis","Lophius piscatorius","Melanogrammus aeglefinus","Merlangius merlangus","Merluccius merluccius","Pleuronectes platessa","Scomber scombrus","Solea solea")),
-  l50 = as.numeric(lm),
+  Scientific_name = (c("Chelidonichthys cuculus","Gadus morhua","Lepidorhombus whiffiagonis",
+                       "Melanogrammus aeglefinus","Merlangius merlangus",
+                       "Merluccius merluccius","Pleuronectes platessa","Scomber scombrus",
+                       "Solea solea")),
+  l_mat = as.numeric(lm),
   row.names = NULL
 )
 
-#write_csv(lm_fin, here("inst","extdata", "cs_length_maturity_from_age_size_data.csv"))
+l_mat<-lm_fin
+```
+
+Weight at Maturity
+
+```{r}
+# Filter to include only 'immature' and 'mature'
+maturity_agg <- cs_age_size %>%
+  filter(Maturity %in% c("immature", "mature")) %>%
+  mutate(Maturity = ifelse(Maturity == "mature", 1, 0)) %>%
+  filter(!is.na(IndWgt), is.finite(IndWgt)) %>%
+  mutate(IndWgt = floor(IndWgt)) %>%
+  group_by(Scientific_name, IndWgt,Maturity) %>%
+  summarize(CANoAtLngt = sum(CANoAtLngt))%>%
+    uncount(CANoAtLngt)
+
+weight_maturity <- maturity_agg %>%
+    filter(IndWgt > 0) %>% 
+    group_by(Scientific_name) %>%
+    group_modify(~ {
+        # Fit model on log scale
+        fit_log <- glm(Maturity ~ log(IndWgt), family = binomial, data = .x)
+        cc <- coef(fit_log)
+        
+        # Define the intercepts/slopes
+        intercept <- cc[1]
+        slope <- cc[2]
+        
+        # Calculate W50 (P = 0.5) -> logit is 0
+        w_mat <- exp(-intercept / slope)
+        
+        # Calculate W25 (P = 0.25) -> logit is log(1/3)
+        w_mat25 <- exp((log(1/3) - intercept) / slope)
+        
+        data.frame(
+            w_mat = as.numeric(w_mat),
+            w_mat25 = as.numeric(w_mat25)
+        )
+    })
+
+weight_maturity
+```
+
+# Combine Parameters into single data frame
+
+```{r}
+cs_calculated_histories<-l_mat%>%
+    left_join(age_mat, by="Scientific_name")
+use_data(cs_calculated_histories,overwrite=TRUE)
+```
+
+# Boarfish l_mat
+
+```{r}
+boarfish<-read.csv("/Users/jessicawestworth/Desktop/caprosaper_jessicawestworth.csv")
+boarfish<-boarfish%>%
+    filter(!MATURE_IMATURE=="I")
+boarfish$MATURE_IMATURE<-as.numeric(boarfish$MATURE_IMATURE)
+
+fit <- glm(MATURE_IMATURE ~ TL_cm, family = binomial, 
+           data = boarfish)
+coefs <- coef(fit)
+
+lm<-c(-coefs[1]/coefs[2])
+
+ggplot(boarfish, aes(x = TL_cm, y = MATURE_IMATURE)) +
+  geom_jitter(height = 0.05, width = 0.1, alpha = 0.5) +  # jitter for binary points
+  # Add logistic regression curves for each species
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(
+    x = "Length class",
+    y = "Probability of being mature",
+    color = "Species",
+    title = "Maturity vs Length by Species"
+  ) +
+  theme_minimal()
+```
+
+# Boarfish w_mat
+
+```{r}
+boarfish<-read.csv("/Users/jessicawestworth/Desktop/caprosaper_jessicawestworth.csv")
+boarfish<-boarfish%>%
+    filter(!MATURE_IMATURE=="I")
+boarfish$MATURE_IMATURE<-as.numeric(boarfish$MATURE_IMATURE)
+boarfish$a<-0.00724
+boarfish$b<-3.07
+boarfish$IndWgt<-boarfish$a*boarfish$TL_cm^boarfish$b
+
+# Fit model on log scale
+fit_log <- glm(MATURE_IMATURE ~ log(IndWgt), family = binomial, data = boarfish)
+cc <- coef(fit_log)
+        
+# Define the intercepts/slopes
+intercept <- cc[1]
+slope <- cc[2]
+        
+# Calculate W50 (P = 0.5) -> logit is 0
+w_mat <- exp(-intercept / slope)
+        
+# Calculate W25 (P = 0.25) -> logit is log(1/3)
+w_mat25 <- exp((log(1/3) - intercept) / slope)
+        
+weight_maturity_boarfish<-data.frame(
+    w_mat = as.numeric(w_mat),
+    w_mat25 = as.numeric(w_mat25))
 ```

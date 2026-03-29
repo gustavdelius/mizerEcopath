@@ -96,5 +96,14 @@ test_that("matchConsumption matches consumption to consumption_observed", {
     # Check that model consumption matches consumption_observed
     model_consumption <- unname(getConsumption(result))
     expected_consumption <- result@species_params$consumption_observed
-    expect_equal(model_consumption, expected_consumption, tolerance = 1e-8)
+    
+    # The match will not be exact for species where Ecopath consumption is too
+    # low to allow for a metabolic rate of at least 10% of production.
+    # So we only check the species where the match is expected to be exact.
+    sp <- celtic_params@species_params
+    total_production <- getTotalProduction(celtic_params)
+    R <- sp$alpha * sp$consumption_observed - total_production
+    exact <- R >= 0.1 * total_production
+    
+    expect_equal(model_consumption[exact], expected_consumption[exact], tolerance = 1e-8)
 })

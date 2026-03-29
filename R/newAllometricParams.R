@@ -26,7 +26,11 @@
 #' calls `setBevertonHolt()` to set the reproduction level to zero
 #'
 #' Because the model does not make use of the resource spectrum, the resource
-#' dynamics is switched off.
+#' dynamics is switched off. Even though it isn't being used yet, an initial
+#' resource abundance power law is set up that stretches over the entire size
+#' range with an exponent of `lambda = 2.05` and an arbitrary coefficient of
+#' `kappa = 10^11`. The exponent of the resource replenishment rate is
+#' set to `n = 0.7`.
 #'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
@@ -56,7 +60,8 @@ newAllometricParams <- function(species_params, no_w = 200) {
                                # extend resource over entire size range
                                max_w = max_w,
                                w_pp_cutoff = max_w * (1 + 1e-9),
-                               resource_dynamics = "resource_constant")
+                               resource_dynamics = "resource_constant",
+                               n = 0.7)
     sp <- p@species_params
 
     # Switch off all interactions
