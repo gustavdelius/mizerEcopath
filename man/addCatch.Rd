@@ -22,7 +22,7 @@ to a negligible value (1e-6) for all survey gears.}
 \code{yield_observed} instead of summing \code{biomass} from \code{landings}.}
 }
 \value{
-A MizerParams object with updated gear parameters and effort turned on.
+A MizerParams object with updated gear parameters.
 }
 \description{
 Uses scaled catch data from landings and survey to set up gear parameters

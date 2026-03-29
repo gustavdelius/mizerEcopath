@@ -33,13 +33,25 @@ contain the following columns:
 \item \code{catch}: The observed count for each bin.
 }}
 
-\item{lambda}{The slope of the community spectrum. Default is 2.05.}
+\item{lambda}{The slope of the community spectrum, used to set the upper
+bound on \code{mu_mat}. Default is 2.05.}
 
 \item{yield_lambda}{A parameter that controls the strength of the penalty for
 deviation from the observed yield.}
 
 \item{production_lambda}{A parameter that controls the strength of the penalty
 for deviation from the observed production.}
+
+\item{mu_mat_lim}{Upper bound on the optimised \code{mu_mat} value. The hard
+upper bound derived from \code{lambda} and growth rate is further capped at
+this value. Default is 5.}
+
+\item{map}{An optional named list that fixes specific parameters during
+optimisation. Use the user-facing parameter names (\code{"l50"}, \code{"l25"},
+\code{"l50_right"}, \code{"l25_right"}, \code{"catchability"}, \code{"mu_mat"}, \code{"m"}).
+Each element should be a \code{factor} vector where \code{NA} entries fix the
+corresponding parameter at its initial value; see \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
+By default \code{m} (the metabolic-rate exponent) is fixed.}
 }
 \value{
 A MizerParams object with the adjusted external mortality, gear
@@ -52,23 +64,29 @@ that the model in steady state reproduces the observed catch size
 distribution, the observed yield and the observed production, if available.
 }
 \details{
-Currently this function is implemented only for the case where there is a
-single gear catching each species.
-
 The function sets new values for the following parameters:
 \itemize{
-\item \code{l50}: The size at which the gear selectivity is 50\%.
-\item \code{l25}: The size at which the gear selectivity is 25\%.
-\item \code{l50_right}: The size at which the gear selectivity is 50\% (right side for double_sigmoid_length selectivity).
-\item \code{l25_right}: The size at which the gear selectivity is 25\% (right side for double_sigmoid_length selectivity).
+\item \code{l50}: The length at which the gear selectivity is 50\%.
+\item \code{l25}: The length at which the gear selectivity is 25\%.
+\item \code{l50_right}: The length at which the gear selectivity is 50\% on the right
+side (only for \code{double_sigmoid_length} selectivity).
+\item \code{l25_right}: The length at which the gear selectivity is 25\% on the right
+side (only for \code{double_sigmoid_length} selectivity).
 \item \code{catchability}: The catchability of the gear.
-\item \code{mu_mat}: The external mortality at maturity.
+\item \code{mu_mat}: The coefficient of the power-law external mortality
+\code{mu(w) = mu_mat * (w / w_mat)^d}, where \code{d} is taken from
+\code{species_params$d} and \code{w_mat} is the weight at maturity.
 }
+
+The observed yield per gear is taken from the \code{yield_observed} column of
+\code{gear_params(params)}. The observed production is taken from the
+\code{production_observed} column of \code{species_params(params)}.
 
 Only the parameters of the selected species are adjusted. The function then
 recalculates the corresponding rate arrays in the params object. It sets the
 initial size spectrum to the steady state size spectrum. The total biomass of
-each species remains unchanged.
+each species is then rescaled to match the observed biomass and the
+reproduction level is set to zero via \code{\link[mizer:setBevertonHolt]{mizer::setBevertonHolt()}}.
 
 The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch
@@ -81,14 +99,17 @@ the predicted production, multiplied by \code{production_lambda}.
 The function deals with missing data in the following way, for each species
 individually:
 \itemize{
-\item If the observed yield is not available, the function will only match the
-observed catch size distribution and the observed production.
-\item If the observed production is not available, the function will only match the
-observed catch size distribution and the observed yield.
-\item If the observed catch size distribution is not available, the function will
-only match the observed yield and the observed production.
-\item If neither the observed yield nor the observed production are available, the
-function raises an error.
+\item If the observed yield is not available (no positive \code{yield_observed} in
+\code{gear_params}), \code{yield_lambda} is set to 0 and only the catch size
+distribution and production are matched.
+\item If the observed production is not available (no \code{production_observed} in
+\code{species_params}), \code{production_lambda} is set to 0 and only the catch size
+distribution and yield are matched.
+\item If the observed catch size distribution is not available (empty \code{catch}),
+only the observed yield and the observed production are matched. The
+selectivity parameters are held fixed.
+\item If neither catch size data nor observed production are available, the
+function issues a warning and returns \code{params} unchanged.
 }
 
 The catch predicted by the model is calculated by integrating the
