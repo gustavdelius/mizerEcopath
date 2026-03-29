@@ -1,7 +1,6 @@
 ---
 title: "Celtic_Sea_Status_Quo_Model"
 author: "Jessica Westworth"
-format: pdf
 editor: visual
 ---
 
@@ -16,9 +15,6 @@ Creating a model representing the average state of the Celtic Sea from 2012 to 2
 #| message: false
 #| results: 'hide'
 
-#library(remotes)
-#install_github("sizespectrum/mizer", ref="diffusion_gemini")
-#install_github("gustavdelius/mizerEcopath", ref="spawning_season") 
 library(mizer)
 library(mizerEcopath)
 library(dplyr)
@@ -36,12 +32,14 @@ Data includes: life_history parameters (l_mat and age_mat calculated from DATRAS
 
 #Life history data from fishbase
 data(life_history_fishbase)
-life_history_fishbase$l_mat<-c(27.15, 42.36707, 23.473, 21.13458, 25.1, 32.87942, 55.0, 22.9, 28.06812, 17.73243, 20.62504, 20.8603,  9.2, 21.31807)
+life_history_fishbase$l_mat <- c(27.15, 42.36707, 23.473, 21.13458, 25.1, 
+                                 32.87942, 55.0, 22.9, 28.06812, 17.73243, 
+                                 20.62504, 20.8603,  9.2, 21.31807)
 
 #maturity values calculated from survey data
 #data(cs_calculated_histories)
 
-    #combine life_history_fishbase and calculated l_mat
+#combine life_history_fishbase and calculated l_mat
 #life_histories<-life_history_fishbase%>%
 #    mutate(
 #        l_mat=case_when(
@@ -91,8 +89,8 @@ survey_length_distribution<-survey_length_distribution%>%
 
 #DATRAS age at length distribution
 data(cs_age_size)
-boar<-readRDS("/Users/jessicawestworth/Desktop/boarfish_struct_like_DATRAS.rds")
-cs_age_size<-rbind(cs_age_size,boar)
+#boar<-readRDS("/Users/jessicawestworth/Desktop/boarfish_struct_like_DATRAS.rds")
+#cs_age_size<-rbind(cs_age_size,boar)
 
 #determining l_max comparing landings max length versus fishbase max length recorded value
 observed_max <- catch_distribution %>%
@@ -181,7 +179,7 @@ model_non_int <- newAllometricParams(sp_params, no_w = 200)
 ## Add gear params
 model_non_int <- addCatch(model_non_int, landings= catch_distribution,
                               fishing_dead_biomass=fishing_deaths,
-                              survey= survey_length_distribution,step=2)
+                              survey= survey_length_distribution)
 
 # Steady model
 model_non_int <- model_non_int %>%
