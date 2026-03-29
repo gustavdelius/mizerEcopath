@@ -171,7 +171,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_ratio_right = rep(-10, length(data$sel_func)),
         log_catchability = rep(-10, length(data$sel_func)),
         mu_mat = 0.2,
-        m = params@species_params$n*1.01
+        m = sps$n * 1.01
     )
 
     upper_bounds_list <- list(

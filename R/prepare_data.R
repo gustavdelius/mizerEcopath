@@ -47,7 +47,11 @@ prepare_data <- function(params, species = 1, catch,
         w_max <- sps$w_max
     } else {
         use_counts <- 1
-
+        if (!all(c('length', 'dl') %in% names(catch)) ||
+            !any(c('count', 'catch') %in% names(catch))) {
+            stop("Data frame 'catch' must contain columns 'length', 'dl', and 'count' (or 'catch').")
+        }
+        catch <- dplyr::ungroup(catch)
         ispec <- species
         catch <- catch |> filter( species == ispec)
 
@@ -94,9 +98,9 @@ prepare_data <- function(params, species = 1, catch,
 
         # Extract counts, bin boundaries and widths
         counts <- full_bins |>
-            select(gear, bin_start, bin_end, length, count) |>
+            select(gear, bin_start, bin_end, count) |>
             tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
-        counts <- as.matrix(counts)[,-c(1:2)]    # for different gears
+        counts <- as.matrix(counts)[,-c(1:2)]    # remove bin_start and bin_end columns
         l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
         w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
         w_bin_widths <- diff(w_bin_boundaries)
@@ -172,7 +176,7 @@ prepare_data <- function(params, species = 1, catch,
         counts = counts,
         bin_index = weight_list$bin_index,
         f_index = weight_list$f_index,
-        sel_func = ifelse(gp$sel_func=='double_sigmoid_length',1,2), # different selectivity functions
+        sel_func = ifelse(gps$sel_func=='double_sigmoid_length',1,2), # different selectivity functions
         coeff_fj = weight_list$coeff_fj,
         coeff_fj1 = weight_list$coeff_fj1,
         dw = dw,
