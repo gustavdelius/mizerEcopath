@@ -8,6 +8,5 @@ valid_catch(catch, species)
 }
 \description{
 This helper function ensures that the catch data frame contains the required columns,
-extracts only the rows for the specified species, and checks that a single gear is used
-(current assumption of the code which may subsequently be overhauled).
+extracts only the rows for the specified species.
 }

@@ -2,25 +2,36 @@
 % Please edit documentation in R/update_params.R
 \name{update_params}
 \alias{update_params}
-\title{Function that updates params object with new parameter values}
+\title{Prepare a TMB Objective Function for Optimising Model Parameters}
 \usage{
 update_params(params, species = 1, pars, data)
 }
 \arguments{
-\item{params}{The MizerParams object to update}
+\item{params}{A MizerParams object}
 
-\item{species}{The species to update. By default the first species in the
-model.}
+\item{species}{The species for which the data is to be prepared. By default
+the first species in the model.}
 
-\item{pars}{A named numeric vector of parameter values}
+\item{catch}{A data frame containing the observed binned catch data. It must
+contain the following columns:
+\itemize{
+\item \code{length}: The start of each bin.
+\item \code{dl}: The width of each bin.
+\item \code{count}: The observed count for each bin.
+}}
 
-\item{data}{The list with data as passed to the objective function}
+\item{yield_lambda}{A parameter that controls the strength of the penalty for
+deviation from the observed yield.}
 }
 \value{
-The updated MizerParams object
+A list with the data to be passed to the TMB objective function. If
+there is no catch data for the species, the function returns NULL.
 }
 \description{
-This function currently updates the gear selectivity parameters \code{l50} and
-\verb{l25, the catchability, the steepness }U\verb{of the maturity ogive and the coefficient}M` of the power-law mortality rate. It then recalculates the
-steady state of the model and rescales it to match the observed biomass.
+This function returns a list with the data to be passed to the TMB objective
+function. The data includes the observed catch data, the model parameters,
+and some precomputed values that are used in the likelihood calculation.
+The main preprocessing makes sure that we have a comprehensive set of bins
+that cover the entire size range, even though there will not be observations
+at all sizes. Missing observations should be interpreted as a 0 count.
 }

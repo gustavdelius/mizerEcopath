@@ -4,19 +4,27 @@
 #' that the model in steady state reproduces the observed catch size
 #' distribution, the observed yield and the observed production, if available.
 #'
-#' Currently this function is implemented only for the case where there is a
-#' single gear catching each species.
-#'
 #' The function sets new values for the following parameters:
-#' * `l50`: The size at which the gear selectivity is 50%.
-#' * `l25`: The size at which the gear selectivity is 25%.
+#' * `l50`: The length at which the gear selectivity is 50%.
+#' * `l25`: The length at which the gear selectivity is 25%.
+#' * `l50_right`: The length at which the gear selectivity is 50% on the right
+#'   side (only for `double_sigmoid_length` selectivity).
+#' * `l25_right`: The length at which the gear selectivity is 25% on the right
+#'   side (only for `double_sigmoid_length` selectivity).
 #' * `catchability`: The catchability of the gear.
-#' * `mu_mat`: The external mortality at maturity.
+#' * `mu_mat`: The coefficient of the power-law external mortality
+#'   `mu(w) = mu_mat * (w / w_mat)^d`, where `d` is taken from
+#'   `species_params$d` and `w_mat` is the weight at maturity.
+#'
+#' The observed yield per gear is taken from the `yield_observed` column of
+#' `gear_params(params)`. The observed production is taken from the
+#' `production_observed` column of `species_params(params)`.
 #'
 #' Only the parameters of the selected species are adjusted. The function then
 #' recalculates the corresponding rate arrays in the params object. It sets the
 #' initial size spectrum to the steady state size spectrum. The total biomass of
-#' each species remains unchanged.
+#' each species is then rescaled to match the observed biomass and the
+#' reproduction level is set to zero via [mizer::setBevertonHolt()].
 #'
 #' The function estimates these parameters by minimizing an objective function.
 #' The objective function is the negative log likelihood of the observed catch
@@ -29,17 +37,20 @@
 #' The function deals with missing data in the following way, for each species
 #' individually:
 #'
-#' -  If the observed yield is not available, the function will only match the
-#' observed catch size distribution and the observed production.
+#' -  If the observed yield is not available (no positive `yield_observed` in
+#' `gear_params`), `yield_lambda` is set to 0 and only the catch size
+#' distribution and production are matched.
 #'
-#' -  If the observed production is not available, the function will only match the
-#' observed catch size distribution and the observed yield.
+#' -  If the observed production is not available (no `production_observed` in
+#' `species_params`), `production_lambda` is set to 0 and only the catch size
+#' distribution and yield are matched.
 #'
-#' -  If the observed catch size distribution is not available, the function will
-#' only match the observed yield and the observed production.
+#' -  If the observed catch size distribution is not available (empty `catch`),
+#' only the observed yield and the observed production are matched. The
+#' selectivity parameters are held fixed.
 #'
-#' -  If neither the observed yield nor the observed production are available, the
-#' function raises an error.
+#' -  If neither catch size data nor observed production are available, the
+#' function issues a warning and returns `params` unchanged.
 #'
 #' The catch predicted by the model is calculated by integrating the
 #' catchability and the gear selectivity over the size distribution of the
@@ -60,14 +71,26 @@
 #'   species whether it is to be selected (TRUE) or not.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
+#'   * `species`: The species for which the catch is recorded.
+#'   * `gear`: The gear used to collect the catch.
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
-#'   * `count`: The observed count for each bin.
-#' @param lambda The slope of the community spectrum. Default is 2.05.
+#'   * `catch`: The observed count for each bin.
+#' @param lambda The slope of the community spectrum, used to set the upper
+#'   bound on `mu_mat`. Default is 2.05.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #' @param production_lambda A parameter that controls the strength of the penalty
-#'  for deviation from the observed production.
+#'   for deviation from the observed production.
+#' @param mu_mat_lim Upper bound on the optimised `mu_mat` value. The hard
+#'   upper bound derived from `lambda` and growth rate is further capped at
+#'   this value. Default is 5.
+#' @param map An optional named list that fixes specific parameters during
+#'   optimisation. Use the user-facing parameter names (`"l50"`, `"l25"`,
+#'   `"l50_right"`, `"l25_right"`, `"catchability"`, `"mu_mat"`, `"m"`).
+#'   Each element should be a `factor` vector where `NA` entries fix the
+#'   corresponding parameter at its initial value; see [TMB::MakeADFun()].
+#'   By default `m` (the metabolic-rate exponent) is fixed.
 #'
 #' @return A MizerParams object with the adjusted external mortality, gear
 #'   selectivity, catchability and steady-state spectrum for the selected
@@ -88,16 +111,22 @@
 #' params_steady <- steadySingleSpecies(params)
 #' all.equal(initialN(params), initialN(params_steady))
 #' @export
+#'
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
-                       yield_lambda = 1, production_lambda = 1) {
+                       yield_lambda = 1, production_lambda = 1,
+                       mu_mat_lim = 5, map = NULL)
+{
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
     params <- validParams(params)
+
     if (length(species) > 1) {
         for (s in species) {
             params <- matchCatch(params, species = s, catch = catch,
+                                 lambda = lambda,
                                  yield_lambda = yield_lambda,
-                                 production_lambda = production_lambda)
+                                 production_lambda = production_lambda,
+                                 mu_mat_lim = mu_mat_lim, map = map)
         }
         return(params)
     }
@@ -105,8 +134,10 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     data <- prepare_data(params, species = species, catch,
                          yield_lambda = yield_lambda,
                          production_lambda = production_lambda)
+
     if (is.null(data)) {
-        warning(species, " can not be matched because neither catches nor production are given.")
+        warning(species, " can not be matched because neither catches ",
+                "nor production are given.")
         return(params)
     }
 
@@ -115,6 +146,10 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     sp_select <- sp$species == species
     sps <- sp[sp_select, ]
     gps <- gp[gp$species == species, ]
+
+    if(is.vector(data$counts)){
+        data$counts <- as.matrix(data$counts, ncol=1)
+        colnames(data$counts) <- gps$gear}
 
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
@@ -126,10 +161,24 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     }
 
     # Initial parameter estimates
-    initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                        mu_mat = mu_mat,
-                        # we need non-zero catchability to match catch
-                        catchability = max(gps$catchability, 1e-8))
+    # differenet parametrization for selectivity (note that C++ fails with NAs)
+    initial_params <- list(
+
+        logit_l50 = qlogis((gps$l50 - min(data$l))/(max(data$l) - min(data$l))),
+
+        log_ratio_left = qlogis((gps$l50 - gps$l25)/gps$l50),
+
+        log_l50_right_offset = ifelse(gps$sel_func == 'double_sigmoid_length',
+                                      log(pmax(1e-3, gps$l50_right - gps$l50)), 1),
+
+        log_ratio_right = ifelse(gps$sel_func == 'double_sigmoid_length',
+                                 log((gps$l25_right - gps$l50_right)/gps$l50_right), 1),
+
+        log_catchability = log(ifelse(gps$catchability <= 0, 1e-8, gps$catchability)),
+
+        mu_mat = mu_mat,
+
+        m = ifelse(any(names(sps)=='m'), sps$m, 1))
 
     # Set parameter bounds
     # Mortality is bounded by the requirement that the juvenile spectrum of
@@ -138,29 +187,106 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
     g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
     mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
-    lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0.2,
-                      catchability = 1e-8)
-    upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = mu_mat_max,
-                      catchability = Inf)
 
-    map <- list()
+    lower_bounds_list <- list(
+        logit_l50 = rep(-10, length(data$sel_func)),
+        log_ratio_left = rep(-10, length(data$sel_func)),
+        log_l50_right_offset = rep(-10, length(data$sel_func)),
+        log_ratio_right = rep(-10, length(data$sel_func)),
+        log_catchability = rep(-10, length(data$sel_func)),
+        mu_mat = 0.2,
+        m = sps$n * 1.01
+    )
+
+    upper_bounds_list <- list(
+        logit_l50 = rep(10, length(data$sel_func)),
+        log_ratio_left = rep(10, length(data$sel_func)),
+        log_l50_right_offset = rep(10, length(data$sel_func)),
+        log_ratio_right = rep(10, length(data$sel_func)),
+        log_catchability = rep(10, length(data$sel_func)),
+        mu_mat = min(mu_mat_max,mu_mat_lim),
+        m = 3
+    )
+
+    if (!is.null(map)) {
+        # Traducir los nombres amigables a los nombres internos del optimizador
+        name_translation <- c(
+            "l50" = "logit_l50",
+            "l25" = "log_ratio_left",
+            "l50_right" = "log_l50_right_offset",
+            "l25_right" = "log_ratio_right",
+            "catchability" = "log_catchability",
+            "mu_mat" = "mu_mat",
+            "m" = "m"
+        )
+
+        transformed_map <- list()
+        for (orig_name in names(map)) {
+            if (orig_name %in% names(name_translation)) {
+                transformed_map[[name_translation[[orig_name]]]] <- map[[orig_name]]
+            } else {
+                transformed_map[[orig_name]] <- map[[orig_name]]
+            }
+        }
+        map <- transformed_map
+    } else {
+        map <- list()
+    }
+
+    # Fix m to its current species_params value by default, keeping the C++
+    # growth formula consistent with mizer's getEGrowth. Users can override
+    # by explicitly including "m" in their map argument.
+    if (!"m" %in% names(map)) {
+        map$m <- factor(NA)
+    }
+
+    # Fix right-side parameters for non-double-sigmoid gears. The C++ does not
+    # use log_l50_right_offset/log_ratio_right for sigmoid gears (sel_func==2),
+    # so leaving them free gives zero-gradient "phantom" parameters that corrupt
+    # nlminb's Hessian approximation and shift convergence for other parameters.
+    is_double <- data$sel_func == 1  # sel_func 1 = double_sigmoid_length
+    if (any(!is_double)) {
+        right_map_vec <- integer(length(data$sel_func))
+        right_map_vec[is_double] <- seq_len(sum(is_double))
+        right_map_vec[!is_double] <- NA
+        if (is.null(map$log_l50_right_offset)) {
+            map$log_l50_right_offset <- factor(right_map_vec)
+        }
+        if (is.null(map$log_ratio_right)) {
+            map$log_ratio_right <- factor(right_map_vec)
+        }
+    }
+
     if (!data$use_counts) {
-        map$l50 <- factor(NA)
-        map$ratio <- factor(NA)
-        lower_bounds <- lower_bounds[-(1:2)]
-        upper_bounds <- upper_bounds[-(1:2)]
+        map$logit_l50 <- factor(rep(NA, length(data$sel_func)))
+        map$log_ratio_left <- factor(rep(NA, length(data$sel_func)))
+        map$log_l50_right_offset <- factor(rep(NA, length(data$sel_func)))
+        map$log_ratio_right <- factor(rep(NA, length(data$sel_func)))
     }
     if (data$yield_lambda == 0) {
-        map$catchability <- factor(NA)
-        lower_bounds <- lower_bounds[-4]
-        upper_bounds <- upper_bounds[-4]
+        map$log_catchability <- factor(rep(NA, length(data$sel_func)))
     }
+
+    lower_bounds <- NULL
+    upper_bounds <- NULL
+
+    for (p in names(initial_params)) {
+        lb <- lower_bounds_list[[p]]
+        ub <- upper_bounds_list[[p]]
+
+        if (!is.null(map[[p]])) {
+            keep <- !is.na(as.vector(map[[p]]))
+            lb <- lb[keep]
+            ub <- ub[keep]
+        }
+        lower_bounds <- c(lower_bounds, lb)
+        upper_bounds <- c(upper_bounds, ub)
+    }
+
     # Prepare the objective function.
-    obj <- MakeADFun(data = data,
-                     parameters = initial_params,
-                     map = map,
-                     DLL = "mizerEcopath",
-                     silent = TRUE)
+
+    obj <- TMB::MakeADFun(data = data, parameters = initial_params, map = map,
+                          DLL = "mizerEcopath", silent = TRUE, debug = FALSE)
 
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,
@@ -169,7 +295,14 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
     # Set model to use the optimal parameters
     w_select <- w(params) %in% data$w
-    optimal_params <- update_params(params, species, optim_result$par, data)
+
+    # Get all parameters, including fixed ones
+    pars_all <- obj$env$last.par.best
+    if (is.null(pars_all)) pars_all <- obj$env$last.par
+
+    pars_list <- obj$env$parList(pars_all)
+
+    optimal_params <- update_params(params, species, pars_list, data)
 
     return(optimal_params)
 }

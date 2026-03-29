@@ -12,9 +12,11 @@
 #'   the first species in the model.
 #' @param catch A data frame containing the observed binned catch data. It must
 #'   contain the following columns:
+#'   * `gear`: The gear used to collect the catch (optional if there is only a
+#'             single gear).
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
-#'   * `count`: The observed count for each bin.
+#'   * `catch`: The observed count for each bin.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #'
@@ -24,7 +26,7 @@
 prepare_data <- function(params, species = 1, catch,
                          yield_lambda = 1, production_lambda = 1) {
 
-    # Validate MizerParams object and extract data for the selected species ----
+    # Validate MizerParams object and extract data for the selected species
     params <- validParams(params)
     species <- valid_species_arg(params, species, error_on_empty = TRUE)
     if (length(species) > 1) {
@@ -33,17 +35,11 @@ prepare_data <- function(params, species = 1, catch,
     sp <- species_params(params)
     sp_select <- sp$species == species
     sps <- sp[sp_select, ]
-
     gp <- params@gear_params
     gp_select <- gp$species == species
     gps <- gp[gp_select, ]
-    if (nrow(gps) > 1) {
-        stop("The code currently assumes that there is only a single gear for each species.")
-    }
 
-    # Validate catch data frame and extract data for the selected species ----
-    catch <- valid_catch(catch, species)
-
+    # Validate catch data frame and extract data for the selected species
     if (nrow(catch) == 0) {
         use_counts <- 0
         counts <- numeric(0)
@@ -51,6 +47,13 @@ prepare_data <- function(params, species = 1, catch,
         w_max <- sps$w_max
     } else {
         use_counts <- 1
+        if (!all(c('length', 'dl') %in% names(catch)) ||
+            !any(c('count', 'catch') %in% names(catch))) {
+            stop("Data frame 'catch' must contain columns 'length', 'dl', and 'count' (or 'catch').")
+        }
+        catch <- dplyr::ungroup(catch)
+        ispec <- species
+        catch <- catch |> filter( species == ispec)
 
         max_length <- max(catch$length + catch$dl)
         max_weight <- sps$a * max_length^sps$b
@@ -58,60 +61,50 @@ prepare_data <- function(params, species = 1, catch,
             stop("For ", species, " you have observed catches of larger weight than the `w_max` that you specified.")
         }
 
-        # Fill in missing zero counts ----
+        # Fill in missing zero counts
 
         # Sort bins
-        catch <- catch[order(catch$length), ]
-        # Extract observed bin starts, ends, and counts
-        observed_bins <- data.frame(
-            bin_start = catch$length,
-            bin_end = catch$length + catch$dl,
-            count = catch$count)
-        # Check that bins don't overlap
-        if (any(observed_bins$bin_end[-nrow(observed_bins)] >
-                observed_bins$bin_start[-1])) {
-            stop("Bins in the catch data must not overlap.")
-        }
+        # catch <- catch[order(catch$length), ]   # better as follows for different gears
+        observed_bins <- catch |>
+            mutate(bin_start = length, bin_end = length + dl, count = catch) |>
+            select(bin_start, bin_end, count, gear) |>
+            arrange(gear, bin_start)
+        # if (any(observed_bins$bin_end[-nrow(observed_bins)] >
+        #         observed_bins$bin_start[-1])) {
+        #   stop("Bins in the catch data must not overlap.")
+        # }     # Not true now
         # Add empty bins at either end. This will have an effect only when the
         # catch data is very poor and would be matched by curves that are still
         # large at the end of the observation interval.
         min_length <- (sps$w_min / sps$a) ^ (1 / sps$b)
-        observed_bins <- rbind(observed_bins,
-                               data.frame(bin_start = min_length,
-                                          bin_end = min(catch$length),
-                                          count = 0))
+        observed_bins <- rbind(observed_bins, data.frame(bin_start = min_length,
+                                                         bin_end = min(catch$length), count = 0, gear = unique(catch$gear))) # add diff gears
         max_idx <- which.max(catch$length)
         max_length <- catch$length[max_idx] + catch$dl[max_idx]
         l_max <- (sps$w_max / sps$a) ^ (1 / sps$b)
-        observed_bins <- rbind(observed_bins,
-                               data.frame(bin_start = max_length,
-                                          bin_end = l_max,
-                                          count = 0))
+        observed_bins <- rbind(observed_bins, data.frame(bin_start = max_length,
+                                                         bin_end = l_max, count = 0, gear = unique(catch$gear)))  # add diff gears
+        observed_bins <- observed_bins |> arrange(gear, bin_start)  # better for different gears
 
         # Create a comprehensive set of bin edges covering all observed bins
         bin_edges <- sort(unique(c(observed_bins$bin_start, observed_bins$bin_end)))
+        bins <- data.frame( bin_start = head(bin_edges, -1), bin_end   = tail(bin_edges, -1))
+        all_combos <- tidyr::expand_grid(gear=unique(observed_bins$gear),bins)
 
         # Define full bins covering the observed range
-        full_bins <- data.frame(
-            bin_start = bin_edges[-length(bin_edges)],
-            bin_end = bin_edges[-1],
-            count = 0  # Initialize counts to zero
-        )
+        full_bins <- all_combos |>
+            left_join(observed_bins, by = c("gear","bin_start","bin_end")) |>
+            mutate(count = tidyr::replace_na(count, 0))  # different fill for missing data
 
-        # Map observed counts to the corresponding bins in full_bins
-        bin_key <- paste0(full_bins$bin_start, "_", full_bins$bin_end)
-        observed_bin_key <- paste0(observed_bins$bin_start, "_", observed_bins$bin_end)
-        matched_indices <- match(observed_bin_key, bin_key)
-        full_bins$count[matched_indices] <- observed_bins$count
-
-        # Extract counts, bin boundaries and widths ----
-        counts <- full_bins$count
+        # Extract counts, bin boundaries and widths
+        counts <- full_bins |>
+            select(gear, bin_start, bin_end, count) |>
+            tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
+        counts <- as.matrix(counts)[,-c(1:2)]    # remove bin_start and bin_end columns
         l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
         w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
         w_bin_widths <- diff(w_bin_boundaries)
-
         w <- w(params)
-        # Select subset of w that totally contains the observed range
         w_min <- max(w[w <= min(w_bin_boundaries)], sps$w_min)
         w_max <- min(w[w >= max(w_bin_boundaries)], sps$w_max)
     }
@@ -120,7 +113,7 @@ prepare_data <- function(params, species = 1, catch,
     w_select <- w >= w_min & w <= w_max
     w <- w[w_select]
     dw <- dw(params)[w_select]
-    l <- (w / sps$a) ^ (1 / sps$b)
+    l <- (w/sps$a)^(1/sps$b)
 
     N <- initialN(params)[sp_select, w_select]
 
@@ -136,15 +129,12 @@ prepare_data <- function(params, species = 1, catch,
     # The cutoff index for R is one more than the C++ index
     biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
     growth <- getEGrowth(params)[sp_select, w_select]
-
     if (use_counts) {
         # Precompute weights for interpolation
         weight_list <- precompute_weights(w_bin_boundaries, w)
     } else {
-        weight_list <- list(bin_index = integer(0),
-                            f_index = integer(0),
-                            coeff_fj = numeric(0),
-                            coeff_fj1 = numeric(0))
+        weight_list <- list(bin_index = integer(0), f_index = integer(0),
+                            coeff_fj = numeric(0), coeff_fj1 = numeric(0))
     }
 
     # The w_mat relevant for calculating mortality is the w just below it
@@ -164,34 +154,57 @@ prepare_data <- function(params, species = 1, catch,
     }
 
     # If yield is not observed
-    if (is.null(gps$yield_observed) || is.na(gps$yield_observed) ||
-        !(gps$yield_observed > 0)) {
+    if (is.null(gps$yield_observed) || any(is.na(gps$yield_observed)) ||
+        any(!(gps$yield_observed > 0))) {
         yield <- 0
         yield_lambda <- 0
     } else {
         yield <- gps$yield_observed
     }
-    # Prepare data list for TMB ----
+
+    # Estimation of m
+
+    ergr <- getEReproAndGrowth(params)[sp_select, w_select]
+    matur <- params@maturity[sp_select, w_select]
+    n <- sps$n
+    # mizer uses w_repro_max (not w_max) in the psi/growth formula, defaulting
+    # to w_max when w_repro_max is not set
+    w_repro_max <- if (!is.null(sps$w_repro_max) && !is.na(sps$w_repro_max)) {
+        sps$w_repro_max
+    } else {
+        sps$w_max
+    }
+
+
+    # Prepare data list for TMB
     data <- list(
         use_counts = use_counts,
         counts = counts,
         bin_index = weight_list$bin_index,
         f_index = weight_list$f_index,
+        sel_func = ifelse(gps$sel_func=='double_sigmoid_length',1,2), # different selectivity functions
         coeff_fj = weight_list$coeff_fj,
         coeff_fj1 = weight_list$coeff_fj1,
         dw = dw,
         w = w,
         l = l,
+        # minl = min(l),
+        # maxl = max(l),   # already calculated in C++
         yield = yield,
         production = production,
         biomass = biomass,
         biomass_cutoff_idx = biomass_cutoff_idx,
-        growth = growth,
+        # growth = growth,
         w_mat = w_mat,
         d = sps$d,
         yield_lambda = yield_lambda,
-        production_lambda = production_lambda
+        production_lambda = production_lambda,
+        matur = matur,
+        ergr = ergr,
+        n = n,
+        w_repro_max = w_repro_max
     )
+
     return(data)
 }
 
@@ -265,9 +278,7 @@ precompute_weights <- function(w_bin_boundaries, w) {
 #' Validate and extract catch data for a single species
 #'
 #' This helper function ensures that the catch data frame contains the required columns,
-#' extracts only the rows for the specified species, and checks that a single gear is used
-#' (current assumption of the code which may subsequently be overhauled).
-
+#' extracts only the rows for the specified species.
 #' @export
 valid_catch <- function(catch, species) {
     # Allow "catch" as an alternative name to "count"
@@ -281,9 +292,9 @@ valid_catch <- function(catch, species) {
     if ("species" %in% names(catch)) {
         catch <- catch[catch$species == species, ]
     }
-    if ("gear" %in% names(catch) && length(unique(catch$gear)) > 1) {
-        stop("The code currently assumes that there is only a single gear for each species.")
-    }
+    # if ("gear" %in% names(catch) && length(unique(catch$gear)) > 1) {
+    #   stop("The code currently assumes that there is only a single gear for each species.")
+    # }   # not true now
 
     return(catch)
 }
