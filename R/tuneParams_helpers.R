@@ -1,6 +1,19 @@
-prepare_params <- function(p) {
+# Environment to store hooks set by tuningGadget()
+tuning_env <- new.env(parent = emptyenv())
+
+#' Prepare the params object for tuning
+#'
+#' This function is called once when a tuning gadget is started. It prepares
+#' the params object for tuning by setting defaults for the species parameters
+#' that the tuning gadget uses but which may not be set in the params object.
+#'
+#' @param p The params object
+#' @param hook An optional function `(p) -> p` called after the shared
+#'   preparation to apply package-specific defaults.
+#' @return The prepared params object
+#' @export
+prepare_params <- function(p, hook = NULL) {
     p@species_params$species <- as.character(p@species_params$species)
-    no_sp <- nrow(p@species_params)
     rownames(p@species_params) <- p@species_params$species
     p <- set_species_param_default(p, "a", 0.006)
     p <- set_species_param_default(p, "b", 3)
@@ -8,31 +21,25 @@ prepare_params <- function(p) {
     p <- set_species_param_default(p, "t0", 0)
     p <- set_species_param_default(p, "w_mat25",
                                    p@species_params$w_mat/(3^(1/10)))
-    p <- set_species_param_default(p, "d", p@species_params$n - 1)
-    p <- set_species_param_default(p, "yield_lambda", 0)
-    p <- set_species_param_default(p, "production_lambda", 0)
-    # Determine gonad proportion
-    current <- getGonadicProduction(p) / getProduction(p)
-    p <- set_species_param_default(p, "gonad_proportion", current)
-    # Determine mu_mat
-    # Note that `mu_mat` is the mortality at the w just below w_mat
-    # TODO: can be removed once mu_mat is a standard for species_params
-    mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
-    mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
-    p <- set_species_param_default(p, "mu_mat", mu_mat)
-    p <- set_species_param_default(p, "d_over_g", 0)
-    p <- set_species_param_default(p, "spawning_mu", 0.5)
-    p <- set_species_param_default(p, "spawning_kappa", 5)
-    p <- set_species_param_default(p, "annuli_min_age", 0)
-    p <- set_species_param_default(p, "annuli_date", 0)
 
-    p <- steadySingleSpecies(p)
-    p <- matchBiomasses(p)
+    # Apply package-specific hook
+    if (!is.null(hook)) {
+        p <- hook(p)
+    }
+
     return(p)
 }
 
-# This is called when a params object is downloaded or when the done button
-# is pressed
+
+#' Finalise the params object after tuning
+#'
+#' This function is called when a params object is downloaded or when the done
+#' button is pressed. It clears the undo attribute and restores the
+#' Beverton-Holt reproduction settings.
+#'
+#' @param p The params object
+#' @return The finalised params object
+#' @export
 finalise_params <- function(p) {
     # Clear attribute that was only needed for the undo functionality
     attr(p, "changes") <- NULL
@@ -55,6 +62,20 @@ finalise_params <- function(p) {
 }
 
 
+#' Update the species parameters
+#'
+#' This function is called when a species parameter is changed. It calculates the
+#' steady state for the changed species and updates the params object.
+#'
+#' If an `update_species_hook` was set by [tuningGadget()], it is called after
+#' `steadySingleSpecies()` to allow package-specific post-processing (e.g.,
+#' `matchBiomasses()` in mizerEcopath).
+#'
+#' @param sp The species to update
+#' @param p The params object
+#' @param params The reactive params object
+#' @param params_old The reactive params object before the change
+#' @export
 tuneParams_update_species <- function(sp, p, params, params_old) {
     # wrap the code in trycatch so that when there is a problem we can
     # simply stay with the old parameters
@@ -64,9 +85,13 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
         p_old <- params_old()
         p@initial_n <- p_old@initial_n
 
-        p <- steadySingleSpecies(p, species = sp)
-        p <- matchBiomasses(p, species = sp)
-        # p <- setBevertonHolt(p, reproduction_level = 0)
+        p <- steadySingleSpecies(p)
+
+        # Apply update_species_hook if set by tuningGadget()
+        hook <- tuning_env$update_species_hook
+        if (!is.null(hook)) {
+            p <- hook(sp, p)
+        }
 
         # Update the reactive params object
         tuneParams_update_params(p, params)
@@ -78,8 +103,20 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
 }
 
 
-# Define function that runs to steady state using `steady()` and
-# then adds the new steady state to the logs
+#' Run to steady state
+#'
+#' This function is called when the user clicks the "Steady" button in
+#' [tuneParams()]. It runs the model to steady state and updates the params
+#' object.
+#'
+#' @param p The params object
+#' @param params The reactive params object
+#' @param params_old The reactive params object before the change
+#' @param logs The logs object
+#' @param session The Shiny session object
+#' @param input The Shiny input object
+#' @param return_sim Whether to return the simulation object
+#' @export
 tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
                                   return_sim = FALSE) {
 
@@ -127,9 +164,18 @@ tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
     error = error_fun)
 }
 
-# Call this whenever the abundance of a species is changed directly
-# i.e., not when it is changed as a consequence of a parameter change.
-# This will make the change permanent by also saving it in params_old
+
+#' Update the abundance of a species
+#'
+#' This function is called when the abundance of a species is changed directly
+#' i.e., not when it is changed as a consequence of a parameter change.
+#' It will make the change permanent by also saving it in params_old.
+#'
+#' @param p The params object
+#' @param sp The species to update
+#' @param params The reactive params object
+#' @param params_old The reactive params object before the change
+#' @export
 tuneParams_update_abundance <- function(p, sp, params, params_old) {
 
     # We need to update `params_old()` because otherwise the change
@@ -138,24 +184,20 @@ tuneParams_update_abundance <- function(p, sp, params, params_old) {
     p_old@initial_n[sp, ] <- p@initial_n[sp, ]
     params_old(p_old)
 
-    # Switch the following off for now because it would be strange to display
-    # these back-reactions from the other species initially and then make them
-    # go away when another parameter is changed (because that would start from
-    # params_old again).
-    # # We let the other species react to this change, but that reaction
-    # # does not get saved in `params_old`. We don't allow a second-order
-    # # change in the changed species.
-    # other_species <- setdiff(p@species_params$species, sp)
-    # p@initial_n <- p_old@initial_n # Important to always start from params_old
-    # p <- steadySingleSpecies(p, species = other_species)
-
     # Update the reactive params object
     tuneParams_update_params(p, params)
 }
 
-# Call this whenever the params object needs to be updated, unless you also
-# need to write it to the logs, in which case call `tuneParams_add_to_logs()`
-# instead.
+#' Update the params object
+#'
+#' This function is called whenever the params object needs to be updated, unless
+#' you also need to write it to the logs, in which case call
+#' `tuneParams_add_to_logs()` instead.
+#' It indicates that the params have changed and updates the reactive params object.
+#'
+#' @param p The params object
+#' @param params The reactive params object
+#' @export
 tuneParams_update_params <- function(p, params) {
 
     # indicate that the params have changed. This will be used in the Undo
@@ -172,7 +214,15 @@ tuneParams_update_params <- function(p, params) {
     params(p)
 }
 
-# This updates the params object and writes it to the logs
+#' Add the params object to the logs
+#'
+#' This function is called when the params object needs to be written to the logs.
+#' It updates the params object and writes it to the logs.
+#'
+#' @param logs The logs object
+#' @param p The params object
+#' @param params The reactive params object
+#' @export
 tuneParams_add_to_logs <- function(logs, p, params) {
 
     # Clear attribute used in undo functionality
@@ -200,6 +250,12 @@ tuneParams_add_to_logs <- function(logs, p, params) {
     }
 }
 
+#' Error function
+#'
+#' This function is called when an error occurs. It shows a modal dialog with the error message.
+#'
+#' @param e The error object
+#' @export
 error_fun <- function(e) {
     showModal(modalDialog(
         title = "Invalid parameters",
@@ -209,16 +265,28 @@ error_fun <- function(e) {
         easyClose = TRUE
     ))}
 
-# Convert the tab name given by the user to lower case, because the names of
-# the tab functions will always start with lower case.
+#' Convert the tab name given by the user to lower case
+#'
+#' This function is used to convert the tab name given by the user to lower case,
+#' because the names of the tab functions will always start with lower case.
+#'
+#' @param tab The tab name
+#' @return The tab name in lower case
+#' @export
 tab_name <- function(tab) {
     tabname <- tab
     substr(tabname, 1, 1) <- tolower(substr(tab, 1, 1))
     tabname
 }
 
-# Return the title for the tab. This is either defined by the tab author or
-# otherwise is the tab name supplied by the user.
+#' Return the title for the tab
+#'
+#' This function is used to return the title for the tab. This is either defined
+#' by the tab author or otherwise is the tab name supplied by the user.
+#'
+#' @param tab The tab name
+#' @return The tab title
+#' @export
 tab_title <- function(tab) {
     tabname <- tab_name(tab)
     title_var <- paste0(tabname, "TabTitle")

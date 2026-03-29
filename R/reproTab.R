@@ -1,6 +1,6 @@
 #' Serve tab with plot of reproductive success rates
 #'
-#' @inheritParams deathTab
+#' @inheritParams biomassTab
 reproTab <- function(input, output, session, params, logs, ...) {
     # erepro plot ----
     output$plot_erepro <- renderPlotly({
@@ -18,7 +18,7 @@ reproTab <- function(input, output, session, params, logs, ...) {
             theme(text = element_text(size = 12)) +
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
     })
-
+    
     # Plot psi ----
     output$plot_psi <- renderPlotly({
         p <- params()

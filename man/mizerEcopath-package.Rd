@@ -4,9 +4,9 @@
 \name{mizerEcopath-package}
 \alias{mizerEcopath}
 \alias{mizerEcopath-package}
-\title{mizerEcopath: Extending an Ecopath model to a mizer model}
+\title{mizerEcopath: Building a Mizer version of an Ecopath model}
 \description{
-Tools for creating a mizer model from an Ecopath model.
+Tools for creating a mizer model matching averaged observations.
 }
 \seealso{
 Useful links:

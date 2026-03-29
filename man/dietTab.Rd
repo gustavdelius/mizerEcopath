@@ -5,7 +5,7 @@
 \alias{dietTabUI}
 \title{Serve tab with diet plot}
 \usage{
-dietTab(input, output, session, params, logs, diet = NULL, ...)
+dietTab(input, output, session, params, logs, ...)
 
 dietTabUI(...)
 }
@@ -19,8 +19,6 @@ dietTabUI(...)
 \item{params}{Reactive value holding updated MizerParams object}
 
 \item{logs}{Environment holding the log of steady states.}
-
-\item{diet}{A diet matrix to match the diet of the model to.}
 
 \item{...}{Unused}
 }

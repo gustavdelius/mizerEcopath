@@ -1,13 +1,7 @@
-#' Controlling the matching
+#' Ecopath-specific match control
 #'
-#' @param input Reactive holding the inputs
-#' @param output Reactive holding the outputs
-#' @param session Shiny session
-#' @param params Reactive value holding updated MizerParams object
-#' @param params_old Reactive value holding non-updated MizerParams object
-#' @param flags Environment holding flags to skip certain observers
-#' @param ... Unused
-matchControl <- function(input, output, session, params, params_old,
+#' @inheritParams ecopathOtherControl
+ecopathMatchControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observeEvent(
         list(input$production_lambda, input$yield_lambda),
@@ -34,12 +28,11 @@ matchControl <- function(input, output, session, params, params_old,
         ignoreInit = TRUE)
 }
 
-#' @rdname matchControl
-#'
+#' @rdname ecopathMatchControl
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
-#' @return A tagList with sliders for the exponents
-matchControlUI <- function(params, input) {
+#' @return A tagList with sliders for the matching strength
+ecopathMatchControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
         tags$h3(tags$a(id = "match"), "Matching strength"),

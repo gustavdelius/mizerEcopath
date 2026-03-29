@@ -1,25 +1,10 @@
-#' Survey tab for tuning gadget
+#' Ecopath survey tab
 #'
-#' Server logic for the survey tab in the tuning gadget. Renders a plot of the
-#' survey number at length and age at length data together with the
-#' corresponding model predictions.
-#'
-#' @inheritParams deathTab
-#' @param age_at_length A data frame with age-at-length observations for the
-#'   selected species. See `preprocess_length_at_age()` for expected columns.
-#' @param catch Data frame holding binned observed catch data. The data can be
-#'   binned either into length bins or weight bins. In the former case the data
-#'   frame should have columns \code{length} and \code{dl} holding the start of
-#'   the size bins in cm and the width of the size bins in cm respectively. In
-#'   the latter case the data frame should have columns \code{weight} and
-#'   \code{dw} holding the start of the size bins in grams and the width of the
-#'   size bins in grams. The data frame also needs to have the columns
-#'   \code{species} (the name of the species), \code{gear} (the name of the
-#'   gear) and \code{catch} (the number of individuals of a particular species
-#'   caught by a particular gear in a size bin).
-#' @return Invisibly returns `NULL`. Used for its side-effect of rendering plots.
+#' @inheritParams ecopathDeathTab
+#' @param age_at_length A data frame with age-at-length observations.
+#' @param catch Data frame holding binned observed catch data.
 #' @keywords internal
-surveyTab <- function(input, output, session, params, logs,
+ecopathSurveyTab <- function(input, output, session, params, logs,
                       age_at_length = NULL, catch = NULL, ...) {
 
     if (!is.null(catch)) {
@@ -57,26 +42,21 @@ surveyTab <- function(input, output, session, params, logs,
             theme(text = element_text(size = 16))
     })
     output$plotSpawningDensity <- renderPlot({
-        # Parameters (you could also hook these to input sliders if desired)
         mu <- input$spawning_mu
-        kappa <- input$spawning_kappa       # concentration
+        kappa <- input$spawning_kappa
 
-        # Smooth sequence across year
         dates <- seq(0, 1, length.out = 200)
         density <- spawning_density(dates, mu, kappa)
 
-        # Plot
         plot(dates * 12, density, type = "l", lwd = 2, col = "lightblue4",
              xlab = "Month", ylab = "Spawning probability density",
              main = "Von Mises Spawning Distribution")
     })
 }
 
-#' @rdname surveyTab
-#' @inheritParams biomassTabUI
-#' @return UI elements for the survey tab.
+#' @rdname ecopathSurveyTab
 #' @keywords internal
-surveyTabUI <- function(...) {
+ecopathSurveyTabUI <- function(...) {
     tagList(
         plotlyOutput("plotSurveyCatchDist"),
         plotOutput("plotSurveyAge"),

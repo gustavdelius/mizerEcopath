@@ -3,7 +3,8 @@
 \name{growthTab}
 \alias{growthTab}
 \alias{growthTabUI}
-\title{Growth tab for tuning gadget}
+\title{Growth tab for tuning gadget
+inheritParams biomassTab}
 \usage{
 growthTab(input, output, session, params, logs, size_at_age = NULL, ...)
 
@@ -20,11 +21,15 @@ growthTabUI(...)
 
 \item{logs}{Environment holding the log of steady states.}
 
-\item{size_at_age}{A data frame with columns 'species', 'age' and 'size'
-giving the size of individuals of each species at each age.}
+\item{size_at_age}{A data frame with observed size at age data to be plotted
+on top of growth curves. Should contain columns \code{species} (species name as
+used in the model), \code{age} (in years) and either \code{weight} (in grams) or
+\code{length} (in cm). If both \code{weight} and \code{length} are provided, only \code{weight}
+is used.}
 
 \item{...}{Unused}
 }
 \description{
 Growth tab for tuning gadget
+inheritParams biomassTab
 }

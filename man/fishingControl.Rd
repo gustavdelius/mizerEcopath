@@ -7,7 +7,7 @@
 \usage{
 fishingControl(input, output, session, params, params_old, flags, ...)
 
-fishingControlUI(params, input)
+fishingControlUI(p, input)
 }
 \arguments{
 \item{input}{Reactive holding the inputs}
@@ -16,16 +16,15 @@ fishingControlUI(params, input)
 
 \item{session}{Shiny session}
 
-\item{params}{The MizerParams object currently being tuned.}
+\item{params}{Reactive value holding updated MizerParams object}
 
 \item{params_old}{Reactive value holding non-updated MizerParams object}
 
 \item{flags}{Environment holding flags to skip certain observers}
 
 \item{...}{Unused}
-}
-\value{
-A tagList with sliders for the gear parameters
+
+\item{p}{The MizerParams object currently being tuned.}
 }
 \description{
 Controlling the fishing parameters in the tuning gadget

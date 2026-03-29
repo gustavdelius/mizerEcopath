@@ -1,14 +1,7 @@
-#' Controlling the diffusion rate
+#' Ecopath-specific diffusion control
 #'
-#'
-#' @param input Reactive holding the inputs
-#' @param output Reactive holding the outputs
-#' @param session Shiny session
-#' @param params Reactive value holding updated MizerParams object
-#' @param params_old Reactive value holding non-updated MizerParams object
-#' @param flags Environment holding flags to skip certain observers
-#' @param ... Unused
-diffusionControl <- function(input, output, session, params, params_old,
+#' @inheritParams ecopathOtherControl
+ecopathDiffusionControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     observe({
         req(input$d_over_g, input$spawning_mu, input$spawning_kappa,
@@ -20,8 +13,6 @@ diffusionControl <- function(input, output, session, params, params_old,
             return()
         }
 
-        # Update slider min/max so that they are a fixed proportion of the
-        # parameter value
         updateSliderInput(session, "spawning_mu",
                           value = input$spawning_mu)
         updateSliderInput(session, "spawning_kappa",
@@ -47,11 +38,11 @@ diffusionControl <- function(input, output, session, params, params_old,
     })
 }
 
-#' @rdname diffusionControl
+#' @rdname ecopathDiffusionControl
 #' @param params The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 #' @return A tagList with sliders for the exponents
-diffusionControlUI <- function(params, input) {
+ecopathDiffusionControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
         tags$h3(tags$a(id = "cohorts"), "Cohorts"),

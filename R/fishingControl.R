@@ -1,186 +1,119 @@
 #' Controlling the fishing parameters in the tuning gadget
-#'
-#' @param input Reactive holding the inputs
-#' @param output Reactive holding the outputs
-#' @param session Shiny session
-#' @param params Reactive value holding updated MizerParams object
-#' @param params_old Reactive value holding non-updated MizerParams object
-#' @param flags Environment holding flags to skip certain observers
-#' @param ... Unused
-fishingControl <- function(input, output, session, params, params_old,
+#' @inheritParams abundanceControl
+fishingControl <- function(input, output, session, params, params_old, 
                            flags, ...) {
-
-    # Persistent storage: species × gear × parameter
-    gear_vals <- reactiveValues()
-
-    get_val <- function(sp, gear, name, default) {
-        if (!is.null(gear_vals[[sp]]) &&
-            !is.null(gear_vals[[sp]][[gear]]) &&
-            !is.null(gear_vals[[sp]][[gear]][[name]])) {
-            gear_vals[[sp]][[gear]][[name]]
-        } else {
-            default
+    observe({
+        gear <- isolate(input$gear)
+        p <- isolate(params())
+        sp <- isolate(input$sp)
+        req(input$catchability,
+            input$effort)
+        # The following line makes sure this observer gets triggered by
+        # any of the inputs
+        l <- input$l50 + input$ldiff + input$l50_right + input$ldiff_right +
+            input$knife_edge_size
+        
+        if (!identical(sp, flags$sp_old_fishing)) {
+            flags$sp_old_fishing <- sp
+            return()
         }
-    }
-
-    set_val <- function(sp, gear, name, value) {
-        if (is.null(gear_vals[[sp]])) gear_vals[[sp]] <- list()
-        if (is.null(gear_vals[[sp]][[gear]])) gear_vals[[sp]][[gear]] <- list()
-        gear_vals[[sp]][[gear]][[name]] <- value
-    }
-
-
-    # RESTORE SLIDERS when species or gear changes
-    observeEvent(
-        list(input$sp, input$gear),
-        {
-            req(input$sp, input$gear)
-
-            sp   <- input$sp
-            gear <- input$gear
-            p    <- params()
-
-            gp_idx <- which(p@gear_params$species == sp &
-                                p@gear_params$gear == gear)
-            if (length(gp_idx) == 0) return()
-
-            sel_func <- p@gear_params[gp_idx, "sel_func"]
-
-            # ---- Catchability ----
-            catch_log <- get_val(
-                sp, gear, "catchability",
-                log10(p@gear_params[gp_idx, "catchability"])
-            )
-
-            updateSliderInput(
-                session, "catchability",
-                value = catch_log
-            )
-
-            # ---- Knife edge ----
-            if (sel_func == "knife_edge") {
-                ke <- get_val(
-                    sp, gear, "knife_edge_size",
-                    p@gear_params[gp_idx, "knife_edge_size"]
-                )
-                updateSliderInput(
-                    session, "knife_edge_size",
-                    value = ke,
-                    max = signif(ke * 2, 2)
-                )
-            }
-
-            # ---- Sigmoid ----
-            if (sel_func %in% c("sigmoid_length", "double_sigmoid_length")) {
-                l50 <- get_val(sp, gear, "l50", p@gear_params[gp_idx, "l50"])
-                ldiff <- get_val(
-                    sp, gear, "ldiff",
-                    p@gear_params[gp_idx, "l50"] -
-                        p@gear_params[gp_idx, "l25"]
-                )
-
-                updateSliderInput(session, "l50",
-                                  value = l50,
-                                  max = signif(l50 * 2, 2))
-                updateSliderInput(session, "ldiff",
-                                  value = ldiff,
-                                  max = signif(ldiff * 2, 2))
-            }
-
-            # ---- Double sigmoid (right) ----
-            if (sel_func == "double_sigmoid_length") {
-                l50r <- get_val(
-                    sp, gear, "l50_right",
-                    p@gear_params[gp_idx, "l50_right"]
-                )
-                ldiffr <- get_val(
-                    sp, gear, "ldiff_right",
-                    p@gear_params[gp_idx, "l25_right"] -
-                        p@gear_params[gp_idx, "l50_right"]
-                )
-
-                updateSliderInput(session, "l50_right",
-                                  value = l50r,
-                                  max = signif(l50r * 2, 2))
-                updateSliderInput(session, "ldiff_right",
-                                  value = ldiffr,
-                                  max = signif(ldiffr * 2, 2))
-            }
-        },
-        ignoreInit = TRUE
-    )
-
-
-    # WRITE TO PARAMS when sliders change
-    observeEvent(
-        list(
-            input$catchability,
-            input$knife_edge_size,
-            input$l50,
-            input$ldiff,
-            input$l50_right,
-            input$ldiff_right
-        ),
-        {
-            req(input$sp, input$gear)
-
-            sp   <- input$sp
-            gear <- input$gear
-            p    <- isolate(params())
-
-            gp_idx <- which(p@gear_params$species == sp &
-                                p@gear_params$gear == gear)
-            if (length(gp_idx) == 0) return()
-
-            sel_func <- p@gear_params[gp_idx, "sel_func"]
-
-            # ---- Catchability ----
-            set_val(sp, gear, "catchability", input$catchability)
-            p@gear_params[gp_idx, "catchability"] <- 10^input$catchability
-
-            # ---- Knife edge ----
-            if (sel_func == "knife_edge" && !is.null(input$knife_edge_size)) {
-                set_val(sp, gear, "knife_edge_size", input$knife_edge_size)
-                p@gear_params[gp_idx, "knife_edge_size"] <- input$knife_edge_size
-            }
-
-            # ---- Sigmoid ----
-            if (sel_func %in% c("sigmoid_length", "double_sigmoid_length") &&
-                !is.null(input$l50) && !is.null(input$ldiff)) {
-
-                set_val(sp, gear, "l50", input$l50)
-                set_val(sp, gear, "ldiff", input$ldiff)
-
-                p@gear_params[gp_idx, "l50"] <- input$l50
-                p@gear_params[gp_idx, "l25"] <- input$l50 - input$ldiff
-            }
-
-            # ---- Double sigmoid (right) ----
-            if (sel_func == "double_sigmoid_length" &&
-                !is.null(input$l50_right) && !is.null(input$ldiff_right)) {
-
-                set_val(sp, gear, "l50_right", input$l50_right)
-                set_val(sp, gear, "ldiff_right", input$ldiff_right)
-
-                p@gear_params[gp_idx, "l50_right"] <- input$l50_right
-                p@gear_params[gp_idx, "l25_right"] <- input$l50_right + input$ldiff_right
-            }
-
-            p <- setFishing(p)
-            tuneParams_update_species(sp, p, params, params_old)
-        },
-        ignoreInit = TRUE
-    )
+        gp_idx <- which(p@gear_params$species == sp &
+                            p@gear_params$gear == gear)
+        
+        # Update slider min/max so that they are a fixed proportion of the
+        # parameter value
+        p@gear_params[gp_idx, "catchability"]  <- input$catchability
+        updateSliderInput(session, "catchability",
+                          min = signif(max(input$catchability / 2 - 1, 0), 2),
+                          max = signif(max(input$catchability * 2, 2), 2))
+        
+        initial_effort(p)[gear] <- input$effort
+        updateSliderInput(session, "effort",
+                          max = signif((input$effort + 1) * 1.5, 2))
+        
+        if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
+            updateSliderInput(session, "knife_edge_size",
+                              max = signif(input$knife_edge_size * 2, 2))
+            p@gear_params[gp_idx, "knife_edge_size"]   <- input$knife_edge_size
+        }
+        if (p@gear_params[gp_idx, "sel_func"] == "sigmoid_length" ||
+            p@gear_params[gp_idx, "sel_func"] == "double_sigmoid_length") {
+            updateSliderInput(session, "l50",
+                              max = signif(input$l50 * 2, 2))
+            updateSliderInput(session, "ldiff",
+                              max = signif(input$ldiff * 2, 2))
+            p@gear_params[gp_idx, "l50"]   <- input$l50
+            p@gear_params[gp_idx, "l25"]   <- input$l50 - input$ldiff
+        }
+        if (p@gear_params[gp_idx, "sel_func"] == "double_sigmoid_length") {
+            p@gear_params[gp_idx, "l50_right"]   <- input$l50_right
+            p@gear_params[gp_idx, "l25_right"]   <- input$l50_right + input$ldiff_right
+            updateSliderInput(session, "l50_right",
+                              max = signif(input$l50_right * 2, 2))
+            updateSliderInput(session, "ldiff_right",
+                              max = signif(input$ldiff_right * 2, 2))
+        }
+        
+        p <- setFishing(p)
+        tuneParams_update_species(sp, p, params, params_old)
+    })
+    
+    observeEvent(input$gear, {
+        gear <- input$gear
+        p <- params()
+        sp <- input$sp
+        
+        gp_idx <- which(p@gear_params$species == sp &
+                            p@gear_params$gear == gear)
+        
+        catchability <- p@gear_params[gp_idx, "catchability"]
+        updateSliderInput(session, "catchability",
+                          value = catchability,
+                          min = signif(max(catchability / 2 - 1, 0), 2),
+                          max = signif(max(catchability * 2, 2), 2))
+        
+        effort <- initial_effort(p)[[gear]]
+        updateSliderInput(session, "effort",
+                          value = effort,
+                          max = signif((effort + 1) * 1.5, 2))
+        
+        if (p@gear_params[gp_idx, "sel_func"] == "knife_edge") {
+            knife_edge_size <- p@gear_params[gp_idx, "knife_edge_size"]
+            updateSliderInput(session, "knife_edge_size",
+                              value = knife_edge_size,
+                              max = signif(knife_edge_size * 2, 2))
+        }
+        if (p@gear_params[gp_idx, "sel_func"] == "sigmoid_length" ||
+            p@gear_params[gp_idx, "sel_func"] == "double_sigmoid_length") {
+            l50 <- p@gear_params[gp_idx, "l50"]
+            ldiff <- p@gear_params[gp_idx, "l50"] - p@gear_params[gp_idx, "l25"]
+            updateSliderInput(session, "l50",
+                              value = l50,
+                              max = signif(l50 * 2, 2))
+            updateSliderInput(session, "ldiff",
+                              value = ldiff,
+                              max = signif(ldiff * 2, 2))
+        }
+        if (p@gear_params[gp_idx, "sel_func"] == "double_sigmoid_length") {
+            l50_right <- p@gear_params[gp_idx, "l50_right"]
+            ldiff_right <- p@gear_params[gp_idx, "l25_right"] - 
+                p@gear_params[gp_idx, "l50_right"]
+            updateSliderInput(session, "l50_right",
+                              value = l50_right,
+                              max = signif(l50_right * 2, 2))
+            updateSliderInput(session, "ldiff_right",
+                              value = ldiff_right,
+                              max = signif(ldiff_right * 2, 2))
+        }
+    },
+    ignoreInit = TRUE)
 }
 
 #' @rdname fishingControl
-#'
-#' @param params The MizerParams object currently being tuned.
-#' @param input Reactive holding the inputs
-#' @return A tagList with sliders for the gear parameters
-fishingControlUI <- function(params, input) {
-    sp <- params@species_params[input$sp, ]
-    gp <- params@gear_params[params@gear_params$species == sp$species, ]
+#' @inheritParams abundanceControlUI
+fishingControlUI <- function(p, input) {
+    sp <- p@species_params[input$sp, ]
+    gp <- p@gear_params[p@gear_params$species == sp$species, ]
     if (nrow(gp) == 0) { # Species not selected by any gears
         return(tagList())
     }
@@ -190,18 +123,23 @@ fishingControlUI <- function(params, input) {
     } else {
         gear <- input$gear
     }
-
+    
+    effort <- p@initial_effort[[gear]]
     gp <- gp[gp$gear == gear, ]
     l1 <- list(tags$h3(tags$a(id = "fishing"), "Fishing"),
-               selectInput("gear", "Gear to tune:", gears,
+               selectInput("gear", "Gear to tune:", gears, 
                            selected = gear),
                sliderInput("catchability", "Catchability",
-                           value = log10(gp$catchability),
-                           min = -13,
-                           max = 4,
-                           step=0.01)
-    )
-
+                           value = gp$catchability,
+                           min = signif(max(0, gp$catchability / 2 - 1), 5),
+                           max = signif(max(gp$catchability * 2, 2), 5),
+                           step = 0.00001),
+               sliderInput("effort", "Effort",
+                           value = effort,
+                           min = 0,
+                           max = signif((effort + 1) * 1.5, 2),
+                           step = 0.01))
+    
     if (gp$sel_func == "knife_edge") {
         l1 <- c(l1, list(
             sliderInput("knife_edge_size", "knife_edge_size",

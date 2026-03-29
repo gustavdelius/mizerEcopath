@@ -7,7 +7,7 @@
 \usage{
 otherControl(input, output, session, params, params_old, flags, ...)
 
-otherControlUI(params, input)
+otherControlUI(p, input)
 }
 \arguments{
 \item{input}{Reactive holding the inputs}
@@ -16,16 +16,15 @@ otherControlUI(params, input)
 
 \item{session}{Shiny session}
 
-\item{params}{The MizerParams object currently being tuned.}
+\item{params}{Reactive value holding updated MizerParams object}
 
 \item{params_old}{Reactive value holding non-updated MizerParams object}
 
 \item{flags}{Environment holding flags to skip certain observers}
 
 \item{...}{Unused}
-}
-\value{
-A tagList with sliders for the exponents
+
+\item{p}{The MizerParams object currently being tuned.}
 }
 \description{
 Adds controls for the parameters that did not fit into other categories.

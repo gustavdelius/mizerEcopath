@@ -5,7 +5,7 @@
 \alias{deathTabUI}
 \title{Serve tab with death plots}
 \usage{
-deathTab(input, output, session, params, logs, diet = NULL, ...)
+deathTab(input, output, session, params, logs, ...)
 
 deathTabUI(...)
 }
@@ -19,8 +19,6 @@ deathTabUI(...)
 \item{params}{Reactive value holding updated MizerParams object}
 
 \item{logs}{Environment holding the log of steady states.}
-
-\item{diet}{A diet matrix to match the diet of the model to.}
 
 \item{...}{Unused}
 }
