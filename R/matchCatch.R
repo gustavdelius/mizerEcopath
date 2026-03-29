@@ -113,15 +113,19 @@
 #' @export
 #'
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
-                       yield_lambda = 1, production_lambda = 1, mu_mat_lim = 5, map = NULL)
+                       yield_lambda = 1, production_lambda = 1,
+                       mu_mat_lim = 5, map = NULL)
 {
-    species <- valid_species_arg(params, species = species, error_on_empty = TRUE)
+    species <- valid_species_arg(params, species = species,
+                                 error_on_empty = TRUE)
     params <- validParams(params)
 
     if (length(species) > 1) {
         for (s in species) {
-            params <- matchCatch(params, species = s, catch = catch, lambda = lambda,
-                                 yield_lambda = yield_lambda, production_lambda = production_lambda,
+            params <- matchCatch(params, species = s, catch = catch,
+                                 lambda = lambda,
+                                 yield_lambda = yield_lambda,
+                                 production_lambda = production_lambda,
                                  mu_mat_lim = mu_mat_lim, map = map)
         }
         return(params)
@@ -132,7 +136,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                          production_lambda = production_lambda)
 
     if (is.null(data)) {
-        warning(species, " can not be matched because neither catches nor production are given.")
+        warning(species, " can not be matched because neither catches ",
+                "nor production are given.")
         return(params)
     }
 
@@ -163,11 +168,11 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
         log_ratio_left = qlogis((gps$l50 - gps$l25)/gps$l50),
 
-        log_l50_right_offset = ifelse( gps$sel_func == 'double_sigmoid_length',
-                                       log(pmax(1e-3, gps$l50_right - gps$l50)), 1),
+        log_l50_right_offset = ifelse(gps$sel_func == 'double_sigmoid_length',
+                                      log(pmax(1e-3, gps$l50_right - gps$l50)), 1),
 
-        log_ratio_right = ifelse( gps$sel_func == 'double_sigmoid_length',
-                                  log((gps$l25_right - gps$l50_right)/gps$l50_right), 1),
+        log_ratio_right = ifelse(gps$sel_func == 'double_sigmoid_length',
+                                 log((gps$l25_right - gps$l50_right)/gps$l50_right), 1),
 
         log_catchability = log(ifelse(gps$catchability <= 0, 1e-8, gps$catchability)),
 
