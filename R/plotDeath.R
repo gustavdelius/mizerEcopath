@@ -14,6 +14,10 @@
 #' @param return_data A boolean value that determines whether the formatted data
 #'   used for the plot is returned instead of the plot itself. Default value is
 #'   FALSE
+#' @param xtrans Transformation for the x-axis. One of "identity" (default) or
+#'   "log10".
+#' @param xvar Variable to use for the x-axis. One of "Length" (default) or
+#'   "Weight".
 #' @param ... Other arguments (currently unused)
 #' @return A ggplot2 object, unless `return_data = TRUE`, in which case a data
 #'   frame with the four variables 'w', 'value', 'Cause', 'Species' is returned.

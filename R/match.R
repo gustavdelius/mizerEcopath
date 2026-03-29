@@ -78,7 +78,7 @@ matchEcopath <- function(params, tol = 0.1, max_iter = 10) {
             break
         }
         params <- params |>
-            matchConsumptionOnce() |>
+            matchConsumption() |>
             matchYield(keep = "biomass") |>
             matchProductionOnce()
     }
@@ -95,4 +95,32 @@ isEcopathMatched <- function(params, tol = 0.1) {
     isConsumptionMatched(params, tol) &&
         isProductionMatched(params, tol) &&
         isCatchMatched(params, tol)
+}
+
+#' @rdname matchEcopath
+isConsumptionMatched <- function(params, tol = 0.1) {
+    if (!is(params, "MizerParams")) {
+        stop("params must be a MizerParams object.")
+    }
+    sp <- params@species_params
+    if (!hasName(sp, "consumption_observed")) {
+        stop("You must provide the consumption_observed species parameter.")
+    }
+    Qratio <- sp$consumption_observed / getConsumption(params)
+    return(max(abs(Qratio - 1), na.rm = TRUE) < tol)
+}
+
+#' @rdname matchEcopath
+isCatchMatched <- function(params, tol = 0.1) {
+    if (!is(params, "MizerParams")) {
+        stop("params must be a MizerParams object.")
+    }
+    gp <- params@gear_params
+    if (!hasName(gp, "yield_observed")) {
+        return(TRUE)
+    }
+    Cratio <- gp$yield_observed / getYield(params)
+    sel <- is.finite(Cratio) & gp$yield_observed > 0
+    if (!any(sel)) return(TRUE)
+    return(max(abs(Cratio[sel] - 1)) < tol)
 }

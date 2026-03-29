@@ -3,11 +3,17 @@
 \name{matchEcopath}
 \alias{matchEcopath}
 \alias{isEcopathMatched}
+\alias{isConsumptionMatched}
+\alias{isCatchMatched}
 \title{Match the model to the Ecopath data}
 \usage{
 matchEcopath(params, tol = 0.1, max_iter = 10)
 
 isEcopathMatched(params, tol = 0.1)
+
+isConsumptionMatched(params, tol = 0.1)
+
+isCatchMatched(params, tol = 0.1)
 }
 \arguments{
 \item{params}{A MizerParams object}

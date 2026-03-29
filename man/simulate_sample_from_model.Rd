@@ -22,10 +22,12 @@ Draws K values using multinomial sampling with probabilities P(K | length)
 for each length observed in a given survey.
 }
 \examples{
+\dontrun{
 set.seed(1)
 P <- matrix(c(0.7, 0.3, 0.2, 0.8), nrow = 2, byrow = TRUE)
 rownames(P) <- c("20", "30"); colnames(P) <- c("0", "1")
 survey_obs <- data.frame(Length = c(20, 20, 30, 30, 30))
 simulate_sample_from_model(P, survey_obs)
+}
 }
 \keyword{internal}

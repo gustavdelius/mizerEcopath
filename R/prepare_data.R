@@ -19,6 +19,8 @@
 #'   * `catch`: The observed count for each bin.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
+#' @param production_lambda A parameter that controls the strength of the penalty
+#'   for deviation from the observed production.
 #'
 #' @return A list with the data to be passed to the TMB objective function. If
 #'   there is no catch data for the species, the function returns NULL.
@@ -220,7 +222,9 @@ prepare_data <- function(params, species = 1, catch,
 #' precompute the weights with which we need to add up the density values to
 #' approximate the integral over each bin.
 #'
-#' #' @return A list with vectors `bin_index`, `f_index`, `coeff_fj`, and `coeff_fj1`
+#' @param w_bin_boundaries A numeric vector of bin boundary values.
+#' @param w A numeric vector of weights at which the density is available.
+#' @return A list with vectors `bin_index`, `f_index`, `coeff_fj`, and `coeff_fj1`
 #'   used for efficient linear interpolation of density values over bins.
 
 precompute_weights <- function(w_bin_boundaries, w) {
@@ -279,6 +283,9 @@ precompute_weights <- function(w_bin_boundaries, w) {
 #'
 #' This helper function ensures that the catch data frame contains the required columns,
 #' extracts only the rows for the specified species.
+#' @param catch A data frame containing the observed binned catch data with columns
+#'   `length`, `dl`, and `count` (or `catch`).
+#' @param species The species name to extract from the catch data.
 #' @export
 valid_catch <- function(catch, species) {
     # Allow "catch" as an alternative name to "count"

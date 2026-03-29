@@ -16,13 +16,15 @@ growthControlUI(p, input)
 
 \item{session}{Shiny session}
 
-\item{params}{The MizerParams object currently being tuned.}
+\item{params}{Reactive value holding updated MizerParams object}
 
 \item{params_old}{Reactive value holding non-updated MizerParams object}
 
 \item{flags}{Environment holding flags to skip certain observers}
 
 \item{...}{Unused}
+
+\item{p}{The MizerParams object currently being tuned.}
 }
 \description{
 A single slider that adjusts both \code{h} and \code{gamma}

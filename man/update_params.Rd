@@ -9,23 +9,16 @@ update_params(params, species = 1, pars, data)
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{species}{The species for which the data is to be prepared. By default
+\item{species}{The species for which to update parameters. By default
 the first species in the model.}
 
-\item{catch}{A data frame containing the observed binned catch data. It must
-contain the following columns:
-\itemize{
-\item \code{length}: The start of each bin.
-\item \code{dl}: The width of each bin.
-\item \code{count}: The observed count for each bin.
-}}
+\item{pars}{A named list of parameter values as returned by the TMB
+optimiser, containing entries for gear selectivity and mortality parameters.}
 
-\item{yield_lambda}{A parameter that controls the strength of the penalty for
-deviation from the observed yield.}
+\item{data}{The data list as returned by \code{\link[=prepare_data]{prepare_data()}}.}
 }
 \value{
-A list with the data to be passed to the TMB objective function. If
-there is no catch data for the species, the function returns NULL.
+A MizerParams object with updated parameters.
 }
 \description{
 This function returns a list with the data to be passed to the TMB objective

@@ -8,18 +8,13 @@
 #' at all sizes. Missing observations should be interpreted as a 0 count.
 #'
 #' @param params A MizerParams object
-#' @param species The species for which the data is to be prepared. By default
+#' @param species The species for which to update parameters. By default
 #'   the first species in the model.
-#' @param catch A data frame containing the observed binned catch data. It must
-#'   contain the following columns:
-#'   * `length`: The start of each bin.
-#'   * `dl`: The width of each bin.
-#'   * `count`: The observed count for each bin.
-#' @param yield_lambda A parameter that controls the strength of the penalty for
-#'   deviation from the observed yield.
+#' @param pars A named list of parameter values as returned by the TMB
+#'   optimiser, containing entries for gear selectivity and mortality parameters.
+#' @param data The data list as returned by [prepare_data()].
 #'
-#' @return A list with the data to be passed to the TMB objective function. If
-#'   there is no catch data for the species, the function returns NULL.
+#' @return A MizerParams object with updated parameters.
 #' @export
 update_params <- function(params, species = 1, pars, data) {
     params <- validParams(params)

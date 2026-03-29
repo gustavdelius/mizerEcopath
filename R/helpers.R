@@ -4,7 +4,7 @@
 #' using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 #' Produces a species-by-species diet matrix, including an \code{"other"} category to account
 #' for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
-#' are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+#' are first summed, each scaled by its consumption rate (Q = B * Q/B), and the result
 #' is then normalised to proportions.
 #'
 #' This produces a species-by-species diet matrix, including an \code{"other"} category to account
@@ -27,6 +27,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Generate a reduced diet matrix
 #' diet_matrix <- reduceEcopathDiet(
 #'     species_params = species_params_example,
@@ -36,6 +37,7 @@
 #'
 #' # View first few rows of the result
 #' head(diet_matrix)
+#' }
 #'
 reduceEcopathDiet <- function(species_params, ecopath_diet, ecopath_params)
 {
@@ -50,9 +52,9 @@ reduceEcopathDiet <- function(species_params, ecopath_diet, ecopath_params)
         species_to_groups = setNames(sp$ecopath_groups, sp$species)
     )
     # Compute absolute consumption Q = B * (Q/B) for each stanza
-    Q <- with(ecopath_params,
-              `Biomass (t/km²)` * `Consumption / biomass (/year)`)
-    names(Q) <- ecopath_params$`Group name`
+    biomass_col <- paste0("Biomass (t/km", "\u00b2", ")")
+    Q <- ecopath_params[[biomass_col]] * ecopath_params[["Consumption / biomass (/year)"]]
+    names(Q) <- ecopath_params[["Group name"]]
     preds <- sapply(names(ecopath_diet_reduced), function(x) substr(x,
                                                                     2, nchar(x)))
     preds <- as.integer(preds)
@@ -174,13 +176,14 @@ addEcopathParams <- function(species_params, ecopath_params,
         sp$consumption_observed[i] <- 0
         sp$production_observed[i] <- 0
 
+        biomass_col <- paste0("Biomass (t/km", "\u00b2", ")")
         for (group in species_to_groups[[species]]) {
             # Extract Ecopath estimates for the group
-            estimates <- ecopath_params[ecopath_params$`Group name` == group, ]
+            estimates <- ecopath_params[ecopath_params[["Group name"]] == group, ]
 
             if (nrow(estimates) > 0) {
                 # Accumulate biomass, consumption, and production
-                biomass <- estimates$`Biomass (t/km²)`
+                biomass <- estimates[[biomass_col]]
                 sp$biomass_observed[i] <- sp$biomass_observed[i] + biomass
 
                 consumption <- estimates$`Consumption / biomass (/year)` * biomass
@@ -261,9 +264,9 @@ validEcopathParams <- function(ecopath_params, species_to_groups) {
     }
     # Sometimes some columns have different names
     column_mappings <- list(
-        "Biomass..t.km.." = "Biomass (t/km²)",
-        "Biomass..t.km." = "Biomass (t/km²)",
-        "Biomass..t.km.2." = "Biomass (t/km²)",
+        "Biomass..t.km.." = "Biomass (t/km\u00b2)",
+        "Biomass..t.km." = "Biomass (t/km\u00b2)",
+        "Biomass..t.km.2." = "Biomass (t/km\u00b2)",
         "Consumption...biomass...year." = "Consumption / biomass (/year)",
         "Production...consumption...year." = "Production / consumption (/year)",
         "X" = "...1",

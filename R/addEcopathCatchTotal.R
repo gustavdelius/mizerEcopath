@@ -39,9 +39,10 @@ addEcopathCatchTotal <- function(params, ecopath_catch) {
         yield_observed = 0
     )
     # Extract total yield for each species from Ecopath
+    catch_col <- paste0("TotalCatch (t/km", "\u00b2", "/year)")
     for (i in seq_len(nrow(sp))) {
         for (group in sp$ecopath_groups[[i]]) {
-            yield <- ecopath_catch$`TotalCatch (t/km²/year)`[ecopath_catch$`Group name` == group]
+            yield <- ecopath_catch[[catch_col]][ecopath_catch[["Group name"]] == group]
             if (length(yield) == 0) {
                 warning("No catch data found for group ", group)
             }
@@ -78,8 +79,8 @@ validEcopathCatch <- function(ecopath_catch, species_params) {
     }
     # Sometimes some columns have different names
     column_mappings <- list(
-        "TotalCatch..t.km..year." = "TotalCatch (t/km²/year)",
-        "Total" = "TotalCatch (t/km²/year)",
+        "TotalCatch..t.km..year." = "TotalCatch (t/km\u00b2/year)",
+        "Total" = "TotalCatch (t/km\u00b2/year)",
         "Group.name" = "Group name"
     )
 

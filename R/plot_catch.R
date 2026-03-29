@@ -1,4 +1,13 @@
-# Plot observed catches against modelled catches
+#' Plot observed catches against modelled catches
+#'
+#' Plots a histogram of the observed catch size distribution alongside the
+#' model-predicted catch density for a single species.
+#'
+#' @param params A MizerParams object.
+#' @param species The species to plot. By default the first species in the model.
+#' @param catch A data frame containing the observed binned catch data with
+#'   columns `length`, `dl`, and `count` (or `catch`).
+#' @return Invisibly returns NULL. Called for its side effect of producing a plot.
 #' @export
 plot_catch <- function(params, species = 1, catch) {
     params <- validParams(params)

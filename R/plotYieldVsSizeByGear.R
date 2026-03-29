@@ -10,7 +10,7 @@ plotYieldVsSizeByGear <- function( model, catch, species = 1, return_df = FALSE)
     a <- as.numeric(params@species_params[idx,"a"])
     b <- as.numeric(params@species_params[idx,"b"])
     w <- params@w
-    l <- wlf(w,a,b)
+    l <- (w / a)^(1 / b)
 
     icatch <- catch |> filter( species == spname)
 

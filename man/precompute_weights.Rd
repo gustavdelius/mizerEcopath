@@ -6,6 +6,15 @@
 \usage{
 precompute_weights(w_bin_boundaries, w)
 }
+\arguments{
+\item{w_bin_boundaries}{A numeric vector of bin boundary values.}
+
+\item{w}{A numeric vector of weights at which the density is available.}
+}
+\value{
+A list with vectors \code{bin_index}, \code{f_index}, \code{coeff_fj}, and \code{coeff_fj1}
+used for efficient linear interpolation of density values over bins.
+}
 \description{
 We have a set of weight bins with boundaries \code{w_bin_boundaries} and need
 an efficient way to integrate a probability density to determine a
@@ -16,8 +25,4 @@ align with the values in \code{w_bin_boundaries} we need to split each bin into
 segments. In this function we want to
 precompute the weights with which we need to add up the density values to
 approximate the integral over each bin.
-}
-\details{
-#' @return A list with vectors \code{bin_index}, \code{f_index}, \code{coeff_fj}, and \code{coeff_fj1}
-used for efficient linear interpolation of density values over bins.
 }

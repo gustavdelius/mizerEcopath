@@ -10,10 +10,14 @@ A data frame with 12 rows and 18 columns. Key columns include:
 \item{species}{Common name of the species}
 \item{w_max}{Maximum body weight (g)}
 \item{w_mat}{Maturity weight (g)}
+\item{age_mat}{Age at maturity (years)}
 \item{a, b}{Length-weight relationship parameters}
 \item{n, p, d}{Allometric exponents for consumption, metabolism, and mortality}
 \item{alpha}{Assimilation efficiency}
 \item{ecopath_groups}{List column mapping Ecopath stanza groups}
+\item{biomass_observed}{Observed biomass (t/km^2) from Ecopath}
+\item{consumption_observed}{Observed consumption (t/km^2/year) from Ecopath}
+\item{production_observed}{Observed production (t/km^2/year) from Ecopath}
 }
 }
 \usage{

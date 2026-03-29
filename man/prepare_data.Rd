@@ -30,6 +30,9 @@ single gear).
 
 \item{yield_lambda}{A parameter that controls the strength of the penalty for
 deviation from the observed yield.}
+
+\item{production_lambda}{A parameter that controls the strength of the penalty
+for deviation from the observed production.}
 }
 \value{
 A list with the data to be passed to the TMB objective function. If

@@ -45,7 +45,7 @@ growthControl <- function(input, output, session, params, params_old, flags, ...
 }
 
 #' @rdname growthControl
-#' @param params The MizerParams object currently being tuned.
+#' @param p The MizerParams object currently being tuned.
 #' @param input Reactive holding the inputs
 growthControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]

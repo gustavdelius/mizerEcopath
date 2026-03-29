@@ -32,6 +32,12 @@ is TRUE.}
 used for the plot is returned instead of the plot itself. Default value is
 FALSE}
 
+\item{xtrans}{Transformation for the x-axis. One of "identity" (default) or
+"log10".}
+
+\item{xvar}{Variable to use for the x-axis. One of "Length" (default) or
+"Weight".}
+
 \item{...}{Other arguments (currently unused)}
 }
 \value{

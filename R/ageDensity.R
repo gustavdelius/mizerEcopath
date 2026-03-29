@@ -7,8 +7,10 @@
 #' @return The probability density evaluated at `x`.
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' # Density at angle pi when centered at pi with moderate concentration
 #' von_mises_pdf(pi, mu = pi, kappa = 2)
+#' }
 von_mises_pdf <- function(x, mu, kappa) {
     denominator <- 2 * pi * besselI(kappa, 0)
     numerator <- exp(kappa * cos(x - mu))
@@ -27,9 +29,11 @@ von_mises_pdf <- function(x, mu, kappa) {
 #'   length as `numeric_dates`.
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' # Peak at mid-year with moderate spread
 #' spawning_density(numeric_dates = c(2020.45, 2020.50, 2020.55),
 #'                  mu = 0.5, kappa = 4)
+#' }
 spawning_density <- function(numeric_dates, mu, kappa) {
     day_fraction <- numeric_dates %% 1
     day_rad <- day_fraction * 2 * pi
@@ -50,8 +54,10 @@ spawning_density <- function(numeric_dates, mu, kappa) {
 #' @return An integer vector with the calculated number of rings (K) for each age.
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' calculate_K(age_in_years = c(0.3, 1.2, 2.7), survey_date = 2023.5,
 #'             annuli_date = 0.25, annuli_min_age = 0.5)
+#' }
 calculate_K <- function(age_in_years, survey_date, annuli_date, annuli_min_age) {
     sapply(age_in_years, function(age) {
         if (age < 0) return(0)
@@ -206,11 +212,13 @@ calculate_and_aggregate_likelihood <- function(surveys, G, a, l, mu, kappa,
 #' @return An integer vector of simulated K values aligned with `survey_obs` rows.
 #' @keywords internal
 #' @examples
+#' \dontrun{
 #' set.seed(1)
 #' P <- matrix(c(0.7, 0.3, 0.2, 0.8), nrow = 2, byrow = TRUE)
 #' rownames(P) <- c("20", "30"); colnames(P) <- c("0", "1")
 #' survey_obs <- data.frame(Length = c(20, 20, 30, 30, 30))
 #' simulate_sample_from_model(P, survey_obs)
+#' }
 simulate_sample_from_model <- function(P_model_K_given_l, survey_obs) {
     simulated_K <- integer(nrow(survey_obs))
 

@@ -57,6 +57,8 @@
 #'
 #' @param params MizerParams object to tune. If missing, the gadget tries to
 #'   recover information from log files left over from aborted previous runs.
+#' @param diet An optional diet matrix to display in the Diet tab. If NULL,
+#'   the diet tab will not show observed diet data.
 #' @inheritParams matchCatch
 #' @inheritParams matchDiet
 #' @param controls A character vector of names of input parameter control

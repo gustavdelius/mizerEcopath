@@ -27,7 +27,7 @@ Aggregates a group-level Ecopath diet matrix to the species level defined in a m
 using a mapping dictionary from Ecopath groups (e.g., juvenile/adult stanzas) to a single mizer species.
 Produces a species-by-species diet matrix, including an \code{"other"} category to account
 for diet contributions from Ecopath groups not included in the model. The contributions of each stanza
-are first summed, each scaled by its consumption rate (Q = B × Q/B), and the result
+are first summed, each scaled by its consumption rate (Q = B * Q/B), and the result
 is then normalised to proportions.
 }
 \details{
@@ -37,6 +37,7 @@ for diet contributions from Ecopath groups not included in the model.
 This function assumes that the supplied Ecopath diet matrix contains proportions (not absolute rates).
 }
 \examples{
+\dontrun{
 # Generate a reduced diet matrix
 diet_matrix <- reduceEcopathDiet(
     species_params = species_params_example,
@@ -46,5 +47,6 @@ diet_matrix <- reduceEcopathDiet(
 
 # View first few rows of the result
 head(diet_matrix)
+}
 
 }

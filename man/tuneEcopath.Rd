@@ -30,6 +30,9 @@ contain the following columns:
 \item \code{catch}: The observed count for each bin.
 }}
 
+\item{diet}{An optional diet matrix to display in the Diet tab. If NULL,
+the diet tab will not show observed diet data.}
+
 \item{controls}{A character vector of names of input parameter control
 sections that should be displayed in the sidebar. See "Customisation"
 below.}

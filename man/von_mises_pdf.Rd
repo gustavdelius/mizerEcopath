@@ -24,7 +24,9 @@ A lightweight implementation used to model circular seasonality
 (e.g., spawning day within a year) without adding dependencies.
 }
 \examples{
+\dontrun{
 # Density at angle pi when centered at pi with moderate concentration
 von_mises_pdf(pi, mu = pi, kappa = 2)
+}
 }
 \keyword{internal}
