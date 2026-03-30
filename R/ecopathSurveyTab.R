@@ -53,8 +53,8 @@ ecopathSurveyTab <- function(input, output, session, params, logs,
             theme(text = element_text(size = 16))
     })
     output$plotSpawningDensity <- renderPlot({
-        mu <- input$spawning_mu
-        kappa <- input$spawning_kappa
+        mu <- req(input$spawning_mu)
+        kappa <- req(input$spawning_kappa)
 
         dates <- seq(0, 1, length.out = 200)
         density <- spawning_density(dates, mu, kappa)
