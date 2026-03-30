@@ -34,3 +34,5 @@ ecopathDietTabUI <- function(...) {
                      selected = "log10", inline = TRUE)
     )
 }
+
+ecopathDietTabTitle <- "Diet"

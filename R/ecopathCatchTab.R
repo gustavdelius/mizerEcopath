@@ -48,3 +48,5 @@ ecopathCatchTabUI <- function(...) {
         plotOutput("plotTotalYield")
     )
 }
+
+ecopathCatchTabTitle <- "Catch"

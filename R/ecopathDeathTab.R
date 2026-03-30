@@ -65,3 +65,5 @@ ecopathDeathTabUI <- function(...) {
         plotlyOutput("plot_prod")
     )
 }
+
+ecopathDeathTabTitle <- "Death"

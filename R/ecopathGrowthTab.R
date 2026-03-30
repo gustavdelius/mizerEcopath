@@ -80,3 +80,5 @@ ecopathGrowthTabUI <- function(...) {
         plotlyOutput("plot_consumption")
     )
 }
+
+ecopathGrowthTabTitle <- "Growth"

@@ -75,3 +75,6 @@ ecopathSpectraTabUI <- function(params, help = TRUE, ...) {
     }
     tl
 }
+
+ecopathSpectraTabTitle <- "Spectra"
+

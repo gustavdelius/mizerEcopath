@@ -66,3 +66,5 @@ ecopathReproTabUI <- function(...) {
         plotlyOutput("plot_psi")
     )
 }
+
+ecopathReproTabTitle <- "Repro"
