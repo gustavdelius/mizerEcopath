@@ -86,6 +86,9 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
 ecopath_prepare_hook <- function(p) {
     no_sp <- nrow(p@species_params)
     p <- set_species_param_default(p, "d", p@species_params$n - 1)
+    # Compute encounter rate coefficient Eiw = ext_encounter / w^n
+    Eiw <- getExtEncounter(p)[, 1] / p@w[1] ^ p@species_params$n
+    p <- set_species_param_default(p, "Eiw", Eiw)
     p <- set_species_param_default(p, "yield_lambda", 0)
     p <- set_species_param_default(p, "production_lambda", 0)
     # Determine gonad proportion
