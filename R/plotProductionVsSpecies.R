@@ -25,7 +25,8 @@ plotProductionVsSpecies <- function(params) {
 
     ggplot(df, aes(x = Species, y = Production)) +
         geom_point(aes(shape = Type), size = 4) +
-        geom_linerange(aes(ymin = Production, ymax = other, colour = Species)) +
+        geom_linerange(data = df[!is.na(df$other) & df$other > 0, ],
+                       aes(ymin = Production, ymax = other, colour = Species)) +
         scale_y_continuous(name = "Production [g/year]", trans = "log10",
                            breaks = log_breaks()) +
         scale_colour_manual(values = getColours(params)) +
