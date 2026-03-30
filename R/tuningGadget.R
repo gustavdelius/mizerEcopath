@@ -236,7 +236,8 @@ tuningGadget <- function(params,
                         # Add links to input sections
                         lapply(controls, function(section) {
                             list("->",
-                                 tags$a(section, href = paste0("#", section)))
+                                 tags$a(control_title(section),
+                                        href = paste0("#", section)))
                         }),
                         data.step = 4,
                         data.position = "right",

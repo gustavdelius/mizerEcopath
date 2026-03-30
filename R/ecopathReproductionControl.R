@@ -73,3 +73,5 @@ ecopathReproductionControlUI <- function(params, input) {
                     step = 0.01)
     )
 }
+
+ecopathReproductionControlTitle <- "Reproduction"

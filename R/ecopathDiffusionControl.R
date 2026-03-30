@@ -84,3 +84,5 @@ ecopathDiffusionControlUI <- function(params, input) {
                     step = 0.0001)
     )
 }
+
+ecopathDiffusionControlTitle <- "Cohorts"

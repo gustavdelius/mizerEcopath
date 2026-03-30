@@ -257,3 +257,5 @@ ecopathFishingControlUI <- function(params, input) {
     }
     l1
 }
+
+ecopathFishingControlTitle <- "Fishing"

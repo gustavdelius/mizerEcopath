@@ -60,3 +60,5 @@ ecopathOtherControlUI <- function(params, input) {
                     step = 0.05)
     )
 }
+
+ecopathOtherControlTitle <- "Other"

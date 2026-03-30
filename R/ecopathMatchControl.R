@@ -54,3 +54,5 @@ ecopathMatchControlUI <- function(params, input) {
                     step = 0.1)
     )
 }
+
+ecopathMatchControlTitle <- "Matching"

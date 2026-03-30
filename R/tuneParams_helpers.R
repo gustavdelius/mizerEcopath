@@ -308,3 +308,24 @@ tab_title <- function(tab) {
     }
     tab
 }
+
+#' Return the title for the control
+#'
+#' This function is used to return the title for the control. This is either
+#' defined by the control author or otherwise is the control name supplied by
+#' the user.
+#'
+#' @param control The control name
+#' @return The control title
+#' @keywords internal
+#' @export
+control_title <- function(control) {
+    title_var <- paste0(control, "ControlTitle")
+    if (!is.null(title <- get0(title_var))) {
+        if (!is.string(title)) {
+            stop(title_var, "should contain a string with the title for the control")
+        }
+        return(title)
+    }
+    control
+}

@@ -65,3 +65,5 @@ ecopathGrowthControlUI <- function(p, input) {
         )
     )
 }
+
+ecopathGrowthControlTitle <- "Encounter"

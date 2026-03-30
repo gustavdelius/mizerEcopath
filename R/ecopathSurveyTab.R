@@ -74,3 +74,5 @@ ecopathSurveyTabUI <- function(...) {
         plotOutput("plotSpawningDensity")
     )
 }
+
+ecopathSurveyTabTitle <- "Survey"
