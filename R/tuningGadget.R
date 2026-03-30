@@ -335,7 +335,8 @@ tuningGadget <- function(params,
 
         # Serve controls ####
         for (section in controls) {
-            fun <- paste0(tolower(section), "Control")
+            fun <- paste0(section, "Control")
+            substr(fun, 1, 1) <- tolower(substr(fun, 1, 1))
             do.call(fun, list(input = input,
                               output = output,
                               session = session,
