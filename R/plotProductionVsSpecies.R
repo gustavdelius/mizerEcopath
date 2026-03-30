@@ -23,10 +23,14 @@ plotProductionVsSpecies <- function(params) {
     # Get rid of unobserved entries
     df <- df[df$Production > 0 & !is.na(df$Production), ]
 
-    ggplot(df, aes(x = Species, y = Production)) +
-        geom_point(aes(shape = Type), size = 4) +
-        geom_linerange(data = df[!is.na(df$other) & df$other > 0, ],
-                       aes(ymin = Production, ymax = other, colour = Species)) +
+    df_lr <- df[!is.na(df$other) & df$other > 0, ]
+    p <- ggplot(df, aes(x = Species, y = Production)) +
+        geom_point(aes(shape = Type), size = 4)
+    if (nrow(df_lr) > 0) {
+        p <- p + geom_linerange(data = df_lr,
+                           aes(ymin = Production, ymax = other, colour = Species))
+    }
+    p +
         scale_y_continuous(name = "Production [g/year]", trans = "log10",
                            breaks = log_breaks()) +
         scale_colour_manual(values = getColours(params)) +
