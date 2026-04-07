@@ -114,7 +114,7 @@
 #'
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                        yield_lambda = 1, production_lambda = 1,
-                       mu_mat_lim = 5, map = NULL)
+                       mu_mat_lim = 5, map = list(m = factor(NA)))
 {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
@@ -231,13 +231,6 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         map <- transformed_map
     } else {
         map <- list()
-    }
-
-    # Fix m to its current species_params value by default, keeping the C++
-    # growth formula consistent with mizer's getEGrowth. Users can override
-    # by explicitly including "m" in their map argument.
-    if (!"m" %in% names(map)) {
-        map$m <- factor(NA)
     }
 
     # Fix right-side parameters for non-double-sigmoid gears. The C++ does not
