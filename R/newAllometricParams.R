@@ -32,11 +32,18 @@
 #' `kappa = 10^11`. The exponent of the resource replenishment rate is
 #' set to `n = 0.7`.
 #'
+#' If you plan to fit several single-species models as a preliminary step
+#' to generating a multi-species model, it is necessary that the maximum
+#' weight of all species be the same. To achieve this, you must select the
+#' largest weight among all species in `max_w`.
+#'
 #' @param species_params A data frame with species parameters
 #' @param no_w The number of weight bins to use in the model
+#' @param max_w The maximum weight used to the model.
+#' Maximum fish weight by default.
 #' @return A MizerParams object
 #' @export
-newAllometricParams <- function(species_params, no_w = 200) {
+newAllometricParams <- function(species_params, no_w = 200, max_w = NULL) {
     sp <- validGivenSpeciesParams(species_params)
 
     # Impose relation between exponents
@@ -55,7 +62,16 @@ newAllometricParams <- function(species_params, no_w = 200) {
     # Generate a default mizer model with the desired species We extend the
     # resource spectrum over the entire size range to ensure that all species
     # have sufficient prey throughout their life.
-    max_w <- max(sp$w_max)
+
+    if(is.null(max_w)){ max_w <- max(sp$w_max)}
+
+    if( max_w < max(sp$w_max)){
+        warning("The maximum weight provided (max_w) is lower than the
+                maximum size of the fish. The model has been generated with
+                the latter")}
+
+    max_w <- max(max_w,sp$w_max)
+
     p <- newMultispeciesParams(sp, no_w = no_w, info_level = 0,
                                # extend resource over entire size range
                                max_w = max_w,
