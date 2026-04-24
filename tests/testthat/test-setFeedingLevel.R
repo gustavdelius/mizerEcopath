@@ -17,12 +17,12 @@ test_that("setFeedingLevel works", {
     desired <- getFeedingLevel(params) # matrix with right dimension
     desired[] <- 0.3
     comment(desired) <- "set manually"
-    expect_equal(getFeedingLevel(p), desired)
-    expect_equal(getEGrowth(p), g)
+    expect_equal(getFeedingLevel(p), desired, ignore_attr = TRUE)
+    expect_equal(getEGrowth(p), g, ignore_attr = TRUE)
     expect_equal(given_species_params(p)$f0, rep(0.3, nrow(p@species_params)))
 
     p <- setFeedingLevel(params, 0)
     desired[] <- 0
-    expect_equal(getFeedingLevel(p), desired)
-    expect_equal(getEGrowth(p), g)
+    expect_equal(getFeedingLevel(p), desired, ignore_attr = TRUE)
+    expect_equal(getEGrowth(p), g, ignore_attr = TRUE)
 })

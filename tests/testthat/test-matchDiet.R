@@ -11,7 +11,7 @@ test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params 
 
     # Same with North Sea model
     params <- NS_params
-    params@ext_encounter <- getEncounter(NS_params)
+    params@ext_encounter[] <- getEncounter(NS_params)
     dm <- getDietMatrix(params)
     result <- matchDiet(params, diet_matrix = dm)
     result@time_modified <- params@time_modified
@@ -41,7 +41,7 @@ test_that("matchDiet achieves the target diet matrix", {
     # Same as above but with North Sea model
     params <- NS_params
     sp <- params@species_params$species
-    params@ext_encounter <- getEncounter(NS_params)
+    params@ext_encounter[] <- getEncounter(NS_params)
     dm <- getDietMatrix(params)
     dm_target <- dm
     dm_target[, sp[2]] <- dm_target[, sp[2]] * 0.9

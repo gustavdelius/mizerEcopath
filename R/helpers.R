@@ -225,14 +225,14 @@ addEcopathParams <- function(species_params, ecopath_params,
 makeNoninteracting <- function(params) {
 
     # Put predation mortality into external mortality
-    params@mu_b <- params@mu_b + getPredMort(params)
+    params@mu_b[] <- params@mu_b + getPredMort(params)
 
     # Put predation encounter into external encounter
     # We make the assumption that all of the encounter rate is from
     # predation and ext_encounter. We need to do this because we do not have
     # a way to calculate the encounter specifically from predation. There is
     # no getPredEncounter() function.
-    params@ext_encounter <- getEncounter(params)
+    params@ext_encounter[] <- getEncounter(params)
 
     # Set the interaction matrix to zero
     interaction_matrix(params)[] <- 0

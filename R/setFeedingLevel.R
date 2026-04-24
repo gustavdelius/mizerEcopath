@@ -19,7 +19,8 @@
 setFeedingLevel <- function(params, feeding_level) {
     sp <- params@species_params
     # Check that params describes a non-interacting model
-    if (!isTRUE(all.equal(getEncounter(params), getExtEncounter(params)))) {
+    if (!isTRUE(all.equal(getEncounter(params), getExtEncounter(params),
+                          check.attributes = FALSE))) {
         stop("This function only works for models where all encounter is external encounter. Try calling `makeNoninteracting()` first.")
     }
     if (missing(feeding_level)) {

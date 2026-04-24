@@ -70,5 +70,5 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
     params2@interaction[] <- 0
     params2@other_encounter <- list()
     params2@ext_encounter[] <- 0
-    expect_equal(getEncounter(params2), encounter_rates)
+    expect_equal(getEncounter(params2), encounter_rates, ignore_attr = TRUE)
 })
