@@ -1,5 +1,5 @@
 ---
-title: "Celtic_Sea_Status_Quo_Model"
+title: "Celtic Sea Status Quo Model"
 author: "Jessica Westworth"
 editor: visual
 ---
