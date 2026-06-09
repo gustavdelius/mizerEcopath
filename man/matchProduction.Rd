@@ -20,7 +20,7 @@ isProductionMatched(params, tol = 0.1)
 \item{max_iter}{The maximum number of iterations. Default is 10.}
 
 \item{steady}{Logical. If \code{TRUE} (default), returns the model to steady state
-after parameter adjustment using \code{\link[mizer:steadySingleSpecies]{mizer::steadySingleSpecies()}} and \code{\link[mizer:matchBiomasses]{mizer::matchBiomasses()}}.}
+after parameter adjustment using \code{\link[mizer:steadySingleSpecies]{steadySingleSpecies()}} and \code{\link[mizer:matchBiomasses]{matchBiomasses()}}.}
 }
 \value{
 A MizerParams object with the adjusted metabolic and reproductive parameters
@@ -54,12 +54,12 @@ The function will return a warning if the maximum number of iterations is
 reached without converging.
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchConsumption}()},
-\code{\link{matchDiet}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}

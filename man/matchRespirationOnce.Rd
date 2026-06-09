@@ -38,12 +38,12 @@ production rate.
 This function calculates \eqn{Q} using \code{getConsumption()}
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchConsumption}()},
-\code{\link{matchDiet}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchProduction}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchProduction]{matchProduction()}}
 }
 \concept{match functions}

@@ -47,12 +47,12 @@ all.equal(getEReproAndGrowth(params),
           getEReproAndGrowth(celtic_params))
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchDiet}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchProduction}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchProduction]{matchProduction()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}

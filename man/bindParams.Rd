@@ -34,5 +34,5 @@ preserved; if multiple input objects carry comments on the same slot, the
 comments are combined after removing duplicates.
 }
 \seealso{
-\code{\link[mizer:addSpecies]{mizer::addSpecies()}}, \code{\link[mizer:removeSpecies]{mizer::removeSpecies()}}
+\code{\link[mizer:addSpecies]{addSpecies()}}, \code{\link[mizer:removeSpecies]{removeSpecies()}}
 }

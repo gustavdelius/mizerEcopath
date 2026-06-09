@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Gustav Delius \email{gustav.delius@york.ac.uk} (\href{https://orcid.org/0000-0003-4092-8228}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Gustav Delius \email{gustav.delius@york.ac.uk} (\href{https://orcid.org/0000-0003-4092-8228}{ORCID}) [copyright holder]
+}
+
 }
 \keyword{internal}

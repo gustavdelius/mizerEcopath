@@ -12,7 +12,7 @@ matchCatch(
   yield_lambda = 1,
   production_lambda = 1,
   mu_mat_lim = 5,
-  map = NULL
+  map = list(m = factor(NA))
 )
 }
 \arguments{
@@ -140,12 +140,12 @@ params_steady <- steadySingleSpecies(params)
 all.equal(initialN(params), initialN(params_steady))
 }
 \seealso{
-Other match functions: 
-\code{\link{matchConsumption}()},
-\code{\link{matchDiet}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchProduction}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchProduction]{matchProduction()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}

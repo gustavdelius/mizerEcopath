@@ -31,27 +31,27 @@ with provided observations (\code{age_at_length}) to verify growth
 and cohort dynamics.
 }
 \seealso{
-Other gadget tabs: 
-\code{\link{abundanceTab}()},
-\code{\link{biomassTab}()},
-\code{\link{catchTab}()},
-\code{\link{deathTab}()},
-\code{\link{dietTab}()},
-\code{\link{ecopathCatchTab}()},
-\code{\link{ecopathDeathTab}()},
-\code{\link{ecopathDietTab}()},
-\code{\link{ecopathGrowthTab}()},
-\code{\link{ecopathReproTab}()},
-\code{\link{ecopathSpectraTab}()},
-\code{\link{ecopathSurveyTab}()},
-\code{\link{growthTab}()},
-\code{\link{numberTab}()},
-\code{\link{ratesTab}()},
-\code{\link{reproTab}()},
-\code{\link{resourceTab}()},
-\code{\link{simTabUI}()},
-\code{\link{spectraTab}()},
-\code{\link{stomachTab}()}
+Other gadget tabs:
+\code{\link[=abundanceTab]{abundanceTab()}},
+\code{\link[=biomassTab]{biomassTab()}},
+\code{\link[=catchTab]{catchTab()}},
+\code{\link[=deathTab]{deathTab()}},
+\code{\link[=dietTab]{dietTab()}},
+\code{\link[=ecopathCatchTab]{ecopathCatchTab()}},
+\code{\link[=ecopathDeathTab]{ecopathDeathTab()}},
+\code{\link[=ecopathDietTab]{ecopathDietTab()}},
+\code{\link[=ecopathGrowthTab]{ecopathGrowthTab()}},
+\code{\link[=ecopathReproTab]{ecopathReproTab()}},
+\code{\link[=ecopathSpectraTab]{ecopathSpectraTab()}},
+\code{\link[=ecopathSurveyTab]{ecopathSurveyTab()}},
+\code{\link[=growthTab]{growthTab()}},
+\code{\link[=numberTab]{numberTab()}},
+\code{\link[=ratesTab]{ratesTab()}},
+\code{\link[=reproTab]{reproTab()}},
+\code{\link[=resourceTab]{resourceTab()}},
+\code{\link[=simTabUI]{simTabUI()}},
+\code{\link[=spectraTab]{spectraTab()}},
+\code{\link[=stomachTab]{stomachTab()}}
 }
 \concept{gadget tabs}
 \keyword{internal}

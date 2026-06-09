@@ -43,20 +43,20 @@ dimnames(getDietMatrix(NS_params))
 getDietMatrix(NS_params)["Cod", ]
 }
 \seealso{
-Other rate functions: 
-\code{\link{getConsumption}()},
-\code{\link{getEcotrophicEfficiency}()},
-\code{\link{getGonadicProduction}()},
-\code{\link{getM0B}()},
-\code{\link{getM2B}()},
-\code{\link{getMetabolicRespiration}()},
-\code{\link{getOffspringProduction}()},
-\code{\link{getProduction}()},
-\code{\link{getReproductiveLoss}()},
-\code{\link{getRespiration}()},
-\code{\link{getSomaticProduction}()},
-\code{\link{getTotalProduction}()},
-\code{\link{getUnassimilated}()},
-\code{\link{getZB}()}
+Other rate functions:
+\code{\link[=getConsumption]{getConsumption()}},
+\code{\link[=getEcotrophicEfficiency]{getEcotrophicEfficiency()}},
+\code{\link[=getGonadicProduction]{getGonadicProduction()}},
+\code{\link[=getM0B]{getM0B()}},
+\code{\link[=getM2B]{getM2B()}},
+\code{\link[=getMetabolicRespiration]{getMetabolicRespiration()}},
+\code{\link[=getOffspringProduction]{getOffspringProduction()}},
+\code{\link[=getProduction]{getProduction()}},
+\code{\link[=getReproductiveLoss]{getReproductiveLoss()}},
+\code{\link[=getRespiration]{getRespiration()}},
+\code{\link[=getSomaticProduction]{getSomaticProduction()}},
+\code{\link[=getTotalProduction]{getTotalProduction()}},
+\code{\link[=getUnassimilated]{getUnassimilated()}},
+\code{\link[=getZB]{getZB()}}
 }
 \concept{rate functions}

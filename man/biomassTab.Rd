@@ -43,26 +43,26 @@ on a species selects it and scales its abundance to match the clicked
 value on the y-axis.
 }
 \seealso{
-Other gadget tabs: 
-\code{\link{abundanceTab}()},
-\code{\link{catchTab}()},
-\code{\link{deathTab}()},
-\code{\link{dietTab}()},
-\code{\link{ecopathAgeTab}()},
-\code{\link{ecopathCatchTab}()},
-\code{\link{ecopathDeathTab}()},
-\code{\link{ecopathDietTab}()},
-\code{\link{ecopathGrowthTab}()},
-\code{\link{ecopathReproTab}()},
-\code{\link{ecopathSpectraTab}()},
-\code{\link{ecopathSurveyTab}()},
-\code{\link{growthTab}()},
-\code{\link{numberTab}()},
-\code{\link{ratesTab}()},
-\code{\link{reproTab}()},
-\code{\link{resourceTab}()},
-\code{\link{simTabUI}()},
-\code{\link{spectraTab}()},
-\code{\link{stomachTab}()}
+Other gadget tabs:
+\code{\link[=abundanceTab]{abundanceTab()}},
+\code{\link[=catchTab]{catchTab()}},
+\code{\link[=deathTab]{deathTab()}},
+\code{\link[=dietTab]{dietTab()}},
+\code{\link[=ecopathAgeTab]{ecopathAgeTab()}},
+\code{\link[=ecopathCatchTab]{ecopathCatchTab()}},
+\code{\link[=ecopathDeathTab]{ecopathDeathTab()}},
+\code{\link[=ecopathDietTab]{ecopathDietTab()}},
+\code{\link[=ecopathGrowthTab]{ecopathGrowthTab()}},
+\code{\link[=ecopathReproTab]{ecopathReproTab()}},
+\code{\link[=ecopathSpectraTab]{ecopathSpectraTab()}},
+\code{\link[=ecopathSurveyTab]{ecopathSurveyTab()}},
+\code{\link[=growthTab]{growthTab()}},
+\code{\link[=numberTab]{numberTab()}},
+\code{\link[=ratesTab]{ratesTab()}},
+\code{\link[=reproTab]{reproTab()}},
+\code{\link[=resourceTab]{resourceTab()}},
+\code{\link[=simTabUI]{simTabUI()}},
+\code{\link[=spectraTab]{spectraTab()}},
+\code{\link[=stomachTab]{stomachTab()}}
 }
 \concept{gadget tabs}

@@ -28,12 +28,12 @@ in the main section.}
 
 \item{match}{A character vector. Determines which quantities should be
 matched to observations each time the "steady" button is pressed. Possible
-entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{mizer::matchGrowth()}}), \code{"biomass"} (using
-\code{\link[mizer:matchBiomasses]{mizer::matchBiomasses()}}) and \code{"yield"} (using \code{\link[mizer:matchYields]{mizer::matchYields()}}).}
+entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{matchGrowth()}}), \code{"biomass"} (using
+\code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using \code{\link[mizer:matchYields]{matchYields()}}).}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive
-efficiency \code{erepro} (Default). See \code{\link[mizer:setBevertonHolt]{mizer::setBevertonHolt()}} for an explanation
+efficiency \code{erepro} (Default). See \code{\link[mizer:setBevertonHolt]{setBevertonHolt()}} for an explanation
 of the \code{reproduction_level}.}
 
 \item{return_app}{Boolean. For testing purposes only. When set to TRUE will

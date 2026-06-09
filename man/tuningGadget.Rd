@@ -65,7 +65,7 @@ functions (e.g., \code{list(catch = catch, diet = diet)}).}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive
-efficiency \code{erepro} (Default). See \code{\link[mizer:setBevertonHolt]{mizer::setBevertonHolt()}} for an explanation
+efficiency \code{erepro} (Default). See \code{\link[mizer:setBevertonHolt]{setBevertonHolt()}} for an explanation
 of the \code{reproduction_level}.}
 
 \item{return_app}{Boolean. For testing purposes only. When set to TRUE will

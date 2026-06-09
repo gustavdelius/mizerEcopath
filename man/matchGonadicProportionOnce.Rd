@@ -20,12 +20,12 @@ This function adjusts the \code{w_repro_max} parameters to match the gonadic
 proportion of the species.
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchConsumption}()},
-\code{\link{matchDiet}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchProduction}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchProduction]{matchProduction()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}

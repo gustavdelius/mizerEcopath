@@ -58,6 +58,6 @@ str(fr)
 }
 }
 \seealso{
-\link[mizer:plotting_functions]{mizer::plotting_functions}
+\link[mizer:plotting_functions]{plotting_functions}
 }
 \concept{plotting functions}

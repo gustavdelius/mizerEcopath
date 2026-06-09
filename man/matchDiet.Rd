@@ -46,12 +46,12 @@ assumptions may be biologically unrealistic or that the input diet matrix
 is incompatible with other model parameters.
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchConsumption}()},
-\code{\link{matchExtMortOnce}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchProduction}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchExtMortOnce]{matchExtMortOnce()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchProduction]{matchProduction()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}

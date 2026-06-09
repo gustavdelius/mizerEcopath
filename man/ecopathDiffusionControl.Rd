@@ -40,20 +40,20 @@ individuals of the same age can vary in size.
 }
 }
 \seealso{
-Other gadget controls: 
-\code{\link{abundanceControl}()},
-\code{\link{ecopathExponentControl}()},
-\code{\link{ecopathFishingControl}()},
-\code{\link{ecopathGrowthControl}()},
-\code{\link{ecopathMatchControl}()},
-\code{\link{ecopathOtherControl}()},
-\code{\link{ecopathReproductionControl}()},
-\code{\link{fishingControl}()},
-\code{\link{growthControl}()},
-\code{\link{interactionControl}()},
-\code{\link{otherControl}()},
-\code{\link{predationControl}()},
-\code{\link{reproductionControl}()},
-\code{\link{resourceControl}()}
+Other gadget controls:
+\code{\link[=abundanceControl]{abundanceControl()}},
+\code{\link[=ecopathExponentControl]{ecopathExponentControl()}},
+\code{\link[=ecopathFishingControl]{ecopathFishingControl()}},
+\code{\link[=ecopathGrowthControl]{ecopathGrowthControl()}},
+\code{\link[=ecopathMatchControl]{ecopathMatchControl()}},
+\code{\link[=ecopathOtherControl]{ecopathOtherControl()}},
+\code{\link[=ecopathReproductionControl]{ecopathReproductionControl()}},
+\code{\link[=fishingControl]{fishingControl()}},
+\code{\link[=growthControl]{growthControl()}},
+\code{\link[=interactionControl]{interactionControl()}},
+\code{\link[=otherControl]{otherControl()}},
+\code{\link[=predationControl]{predationControl()}},
+\code{\link[=reproductionControl]{reproductionControl()}},
+\code{\link[=resourceControl]{resourceControl()}}
 }
 \concept{gadget controls}

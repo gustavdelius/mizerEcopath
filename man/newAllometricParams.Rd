@@ -4,12 +4,15 @@
 \alias{newAllometricParams}
 \title{Set up parameters for a model with allometric encounter and mortality rates}
 \usage{
-newAllometricParams(species_params, no_w = 200)
+newAllometricParams(species_params, no_w = 200, max_w = NULL)
 }
 \arguments{
 \item{species_params}{A data frame with species parameters}
 
 \item{no_w}{The number of weight bins to use in the model}
+
+\item{max_w}{The maximum weight used to the model.
+Maximum fish weight by default.}
 }
 \value{
 A MizerParams object
@@ -47,4 +50,9 @@ resource abundance power law is set up that stretches over the entire size
 range with an exponent of \code{lambda = 2.05} and an arbitrary coefficient of
 \code{kappa = 10^11}. The exponent of the resource replenishment rate is
 set to \code{n = 0.7}.
+
+If you plan to fit several single-species models as a preliminary step
+to generating a multi-species model, it is necessary that the maximum
+weight of all species be the same. To achieve this, you must select the
+largest weight among all species in \code{max_w}.
 }

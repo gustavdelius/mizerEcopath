@@ -20,12 +20,12 @@ Adjust the external mortality so that the biomass loss due to mortality
 (including the fisheries yield) matches the somatic production.
 }
 \seealso{
-Other match functions: 
-\code{\link{matchCatch}()},
-\code{\link{matchConsumption}()},
-\code{\link{matchDiet}()},
-\code{\link{matchGonadicProportionOnce}()},
-\code{\link{matchProduction}()},
-\code{\link{matchRespirationOnce}()}
+Other match functions:
+\code{\link[=matchCatch]{matchCatch()}},
+\code{\link[=matchConsumption]{matchConsumption()}},
+\code{\link[=matchDiet]{matchDiet()}},
+\code{\link[=matchGonadicProportionOnce]{matchGonadicProportionOnce()}},
+\code{\link[=matchProduction]{matchProduction()}},
+\code{\link[=matchRespirationOnce]{matchRespirationOnce()}}
 }
 \concept{match functions}
