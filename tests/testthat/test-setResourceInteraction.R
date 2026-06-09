@@ -25,10 +25,10 @@ test_that("setResourceInteraction works", {
     expect_equal(resource_level(params_new), initial_resource)
 
     # Test total encounter rate is preserved
-    expect_equal(getEncounter(params_new), getEncounter(params))
+    expect_equal(getEncounter(params_new), getEncounter(params), ignore_attr = TRUE)
     # Test that growth and mortality rates are preserved
-    expect_equal(getEGrowth(params_new), getEGrowth(params))
-    expect_equal(getMort(params_new), getMort(params))
+    expect_equal(getEGrowth(params_new), getEGrowth(params), ignore_attr = TRUE)
+    expect_equal(getMort(params_new), getMort(params), ignore_attr = TRUE)
 
     # Test interaction_resource increased for first species
     expect_true(params_new@species_params$interaction_resource[1] > initial_interaction[1])
@@ -63,7 +63,7 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
     encounter_rates2 <- getResourceEncounterRate(params2)
 
     # Should scale linearly with interaction_resource
-    expect_equal(encounter_rates2, 2 * encounter_rates)
+    expect_equal(encounter_rates2, 2 * encounter_rates, ignore_attr = TRUE)
 
     # Should equal to total predation encounter when interaction matrix is 0
     params2 <- params

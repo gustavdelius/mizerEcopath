@@ -88,23 +88,21 @@ newAllometricParams <- function(species_params, no_w = 200, max_w = NULL) {
     sp$h <- Inf
     intake_max(p)[] <- Inf
 
+    # Set power-law encounter rate (the coefficient will be adjusted below)
+    sp$E_ext <- 1
+
     species_params(p) <- sp
 
-    # Set power-law encounter rate (the coefficient will be adjusted below)
-    ext_encounter(p) <- t(outer(p@w, sp$n, "^"))
     # Set encounter rate coefficient to produce desired growth rate
     sp <- set_species_param_default(sp, "age_mat", age_mat_vB(sp))
-    factor <- age_mat(p) / sp$age_mat
-    ext_encounter(p) <- sweep(ext_encounter(p), 1, factor, "*")
-    # Determine power-law coefficient for encounter rate
-    e0 <- getEGrowth(p)[, 1] / w(p)[1] ^ sp$n[1]
+    sp$E_ext <- age_mat(p) / sp$age_mat
 
     # Set power-law mortality
     # Choose a positive coefficient so that the juvenile biomass density
     # has a slightly negative slope (of -0.2).
-    mu0 <- e0 * (1 + 0.2 - sp$n)
-    ext_mort(p) <- sweep(t(outer(p@w, sp$d, "^")), 1, mu0, "*")
+    sp$z_ext <- sp$alpha * sp$E_ext * (1 + 0.2 - sp$n)
 
+    species_params(p) <- sp
     # Match Biomasses
     p <- matchBiomasses(p)
     # Set to steady state
