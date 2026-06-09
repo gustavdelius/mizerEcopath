@@ -102,7 +102,7 @@ bindParams <- function(...) {
     p@metab         <- stack_rows("metab")
     p@mu_b          <- stack_rows("mu_b")
     p@ext_encounter <- stack_rows("ext_encounter")
-    p@diffusion     <- stack_rows("diffusion")
+    p@ext_diffusion     <- stack_rows("ext_diffusion")
 
     # Combine [species x w_full] arrays ----
     p@ft_pred_kernel_e <- stack_rows("ft_pred_kernel_e")

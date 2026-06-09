@@ -19,7 +19,7 @@ test_that("bindParams combines species correctly", {
     expect_equal(pc@metab[1:2, ], p1@metab, ignore_attr = TRUE)
     expect_equal(pc@mu_b[1:2, ], p1@mu_b, ignore_attr = TRUE)
     expect_equal(pc@ext_encounter[1:2, ], p1@ext_encounter, ignore_attr = TRUE)
-    expect_equal(pc@diffusion[1:2, ], p1@diffusion, ignore_attr = TRUE)
+    expect_equal(pc@ext_diffusion[1:2, ], p1@ext_diffusion, ignore_attr = TRUE)
     expect_equal(pc@ft_pred_kernel_e[1:2, ], p1@ft_pred_kernel_e, ignore_attr = TRUE)
     expect_equal(pc@ft_mask[1:2, ], p1@ft_mask, ignore_attr = TRUE)
     expect_identical(names(dimnames(pc@mu_b)), names(dimnames(p1@mu_b)))
