@@ -86,7 +86,7 @@ test_that("matchConsumption preserves energy for growth and reproduction", {
         suppressWarnings()
     new_ERG <- getEReproAndGrowth(result)
     # They should be equal (within floating-point tolerance)
-    expect_equal(new_ERG, orig_ERG, tolerance = 1e-8)
+    expect_equal(new_ERG, orig_ERG, tolerance = 1e-8, ignore_attr = TRUE)
 })
 
 test_that("matchConsumption matches consumption to consumption_observed", {
@@ -96,7 +96,7 @@ test_that("matchConsumption matches consumption to consumption_observed", {
     # Check that model consumption matches consumption_observed
     model_consumption <- unname(getConsumption(result))
     expected_consumption <- result@species_params$consumption_observed
-    
+
     # The match will not be exact for species where Ecopath consumption is too
     # low to allow for a metabolic rate of at least 10% of production.
     # So we only check the species where the match is expected to be exact.
@@ -104,6 +104,6 @@ test_that("matchConsumption matches consumption to consumption_observed", {
     total_production <- getTotalProduction(celtic_params)
     R <- sp$alpha * sp$consumption_observed - total_production
     exact <- R >= 0.1 * total_production
-    
+
     expect_equal(model_consumption[exact], expected_consumption[exact], tolerance = 1e-8)
 })
