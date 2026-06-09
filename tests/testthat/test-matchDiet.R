@@ -11,7 +11,8 @@ test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params 
 
     # Same with North Sea model
     params <- NS_params
-    params@ext_encounter[] <- getEncounter(NS_params)
+    ext_encounter(params) <- getEncounter(NS_params)
+    comment(params@mu_b) <- "Set manually"
     dm <- getDietMatrix(params)
     result <- matchDiet(params, diet_matrix = dm)
     result@time_modified <- params@time_modified

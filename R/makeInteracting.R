@@ -58,7 +58,7 @@ makeInteracting <- function(params, interaction,
     }
     # Don't allow negative encounter rates
     new_ext_encounter[new_ext_encounter < 0] <- 0
-    params@ext_encounter <- new_ext_encounter
+    ext_encounter(params) <- new_ext_encounter
 
     ## Change external mortality rate
     pred_mort <- getPredMort(params)
@@ -76,7 +76,7 @@ makeInteracting <- function(params, interaction,
     }
     # Don't allow negative mortality rates
     new_ext_mort[new_ext_mort < 0] <- 0
-    params@mu_b <- new_ext_mort
+    ext_mort(params) <- new_ext_mort
 
     return(params)
 }
