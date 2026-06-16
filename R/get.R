@@ -10,20 +10,18 @@
 #' and \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
 #'
 #' @param params A MizerParams object
-#' @param min_w The minimum weight of individuals to include. Default is 0.
-#' @param max_w The maximum weight of individuals to include. Default is `Inf`.
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of somatic production for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getSomaticProduction(NS_params)
-getSomaticProduction <- function(params, min_w = 0, max_w = Inf) {
+getSomaticProduction <- function(params, ...) {
     N <- initialN(params)
     dw <- dw(params)
-    sel <- params@w >= min_w & params@w <= max_w
-    Ps <- as.vector((getEGrowth(params)[, sel, drop = FALSE] *
-                          N[, sel, drop = FALSE]) %*% dw[sel])
-    names(Ps) <- species_params(params)$species
+    sel <- get_size_range_array(params, ...)
+    Ps <- as.vector(((getEGrowth(params) * N) * sel) %*% dw)
+    names(Ps) <- params@species_params$species
     return(Ps)
 }
 
@@ -33,15 +31,17 @@ getSomaticProduction <- function(params, min_w = 0, max_w = Inf) {
 #' individuals of that species.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of gonadic production for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getGonadicProduction(NS_params)
-getGonadicProduction <- function(params) {
+getGonadicProduction <- function(params, ...) {
     N <- initialN(params)
     dw <- dw(params)
-    Pg <- as.vector((getERepro(params) * N) %*% dw)
+    sel <- get_size_range_array(params, ...)
+    Pg <- as.vector(((getERepro(params) * N) * sel) %*% dw)
     names(Pg) <- params@species_params$species
     return(Pg)
 }
@@ -59,15 +59,17 @@ getGonadicProduction <- function(params) {
 #' over after production, in order to estimate the required metabolic loss.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of gonadic production for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getTotalProduction(NS_params)
-getTotalProduction <- function(params) {
+getTotalProduction <- function(params, ...) {
     N <- initialN(params)
     dw <- dw(params)
-    Pg <- as.vector((getEReproAndGrowth(params) * N) %*% dw)
+    sel <- get_size_range_array(params, ...)
+    Pg <- as.vector(((getEReproAndGrowth(params) * N) * sel) %*% dw)
     names(Pg) <- params@species_params$species
     return(Pg)
 }
@@ -87,13 +89,14 @@ getTotalProduction <- function(params) {
 #' of offspring biomass obtained with \code{\link{getOffspringProduction}}.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of production for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getProduction(NS_params)
-getProduction <- function(params) {
-    getSomaticProduction(params) + getOffspringProduction(params)
+getProduction <- function(params, ...) {
+    getSomaticProduction(params, ...) + getOffspringProduction(params)
 }
 
 #' Get consumption rate for each species
@@ -142,15 +145,17 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 #' Used internally by [matchConsumption()] to help scale metabolic loss to match observed consumption.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of respiration for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getMetabolicRespiration(NS_params)
-getMetabolicRespiration <- function(params) {
+getMetabolicRespiration <- function(params, ...) {
     N <- initialN(params)
     dw <- dw(params)
-    R <- as.vector((getMetabolicRate(params) * N) %*% dw)
+    sel <- get_size_range_array(params, ...)
+    R <- as.vector(((getMetabolicRate(params) * N) * sel) %*% dw)
     names(R) <- params@species_params$species
     return(R)
 }
@@ -162,13 +167,14 @@ getMetabolicRespiration <- function(params) {
 #' production (calculated with [getOffspringProduction]).
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of reproduction biomass loss for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getReproductiveLoss(NS_params)
-getReproductiveLoss <- function(params) {
-    getGonadicProduction(params) - getOffspringProduction(params)
+getReproductiveLoss <- function(params, ...) {
+    getGonadicProduction(params, ...) - getOffspringProduction(params)
 }
 
 #' Get respiration rate as defined by Ecopath
@@ -190,13 +196,14 @@ getReproductiveLoss <- function(params) {
 #' [getReproductiveLoss()]).
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of respiration for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getRespiration(NS_params)
-getRespiration <- function(params) {
-    getMetabolicRespiration(params) + getReproductiveLoss(params)
+getRespiration <- function(params, ...) {
+    getMetabolicRespiration(params, ...) + getReproductiveLoss(params, ...)
 }
 
 #' Get unassimilated food
@@ -232,16 +239,18 @@ getUnassimilated <- function(params) {
 #' number density of species \eqn{i} at weight \eqn{w}.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to mortality for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getZB(NS_params)
-getZB <- function(params) {
+getZB <- function(params, ...) {
     N <- initialN(params)
     w <- w(params)
     dw <- dw(params)
-    ZB <- as.vector((getMort(params) * N) %*% (w * dw))
+    sel <- get_size_range_array(params, ...)
+    ZB <- as.vector(((getMort(params) * N) * sel) %*% (w * dw))
     names(ZB) <- params@species_params$species
     return(ZB)
 }
@@ -258,17 +267,19 @@ getZB <- function(params) {
 #' and \eqn{N_i(w)} is the number density of species i at weight w.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to external mortality for
 #'   each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getM0B(NS_params)
-getM0B <- function(params) {
+getM0B <- function(params, ...) {
     N <- initialN(params)
     w <- w(params)
     dw <- dw(params)
-    M0B <- as.vector((getExtMort(params) * N) %*% (w * dw))
+    sel <- get_size_range_array(params, ...)
+    M0B <- as.vector(((getExtMort(params) * N) * sel) %*% (w * dw))
     names(M0B) <- params@species_params$species
     return(M0B)
 }
@@ -285,17 +296,19 @@ getM0B <- function(params) {
 #' and \eqn{N_i(w)} is the number density of species i at weight w.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to predation mortality for
 #'   each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getM2B(NS_params)
-getM2B <- function(params) {
+getM2B <- function(params, ...) {
     N <- initialN(params)
     w <- w(params)
     dw <- dw(params)
-    M2B <- as.vector((getPredMort(params) * N) %*% (w * dw))
+    sel <- get_size_range_array(params, ...)
+    M2B <- as.vector(((getPredMort(params) * N) * sel) %*% (w * dw))
     names(M2B) <- params@species_params$species
     return(M2B)
 }
@@ -309,14 +322,15 @@ getM2B <- function(params) {
 #' and \eqn{P_i} is the rate of production.
 #'
 #' @param params A MizerParams object
+#' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of ecotrophic efficiency for each species
 #' @export
 #' @family rate functions
 #' @examples
 #' getEcotrophicEfficiency(NS_params)
-getEcotrophicEfficiency <- function(params) {
-    P <- getProduction(params)
-    M0B <- getM0B(params)
+getEcotrophicEfficiency <- function(params, ...) {
+    P <- getProduction(params, ...)
+    M0B <- getM0B(params, ...)
     EE <- 1 - M0B / P
     return(EE)
 }

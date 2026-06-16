@@ -4,10 +4,23 @@
 \alias{getM2B}
 \title{Get rate at which biomass is lost due to predation mortality}
 \usage{
-getM2B(params)
+getM2B(params, ...)
 }
 \arguments{
 \item{params}{A MizerParams object}
+
+\item{...}{
+  Arguments passed on to \code{\link[mizer:get_size_range_array]{mizer::get_size_range_array}}
+  \describe{
+    \item{\code{min_w}}{Smallest weight in size range. Defaults to smallest weight in
+the model.}
+    \item{\code{max_w}}{Largest weight in size range. Defaults to largest weight in the
+model.}
+    \item{\code{min_l}}{Smallest length in size range. If supplied, this takes
+precedence over \code{min_w}.}
+    \item{\code{max_l}}{Largest length in size range. If supplied, this takes precedence
+over \code{max_w}.}
+  }}
 }
 \value{
 A named vector of biomass loss rate due to predation mortality for

@@ -4,14 +4,23 @@
 \alias{getSomaticProduction}
 \title{Get somatic production for each species}
 \usage{
-getSomaticProduction(params, min_w = 0, max_w = Inf)
+getSomaticProduction(params, ...)
 }
 \arguments{
 \item{params}{A MizerParams object}
 
-\item{min_w}{The minimum weight of individuals to include. Default is 0.}
-
-\item{max_w}{The maximum weight of individuals to include. Default is \code{Inf}.}
+\item{...}{
+  Arguments passed on to \code{\link[mizer:get_size_range_array]{mizer::get_size_range_array}}
+  \describe{
+    \item{\code{min_w}}{Smallest weight in size range. Defaults to smallest weight in
+the model.}
+    \item{\code{max_w}}{Largest weight in size range. Defaults to largest weight in the
+model.}
+    \item{\code{min_l}}{Smallest length in size range. If supplied, this takes
+precedence over \code{min_w}.}
+    \item{\code{max_l}}{Largest length in size range. If supplied, this takes precedence
+over \code{max_w}.}
+  }}
 }
 \value{
 A named vector of somatic production for each species
