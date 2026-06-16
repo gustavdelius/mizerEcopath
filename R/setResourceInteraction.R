@@ -52,10 +52,20 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # Then calculate the ratio of the external encounter rate to the
     # encounter rate achieved with interaction_resource = 1
     ratio <- params@ext_encounter / encounter
-    # This can fail if encounter is zero, which can happen at very large
-    # sizes that we are not interested in. Set these zeros to Inf so they do not
-    # affect the minimum calculation below.
-    ratio[!is.finite(ratio) | ratio == 0] <- Inf
+    # ratio is NaN where both ext_encounter and encounter are zero, and Inf
+    # where encounter is zero but ext_encounter is not. Set these to Inf so
+    # they do not affect the minimum calculation below. A ratio of exactly
+    # zero (ext_encounter is zero but encounter is not) is a legitimate,
+    # often binding, constraint and must be kept.
+    ratio[!is.finite(ratio)] <- Inf
+    # Sizes at which a species has negligible abundance (relative to its own
+    # peak abundance) do not meaningfully affect the dynamics, so the
+    # encounter rate there should not be allowed to constrain the ratio.
+    # `w_max` is not a reliable cutoff for this: some species already have
+    # negligible abundance well before `w_max`.
+    n <- initialN(params)
+    sel <- n / apply(n, 1, max) > 1e-10
+    ratio[!sel] <- Inf
     # The minimum ratio is the maximum that can be absorbed from the external
     # encounter rate
     ratio <- apply(ratio, 1, min)
@@ -75,6 +85,7 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     params@ext_encounter[params@ext_encounter < 0] <- 0
 
     rel_diff <- abs(getEncounter(params) - old_encounter) / old_encounter
+    rel_diff[!sel] <- 0
     if (max(rel_diff[is.finite(rel_diff)], 0) > 1e-10) {
         print(max(rel_diff[is.finite(rel_diff)], 0))
         stop("Encounter rate changed significantly")
