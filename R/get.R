@@ -4,10 +4,10 @@
 #' individuals of that species.
 #'
 #' The somatic production rate \eqn{P_{s.i}} is calculated as
-#' \deqn{P_{s.i} = \int_{w_0}^{w_{max}} \phi_i(w) dw}
-#' where \eqn{\phi_i(w)} is the flux in size space for species \eqn{i}
-#' and weight \eqn{w} (calculated with \code{\link{getFlux}}). This includes
-#' both advection and diffusion terms.
+#' \deqn{P_{s.i} = \int_{w_0}^{w_{max}} g_i(w) N_i(w) dw}
+#' where \eqn{g(w)} is the somatic growth rate of an individual of species \eqn{i}
+#' and weight \eqn{w} (calculated with \code{\link{getEGrowth}})
+#' and \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
 #'
 #' @param params A MizerParams object
 #' @param min_w The minimum weight of individuals to include. Default is 0.
@@ -18,9 +18,11 @@
 #' @examples
 #' getSomaticProduction(NS_params)
 getSomaticProduction <- function(params, min_w = 0, max_w = Inf) {
-    flux <- sweep(getFlux(params), 2, dw(params), "*")
+    N <- initialN(params)
+    dw <- dw(params)
     sel <- params@w >= min_w & params@w <= max_w
-    Ps <- rowSums(flux[, sel, drop = FALSE])
+    Ps <- as.vector((getEGrowth(params)[, sel, drop = FALSE] *
+                          N[, sel, drop = FALSE]) %*% dw[sel])
     names(Ps) <- species_params(params)$species
     return(Ps)
 }

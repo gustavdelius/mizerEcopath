@@ -22,10 +22,10 @@ individuals of that species.
 }
 \details{
 The somatic production rate \eqn{P_{s.i}} is calculated as
-\deqn{P_{s.i} = \int_{w_0}^{w_{max}} \phi_i(w) dw}
-where \eqn{\phi_i(w)} is the flux in size space for species \eqn{i}
-and weight \eqn{w} (calculated with \code{\link{getFlux}}). This includes
-both advection and diffusion terms.
+\deqn{P_{s.i} = \int_{w_0}^{w_{max}} g_i(w) N_i(w) dw}
+where \eqn{g(w)} is the somatic growth rate of an individual of species \eqn{i}
+and weight \eqn{w} (calculated with \code{\link{getEGrowth}})
+and \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
 }
 \examples{
 getSomaticProduction(NS_params)
