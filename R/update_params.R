@@ -34,9 +34,26 @@ update_params <- function(params, species = 1, pars, data) {
     sp_select <- sp$species == species
     sps <- sp[sp_select, ]
 
+    # Ensure the species_params table has a D_ext column (the coefficient of the
+    # external-diffusion power law d(w) = D_ext * w^(n+1)). Derive it from the
+    # ext_diffusion slot / legacy d_over_g for any species that lacks it, so that
+    # the per-species row assignment below has a column to write into.
+    if (!"D_ext" %in% names(sp)) {
+        D_ext_all <- vapply(seq_len(nrow(sp)), function(i) {
+            diffusion_coefficient(params, seq_len(nrow(sp)) == i, sp$n[i])
+        }, numeric(1))
+        params@species_params$D_ext <- D_ext_all
+        sp <- species_params(params)
+        sps <- sp[sp_select, ]
+    }
+
     gp <- params@gear_params
     gp_select <- gp$species == species
-    gps <- gp[gp_select, ]
+    # Only the matched gears (those present in the catch data) are updated; any
+    # other model gears (e.g. a survey gear) are left untouched. Align to the
+    # gear order used when the data was prepared.
+    matched_idx <- which(gp_select)[match(attr(data, "gears"), gp$gear[gp_select])]
+    gps <- gp[matched_idx, ]
 
     # Update the gear parameters
     gplist <- list()
@@ -59,9 +76,7 @@ update_params <- function(params, species = 1, pars, data) {
     gps[,'l25_right'] <- ifelse(gps$sel_func=='double_sigmoid_length', gp_res$l25_right, NA)
     gps[,'catchability'] <- gp_res$catchability
 
-    if(nrow(gps) == 1 && gps$sel_func!='double_sigmoid_length'){gps[,'l50_right'] <- gps[,'l25_right'] <- NULL}
-
-    gear_params(params)[gp_select, ] <- gps
+    gear_params(params)[matched_idx, ] <- gps
 
     # Getting the "m" value
     sps$m <- pars[["m"]]
@@ -73,6 +88,12 @@ update_params <- function(params, species = 1, pars, data) {
     w_mat <- params@w[mat_idx]
     ext_mort(params)[sp_select, ] <-
         pars[["mu_mat"]] * (params@w / w_mat)^sps$d
+
+    # Update the external-diffusion power law from the optimised D_ext so that
+    # the steady state below (which is diffusion-aware) uses the same diffusion
+    # as the TMB objective.
+    sps$D_ext <- exp(pars[["log_D_ext"]])
+    params@ext_diffusion[sp_select, ] <- sps$D_ext * params@w^(sps$n + 1)
 
     params@species_params[sp_select, ] <- sps
     params <- setReproduction(params)

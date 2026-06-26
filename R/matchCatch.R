@@ -145,11 +145,10 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     gp <- gear_params(params)
     sp_select <- sp$species == species
     sps <- sp[sp_select, ]
+    # Only the gears that are being matched (those present in the catch data),
+    # in the same order as the data prepared above.
     gps <- gp[gp$species == species, ]
-
-    if(is.vector(data$counts)){
-        data$counts <- as.matrix(data$counts, ncol=1)
-        colnames(data$counts) <- gps$gear}
+    gps <- gps[match(attr(data, "gears"), gps$gear), ]
 
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
@@ -178,7 +177,12 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
         mu_mat = mu_mat,
 
-        m = ifelse(any(names(sps)=='m'), sps$m, 1))
+        m = ifelse(any(names(sps)=='m'), sps$m, 1),
+
+        # Coefficient of the external-diffusion power law d(w) = D_ext * w^(n+1).
+        # Floored away from zero so that the log is finite.
+        log_D_ext = log(max(diffusion_coefficient(params, sp_select, sps$n),
+                            1e-6)))
 
     # Set parameter bounds
     # Mortality is bounded by the requirement that the juvenile spectrum of
@@ -195,7 +199,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_ratio_right = rep(-10, length(data$sel_func)),
         log_catchability = rep(-10, length(data$sel_func)),
         mu_mat = 0.2,
-        m = sps$n * 1.01
+        m = sps$n * 1.01,
+        log_D_ext = -20
     )
 
     upper_bounds_list <- list(
@@ -205,7 +210,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_ratio_right = rep(10, length(data$sel_func)),
         log_catchability = rep(10, length(data$sel_func)),
         mu_mat = min(mu_mat_max,mu_mat_lim),
-        m = 3
+        m = 3,
+        log_D_ext = 15
     )
 
     if (!is.null(map)) {
@@ -217,7 +223,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
             "l25_right" = "log_ratio_right",
             "catchability" = "log_catchability",
             "mu_mat" = "mu_mat",
-            "m" = "m"
+            "m" = "m",
+            "D_ext" = "log_D_ext"
         )
 
         transformed_map <- list()
@@ -229,6 +236,18 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
             }
         }
         map <- transformed_map
+
+        # The per-gear parameters have one entry per matched gear. A scalar map
+        # factor (e.g. `map = list(l50 = factor(NA))`) is recycled to fix the
+        # parameter for every gear of the species.
+        per_gear <- c("logit_l50", "log_ratio_left", "log_l50_right_offset",
+                      "log_ratio_right", "log_catchability")
+        n_g <- length(data$sel_func)
+        for (p in intersect(names(map), per_gear)) {
+            if (length(map[[p]]) == 1 && n_g > 1) {
+                map[[p]] <- factor(rep(as.vector(map[[p]]), n_g))
+            }
+        }
     } else {
         map <- list()
     }
@@ -255,6 +274,9 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         map$log_ratio_left <- factor(rep(NA, length(data$sel_func)))
         map$log_l50_right_offset <- factor(rep(NA, length(data$sel_func)))
         map$log_ratio_right <- factor(rep(NA, length(data$sel_func)))
+        # Without a catch size distribution there is nothing to inform the
+        # diffusion, so keep it fixed at its initial value.
+        if (is.null(map$log_D_ext)) map$log_D_ext <- factor(NA)
     }
     if (data$yield_lambda == 0) {
         map$log_catchability <- factor(rep(NA, length(data$sel_func)))

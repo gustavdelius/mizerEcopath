@@ -35,8 +35,9 @@ dynamics in an Ecopath-aligned mizer model. It includes settings for:
 duration of reproduction.
 \item \strong{Annulus date/age}: Specifies when and at what age annual growth
 markers (annuli) are formed.
-\item \strong{Diffusion strength}: Adjusts \code{d_over_g}, which determines how much
-individuals of the same age can vary in size.
+\item \strong{Diffusion strength}: Adjusts \code{D_ext}, the coefficient of the
+external-diffusion power law \code{d(w) = D_ext * w^(n+1)}, which determines
+how much individuals of the same age can vary in size.
 }
 }
 \seealso{

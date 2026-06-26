@@ -45,7 +45,8 @@ prepare_data <- function(params, species = 1, catch,
     # Validate catch data frame and extract data for the selected species
     if (nrow(catch) == 0) {
         use_counts <- 0
-        counts <- numeric(0)
+        # TMB expects `counts` to be a matrix even when it is not used.
+        counts <- matrix(0, nrow = 0, ncol = nrow(gps))
         w_min <- 1
         w_max <- sps$w_max
     } else {
@@ -57,6 +58,26 @@ prepare_data <- function(params, species = 1, catch,
         catch <- dplyr::ungroup(catch)
         ispec <- species
         catch <- catch |> filter( species == ispec)
+
+        # `matchCatch()` fits only the gears that the catch data provides a size
+        # distribution for. Every gear in the catch must exist in the model, but
+        # the model may have additional gears (e.g. a survey gear) that have no
+        # catch data; those are left untouched. We therefore restrict the gear
+        # parameters to the catch gears, keeping the model's gear order so that
+        # the columns of `counts` line up with `yield`/`sel_func` below.
+        catch_gears <- unique(catch$gear)
+        model_gears <- gps$gear
+        unknown_gears <- setdiff(catch_gears, model_gears)
+        if (length(unknown_gears) > 0) {
+            stop("For species '", species, "' the catch data contains gears (",
+                 paste(unknown_gears, collapse = ", "),
+                 ") that are not among the model's gears (",
+                 paste(model_gears, collapse = ", "),
+                 "). Every gear in the catch data must exist in ",
+                 "`gear_params(params)`.")
+        }
+        gps <- gps[gps$gear %in% catch_gears, ]
+        model_gears <- gps$gear
 
         max_length <- max(catch$length + catch$dl)
         max_weight <- sps$a * max_length^sps$b
@@ -100,10 +121,13 @@ prepare_data <- function(params, species = 1, catch,
             mutate(count = tidyr::replace_na(count, 0))  # different fill for missing data
 
         # Extract counts, bin boundaries and widths
-        counts <- full_bins |>
+        counts_wide <- full_bins |>
             select(gear, bin_start, bin_end, count) |>
             tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
-        counts <- as.matrix(counts)[,-c(1:2)]    # remove bin_start and bin_end columns
+        # Keep counts as a matrix with one column per gear, ordered to match
+        # the model gear order (`gps$gear`) so that column g lines up with the
+        # selectivity and yield of gear g in the C++ objective function.
+        counts <- as.matrix(counts_wide[, model_gears, drop = FALSE])
         l_bin_boundaries <- unique(c(full_bins$bin_start, full_bins$bin_end))
         w_bin_boundaries <- sps$a * l_bin_boundaries^sps$b
         w_bin_widths <- diff(w_bin_boundaries)
@@ -207,6 +231,10 @@ prepare_data <- function(params, species = 1, catch,
         n = n,
         w_repro_max = w_repro_max
     )
+
+    # The gears that are being matched, in the order used for `counts`, `yield`
+    # and `sel_func`. Stored as an attribute so it is not passed to TMB as data.
+    attr(data, "gears") <- gps$gear
 
     return(data)
 }

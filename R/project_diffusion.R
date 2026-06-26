@@ -21,10 +21,6 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     }
     sps <- species_params(params)[species, ]
     n <- sps$n
-    d_over_g <- sps$d_over_g
-    if (is.null(d_over_g) || is.na(d_over_g)) {
-        d_over_g <- 0
-    }
     w <- w(params)
     x <- log(w / w[1])
     h <- x[2] - x[1]
@@ -36,13 +32,13 @@ project_diffusion <- function(params, species, dt = 0.05, nsteps = 200) {
     g <- getEGrowth(params)[species, ]
     # emigration <- emigration(params)[species, ]
 
-    # Calculate diffusion rate as a power law
-    g_0 <- g[1] / w[1]^n
-    d_0 <- d_over_g * g_0
-    d <- d_0 * w^(n + 1)
+    # Calculate diffusion rate as a power law d(w) = D_ext * w^(n+1)
+    D_ext <- diffusion_coefficient(params,
+                                   species_params(params)$species == species, n)
+    d <- D_ext * w^(n + 1)
     # Transform to logarithmic space
     dtilde <- d / w^2
-    dtilde_prime <- d_0 * (n - 1) * w^(n - 1)
+    dtilde_prime <- D_ext * (n - 1) * w^(n - 1)
     gtilde <- g / w - 0.5 * dtilde
     # etilde <- emigration * w
     # Transform to standard form for diffusion term
