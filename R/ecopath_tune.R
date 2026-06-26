@@ -98,7 +98,13 @@ ecopath_prepare_hook <- function(p) {
     mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
     mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
     p <- set_species_param_default(p, "mu_mat", mu_mat)
-    p <- set_species_param_default(p, "d_over_g", 0)
+    # Determine D_ext, the coefficient of the external-diffusion power law
+    # d(w) = D_ext * w^(n+1), from the ext_diffusion slot (or legacy d_over_g).
+    # Assign directly so any stale `D_ext` column is overwritten with the value
+    # consistent with the ext_diffusion slot.
+    p@species_params$D_ext <- vapply(seq_len(no_sp), function(i) {
+        diffusion_coefficient(p, seq_len(no_sp) == i, p@species_params$n[i])
+    }, numeric(1))
     p <- set_species_param_default(p, "spawning_mu", 0.5)
     p <- set_species_param_default(p, "spawning_kappa", 5)
     p <- set_species_param_default(p, "annuli_min_age", 0)

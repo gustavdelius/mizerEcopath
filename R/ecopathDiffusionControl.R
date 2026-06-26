@@ -6,8 +6,9 @@
 #'     duration of reproduction.
 #' *   **Annulus date/age**: Specifies when and at what age annual growth
 #'     markers (annuli) are formed.
-#' *   **Diffusion strength**: Adjusts `d_over_g`, which determines how much
-#'     individuals of the same age can vary in size.
+#' *   **Diffusion strength**: Adjusts `D_ext`, the coefficient of the
+#'     external-diffusion power law `d(w) = D_ext * w^(n+1)`, which determines
+#'     how much individuals of the same age can vary in size.
 #'
 #' @inheritParams ecopathOtherControl
 #' @family gadget controls
@@ -15,7 +16,7 @@
 ecopathDiffusionControl <- function(input, output, session, params, params_old,
                              flags, ...) {
     observe({
-        req(input$d_over_g, input$spawning_mu, input$spawning_kappa,
+        req(input$D_ext, input$spawning_mu, input$spawning_kappa,
             input$annuli_min_age, input$annuli_date)
         p <- isolate(params())
         sp <- isolate(input$sp)
@@ -34,17 +35,19 @@ ecopathDiffusionControl <- function(input, output, session, params, params_old,
                           value = input$annuli_date)
         updateSliderInput(session, "annuli_min_age",
                           value = input$annuli_min_age)
-        updateSliderInput(session, "d_over_g",
-                          value = input$d_over_g,
-                          min = signif(input$d_over_g / 2, 2),
-                          max = signif((input$d_over_g + 0.1) * 1.5, 2))
+        updateSliderInput(session, "D_ext",
+                          value = input$D_ext,
+                          min = signif(input$D_ext / 2, 2),
+                          max = signif((input$D_ext + 0.1) * 1.5, 2))
 
         p@species_params[[sp, "spawning_mu"]] <- input$spawning_mu
         p@species_params[[sp, "spawning_kappa"]] <- input$spawning_kappa
         p@species_params[[sp, "annuli_min_age"]] <- input$annuli_min_age
         p@species_params[[sp, "annuli_date"]] <- input$annuli_date
-        p@species_params[[sp, "d_over_g"]] <- input$d_over_g
-        p <- setDiffusion(p, reset = TRUE)
+        p@species_params[[sp, "D_ext"]] <- input$D_ext
+        # Update the external-diffusion power law d(w) = D_ext * w^(n+1).
+        n <- p@species_params[[sp, "n"]]
+        p@ext_diffusion[sp, ] <- input$D_ext * p@w^(n + 1)
         tuneParams_update_species(sp, p, params, params_old)
     })
 }
@@ -77,10 +80,10 @@ ecopathDiffusionControlUI <- function(params, input) {
                     min = -1,
                     max = 3,
                     step = 0.01),
-        sliderInput("d_over_g", "Diffusion strength",
-                    value = sp$d_over_g,
-                    min = signif(sp$d_over_g / 2, 2),
-                    max = signif((sp$d_over_g + 0.1) * 1.5, 2),
+        sliderInput("D_ext", "Diffusion strength",
+                    value = sp$D_ext,
+                    min = signif(sp$D_ext / 2, 2),
+                    max = signif((sp$D_ext + 0.1) * 1.5, 2),
                     step = 0.0001)
     )
 }

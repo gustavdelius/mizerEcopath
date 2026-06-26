@@ -61,14 +61,48 @@ vector<Type> calculate_growth(vector<Type> w, vector<Type> ergr,
 
 template<class Type>
 vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
-                         vector<Type> dw)
+                         vector<Type> dw, vector<Type> d)
 {
+    // Solve the diffusion-aware single-species steady-state spectrum, matching
+    // mizer's default upwind scheme (`get_transport_coefs_upwind()` evaluated at
+    // dt = 1 with the fixed egg-density boundary of `get_steady_state_n()`, see
+    // mizer's numerical_details vignette, "Steady-State Solution"). `growth` is
+    // the growth velocity at the bin boundaries g_j, `mort` the bin-averaged
+    // mortality mu_j, `dw` the bin widths and `d` the diffusion rate d_j.
+    // With d == 0 the upper diagonal vanishes and this reduces exactly to the
+    // pure-advection recursion N(j) = N(j-1) g(j-1) / (g(j) + mu(j) dw(j)).
     int size = dw.size();
-    vector<Type> N(size);
-    N(0) = Type(1.0);
-    for (int i = 1; i < size; ++i) {
-        Type denominator = growth(i) + mort(i) * dw(i);
-        N(i) = N(i - 1) * growth(i - 1) / denominator;
+    vector<Type> a(size), b(size), c(size), S(size);
+
+    // Egg boundary: N(0) is fixed to 1; the overall scale is normalised later.
+    a(0) = Type(0.0);
+    b(0) = Type(1.0);
+    c(0) = Type(0.0);
+    S(0) = Type(1.0);
+
+    for (int j = 1; j < size; ++j) {
+        Type inv_dw = Type(1.0) / dw(j);
+        a(j) = -inv_dw * (growth(j - 1) + Type(0.5) * d(j - 1) / dw(j - 1));
+        b(j) = mort(j) + inv_dw * (growth(j)
+                                   + Type(0.5) * d(j) / dw(j)
+                                   + Type(0.5) * d(j) / dw(j - 1));
+        c(j) = (j < size - 1) ?
+            (-inv_dw * Type(0.5) * d(j + 1) / dw(j)) : Type(0.0);
+        S(j) = Type(0.0);
+    }
+
+    // Thomas algorithm (double sweep) for the tridiagonal system.
+    vector<Type> cp(size), sp(size), N(size);
+    cp(0) = c(0) / b(0);
+    sp(0) = S(0) / b(0);
+    for (int j = 1; j < size; ++j) {
+        Type denom = b(j) - a(j) * cp(j - 1);
+        cp(j) = c(j) / denom;
+        sp(j) = (S(j) - a(j) * sp(j - 1)) / denom;
+    }
+    N(size - 1) = sp(size - 1);
+    for (int j = size - 2; j >= 0; --j) {
+        N(j) = sp(j) - cp(j) * N(j + 1);
     }
 
     return N;
@@ -110,6 +144,7 @@ Type objective_function<Type>::operator() ()
     PARAMETER_VECTOR(log_catchability);
     PARAMETER(mu_mat);
     PARAMETER(m);
+    PARAMETER(log_D_ext);
 
     int n_bins = w.size();
     int n_g = yield.size();
@@ -137,7 +172,16 @@ Type objective_function<Type>::operator() ()
 
     vector<Type> growth = calculate_growth(w, ergr, matur, m, n, w_repro_max);
 
-    vector<Type> N = calculate_N(mort, growth, dw);
+    // External diffusion rate as a power law d(w) = D_ext * w^(n+1), matching
+    // the model's `ext_diffusion` slot (getDiffusion()) when use_predation_diffusion
+    // is FALSE.
+    Type D_ext = exp(log_D_ext);
+    vector<Type> d_diff(n_bins);
+    for (int i = 0; i < n_bins; ++i) {
+        d_diff(i) = D_ext * pow(w(i), n + Type(1.0));
+    }
+
+    vector<Type> N = calculate_N(mort, growth, dw, d_diff);
 
     Type unscaled_biomass = 0;
     for (int i = biomass_cutoff_idx; i < n_bins; ++i) {
@@ -240,6 +284,8 @@ Type objective_function<Type>::operator() ()
     REPORT(N);
     REPORT(total_F_mort);
     REPORT(mort);
+    REPORT(growth);
+    REPORT(d_diff);
 
     // Check final biomass again
     Type total_biomass = 0;
