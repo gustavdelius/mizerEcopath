@@ -59,7 +59,9 @@ test_that("alignResource updates kappa in resource_params", {
 
 test_that("alignResource sets initialNResource equal to resource_capacity", {
     p <- alignResource(p_allometric)
-    expect_equal(initialNResource(p), resource_capacity(p))
+    # The two accessors carry different `value_name` attributes, so compare the
+    # underlying values only.
+    expect_equal(initialNResource(p), resource_capacity(p), ignore_attr = TRUE)
 })
 
 test_that("alignResource respects custom w_pp_cutoff argument", {

@@ -23,8 +23,11 @@ test_that("matchConsumption sets p = n for selected species", {
     params_mismatch <- celtic_params
     # Assume we have at least one species; set mismatch for the first selected species
     params_mismatch@species_params$p <- 0.9
+    # The warning should list the selected species whose exponent was changed,
+    # derived from the model rather than hard-coded.
+    changed <- paste(params_mismatch@species_params$species[1:4], collapse = ", ")
     expect_warning(result <- matchConsumption(params_mismatch, species = 1:4),
-                   "Exponent `p` changed for Herring, Cod,")
+                   paste0("Exponent `p` changed for ", changed), fixed = TRUE)
     expect_identical(result@species_params$p[1:4], result@species_params$n[1:4])
     expect_identical(result@species_params$p[5], 0.9)
 })
