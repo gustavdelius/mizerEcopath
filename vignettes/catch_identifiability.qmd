@@ -329,7 +329,7 @@ the low-mortality side, where, as we just saw, even the likelihood cannot
 tell the fits apart.
 
 Note how *mild* the diffusion adjustment is here — `D_ext` moves only from
-about 12 to 14 across the whole four-fold range of mortality, not over
+about 11 to 14 across the whole four-fold range of mortality, not over
 orders of magnitude. The
 trade-off is gentle precisely because, for this stock, the externally
 imposed mortality that we are tuning is a small part of the story: at
@@ -452,12 +452,15 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], FALSE))) |>
 
 Every start converges to the *same* solution — the optimiser is robust to
 its initial values; we cannot make it diverge by starting it badly. But
-look at *which* solution. The selectivity is recovered (`l50` lands on its
-true value from every start), yet the mortality and diffusion are not: every
-run settles on `mu_mat` ≈ 0.72 and `D_ext` ≈ 15, whereas the truth is 0.29
-and 12.4, and the implied production overshoots the true value by about a
-quarter. The optimiser reliably finds a point that reproduces the catch and
-the yield — but it is a point on the degenerate valley, not the truth.
+look at *which* solution. The selectivity is essentially recovered (`l50` ≈
+36 from every start, near the true 35.4), yet the mortality and diffusion
+are not: every run settles on `mu_mat` ≈ 0.73 and `D_ext` ≈ 15, whereas the
+truth is 0.29 and 12.4, and the implied production overshoots the true value
+by about a quarter. The optimiser reliably finds a point that reproduces the
+catch and the yield — but it is a point on the degenerate valley, not the
+truth. (This is genuine: it is not the optimiser stopping short, nor a
+numerical artefact — the catch+yield objective really does take its lowest
+value here rather than at the true parameters.)
 
 **With the production supplied:**
 
@@ -469,7 +472,7 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], TRUE))) |>
 ```
 
 The production constraint changes the destination. Now every start
-converges — again robustly — to `mu_mat` ≈ 0.25, `D_ext` ≈ 12 and a
+converges — again robustly — to `mu_mat` ≈ 0.28, `D_ext` ≈ 12 and a
 production near the true 0.31: close to the true values (not exact, because,
 as we saw, production constrains the mortality only loosely). What changed
 between the two tables is not the *reliability* of convergence but its
@@ -479,6 +482,93 @@ approximately the truth. The danger, then, is not a fragile optimiser that
 needs careful starting values — it is a confident one that returns a clean,
 repeatable answer which, absent the production data, is simply the wrong
 point on the valley.
+
+## A new dataset gives a new answer
+
+The previous section fixed the data and varied the starting point. Now we do
+the reverse: fix a sensible starting point and vary the *data*, by drawing
+fresh random catch samples (multinomial draws) from the same true model. If
+the parameters were well determined, every sample would give essentially the
+same fit. They do not — and *how* they differ tells us exactly what kind of
+problem this is.
+
+```{r}
+#| message: false
+#| warning: false
+# True per-bin catch probabilities (1-cm bins) from the true model.
+true_rate <- p0@initial_n[s, ] * getFMort(p0)[s, ] * p0@dw
+agg <- aggregate(true_rate, list(length = floor(lengths)), sum)
+names(agg)[2] <- "rate"
+agg <- agg[agg$rate > 0 & (agg$length + 1) <= l_max, ]
+true_probs <- agg$rate / sum(agg$rate)
+true_bins  <- agg$length
+
+# Fit one random multinomial catch sample, always from the same start.
+fit_sample <- function(seed, n_total, use_production) {
+    set.seed(seed)
+    cnt <- as.vector(rmultinom(1, n_total, true_probs))
+    catch <- data.frame(species = species, gear = "total",
+                        length = true_bins[cnt > 0], dl = 1, catch = cnt[cnt > 0])
+    pp <- p0
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- 45; gp$l25[gi] <- 41           # same (mediocre) start every time
+    gear_params(pp) <- gp
+    if (use_production) {
+        spp <- species_params(pp); spp$production_observed[s] <- prod_true
+        species_params(pp) <- spp
+    }
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch, yield_lambda = 1,
+        production_lambda = if (use_production) 1 else 0, map = list(m = factor(NA))))
+    spf <- species_params(fit)[s, ]
+    c(mu_mat = spf$mu_mat, D_ext = spf$D_ext)
+}
+
+seeds <- 1:6
+big_noprod   <- t(sapply(seeds, fit_sample, n_total = 1e5,  use_production = FALSE))
+small_noprod <- t(sapply(seeds, fit_sample, n_total = 2000, use_production = FALSE))
+big_prod     <- t(sapply(seeds, fit_sample, n_total = 1e5,  use_production = TRUE))
+```
+
+```{r}
+#| fig-cap: "Fitted (mu_mat, D_ext) for six random catch datasets drawn from the same true model (star). Without production, a large sample (filled blue) clusters tightly but away from the truth (bias), and a small sample (open grey) scatters widely along the valley (variance). With production (red triangles) every dataset lands near the truth."
+plot(NULL, xlim = c(0, 1.5), ylim = c(9, 20),
+     xlab = "fitted mu_mat", ylab = "fitted D_ext",
+     main = "Six random datasets from one true model")
+points(small_noprod[, 1], small_noprod[, 2], pch = 1,  col = "grey45", cex = 1.4, lwd = 2)
+points(big_noprod[, 1],   big_noprod[, 2],   pch = 19, col = "blue")
+points(big_prod[, 1],     big_prod[, 2],     pch = 17, col = "red")
+points(sps$mu_mat, sps$D_ext, pch = 8, cex = 2.2, lwd = 2)
+legend("topright", bty = "n",
+       pch = c(8, 19, 1, 17), col = c("black", "blue", "grey45", "red"),
+       pt.cex = c(1.5, 1, 1.4, 1),
+       legend = c("truth", "no production, n = 1e5",
+                  "no production, n = 2000", "with production, n = 1e5"))
+```
+
+Each fit still converges cleanly — the optimiser is no less reliable here
+than before. But the answer it returns depends on the data, in two distinct
+ways:
+
+- **Variance.** With a smaller sample (open grey) the fits scatter widely
+  along the valley — `mu_mat` ranges over more than a factor of two across
+  the six datasets, with `D_ext` tracking it. This spread is sampling variability,
+  and it is large *because* the likelihood is so flat: a little noise tilts a
+  nearly level surface into a minimum somewhere new. It shrinks as the sample
+  grows (the filled blue points, at fifty times the sample size, cluster much
+  more tightly).
+- **Bias.** But the blue cluster, tight as it is, sits at `mu_mat` ≈ 0.73,
+  not at the truth (the star at 0.29). That offset is *not* sampling noise:
+  it does not shrink with sample size, because the catch+yield objective is
+  genuinely minimised away from the true value. More data buys you precision
+  around the wrong answer.
+
+Throughout, the selectivity and catchability (not plotted) barely move from
+dataset to dataset — it is specifically the mortality–diffusion pair that is
+unstable. And **the production constraint removes both problems at once**
+(red triangles): every dataset lands tightly near the truth. Production
+supplies the missing curvature, turning the flat valley into a genuine
+basin, so the estimator becomes both low-variance and nearly unbiased.
 
 ## Takeaways
 
@@ -503,5 +593,10 @@ point on the valley.
   *not* evidence that the parameters are identified: without production the
   optimiser repeatably returns the wrong mortality and diffusion. Robustness
   of convergence and correctness of the answer are different things.
+- A **new dataset gives a new answer**. Without production the fitted
+  mortality and diffusion scatter from sample to sample (variance, growing as
+  the sample shrinks) around a value that is itself off the truth (bias, not
+  cured by more data). Production removes both, clustering every dataset near
+  the true values.
 ```
 
