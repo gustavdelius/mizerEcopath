@@ -1,4 +1,37 @@
 # test-matchCatch.R
+#
+# Tests for matchCatch(), which fits gear selectivity, catchability and
+# mortality so the model reproduces observed catch size distributions,
+# yield and production.
+#
+# Input validation:
+#   - errors when the catch contains a gear not in the model
+#   - errors when catch data is missing required columns
+#   - warns on non-existent species and errors when none are selected
+#
+# Core fitting behaviour:
+#   - runs without error for a single species
+#   - recovers a model-generated catch size distribution
+#   - fits only the catch's gears, leaving other gears untouched
+#   - updates gear selectivity parameters for the selected species
+#   - preserves biomass for the adjusted species
+#   - handles multiple species
+#   - works with multiple gears, incl. double_sigmoid_length
+#
+# Optional / free parameters:
+#   - respects the yield_lambda parameter
+#   - fits m when freed via map (m > n)
+#   - moves D_ext from its starting value when free
+#   - mu_mat_lim caps the optimised external mortality
+#   - map fixes a specified parameter at its initial value
+#
+# Missing-data and edge cases:
+#   - warns and returns params unchanged with no catch and no production
+#   - still runs when yield_observed is missing
+#   - still runs when production_observed is missing
+#   - with empty catch, matches only yield and production (selectivity
+#     left unchanged)
+
 library(testthat)
 library(mizer)
 
