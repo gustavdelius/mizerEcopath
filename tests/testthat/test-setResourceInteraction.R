@@ -21,8 +21,10 @@ test_that("setResourceInteraction works", {
     # Apply the function
     params_new <- setResourceInteraction(params)
 
-    # Test resource level is preserved
-    expect_equal(resource_level(params_new), initial_resource)
+    # Test resource level is preserved. `resource_level()` carries a `params`
+    # attribute referencing the (legitimately changed) params object, so compare
+    # the values only.
+    expect_equal(resource_level(params_new), initial_resource, ignore_attr = TRUE)
 
     # Test total encounter rate is preserved
     expect_equal(getEncounter(params_new), getEncounter(params), ignore_attr = TRUE)

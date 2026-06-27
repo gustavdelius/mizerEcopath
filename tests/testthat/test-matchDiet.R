@@ -5,7 +5,9 @@ test_that("matchDiet throws error for non-MizerParams input", {
 
 test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params unchanged", {
     dm <- getDietMatrix(celtic_params)
-    result <- matchDiet(celtic_params, diet_matrix = dm)
+    # makeInteracting() warns that Hake/Megrim hit a zero external encounter
+    # rate; this is expected for this model and documented in ?matchDiet.
+    result <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm))
     result@time_modified <- celtic_params@time_modified
     expect_equal(result, celtic_params)
 
@@ -29,7 +31,22 @@ test_that("matchDiet achieves the target diet matrix", {
     dm_target <- dm
     dm_target[, sp[2]] <- dm_target[, sp[2]] * 0.8
 
-    result <- matchDiet(celtic_params, diet_matrix = dm_target)
+    # Some predators may require a negative external encounter rate to reach the
+    # target diet; makeInteracting() clamps that to zero, so an exact match is
+    # impossible for them. Capture which predators are clamped so they can be
+    # excluded from the comparison rather than hard-coding species names.
+    clamped <- character(0)
+    result <- withCallingHandlers(
+        matchDiet(celtic_params, diet_matrix = dm_target),
+        warning = function(w) {
+            m <- regmatches(conditionMessage(w),
+                             regexec("negative external encounter rate for (.+?)\\.",
+                                     conditionMessage(w)))[[1]]
+            if (length(m) == 2) clamped <<- c(clamped, m[2])
+            invokeRestart("muffleWarning")
+        }
+    )
+    feasible <- setdiff(sp, clamped)
 
     # Expected absolute flows: normalise rows of dm_target then scale by Q
     Q <- getConsumption(celtic_params)
@@ -37,7 +54,8 @@ test_that("matchDiet achieves the target diet matrix", {
         dm_target[sp, sp] / rowSums(dm_target[sp, , drop = FALSE]),
         1, Q, "*"
     )
-    expect_equal(getDietMatrix(result)[sp, sp], expected, tolerance = 1e-6)
+    expect_equal(getDietMatrix(result)[feasible, sp], expected[feasible, ],
+                 tolerance = 1e-6)
 
     # Same as above but with North Sea model
     params <- NS_params
@@ -127,7 +145,7 @@ test_that("matchDiet handles a predator whose diet is entirely non-species", {
     # Zero out all species-species entries for the first predator so it eats
     # only "other" prey; theta should become 0 (not NaN) for that row.
     dm[sp[1], sp] <- 0
-    result <- matchDiet(celtic_params, diet_matrix = dm)
+    result <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm))
     expect_equal(interaction_matrix(result)[sp[1], ], setNames(rep(0, length(sp)), sp))
 })
 
@@ -148,8 +166,8 @@ test_that("matchDiet aggregates non-species prey columns into other", {
             exotic_prey_B = dm[, col] * 0.4,
             dm[, non_sp_cols[-1], drop = FALSE]
         )
-        result_original <- matchDiet(celtic_params, diet_matrix = dm)
-        result_split    <- matchDiet(celtic_params, diet_matrix = dm_split)
+        result_original <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm))
+        result_split    <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm_split))
         result_split@time_modified <- result_original@time_modified
         expect_equal(result_original, result_split)
     } else {
@@ -163,8 +181,8 @@ test_that("matchDiet normalises rows so scale of input does not matter", {
     # should be identical because rows are normalised internally.
     scale_factors <- seq(0.5, 2, length.out = nrow(dm))
     dm_scaled <- dm * scale_factors  # recycles row-wise (column-major order)
-    result_original <- matchDiet(celtic_params, diet_matrix = dm)
-    result_scaled   <- matchDiet(celtic_params, diet_matrix = dm_scaled)
+    result_original <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm))
+    result_scaled   <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm_scaled))
     result_scaled@time_modified <- result_original@time_modified
     expect_equal(result_original, result_scaled)
 })

@@ -76,7 +76,14 @@ update_params <- function(params, species = 1, pars, data) {
     gps[,'l25_right'] <- ifelse(gps$sel_func=='double_sigmoid_length', gp_res$l25_right, NA)
     gps[,'catchability'] <- gp_res$catchability
 
-    gear_params(params)[matched_idx, ] <- gps
+    # Only write back columns that exist in the model's gear_params. The
+    # l50_right / l25_right columns are only present when a double_sigmoid_length
+    # gear is in use; for other selectivity functions they are not needed, and
+    # writing them would trigger a "provided N variables to replace M" warning.
+    gpt <- gear_params(params)
+    cols <- intersect(names(gpt), names(gps))
+    gpt[matched_idx, cols] <- gps[, cols]
+    gear_params(params) <- gpt
 
     # Getting the "m" value
     sps$m <- pars[["m"]]

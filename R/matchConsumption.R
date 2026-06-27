@@ -51,6 +51,14 @@ matchConsumption <- function(params, species = NULL) {
         return(params)
     }
 
+    # Record the encounter and feeding level before any changes so that the
+    # external encounter rate can later be adjusted to preserve the energy
+    # available for growth and reproduction. Neither quantity depends on the
+    # metabolic rate or the exponent `p`, so they are unaffected by the changes
+    # made below.
+    E_old <- getEncounter(params)[sp_select, , drop = FALSE]
+    f_old <- getFeedingLevel(params)[sp_select, , drop = FALSE]
+
     # Set p = n for selected species
     wrong <- !is.null(sp$p[sp_select]) & !is.na(sp$p[sp_select]) &
         sp$p[sp_select] != sp$n[sp_select]
@@ -104,13 +112,29 @@ matchConsumption <- function(params, species = NULL) {
     metab_new <- sweep(metab_unit, 1, ks, "*")
     params@metab[sp_select, ] <- metab_new
 
-    # Increase the encounter rate to compensate
-    # to ext_encounter + (metab_new - metab_old) / alpha
-    ext_en <- ext_encounter(params)
+    # Adjust the external encounter rate to preserve the energy available for
+    # growth and reproduction. The realised intake is alpha * (1 - f) * E, where
+    # the feeding level f = E / (E + m) depends on the encounter rate E and the
+    # maximum intake m = h * w^n. A naive `ext_encounter + met_diff / alpha`
+    # adjustment only preserves alpha * E - metab, not alpha * (1 - f) * E -
+    # metab, so it fails whenever the feeding level is non-negligible. Instead we
+    # solve for the new total encounter rate E_new that keeps the realised intake
+    # consistent with the change in metabolic loss.
     met_diff <- metab_new - metab_old
     alpha_vec <- sp$alpha[sp_select]
-    adj_mat <- sweep(met_diff, 1, alpha_vec, "/")
-    ext_en[sp_select, ] <- ext_en[sp_select, ] + adj_mat
+    # Maximum intake m from f = E / (E + m)  =>  m = E * (1 - f) / f
+    m <- E_old * (1 - f_old) / f_old
+    # Target realised intake: (1 - f_old) * E_old + met_diff / alpha
+    target <- (1 - f_old) * E_old + sweep(met_diff, 1, alpha_vec, "/")
+    # Solve (1 - f_new) * E_new = target, i.e. m * E / (E + m) = target.
+    E_new <- target * m / (m - target)
+    # Where there is no satiation (f_old == 0, m == Inf) the realised intake
+    # equals the encounter rate, so E_new is simply the target.
+    no_sat <- !is.finite(m)
+    E_new[no_sat] <- target[no_sat]
+
+    ext_en <- ext_encounter(params)
+    ext_en[sp_select, ] <- ext_en[sp_select, ] + (E_new - E_old)
     ext_encounter(params) <- ext_en
 
     return(params)

@@ -201,9 +201,18 @@ test_that("matchCatch respects the yield_lambda parameter", {
 })
 
 test_that("matchCatch handles invalid species inputs gracefully", {
+    # Muffle the unrelated `erepro` adjustment warning emitted while fitting Cod
+    # so that only the invalid-species warning is asserted here.
     expect_warning(
-        matchCatch(celtic_params, species = c("Cod", "NotASpecies"),
-                   catch = celtic_catch),
+        withCallingHandlers(
+            matchCatch(celtic_params, species = c("Cod", "NotASpecies"),
+                       catch = celtic_catch),
+            warning = function(w) {
+                if (!grepl("do not exist", conditionMessage(w))) {
+                    invokeRestart("muffleWarning")
+                }
+            }
+        ),
         "The following species do not exist: NotASpecies."
     )
 
