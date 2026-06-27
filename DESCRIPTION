@@ -11,7 +11,7 @@ License: GPL-3
 URL: https://github.com/gustavdelius/mizerEcopath
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
-    mizer (>= 3.0.0),
+    mizer (>= 3.1.0),
     mizerExperimental (>= 3.0.0),
     R (>= 3.5)
 Imports:
