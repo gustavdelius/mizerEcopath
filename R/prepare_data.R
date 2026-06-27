@@ -133,7 +133,16 @@ prepare_data <- function(params, species = 1, catch,
         w_bin_widths <- diff(w_bin_boundaries)
         w <- w(params)
         w_min <- max(w[w <= min(w_bin_boundaries)], sps$w_min)
-        w_max <- min(w[w >= max(w_bin_boundaries)], sps$w_max)
+        # The single-species steady-state spectrum must be solved on the same
+        # grid that mizer's `steadySingleSpecies()` (`get_steady_state_n()`)
+        # uses, i.e. the full weight grid extending *above* the species' w_max.
+        # With diffusion present, individuals spread to sizes larger than w_max,
+        # so truncating the solver grid at w_max imposes a spurious zero-flux
+        # wall there and gives a steeper upper tail than mizer, biasing the
+        # fitted mortality and diffusion. We therefore extend the solver grid to
+        # the top of the model grid; the catch likelihood still only uses the
+        # observed bins (all <= w_max).
+        w_max <- max(w)
     }
 
     w <- w(params)
