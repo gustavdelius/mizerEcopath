@@ -1,0 +1,656 @@
+---
+title: "How precisely does the catch size distribution determine the parameters?"
+author: "Gustav Delius"
+format:
+  html:
+    toc: true
+    html-math-method: mathjax
+vignette: >
+  %\VignetteIndexEntry{How precisely does the catch size distribution determine the parameters?}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                      fig.width = 7, fig.height = 4.2)
+```
+
+## The question
+
+`matchCatch()` adjusts gear selectivity, catchability, mortality and the
+growth-diffusion coefficient so that the model reproduces an observed catch
+size distribution. A natural hope is that fitting the catch recovers the
+*true* values of those parameters. How well does it?
+
+The answer turns out to be uneven, and in an instructive way. Two of the
+parameters — the gear selectivity and the catchability — are pinned down
+sharply. The other two — mortality and diffusion — are recovered only
+*loosely*: the fit is essentially unbiased (a perfect, noise-free catch
+recovers the truth), but it is imprecise, because mortality and diffusion
+trade off against each other along a shallow valley in which the catch and
+yield barely change. At the sample sizes available in practice that
+imprecision is large. The single most effective remedy is an independent
+estimate of **production**, which we usually lack — so this vignette looks
+in particular at the case that matters most: **the total yield is known but
+the production is not.**
+
+This is not a weakness of the optimiser; it is a property of how much
+information the catch shape carries. The test
+`"matchCatch recovers a model-generated catch size distribution"` checks
+only that the *fitted catch distribution* matches the observed one, and its
+comment warns that "the gear and mortality parameters themselves are not
+uniquely recovered". This vignette builds intuition for *why*, through
+examples.
+
+## The catch is a product, but the population is not free
+
+The model's predicted catch density at weight $w$ is
+
+$$
+C(w) \;=\; N(w)\, F(w),
+\qquad F(w) = q\, S(w),
+$$
+
+where $N(w)$ is the steady-state number density, $S(w)$ the gear
+selectivity (between 0 and 1) and $q$ the catchability. This is exactly
+what the package computes — in `plot_catch()` the modelled catch is
+`initial_n * getFMort`.
+
+It would be glib to say "the catch is a product, so you cannot recover its
+factors", because the population $N$ is **not** a free factor we may choose
+at will. In the steady state, $N(w)$ is determined by the biology: it is
+the solution of the size-structured balance between
+
+- **growth** $g(w)$ — the deterministic rate at which an individual gains
+  weight,
+- **diffusion** $d(w) = D_{\text{ext}}\, w^{\,n+1}$ — the stochastic spread
+  in growth, so that individuals of the same age reach a *range* of sizes,
+- **mortality** $\mu(w)$ — which removes individuals and steepens the
+  spectrum.
+
+The real question is therefore sharper: given the catch shape, how well can
+we disentangle *selectivity* from the *biological parameters that shape the
+spectrum* — chiefly mortality and diffusion? Selectivity comes out cleanly.
+Mortality and diffusion do not, and the reason is that **they both reshape
+the upper tail of $N(w)$ in nearly the same way, so the catch shape responds
+mostly to their combined effect and only weakly to the difference between
+them.** That weak response is enough to recover them from a perfect catch,
+but easily swamped by noise in a real one.
+
+## A look at the model
+
+Throughout we use a single-gear Celtic Sea model and generate catch data
+from it, so that the truth is known and we can ask whether fitting the
+catch recovers it. The helpers below build that model, sample its predicted
+catch into 1-cm length bins, and let us set the diffusion coefficient.
+
+```{r}
+#| message: false
+#| warning: false
+library(mizerEcopath)
+
+# Collapse celtic_params to one gear per species.
+make_single_gear <- function() {
+    params <- celtic_params
+    gp <- gear_params(params)
+    keep <- do.call(rbind, lapply(split(gp, gp$species), function(g) {
+        row <- g[which.max(g$yield_observed), , drop = FALSE]
+        row$gear <- "total"
+        row$yield_observed <- sum(g$yield_observed)
+        row
+    }))
+    rownames(keep) <- paste(keep$species, keep$gear, sep = ", ")
+    gear_params(params) <- keep
+    initial_effort(params) <- 1
+    params
+}
+
+# Expected catch in each 1-cm length bin: the integral of the catch density
+# N*F over the bin. We use the same piecewise-linear interpolation of the
+# density that matchCatch()'s likelihood uses internally, so that the
+# synthetic data is *self-consistent* with the model. (A cruder histogram —
+# assigning each weight bin to floor(length) — disagrees with the likelihood's
+# integration by a few percent, and because the mortality-diffusion valley is
+# so flat that small discrepancy is enough to shift the fitted mortality
+# substantially. Self-consistent binning is what lets a perfect catch recover
+# the truth.)
+model_catch_rate <- function(params, species, bins) {
+    sp <- species_params(params); s <- which(sp$species == species); sps <- sp[s, ]
+    w <- params@w
+    dens <- approxfun(w, params@initial_n[s, ] * getFMort(params)[s, ], rule = 2)
+    vapply(bins, function(L) {
+        lo <- sps$a * L^sps$b; hi <- sps$a * (L + 1)^sps$b
+        grid <- sort(unique(c(w[w > lo & w < hi], lo, hi)))
+        v <- dens(grid); sum(diff(grid) * (head(v, -1) + tail(v, -1)) / 2)
+    }, numeric(1))
+}
+
+# Generate model catch data over 1-cm bins (integer counts summing to ~n_total).
+model_catch_data <- function(params, species, n_total = 1e5) {
+    sp <- species_params(params); s <- sp$species == species; sps <- sp[s, ]
+    w <- params@w; dens <- params@initial_n[s, ] * getFMort(params)[s, ]
+    l_max <- (sps$w_max / sps$a)^(1 / sps$b)
+    bins  <- seq(floor((min(w[dens > 0]) / sps$a)^(1 / sps$b)), floor(l_max) - 1)
+    rate  <- model_catch_rate(params, species, bins)
+    bins  <- bins[rate > 0]; rate <- rate[rate > 0]
+    count <- round(rate / sum(rate) * n_total)
+    data.frame(species = species, gear = "total", length = bins[count > 0],
+               dl = 1, catch = count[count > 0])
+}
+
+# The model's predicted catch density (a PDF) over given length bins.
+model_catch_pdf <- function(params, species, bins) {
+    r <- model_catch_rate(params, species, bins)
+    r / sum(r)
+}
+
+# Set the diffusion coefficient D_ext and recompute the (diffusion-aware)
+# steady state, holding mortality, growth and selectivity fixed.
+set_D_ext <- function(params, species, D) {
+    sp <- species_params(params); s <- sp$species == species
+    sp$D_ext[s] <- D; species_params(params) <- sp
+    params@ext_diffusion[s, ] <- D * params@w^(sp$n[s] + 1)
+    steadySingleSpecies(params, species = species)
+}
+
+species <- "Haddock"
+# Solve the single-species steady state, the spectrum matchCatch() reconstructs,
+# so the synthetic catch is one the fit's solver can reproduce exactly.
+p0      <- steadySingleSpecies(make_single_gear(), species = species)
+s       <- species_params(p0)$species == species
+sps     <- species_params(p0)[s, ]
+lengths <- (p0@w / sps$a)^(1 / sps$b)   # length (cm) of each weight bin
+
+# Make the experiment self-consistent: the "observed" yield is this model's own
+# yield, not the celtic multispecies value carried over by make_single_gear().
+# The catch shape barely constrains the mortality, so an inconsistent yield
+# target would pull the recovered mortality off the truth.
+gp0 <- gear_params(p0); gi0 <- which(gp0$species == species)
+gp0$yield_observed[gi0] <- getYield(p0)[s]
+gear_params(p0) <- gp0
+```
+
+## How diffusion shapes the spectrum
+
+Diffusion is the parameter readers tend to have least intuition for, so it
+is worth pinning down with a measurement.
+
+Without diffusion ($D_{\text{ext}} = 0$) every individual of a cohort
+follows the same deterministic growth curve. As a fish matures it channels a
+growing share of its surplus energy into reproduction, so its growth *slows
+sharply* well short of the maximum size $w_{\max}$. For this Haddock model
+growth has all but stalled by about 56 cm — only a few percent of its rate
+at maturity — whereas $w_{\max}$ corresponds to 112 cm. With no diffusion,
+then, individuals creep past 56 cm only very slowly while mortality keeps
+removing them, so the spectrum *falls away sharply* there and the upper size
+range is nearly empty.
+
+Diffusion lets growth rates vary between individuals: a cohort *spreads
+out* into a range of sizes as it ages (this is what the age-fitting
+machinery in `project_diffusion()` exploits; see the *Diffusion*
+vignette). Crucially, it carries some individuals *through* the near-stall
+and on towards $w_{\max}$. The larger the diffusion, the more individuals
+populate that upper tail. So **more diffusion means *more* large fish** — it
+is diffusion, not deterministic growth, that fills the large-size end of the
+spectrum.
+
+We can see it directly in the steady-state spectra. Holding mortality and
+selectivity fixed, we recompute the spectrum at three diffusion levels and
+rescale each to the **same total biomass**, so the comparison is fair: any
+difference is then in how that fixed biomass is *distributed* over sizes,
+not in how much there is. We plot biomass density, so the area under each
+curve is the (equal) total biomass. At low diffusion the biomass is bottled
+up below ~56 cm, where growth stalls (a sharp drop there); raising the
+diffusion spreads it out into the large-size tail:
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-cap: "Steady-state biomass density at three diffusion coefficients, each rescaled to the same total biomass (equal area under the curve), with mortality and selectivity held fixed. At low `D_ext` the spectrum drops away sharply near ~56 cm, where growth stalls; larger `D_ext` fills the large-size tail. More diffusion means more large fish."
+l_mat <- (sps$w_mat / sps$a)^(1 / sps$b)   # length at maturity (cm)
+l_max <- (sps$w_max / sps$a)^(1 / sps$b)   # maximum length (cm)
+dl   <- p0@dw / (sps$a * sps$b * lengths^(sps$b - 1))  # width of each bin (cm)
+Ds   <- c(0.1, 10, 100)
+cols <- c("blue", "black", "red")
+rng  <- lengths >= 0.5 * l_mat & lengths <= 0.97 * l_max
+
+# Biomass density in length, rescaled so the total biomass equals 1.
+biomass_density <- function(D) {
+    pp <- set_D_ext(p0, species, D)
+    Bm <- pp@initial_n[s, ] * p0@w * p0@dw   # biomass in each bin
+    (Bm / dl) / sum(Bm)
+}
+beta <- lapply(Ds, biomass_density)
+ymax <- max(vapply(beta, function(b) max(b[rng]), numeric(1)))
+
+plot(NULL, xlim = c(0.5 * l_mat, 0.97 * l_max), ylim = c(0, ymax),
+     xlab = "Length [cm]", ylab = "Biomass density (total biomass = 1)",
+     main = "Biomass spectrum at equal total biomass")
+for (i in seq_along(Ds)) lines(lengths[rng], beta[[i]][rng], col = cols[i], lwd = 2.5)
+abline(v = l_mat, lty = 3); text(l_mat, ymax, " maturity", adj = c(0, 1), cex = 0.8)
+legend("topright", paste0("D_ext = ", Ds), col = cols, lwd = 2.5, bty = "n")
+```
+
+The effect on the catch follows directly. Raising `D_ext` lets the catch
+reach larger sizes: with little diffusion almost nothing is caught above
+60 cm, while at high diffusion a sixth of the catch is, and the mean catch
+length climbs:
+
+```{r}
+#| message: false
+#| warning: false
+diff_demo <- do.call(rbind, lapply(c(1e-3, 0.1, 1, 10, 100), function(D) {
+    pp <- set_D_ext(p0, species, D)
+    cw <- pp@initial_n[s, ] * getFMort(pp)[s, ] * pp@dw
+    cw <- cw / sum(cw)                       # normalised catch over weight
+    data.frame(D_ext                = D,
+               frac_catch_over_60cm = round(sum(cw[lengths > 60]), 3),
+               mean_catch_length_cm = round(sum(cw * lengths), 1))
+}))
+print(diff_demo, row.names = FALSE)
+```
+
+Mortality and diffusion therefore push the large-fish abundance in
+*opposite* directions: more mortality removes large fish, more diffusion
+supplies them. That is the root of the trade-off. To keep the catch *almost*
+unchanged while *raising* mortality (which removes large fish), the fit can
+simply *raise* the diffusion (which puts them back), and vice versa. Because
+the catch reveals mostly the net upper-tail shape (filtered through
+selectivity), it constrains the two only loosely as a pair: a wide range of
+mortality–diffusion combinations, rising and falling together, fit nearly
+equally well. The combinations are not *exactly* equivalent — the catch does
+faintly prefer the true pair — but the preference is slight, so it takes a
+very clean catch to act on it.
+
+## Yield known, production unknown
+
+This is the situation we usually face: the total landed weight of a stock
+is recorded, but an independent estimate of its production is not. What can
+we then learn, and what stays out of reach?
+
+We hold mortality (`mu_mat`) fixed at a range of values spanning a factor
+of four around the truth, and at each one fit the catch shape **and** the
+yield, but supply **no** production penalty (`production_lambda = 0`). The
+gear selectivity, catchability and diffusion are free. If mortality were
+identifiable from the catch and yield, only the true value would fit well.
+
+```{r}
+#| message: false
+#| warning: false
+catch_obs <- model_catch_data(p0, species)
+obs_pdf   <- catch_obs$catch / sum(catch_obs$catch)
+mu0       <- sps$mu_mat
+
+mus <- c(0.5, 0.75, 1, 1.5, 2) * mu0
+fits <- lapply(mus, function(mu) {
+    pp <- p0
+    sp <- species_params(pp); sp$mu_mat[s] <- mu; species_params(pp) <- sp
+    suppressWarnings(matchCatch(
+        pp, species = species, catch = catch_obs,
+        yield_lambda = 1, production_lambda = 0,           # yield only
+        map = list(m = factor(NA), mu_mat = factor(NA))))  # mortality fixed
+})
+
+summary_tab <- do.call(rbind, Map(function(mu, fit) {
+    gpf <- gear_params(fit); gpf <- gpf[gpf$species == species, ]
+    spf <- species_params(fit)[s, ]
+    pm  <- model_catch_pdf(fit, species, catch_obs$length)
+    tv  <- 0.5 * sum(abs(obs_pdf - pm))
+    nll <- -sum(catch_obs$catch * log(pmax(pm, 1e-300)))  # catch-shape NLL
+    data.frame(
+        mu_mat       = round(mu, 3),
+        l50          = round(gpf$l50, 1),
+        catchability = round(gpf$catchability, 3),
+        D_ext        = signif(spf$D_ext, 3),
+        TV_distance  = round(tv, 4),
+        NLL          = nll,
+        yield        = signif(getYield(fit)[s], 3),
+        production   = signif(getProduction(fit)[species], 3))
+}, mus, fits))
+# Show the catch-shape NLL relative to the best-fitting row; the sample size
+# is the same in every row, so these differences are directly comparable.
+summary_tab$NLL <- round(summary_tab$NLL - min(summary_tab$NLL), 1)
+print(summary_tab, row.names = FALSE)
+```
+
+Three things stand out, and together they tell the whole story.
+
+**The yield fixes the catchability.** Across the whole range the matched
+yield sits on the observed value and the catchability barely moves. The
+total landed mass $\int C(w)\,w\,dw = q\!\int S(w)\,N(w)\,w\,dw$ depends
+directly on $q$, so requiring the model to reproduce the observed yield
+determines $q$ — the one thing the *shape* alone leaves undetermined. This
+is the part of the problem that yield data solve cleanly.
+
+**The catch shape constrains the mortality only loosely.** Every row
+reproduces the catch distribution closely — the total-variation distances
+are all tiny — even though the assumed mortality ranges over a factor of
+four. The fitted catch curves lie almost on top of one another:
+
+```{r}
+#| fig-cap: "Catch densities fitted at mortality assumptions spanning a factor of four, with the yield matched but no production constraint. The observed catch (grey bars) is reproduced almost equally well by all of them."
+heights <- obs_pdf
+plot(NULL, xlim = range(catch_obs$length), ylim = c(0, max(heights) * 1.05),
+     xlab = "Length [cm]", ylab = "Relative catch density",
+     main = paste(species, "— one catch, a range of mortalities"))
+rect(catch_obs$length - 0.5, 0, catch_obs$length + 0.5, heights,
+     col = "grey85", border = NA)
+cols <- c("blue", "cyan4", "black", "orange", "red")
+for (i in seq_along(fits)) {
+    lines(catch_obs$length, model_catch_pdf(fits[[i]], species, catch_obs$length),
+          col = cols[i], lwd = 2)
+}
+legend("topright", legend = paste0("mu_mat = ", round(mus, 2)),
+       col = cols, lwd = 2, bty = "n")
+```
+
+The `TV_distance` column is the total-variation distance between the
+observed and fitted catch — a readable measure of shape mismatch. The `NLL`
+column is the catch-shape negative log-likelihood, the quantity
+`matchCatch()` actually minimises, shown relative to the best-fitting row.
+(Its absolute level is a large constant that every row carries; only the
+differences matter, and since the sample size is the same in every row they
+are directly comparable.) The likelihood tells a one-sided story that the
+uniformly tiny total-variation distances hide. It has a shallow minimum
+right at the true mortality (essentially tied with the value just below),
+and from half the true value up to it the NLL varies by only a few units;
+but above the truth it climbs by tens of units. So the catch pins the mortality mainly
+*from above*: it clearly rules out values much larger than the truth, while
+distinguishing the truth from lower values only feebly. That lower side is
+what the yield and production must resolve. Note, though, that this is on a
+likelihood scale: these "couple of units" are differences in the
+log-likelihood of a 100,000-fish sample, so they are not negligible — they
+are exactly what lets a clean catch recover the truth, as we will see.
+
+**Diffusion is what absorbs the difference.** Look at the `D_ext` column:
+as the assumed mortality *rises*, the fitted diffusion *rises* with it.
+This is exactly the trade-off of the previous section. A higher mortality
+removes large fish; the fit simply raises the diffusion to supply more, so
+the upper tail of the catch is restored. The two move *together*, sliding
+along a valley in which catch and yield stay almost constant — most flatly
+on the low-mortality side, where even the likelihood barely separates the
+fits.
+
+Note how *mild* the diffusion adjustment is here — `D_ext` moves only from
+about 11 to 14 across the whole four-fold range of mortality, not over
+orders of magnitude. A large change in assumed mortality is offset by only a
+small change in diffusion, and yet leaves the catch almost unchanged: the
+catch is simply not very sensitive to *where*, along this trade-off, the
+upper tail of the spectrum comes from. That insensitivity is the whole
+difficulty in one sentence.
+
+## The one quantity that does respond: production
+
+The last column is the one that moves with mortality. The **production** —
+the rate at which biomass is removed by mortality — climbs steadily across
+the fits, while the yield stays pinned to its observed value:
+
+```{r}
+#| fig-cap: "With the yield matched but production unconstrained, the fitted yield (open circles) is flat across mortality assumptions, while the implied production (filled circles) rises. Yield carries no information about mortality; production carries some."
+op <- par(mar = c(4, 4, 2, 4))
+plot(summary_tab$mu_mat, summary_tab$production, type = "b", pch = 19,
+     xlab = "assumed mu_mat", ylab = "production", main = "")
+par(new = TRUE)
+plot(summary_tab$mu_mat, summary_tab$yield, type = "b", pch = 1, lty = 2,
+     axes = FALSE, xlab = "", ylab = "", ylim = c(0, max(summary_tab$yield) * 1.3))
+axis(4); mtext("yield", side = 4, line = 2.5)
+legend("topleft", c("production", "yield"), pch = c(19, 1), lty = c(1, 2),
+       bty = "n")
+par(op)
+```
+
+So if you calibrate to **yield only**, the result is:
+
+| Quantity | Status after a yield-only fit |
+|----------|-------------------------------|
+| Gear selectivity ($l_{50}, l_{25}$) | **Well determined** by the catch shape |
+| Catchability $q$ | **Well determined** by the yield |
+| Mortality (`mu_mat`) | **Unbiased but imprecise** — recovered on average, bounded from above by the catch, loose below; trades off against diffusion |
+| Diffusion (`D_ext`) | **Unbiased but imprecise** — trades off against mortality; precision falls as the sample shrinks |
+| Production | Follows the imprecise mortality |
+
+The model you get back will reproduce the observed catch and yield
+faithfully, and its selectivity and catchability can be trusted. Its
+mortality and diffusion are correct *on average* but sit on a shallow valley
+along which the catch and yield hardly change, so any single fit can be far
+off — by a factor of two or more at realistic sample sizes, as we will see.
+Production moves along that valley, so it is the natural quantity to bring in
+if you want to sharpen the mortality.
+
+## What closes the gap
+
+Adding an observed production to the objective (`production_lambda > 0`)
+gives the optimiser a constraint that *does* vary along the valley, so it
+sharpens the mortality — and with it the diffusion. The catch and yield pin
+the mortality only weakly, through the faint downhill tilt of the valley
+floor: that tilt is enough on noise-free data (as the next section shows) but
+little defence once sampling noise enters, whereas production grips the
+mortality directly. This is why `matchCatch()` matches all three: catch
+shape, yield and production.
+
+It is worth being honest about how much this buys you. An *accurate*
+production pins the mortality far more tightly — we will see the per-dataset
+scatter shrink severalfold. But the leverage is limited: here production
+changes by only about 20% across a four-fold change in mortality, so the
+inference runs the other way too — a modest *error* in the observed
+production maps into a sizeable error in the inferred mortality. When even
+production is uncertain, the most reliable course is often to fix the
+diffusion (or the mortality) at an externally informed value rather than to
+ask the fit to discover it.
+
+## Does the optimiser find the true parameters?
+
+So far we have probed the objective by hand, holding mortality fixed. A
+separate, practical question is what the optimiser itself does when set
+loose: does it recover the parameters that generated the data, and does the
+answer depend on where it starts? We use here the model's *exact* predicted
+catch — the noise-free expected counts of `model_catch_data()`, with no
+sampling scatter — and start `matchCatch()` from a range of deliberately
+*wrong* values for the selectivity, mortality and diffusion, to see where it
+lands; first with no production constraint, then with the true production
+supplied.
+
+```{r}
+#| message: false
+#| warning: false
+g_true    <- gear_params(p0); gi0 <- which(g_true$species == species)
+l50_true  <- g_true$l50[gi0]
+prod_true <- getProduction(p0)[species]
+
+# Fit from a given (very different) starting point, optionally supplying the
+# observed production.
+fit_from <- function(l50_0, mu_0, D_0, use_production) {
+    pp <- p0
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- l50_0; gp$l25[gi] <- l50_0 - 4; gp$catchability[gi] <- 1
+    gear_params(pp) <- gp
+    sp <- species_params(pp)
+    sp$mu_mat[s] <- mu_0; sp$D_ext[s] <- D_0
+    sp$production_observed[s] <- if (use_production) prod_true else NA
+    pp@ext_diffusion[s, ] <- D_0 * pp@w^(sp$n[s] + 1)
+    species_params(pp) <- sp
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch_obs, yield_lambda = 1,
+        production_lambda = if (use_production) 1 else 0,
+        map = list(m = factor(NA))))
+    gf <- gear_params(fit); gi <- which(gf$species == species)
+    spf <- species_params(fit)[s, ]
+    data.frame(l50_start = l50_0, mu_start = mu_0, D_start = D_0,
+               l50 = round(gf$l50[gi], 1), mu_mat = round(spf$mu_mat, 3),
+               D_ext = signif(spf$D_ext, 3),
+               production = round(getProduction(fit)[species], 3))
+}
+
+# Four very different starting points.
+starts <- list(c(30, 0.10, 3), c(40, 0.60, 20),
+               c(55, 1.50, 0.1), c(70, 3.00, 0.01))
+
+cat(sprintf("truth:  l50 = %.1f   mu_mat = %.2f   D_ext = %.1f   production = %.3f\n",
+            l50_true, sps$mu_mat, sps$D_ext, prod_true))
+```
+
+**Without a production constraint:**
+
+```{r}
+#| message: false
+#| warning: false
+do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], FALSE))) |>
+    print(row.names = FALSE)
+```
+
+Every start converges to the *same* solution — the optimiser is robust to
+its initial values; we cannot make it diverge by starting it badly. And the
+solution is essentially the truth: `l50` ≈ 35.4, `mu_mat` ≈ 0.29 and
+`D_ext` ≈ 12.4, against the true 35.4, 0.29 and 12.4. So from a *perfect*
+catch the parameters can be recovered — even the mortality and diffusion,
+despite the shallow valley between them, and *without* the production
+constraint. The catch is not fundamentally ambiguous: the valley floor
+tilts, ever so slightly, toward the truth, and with noise-free data that
+faint tilt is enough.
+
+**With the production supplied:**
+
+```{r}
+#| message: false
+#| warning: false
+do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], TRUE))) |>
+    print(row.names = FALSE)
+```
+
+Supplying the production changes the destination hardly at all here —
+`mu_mat` ≈ 0.29, `D_ext` ≈ 12.4, production ≈ 0.32 — because with a noise-free
+catch the optimiser already had what it needed to find the truth. On perfect
+data the two calibrations agree, and both are essentially right. That is the
+reassuring part, and it is worth stating plainly: the objective is
+well-posed and its minimum sits at the truth, reached robustly from any
+starting point. The parameters are *identifiable in principle*.
+
+The catch (with the yield) really does, then, contain the information needed
+to recover the mortality and diffusion — but only a little of it, concentrated
+in that faint downhill tilt of the valley floor. Real data are not noise-free,
+and the next section shows what happens to that small signal once sampling
+noise is added: it is where production earns its keep.
+
+## A new dataset gives a new answer
+
+The previous section fixed the data and varied the starting point. Now we do
+the reverse: fix a sensible starting point and vary the *data*, by drawing
+fresh random catch samples (multinomial draws) from the same true model. If
+the parameters were well determined, every sample would give essentially the
+same fit. They do not — and *how* they differ tells us exactly what kind of
+problem this is.
+
+```{r}
+#| message: false
+#| warning: false
+# The model's exact expected catch per 1-cm bin (same binning as the
+# likelihood), used as the multinomial probabilities to draw samples from.
+true_bins  <- catch_obs$length
+true_probs <- model_catch_pdf(p0, species, true_bins)
+
+# Fit one random multinomial catch sample, always from the same start.
+fit_sample <- function(seed, n_total, use_production) {
+    set.seed(seed)
+    cnt <- as.vector(rmultinom(1, n_total, true_probs))
+    catch <- data.frame(species = species, gear = "total",
+                        length = true_bins[cnt > 0], dl = 1, catch = cnt[cnt > 0])
+    pp <- p0
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- 45; gp$l25[gi] <- 41           # same (mediocre) start every time
+    gear_params(pp) <- gp
+    if (use_production) {
+        spp <- species_params(pp); spp$production_observed[s] <- prod_true
+        species_params(pp) <- spp
+    }
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch, yield_lambda = 1,
+        production_lambda = if (use_production) 1 else 0, map = list(m = factor(NA))))
+    spf <- species_params(fit)[s, ]
+    c(mu_mat = spf$mu_mat, D_ext = spf$D_ext)
+}
+
+# A realistic sample size (n = 2000), with and without production, plus a very
+# large sample without production to show that the spread is variance (it
+# shrinks with more data), not bias.
+seeds       <- 1:6
+noprod_2000 <- t(sapply(seeds, fit_sample, n_total = 2000, use_production = FALSE))
+prod_2000   <- t(sapply(seeds, fit_sample, n_total = 2000, use_production = TRUE))
+noprod_1e5  <- t(sapply(seeds, fit_sample, n_total = 1e5,  use_production = FALSE))
+```
+
+```{r}
+#| fig-cap: "Fitted (mu_mat, D_ext) for six random catch datasets of a realistic size (n = 2000 fish) drawn from the same true model (star). Without production (open circles) the fits scatter widely along the mortality-diffusion valley but centre on the truth. With production (red triangles) the mortality is pinned on it (the diffusion stays looser, spreading vertically). The scatter is variance, not bias."
+xr <- range(c(noprod_2000[, 1], prod_2000[, 1], sps$mu_mat))
+yr <- range(c(noprod_2000[, 2], prod_2000[, 2], sps$D_ext))
+plot(NULL, xlim = xr, ylim = yr,
+     xlab = "fitted mu_mat", ylab = "fitted D_ext",
+     main = "Six random datasets (n = 2000) from one true model")
+points(noprod_2000[, 1], noprod_2000[, 2], pch = 1,  col = "blue", cex = 1.4, lwd = 2)
+points(prod_2000[, 1],   prod_2000[, 2],   pch = 17, col = "red")
+points(sps$mu_mat, sps$D_ext, pch = 8, cex = 2.2, lwd = 2)
+legend("topleft", bty = "n",
+       pch = c(8, 1, 17), col = c("black", "blue", "red"),
+       pt.cex = c(1.5, 1.4, 1),
+       legend = c("truth", "no production", "with production"))
+```
+
+Every fit still converges cleanly — the optimiser is reliable here as
+before. But without production the answer it returns swings with the data:
+
+- **It is variance, not bias.** Across the six datasets the no-production
+  fits (open circles) scatter along the valley — `mu_mat` ranges over a
+  factor of two or more, with `D_ext` tracking it — but they *centre on the
+  truth* (the star). There is no systematic offset; a single fit is simply an
+  imprecise draw. The spread is sampling variability, large *because* the
+  likelihood is so flat that a little noise tilts a nearly level surface into
+  a minimum somewhere new.
+- **The spread shrinks with more data.** At fifty times the sample
+  (`noprod_1e5`, not plotted) the no-production `mu_mat` tightens to roughly
+  0.26–0.32 — still scattered, still centred on the truth, but far narrower.
+  Precision, not correctness, is what the sample size buys; that is the
+  signature of variance.
+
+Throughout, the selectivity and catchability (not plotted) stay put from
+dataset to dataset — even at `n = 2000`, `l50` holds to within a few tenths
+of a centimetre. It is specifically the mortality–diffusion pair that is
+unstable. And **the production constraint tames it** (red triangles): with an
+accurate production the `mu_mat` estimates collapse onto a narrow band around
+the truth (here roughly 0.25–0.29, several times tighter than without), even
+as the diffusion stays looser — the red points still spread vertically —
+because production bears directly on mortality, not on the diffusion, which
+the catch tail alone must fix. Production supplies the steep constraint the
+flat valley lacks along the mortality axis, turning an imprecise mortality
+estimate into a much sharper one.
+
+## Takeaways
+
+- The catch size distribution reflects the population spectrum $N(w)$
+  filtered through selectivity. $N$ itself is shaped by growth, diffusion
+  and mortality together, and **mortality and diffusion act on the upper
+  tail in nearly the same way** — more mortality removes large fish, more
+  diffusion supplies them — so the catch responds strongly to their combined
+  effect and only weakly to the difference between them.
+- **Selectivity and catchability are well determined** — the first by the
+  catch shape, the second by the yield — at every sample size we tried.
+- **Mortality and diffusion are determined, but only loosely.** The fit is
+  essentially unbiased — a perfect, noise-free catch recovers the truth, and
+  the optimiser reaches it robustly from any starting point — so the
+  parameters are identifiable in principle. But the valley between mortality
+  and diffusion is so flat that realistic sampling noise scatters any single
+  fit widely (a factor of two or more at `n ≈ 2000`). The trouble is
+  precision, not bias, and not the optimiser.
+- **A new dataset gives a new answer**, but a *centred* one: the no-production
+  fits scatter around the truth and tighten as the sample grows. That is the
+  hallmark of variance — fixed by more or better data, not by a better
+  algorithm.
+- **Production is the effective remedy.** An accurate production supplies the
+  steep constraint the catch and yield lack under noise, pinning the mortality
+  several times more tightly. Its leverage is limited, though — production
+  changes only ~20% across a four-fold change in mortality — so an
+  *inaccurate* production feeds error back into the mortality. When even production is uncertain,
+  fixing the diffusion (or mortality) at an externally informed value is
+  often the most reliable course.
+```
+
