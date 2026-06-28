@@ -203,6 +203,15 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     species <- "Haddock"
     sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
     s  <- species_params(sg)$species == species
+    # Make the synthetic experiment self-consistent: the "observed" yield must be
+    # this single-species model's own yield, not the celtic multispecies value
+    # carried over by make_celtic_single_gear(). The catch shape barely
+    # constrains the mortality (see the catch_identifiability vignette), so an
+    # inconsistent yield target would let the yield penalty pull the recovered
+    # mortality off the truth.
+    gp0 <- gear_params(sg); gi0 <- which(gp0$species == species)
+    gp0$yield_observed[gi0] <- getYield(sg)[s]
+    gear_params(sg) <- gp0
     catch <- model_catch_data(sg, species)
 
     gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]
@@ -232,20 +241,29 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
     sp_fit <- species_params(fit)[s, ]
 
-    expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)         # selectivity
+    # On a clean, self-consistent catch every parameter comes back close to the
+    # truth - even the mortality and diffusion, despite the shallow valley
+    # between them (under sampling noise the mortality becomes imprecise; see the
+    # catch_identifiability vignette).
+    expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)        # selectivity
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03) # from the yield
-    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.12)      # mortality
-    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.12)        # diffusion
+    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05)      # mortality
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)        # diffusion
 })
 
 test_that("matchCatch recovers selectivity and catchability from the catch alone", {
     # Even without a production constraint, the catch shape determines the
-    # selectivity and the yield determines the catchability. (Mortality and
-    # diffusion are recovered too, but only loosely without production - see the
+    # selectivity and the yield determines the catchability. (On this clean catch
+    # the mortality and diffusion come back well too, but under sampling noise the
+    # mortality becomes imprecise without production - see the
     # catch_identifiability vignette - so they are not asserted tightly here.)
     species <- "Haddock"
     sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
     s  <- species_params(sg)$species == species
+    # Self-consistent "observed" yield (see the with-production test above).
+    gp0 <- gear_params(sg); gi0 <- which(gp0$species == species)
+    gp0$yield_observed[gi0] <- getYield(sg)[s]
+    gear_params(sg) <- gp0
     catch <- model_catch_data(sg, species)
 
     gp_true  <- gear_params(sg)[gear_params(sg)$species == species, ]

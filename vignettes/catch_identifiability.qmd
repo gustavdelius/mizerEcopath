@@ -155,11 +155,21 @@ set_D_ext <- function(params, species, D) {
     steadySingleSpecies(params, species = species)
 }
 
-p0      <- make_single_gear()
 species <- "Haddock"
+# Solve the single-species steady state, the spectrum matchCatch() reconstructs,
+# so the synthetic catch is one the fit's solver can reproduce exactly.
+p0      <- steadySingleSpecies(make_single_gear(), species = species)
 s       <- species_params(p0)$species == species
 sps     <- species_params(p0)[s, ]
 lengths <- (p0@w / sps$a)^(1 / sps$b)   # length (cm) of each weight bin
+
+# Make the experiment self-consistent: the "observed" yield is this model's own
+# yield, not the celtic multispecies value carried over by make_single_gear().
+# The catch shape barely constrains the mortality, so an inconsistent yield
+# target would pull the recovered mortality off the truth.
+gp0 <- gear_params(p0); gi0 <- which(gp0$species == species)
+gp0$yield_observed[gi0] <- getYield(p0)[s]
+gear_params(p0) <- gp0
 ```
 
 ## How diffusion shapes the spectrum
@@ -168,22 +178,23 @@ Diffusion is the parameter readers tend to have least intuition for, so it
 is worth pinning down with a measurement.
 
 Without diffusion ($D_{\text{ext}} = 0$) every individual of a cohort
-follows the same deterministic growth curve. That curve slows to a halt at
-an *asymptotic size*, well short of the maximum size $w_{\max}$, because a
-mature fish channels a growing share of its surplus energy into
-reproduction rather than growth. For this Haddock model the asymptotic
-length is about 56 cm, whereas $w_{\max}$ corresponds to 112 cm. With no
-diffusion, then, *no fish ever exceeds 56 cm*: the spectrum has a hard edge
-there and the upper half of the size range is simply empty.
+follows the same deterministic growth curve. As a fish matures it channels a
+growing share of its surplus energy into reproduction, so its growth *slows
+sharply* well short of the maximum size $w_{\max}$. For this Haddock model
+growth has all but stalled by about 56 cm — only a few percent of its rate
+at maturity — whereas $w_{\max}$ corresponds to 112 cm. With no diffusion,
+then, individuals creep past 56 cm only very slowly while mortality keeps
+removing them, so the spectrum *falls away sharply* there and the upper size
+range is nearly empty.
 
 Diffusion lets growth rates vary between individuals: a cohort *spreads
 out* into a range of sizes as it ages (this is what the age-fitting
 machinery in `project_diffusion()` exploits; see the *Diffusion*
-vignette). Crucially, it lets some individuals grow *past* the
-deterministic asymptote and on towards $w_{\max}$. The larger the
-diffusion, the more individuals populate that upper tail. So **more
-diffusion means *more* large fish** — it is diffusion, not deterministic
-growth, that fills the large-size end of the spectrum.
+vignette). Crucially, it carries some individuals *through* the near-stall
+and on towards $w_{\max}$. The larger the diffusion, the more individuals
+populate that upper tail. So **more diffusion means *more* large fish** — it
+is diffusion, not deterministic growth, that fills the large-size end of the
+spectrum.
 
 We can see it directly in the steady-state spectra. Holding mortality and
 selectivity fixed, we recompute the spectrum at three diffusion levels and
@@ -191,13 +202,13 @@ rescale each to the **same total biomass**, so the comparison is fair: any
 difference is then in how that fixed biomass is *distributed* over sizes,
 not in how much there is. We plot biomass density, so the area under each
 curve is the (equal) total biomass. At low diffusion the biomass is bottled
-up below the deterministic asymptote (a sharp edge near 56 cm); raising the
+up below ~56 cm, where growth stalls (a sharp drop there); raising the
 diffusion spreads it out into the large-size tail:
 
 ```{r}
 #| message: false
 #| warning: false
-#| fig-cap: "Steady-state biomass density at three diffusion coefficients, each rescaled to the same total biomass (equal area under the curve), with mortality and selectivity held fixed. At low `D_ext` no fish pass the ~56 cm deterministic asymptote; larger `D_ext` fills the large-size tail. More diffusion means more large fish."
+#| fig-cap: "Steady-state biomass density at three diffusion coefficients, each rescaled to the same total biomass (equal area under the curve), with mortality and selectivity held fixed. At low `D_ext` the spectrum drops away sharply near ~56 cm, where growth stalls; larger `D_ext` fills the large-size tail. More diffusion means more large fish."
 l_mat <- (sps$w_mat / sps$a)^(1 / sps$b)   # length at maturity (cm)
 l_max <- (sps$w_max / sps$a)^(1 / sps$b)   # maximum length (cm)
 dl   <- p0@dw / (sps$a * sps$b * lengths^(sps$b - 1))  # width of each bin (cm)
@@ -412,19 +423,22 @@ if you want to sharpen the mortality.
 
 Adding an observed production to the objective (`production_lambda > 0`)
 gives the optimiser a constraint that *does* vary along the valley, so it
-sharpens the mortality — and with it the diffusion — far beyond what the
-catch and yield alone manage. This is why `matchCatch()` matches all three:
-catch shape, yield and production.
+sharpens the mortality — and with it the diffusion. The catch and yield pin
+the mortality only weakly, through the faint downhill tilt of the valley
+floor: that tilt is enough on noise-free data (as the next section shows) but
+little defence once sampling noise enters, whereas production grips the
+mortality directly. This is why `matchCatch()` matches all three: catch
+shape, yield and production.
 
 It is worth being honest about how much this buys you. An *accurate*
-production pins the mortality tightly (we will see fits land within a few
-percent of the truth). But the leverage is limited: here production changes
-by only about 20% across a four-fold change in mortality, so the inference
-runs the other way too — a modest *error* in the observed production maps
-into a sizeable error in the inferred mortality. When even production is
-uncertain, the most reliable course is often to fix the diffusion (or the
-mortality) at an externally informed value rather than to ask the fit to
-discover it.
+production pins the mortality far more tightly — we will see the per-dataset
+scatter shrink severalfold. But the leverage is limited: here production
+changes by only about 20% across a four-fold change in mortality, so the
+inference runs the other way too — a modest *error* in the observed
+production maps into a sizeable error in the inferred mortality. When even
+production is uncertain, the most reliable course is often to fix the
+diffusion (or the mortality) at an externally informed value rather than to
+ask the fit to discover it.
 
 ## Does the optimiser find the true parameters?
 
@@ -488,14 +502,13 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], FALSE))) |>
 
 Every start converges to the *same* solution — the optimiser is robust to
 its initial values; we cannot make it diverge by starting it badly. And the
-solution is essentially the truth: `l50` ≈ 35.4, `mu_mat` ≈ 0.27,
-`D_ext` ≈ 12, against the true 35.4, 0.29 and 12.4. So from a *perfect*
+solution is essentially the truth: `l50` ≈ 35.4, `mu_mat` ≈ 0.29 and
+`D_ext` ≈ 12.4, against the true 35.4, 0.29 and 12.4. So from a *perfect*
 catch the parameters can be recovered — even the mortality and diffusion,
-despite the shallow valley between them. The catch is not fundamentally
-ambiguous: the valley floor tilts, ever so slightly, toward the truth, and
-with noise-free data that faint tilt is enough. (The small residual — `mu`
-about 0.27 rather than 0.29 — is the last trace of binning discretisation
-plus the rounding of the counts to integers, not a real bias.)
+despite the shallow valley between them, and *without* the production
+constraint. The catch is not fundamentally ambiguous: the valley floor
+tilts, ever so slightly, toward the truth, and with noise-free data that
+faint tilt is enough.
 
 **With the production supplied:**
 
@@ -507,7 +520,7 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], TRUE))) |>
 ```
 
 Supplying the production changes the destination hardly at all here —
-`mu_mat` ≈ 0.28, `D_ext` ≈ 12, production ≈ 0.32 — because with a noise-free
+`mu_mat` ≈ 0.29, `D_ext` ≈ 12.4, production ≈ 0.32 — because with a noise-free
 catch the optimiser already had what it needed to find the truth. On perfect
 data the two calibrations agree, and both are essentially right. That is the
 reassuring part, and it is worth stating plainly: the objective is
@@ -595,7 +608,7 @@ before. But without production the answer it returns swings with the data:
   a minimum somewhere new.
 - **The spread shrinks with more data.** At fifty times the sample
   (`noprod_1e5`, not plotted) the no-production `mu_mat` tightens to roughly
-  0.25–0.33 — still scattered, still centred on the truth, but far narrower.
+  0.26–0.32 — still scattered, still centred on the truth, but far narrower.
   Precision, not correctness, is what the sample size buys; that is the
   signature of variance.
 
@@ -603,12 +616,13 @@ Throughout, the selectivity and catchability (not plotted) stay put from
 dataset to dataset — even at `n = 2000`, `l50` holds to within a few tenths
 of a centimetre. It is specifically the mortality–diffusion pair that is
 unstable. And **the production constraint tames it** (red triangles): with an
-accurate production every dataset pins `mu_mat` to within a few percent of
-the truth. (The diffusion stays looser — the red points still spread
-vertically — because production bears directly on mortality, not on the
-diffusion, which the catch tail alone must fix.) Production supplies the
-steep constraint the flat valley lacks along the mortality axis, turning an
-imprecise mortality estimate into a sharp one.
+accurate production the `mu_mat` estimates collapse onto a narrow band around
+the truth (here roughly 0.25–0.29, several times tighter than without), even
+as the diffusion stays looser — the red points still spread vertically —
+because production bears directly on mortality, not on the diffusion, which
+the catch tail alone must fix. Production supplies the steep constraint the
+flat valley lacks along the mortality axis, turning an imprecise mortality
+estimate into a much sharper one.
 
 ## Takeaways
 
@@ -632,10 +646,10 @@ imprecise mortality estimate into a sharp one.
   hallmark of variance — fixed by more or better data, not by a better
   algorithm.
 - **Production is the effective remedy.** An accurate production supplies the
-  steep constraint the catch and yield lack, pinning the mortality to within
-  a few percent. Its leverage is limited, though — production changes only
-  ~20% across a four-fold change in mortality — so an *inaccurate* production
-  feeds error back into the mortality. When even production is uncertain,
+  steep constraint the catch and yield lack under noise, pinning the mortality
+  several times more tightly. Its leverage is limited, though — production
+  changes only ~20% across a four-fold change in mortality — so an
+  *inaccurate* production feeds error back into the mortality. When even production is uncertain,
   fixing the diffusion (or mortality) at an externally informed value is
   often the most reliable course.
 ```
