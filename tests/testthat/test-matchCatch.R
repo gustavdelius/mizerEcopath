@@ -12,6 +12,8 @@
 # Core fitting behaviour:
 #   - runs without error for a single species
 #   - recovers a model-generated catch size distribution
+#   - recovers the true parameters from a self-consistent catch
+#   - recovers selectivity and catchability from the catch alone
 #   - fits only the catch's gears, leaving other gears untouched
 #   - updates gear selectivity parameters for the selected species
 #   - preserves biomass for the adjusted species
@@ -53,34 +55,51 @@ make_celtic_single_gear <- function() {
     params
 }
 
-# Generate catch data from the model itself, by sampling the model's predicted
-# catch density (N * F_mort) into 1-cm length bins in the `celtic_catch` format.
+# Expected catch in each 1-cm length bin: the integral of the catch density
+# (N * F_mort) over the bin, using the same piecewise-linear interpolation of
+# the density that matchCatch()'s likelihood uses internally. Generating the
+# synthetic data with the *same* binning as the likelihood is what makes the
+# model self-consistent, so that a fit can recover the parameters that
+# generated it. A cruder floor()-histogram disagrees by a few percent, and
+# because the mortality-diffusion valley is so flat that small discrepancy is
+# enough to shift the recovered mortality substantially.
+model_catch_rate <- function(params, species, bins) {
+    sp <- species_params(params)
+    s <- which(sp$species == species)
+    sps <- sp[s, ]
+    w <- params@w
+    dens <- approxfun(w, params@initial_n[s, ] * getFMort(params)[s, ], rule = 2)
+    vapply(bins, function(L) {
+        lo <- sps$a * L^sps$b
+        hi <- sps$a * (L + 1)^sps$b
+        grid <- sort(unique(c(w[w > lo & w < hi], lo, hi)))
+        v <- dens(grid)
+        sum(diff(grid) * (head(v, -1) + tail(v, -1)) / 2)
+    }, numeric(1))
+}
+
+# Generate catch data from the model itself, in the `celtic_catch` format
+# (integer counts over 1-cm length bins summing to ~n_total).
 model_catch_data <- function(params, species, gear = "total", n_total = 1e5) {
     sp <- species_params(params)
     s <- sp$species == species
     sps <- sp[s, ]
-    lengths <- (params@w / sps$a)^(1 / sps$b)
+    w <- params@w
+    dens <- params@initial_n[s, ] * getFMort(params)[s, ]
     l_max <- (sps$w_max / sps$a)^(1 / sps$b)
-    rate <- params@initial_n[s, ] * getFMort(params)[s, ] * params@dw
-    df <- aggregate(rate, list(length = floor(lengths)), sum)
-    names(df)[2] <- "rate"
-    df <- df[df$rate > 0 & (df$length + 1) <= l_max, ]
-    count <- round(df$rate / sum(df$rate) * n_total)
-    keep <- count > 0
-    data.frame(species = species, gear = gear, length = df$length[keep],
-               dl = 1, catch = count[keep])
+    bins <- seq(floor((min(w[dens > 0]) / sps$a)^(1 / sps$b)), floor(l_max) - 1)
+    rate <- model_catch_rate(params, species, bins)
+    bins <- bins[rate > 0]
+    rate <- rate[rate > 0]
+    count <- round(rate / sum(rate) * n_total)
+    data.frame(species = species, gear = gear, length = bins[count > 0],
+               dl = 1, catch = count[count > 0])
 }
 
 # Relative frequency of the model's predicted catch over the given 1-cm bins.
 model_catch_hist <- function(params, species, length_bins) {
-    sp <- species_params(params)
-    s <- sp$species == species
-    sps <- sp[s, ]
-    lengths <- (params@w / sps$a)^(1 / sps$b)
-    rate <- params@initial_n[s, ] * getFMort(params)[s, ] * params@dw
-    h <- tapply(rate, factor(floor(lengths), levels = length_bins), sum)
-    h[is.na(h)] <- 0
-    as.numeric(h / sum(h))
+    rate <- model_catch_rate(params, species, length_bins)
+    rate / sum(rate)
 }
 
 # Build params with two gears for Hake (sigmoid_length + double_sigmoid_length)
@@ -161,10 +180,8 @@ test_that("matchCatch runs without error with valid inputs for a single species"
 
 test_that("matchCatch recovers a model-generated catch size distribution", {
     # Generate catch data from a single-gear model, then check that the fitted
-    # model reproduces that size distribution closely. (The gear and mortality
-    # parameters themselves are not uniquely recovered, because the catch shape
-    # is degenerate between selectivity and mortality; yield and production are
-    # used to break this degeneracy.)
+    # model reproduces that size distribution closely. (Recovery of the
+    # parameters themselves is tested separately below.)
     sg_params <- make_celtic_single_gear()
     species <- "Cod"
     catch <- model_catch_data(sg_params, species)
@@ -175,6 +192,82 @@ test_that("matchCatch recovers a model-generated catch size distribution", {
     modelled <- model_catch_hist(result, species, catch$length)
     tv_distance <- 0.5 * sum(abs(observed - modelled))
     expect_lt(tv_distance, 0.05)
+})
+
+test_that("matchCatch recovers the true parameters from a self-consistent catch", {
+    # With the catch generated using the same bin-integration as the likelihood,
+    # and the yield and production supplied, matchCatch() recovers the
+    # parameters that generated the data even when started far from them. The
+    # data is generated from the single-species steady state, which the fit's
+    # solver can reproduce exactly.
+    species <- "Haddock"
+    sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
+    s  <- species_params(sg)$species == species
+    catch <- model_catch_data(sg, species)
+
+    gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]
+    l50_true  <- gp_true$l50
+    q_true    <- gp_true$catchability
+    mu_true   <- species_params(sg)[s, "mu_mat"]
+    D_true    <- species_params(sg)[s, "D_ext"]
+    prod_true <- getProduction(sg)[species]
+
+    # Start from deliberately wrong values: selectivity 8 cm too high,
+    # mortality 4x too high, diffusion 4x too low, catchability reset to 1.
+    pp <- sg
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- l50_true + 8; gp$l25[gi] <- gp$l50[gi] - 4
+    gp$catchability[gi] <- 1
+    gear_params(pp) <- gp
+    spp <- species_params(pp)
+    spp$mu_mat[s] <- mu_true * 4
+    spp$D_ext[s]  <- D_true / 4
+    spp$production_observed[s] <- prod_true
+    pp@ext_diffusion[s, ] <- spp$D_ext[s] * pp@w^(spp$n[s] + 1)
+    species_params(pp) <- spp
+
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch,
+        yield_lambda = 1, production_lambda = 1, map = list(m = factor(NA))))
+    gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
+    sp_fit <- species_params(fit)[s, ]
+
+    expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)         # selectivity
+    expect_equal(gp_fit$catchability, q_true, tolerance = 0.03) # from the yield
+    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.12)      # mortality
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.12)        # diffusion
+})
+
+test_that("matchCatch recovers selectivity and catchability from the catch alone", {
+    # Even without a production constraint, the catch shape determines the
+    # selectivity and the yield determines the catchability. (Mortality and
+    # diffusion are recovered too, but only loosely without production - see the
+    # catch_identifiability vignette - so they are not asserted tightly here.)
+    species <- "Haddock"
+    sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
+    s  <- species_params(sg)$species == species
+    catch <- model_catch_data(sg, species)
+
+    gp_true  <- gear_params(sg)[gear_params(sg)$species == species, ]
+    l50_true <- gp_true$l50
+    q_true   <- gp_true$catchability
+
+    pp <- sg
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- l50_true + 8; gp$l25[gi] <- gp$l50[gi] - 4
+    gp$catchability[gi] <- 1
+    gear_params(pp) <- gp
+    spp <- species_params(pp)
+    spp$mu_mat[s] <- spp$mu_mat[s] * 4
+    species_params(pp) <- spp
+
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch,
+        yield_lambda = 1, production_lambda = 0, map = list(m = factor(NA))))
+    gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
+
+    expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
+    expect_equal(gp_fit$catchability, q_true, tolerance = 0.03)
 })
 
 test_that("matchCatch throws error if catch data is missing required columns", {
