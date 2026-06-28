@@ -135,14 +135,15 @@ prepare_data <- function(params, species = 1, catch,
         w_min <- max(w[w <= min(w_bin_boundaries)], sps$w_min)
         # The single-species steady-state spectrum must be solved on the same
         # grid that mizer's `steadySingleSpecies()` (`get_steady_state_n()`)
-        # uses, i.e. the full weight grid extending *above* the species' w_max.
-        # With diffusion present, individuals spread to sizes larger than w_max,
-        # so truncating the solver grid at w_max imposes a spurious zero-flux
-        # wall there and gives a steeper upper tail than mizer, biasing the
-        # fitted mortality and diffusion. We therefore extend the solver grid to
-        # the top of the model grid; the catch likelihood still only uses the
+        # uses. mizer holds the abundance at zero above w_max, solving with a
+        # zero-flux cap one bin above w_max under the first-order upwind scheme
+        # (its `support_top_idx()` = w_max_idx + 1). The TMB objective uses that
+        # same first-order scheme and caps the flux at the top of its grid, so we
+        # end the solver grid at w_max_idx + 1 to reproduce mizer's boundary and
+        # thus its steady state. The catch likelihood still uses only the
         # observed bins (all <= w_max).
-        w_max <- max(w)
+        w_max_idx <- sum(w <= sps$w_max)
+        w_max <- w[min(w_max_idx + 1L, length(w))]
     }
 
     w <- w(params)
