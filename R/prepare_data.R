@@ -221,10 +221,10 @@ prepare_data <- function(params, species = 1, catch,
     # Prepare data list for TMB
     if (second_order) {
         flux_limiter <- params@second_order_w[["flux"]]
-        psi_full <- mizer:::flux_limiter_psi(params, initialN(params), getEGrowth(params), flux_limiter)
-        psi <- psi_full[sp_select, w_select]
+        chi_full <- mizer:::flux_limiter_psi(params, initialN(params), getEGrowth(params), flux_limiter)
+        chi <- chi_full[sp_select, w_select]
     } else {
-        psi <- rep(0, length(w))
+        chi <- rep(0, length(w))
     }
 
     data <- list(
@@ -254,7 +254,7 @@ prepare_data <- function(params, species = 1, catch,
         n = n,
         w_repro_max = w_repro_max,
         second_order = as.integer(second_order),
-        psi = psi,
+        chi = chi,
         defaults_edition = mizer::defaults_edition(),
         b_lw = sps$b
     )

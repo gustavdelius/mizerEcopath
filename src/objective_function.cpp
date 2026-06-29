@@ -93,21 +93,21 @@ vector<Type> calculate_growth(vector<Type> w, vector<Type> ergr,
     for (int i = 0; i < repro_prop.size(); i++) {
         if (repro_prop(i) > Type(1.0)) repro_prop(i) = Type(1.0);
     }
-    vector<Type> phi = matur * repro_prop;
-    for (int i = 0; i < phi.size(); i++) {
-        if (phi(i) > Type(1.0)) phi(i) = Type(1.0);
+    vector<Type> psi = matur * repro_prop;
+    for (int i = 0; i < psi.size(); i++) {
+        if (psi(i) > Type(1.0)) psi(i) = Type(1.0);
     }
     
     // Set psi for all w > w_repro_max to 1 if defaults_edition < 2
     if (defaults_edition < 2) {
         for (int i = 0; i < w.size(); i++) {
             if (w(i) > w_repro_max) {
-                phi(i) = Type(1.0);
+                psi(i) = Type(1.0);
             }
         }
     }
     
-    vector<Type> growth = (Type(1.0) - phi) * ergr;
+    vector<Type> growth = (Type(1.0) - psi) * ergr;
     for (int i = 0; i < growth.size(); i++) {
         if (growth(i) < Type(0.0)) growth(i) = Type(0.0);
     }
@@ -166,7 +166,7 @@ vector<Type> calculate_N(vector<Type> mort, vector<Type> growth,
 
 template<class Type>
 vector<Type> calculate_N_second_order(vector<Type> mort, vector<Type> growth,
-                                      vector<Type> dw, vector<Type> w, vector<Type> d, vector<Type> psi)
+                                      vector<Type> dw, vector<Type> w, vector<Type> d, vector<Type> chi)
 {
     int size = dw.size();
     vector<Type> a(size), b(size), c(size), S(size);
@@ -185,10 +185,10 @@ vector<Type> calculate_N_second_order(vector<Type> mort, vector<Type> growth,
         Type inv_dw = Type(1.0) / dw(j);
         
         Type gj = growth(j);
-        Type psij = psi(j);
+        Type chij = chi(j);
         
         Type gj_plus_1 = (j < size - 1) ? growth(j + 1) : growth(j);
-        Type psij_plus_1 = (j < size - 1) ? psi(j + 1) : Type(0.0);
+        Type chij_plus_1 = (j < size - 1) ? chi(j + 1) : Type(0.0);
         
         Type wj = w(j);
         Type wj_plus_1 = (j < size - 1) ? w(j + 1) : w(j) * beta;
@@ -197,14 +197,14 @@ vector<Type> calculate_N_second_order(vector<Type> mort, vector<Type> growth,
         Type dj_minus_1 = d(j - 1);
         Type dj_plus_1 = (j < size - 1) ? d(j + 1) : d(j);
 
-        a(j) = -inv_dw * (gj * (Type(1.0) - Type(0.5) * psij) + dj_minus_1 / (Type(2.0) * h * wj));
+        a(j) = -inv_dw * (gj * (Type(1.0) - Type(0.5) * chij) + dj_minus_1 / (Type(2.0) * h * wj));
         
-        b(j) = mort(j) + inv_dw * (gj_plus_1 * (Type(1.0) - Type(0.5) * psij_plus_1) 
-                                   - Type(0.5) * psij * gj 
+        b(j) = mort(j) + inv_dw * (gj_plus_1 * (Type(1.0) - Type(0.5) * chij_plus_1) 
+                                   - Type(0.5) * chij * gj 
                                    + dj * (Type(1.0) / (Type(2.0) * h * wj) + Type(1.0) / (Type(2.0) * h * wj_plus_1)));
         
         c(j) = (j < size - 1) ?
-            (inv_dw * (Type(0.5) * psij_plus_1 * gj_plus_1 - dj_plus_1 / (Type(2.0) * h * wj_plus_1))) : Type(0.0);
+            (inv_dw * (Type(0.5) * chij_plus_1 * gj_plus_1 - dj_plus_1 / (Type(2.0) * h * wj_plus_1))) : Type(0.0);
             
         S(j) = Type(0.0);
     }
@@ -255,7 +255,7 @@ Type objective_function<Type>::operator() ()
     DATA_SCALAR(n);
     DATA_SCALAR(w_repro_max);
     DATA_INTEGER(second_order);
-    DATA_VECTOR(psi);
+    DATA_VECTOR(chi);
     DATA_INTEGER(defaults_edition);
     DATA_SCALAR(b_lw);
 
@@ -314,7 +314,7 @@ Type objective_function<Type>::operator() ()
 
     vector<Type> N;
     if (second_order == 1) {
-        N = calculate_N_second_order(mort, growth, dw, w, d_diff, psi);
+        N = calculate_N_second_order(mort, growth, dw, w, d_diff, chi);
     } else {
         N = calculate_N(mort, growth, dw, d_diff);
     }
