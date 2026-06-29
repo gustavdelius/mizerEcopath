@@ -475,3 +475,46 @@ test_that("map argument fixes the specified parameter at its initial value", {
     l50_after <- gear_params(result)[gear_params(result)$species == "Hake", "l50"]
     expect_equal(l50_before, l50_after)
 })
+
+test_that("matchCatch recovers the true parameters when second_order_w is TRUE", {
+    species <- "Haddock"
+    sg <- make_celtic_single_gear()
+    second_order_w(sg) <- TRUE
+    sg <- steadySingleSpecies(sg, species = species)
+    s  <- species_params(sg)$species == species
+    gp0 <- gear_params(sg); gi0 <- which(gp0$species == species)
+    gp0$yield_observed[gi0] <- getYield(sg)[s]
+    gear_params(sg) <- gp0
+    catch <- model_catch_data(sg, species)
+
+    gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]
+    l50_true  <- gp_true$l50
+    q_true    <- gp_true$catchability
+    mu_true   <- species_params(sg)[s, "mu_mat"]
+    D_true    <- species_params(sg)[s, "D_ext"]
+    prod_true <- getProduction(sg)[species]
+
+    # Start from deliberately wrong values
+    pp <- sg
+    gp <- gear_params(pp); gi <- which(gp$species == species)
+    gp$l50[gi] <- l50_true + 8; gp$l25[gi] <- gp$l50[gi] - 4
+    gp$catchability[gi] <- 1
+    gear_params(pp) <- gp
+    spp <- species_params(pp)
+    spp$mu_mat[s] <- mu_true * 4
+    spp$D_ext[s]  <- D_true / 4
+    spp$production_observed[s] <- prod_true
+    pp@ext_diffusion[s, ] <- spp$D_ext[s] * pp@w^(spp$n[s] + 1)
+    species_params(pp) <- spp
+
+    fit <- suppressWarnings(matchCatch(
+        pp, species = species, catch = catch,
+        yield_lambda = 1, production_lambda = 1, map = list(m = factor(NA))))
+    gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
+    sp_fit <- species_params(fit)[s, ]
+
+    expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
+    expect_equal(gp_fit$catchability, q_true, tolerance = 0.03)
+    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05)
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)
+})

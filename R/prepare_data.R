@@ -41,6 +41,7 @@ prepare_data <- function(params, species = 1, catch,
     gp <- params@gear_params
     gp_select <- gp$species == species
     gps <- gp[gp_select, ]
+    second_order <- params@second_order_w[["flux"]] != "upwind"
 
     # Validate catch data frame and extract data for the selected species
     if (nrow(catch) == 0) {
@@ -143,7 +144,11 @@ prepare_data <- function(params, species = 1, catch,
         # thus its steady state. The catch likelihood still uses only the
         # observed bins (all <= w_max).
         w_max_idx <- sum(w <= sps$w_max)
-        w_max <- w[min(w_max_idx + 1L, length(w))]
+        if (second_order) {
+            w_max <- w[w_max_idx]
+        } else {
+            w_max <- w[min(w_max_idx + 1L, length(w))]
+        }
     }
 
     w <- w(params)
@@ -214,6 +219,14 @@ prepare_data <- function(params, species = 1, catch,
 
 
     # Prepare data list for TMB
+    if (second_order) {
+        flux_limiter <- params@second_order_w[["flux"]]
+        psi_full <- mizer:::flux_limiter_psi(params, initialN(params), getEGrowth(params), flux_limiter)
+        psi <- psi_full[sp_select, w_select]
+    } else {
+        psi <- rep(0, length(w))
+    }
+
     data <- list(
         use_counts = use_counts,
         counts = counts,
@@ -239,7 +252,11 @@ prepare_data <- function(params, species = 1, catch,
         matur = matur,
         ergr = ergr,
         n = n,
-        w_repro_max = w_repro_max
+        w_repro_max = w_repro_max,
+        second_order = as.integer(second_order),
+        psi = psi,
+        defaults_edition = mizer::defaults_edition(),
+        b_lw = sps$b
     )
 
     # The gears that are being matched, in the order used for `counts`, `yield`
