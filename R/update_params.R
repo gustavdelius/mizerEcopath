@@ -100,7 +100,12 @@ update_params <- function(params, species = 1, pars, data) {
     # the steady state below (which is diffusion-aware) uses the same diffusion
     # as the TMB objective.
     sps$D_ext <- exp(pars[["log_D_ext"]])
-    params@ext_diffusion[sp_select, ] <- sps$D_ext * params@w^(sps$n + 1)
+    if (isTRUE(params@second_order_w[["bin_average"]])) {
+        params@ext_diffusion[sp_select, ] <- sps$D_ext *
+            mizer:::power_law_bin_average(params@w, params@dw, sps$n + 1)
+    } else {
+        params@ext_diffusion[sp_select, ] <- sps$D_ext * params@w^(sps$n + 1)
+    }
 
     params@species_params[sp_select, ] <- sps
     params <- setReproduction(params)
