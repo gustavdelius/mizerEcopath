@@ -51,35 +51,35 @@ curve the surplus energy must therefore be \eqn{g_{vb}/(1 - \psi)}, so the
 metabolic loss is reduced by \eqn{\psi/(1 - \psi)\,g_{vb}}. Because
 \code{w_repro_max} is set to \code{w_inf}, and mizer's maturity ogive gives
 \eqn{\psi \propto (w/w_{\mathrm{repro\,max}})^{1-n}} above \code{w_mat}, this
-reduction equals the metabolic loss itself at \code{w_inf} (all income then funds
-reproduction) and is smaller below, so the metabolic loss stays
-non-negative.
+reduction equals the metabolic loss across the mature range where the ogive
+has saturated (reducing the metabolic loss to zero there, so the income funds
+both somatic growth and reproduction) and is smaller in the maturation
+transition just above \code{w_mat}; either way it never exceeds the metabolic loss,
+which therefore stays non-negative.
 }
 
 \section{Negative \code{t0}}{
 
 A negative \code{t0} means the von Bertalanffy fish already has a positive size at
 age 0, so mizer, which starts every fish at \code{w_min}, cannot follow the curve
-below maturity. Instead the growth below maturity is sped up so that maturity
-is reached at the age the von Bertalanffy curve (with its negative \code{t0})
-predicts, namely \eqn{t_{\mathrm{mat}} = t_0 - \log(1 -
-(w_{\mathrm{mat}}/w_\infty)^{1/b})/k_{vb}}; above maturity the growth is left
-unchanged and so rejoins the von Bertalanffy curve. The speed-up is applied
-in two stages:
-\itemize{
-\item The metabolic loss below maturity is scaled by a constant factor
-\eqn{c \in (0, 1]}, which keeps the growth a von Bertalanffy form with
-rate \eqn{c\,k_{vb}} and asymptote \eqn{w_\infty^{1/b}/c}. The factor is
-found by inverting the resulting age-at-maturity for \code{c}.
-\item Removing the metabolic loss entirely (\eqn{c = 0}) gives the fastest
-growth this can achieve and hence a minimum reachable maturity age. If
-\code{t0} is so negative that even this is too slow, the metabolic loss is set
-to zero and the intake (external encounter rate) below maturity is
-additionally raised by the factor needed to hit the target maturity age.
-A message reports the factor used. Note that this raises the implied
-juvenile consumption above the power law for the affected species.
-}
-Species with \code{t0 >= 0} (or missing \code{t0}) are left unchanged.
+below maturity. Instead a speed-up
+\eqn{\Delta(w) = s\,w^n(1 - (w/w_{\mathrm{mat}})^{1-n})} is added to the growth
+rate below maturity, chosen so that maturity is reached at the age the von
+Bertalanffy curve (with its negative \code{t0}) predicts, namely
+\eqn{t_{\mathrm{mat}} = t_0 - \log(1 - (w_{\mathrm{mat}}/w_\infty)^{1/b})/k_{vb}}.
+Because \eqn{\Delta} vanishes at \code{w_mat}, the growth rate stays continuous
+there, and above maturity the growth is unchanged and so coincides with the
+von Bertalanffy curve.
+
+Since \eqn{g_{vb} + \Delta = (A + s)\,w^n - (B + s/w_{\mathrm{mat}}^{1/b})\,w}
+is again of von Bertalanffy form, the age to maturity has a closed form which
+is inverted for the amplitude \eqn{s}. Its \eqn{w^n} term is added to the
+encounter rate (income) and its \eqn{w} term to the metabolic loss, keeping
+consumption allometric (\eqn{\propto w^n}) and respiration linear
+(\eqn{\propto w}). A message notes that juvenile intake is raised for the
+affected species. An error is raised only if \code{t0} is so negative that
+\eqn{t_{\mathrm{mat}} \le 0}. Species with \code{t0 >= 0} (or missing \code{t0}) are
+left unchanged.
 }
 
 \seealso{

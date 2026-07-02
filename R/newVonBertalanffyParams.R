@@ -29,33 +29,33 @@
 #' metabolic loss is reduced by \eqn{\psi/(1 - \psi)\,g_{vb}}. Because
 #' `w_repro_max` is set to `w_inf`, and mizer's maturity ogive gives
 #' \eqn{\psi \propto (w/w_{\mathrm{repro\,max}})^{1-n}} above `w_mat`, this
-#' reduction equals the metabolic loss itself at `w_inf` (all income then funds
-#' reproduction) and is smaller below, so the metabolic loss stays
-#' non-negative.
+#' reduction equals the metabolic loss across the mature range where the ogive
+#' has saturated (reducing the metabolic loss to zero there, so the income funds
+#' both somatic growth and reproduction) and is smaller in the maturation
+#' transition just above `w_mat`; either way it never exceeds the metabolic loss,
+#' which therefore stays non-negative.
 #'
 #' @section Negative `t0`:
 #' A negative `t0` means the von Bertalanffy fish already has a positive size at
 #' age 0, so mizer, which starts every fish at `w_min`, cannot follow the curve
-#' below maturity. Instead the growth below maturity is sped up so that maturity
-#' is reached at the age the von Bertalanffy curve (with its negative `t0`)
-#' predicts, namely \eqn{t_{\mathrm{mat}} = t_0 - \log(1 -
-#' (w_{\mathrm{mat}}/w_\infty)^{1/b})/k_{vb}}; above maturity the growth is left
-#' unchanged and so rejoins the von Bertalanffy curve. The speed-up is applied
-#' in two stages:
-#' \itemize{
-#'   \item The metabolic loss below maturity is scaled by a constant factor
-#'     \eqn{c \in (0, 1]}, which keeps the growth a von Bertalanffy form with
-#'     rate \eqn{c\,k_{vb}} and asymptote \eqn{w_\infty^{1/b}/c}. The factor is
-#'     found by inverting the resulting age-at-maturity for `c`.
-#'   \item Removing the metabolic loss entirely (\eqn{c = 0}) gives the fastest
-#'     growth this can achieve and hence a minimum reachable maturity age. If
-#'     `t0` is so negative that even this is too slow, the metabolic loss is set
-#'     to zero and the intake (external encounter rate) below maturity is
-#'     additionally raised by the factor needed to hit the target maturity age.
-#'     A message reports the factor used. Note that this raises the implied
-#'     juvenile consumption above the power law for the affected species.
-#' }
-#' Species with `t0 >= 0` (or missing `t0`) are left unchanged.
+#' below maturity. Instead a speed-up
+#' \eqn{\Delta(w) = s\,w^n(1 - (w/w_{\mathrm{mat}})^{1-n})} is added to the growth
+#' rate below maturity, chosen so that maturity is reached at the age the von
+#' Bertalanffy curve (with its negative `t0`) predicts, namely
+#' \eqn{t_{\mathrm{mat}} = t_0 - \log(1 - (w_{\mathrm{mat}}/w_\infty)^{1/b})/k_{vb}}.
+#' Because \eqn{\Delta} vanishes at `w_mat`, the growth rate stays continuous
+#' there, and above maturity the growth is unchanged and so coincides with the
+#' von Bertalanffy curve.
+#'
+#' Since \eqn{g_{vb} + \Delta = (A + s)\,w^n - (B + s/w_{\mathrm{mat}}^{1/b})\,w}
+#' is again of von Bertalanffy form, the age to maturity has a closed form which
+#' is inverted for the amplitude \eqn{s}. Its \eqn{w^n} term is added to the
+#' encounter rate (income) and its \eqn{w} term to the metabolic loss, keeping
+#' consumption allometric (\eqn{\propto w^n}) and respiration linear
+#' (\eqn{\propto w}). A message notes that juvenile intake is raised for the
+#' affected species. An error is raised only if `t0` is so negative that
+#' \eqn{t_{\mathrm{mat}} \le 0}. Species with `t0 >= 0` (or missing `t0`) are
+#' left unchanged.
 #'
 #' @param species_params Species parameter data frame. Must contain the von
 #'   Bertalanffy parameters `w_inf`, `k_vb` and `t0` as well as the usual mizer
@@ -119,71 +119,82 @@ newVonBertalanffyParams <- function(species_params, no_w = 200, max_w = NULL) {
 
     species_params(p) <- sp
 
-    # Subtract the reproduction investment from the metabolic loss rate. Somatic
-    # growth in mizer is g = (1 - psi) * (alpha * E - metab), so for g to equal
-    # the von Bertalanffy rate g_vb we need alpha * E - metab = g_vb / (1 - psi).
-    # The juvenile power law already gives alpha * E - metab = g_vb, so we reduce
-    # metab by psi / (1 - psi) * g_vb. With w_repro_max = w_inf this reduction
-    # equals metab itself at w_inf (all income then funds reproduction) and is
-    # smaller below, so metab stays non-negative. The pmax() guards against tiny
-    # negative values from floating-point rounding at the top of the range.
+    # Somatic growth in mizer is g = (1 - psi) * (alpha * E - metab), where psi
+    # is the fraction of surplus energy invested into reproduction. We want the
+    # somatic growth to equal a target rate g_target, which is the von
+    # Bertalanffy rate g_vb plus, for species with a negative t0, a speed-up
+    # Delta below maturity (built below). This requires
+    # alpha * E - metab = g_target / (1 - psi), i.e. the metabolic loss is
+    # reduced by the reproduction investment psi / (1 - psi) * g_target. With
+    # w_repro_max = w_inf this reduction never exceeds metab, so metab stays
+    # non-negative. See the "von Bertalanffy growth" vignette for the derivation.
     vb <- vonBertalanffyGrowth(p)
-    repro <- p@psi / (1 - p@psi) * vb
-    repro[vb == 0] <- 0
+    psi <- p@psi
+    w <- p@w
 
-    # Handle a negative von Bertalanffy birth age t0. A negative t0 means the
-    # fish already has a positive size at age 0, so mizer, which starts every
+    # Speed-up for a negative von Bertalanffy birth age t0. A negative t0 means
+    # the fish already has a positive size at age 0, so mizer, which starts every
     # fish at w_min, cannot follow the von Bertalanffy curve below maturity. We
-    # instead speed up growth below maturity so that maturity is reached at the
-    # age the von Bertalanffy curve (with its negative t0) predicts. Above
-    # maturity the growth is left unchanged, so the curve rejoins the von
-    # Bertalanffy curve there.
-    #
-    # In terms of u = w^(1/b) the von Bertalanffy rate is du/dt = k_vb(u_inf - u)
-    # with u_inf = w_inf^(1/b). Scaling metab by a factor c turns this into
-    # du/dt = c*k_vb(u_inf/c - u), i.e. again von Bertalanffy but with rate
-    # c*k_vb and asymptote u_inf/c. The age to grow from w_min to w_mat is then
-    #   age(c) = log((u_inf - c*u_min)/(u_inf - c*u_mat)) / (c*k_vb),
-    # which we invert for c in (0, 1] to match the target maturity age. The
-    # fastest growth reducing metab alone can achieve is at c = 0 (no metabolic
-    # loss), giving the minimum maturity age floor_age below. When even that is
-    # too slow (a strongly negative t0), we additionally raise the intake below
-    # maturity: with metab = 0 the growth is the pure power law d*A*w^n, which
-    # has constant du/dt and maturity age floor_age / d, so scaling the intake
-    # by d = floor_age / t_mat hits the target.
-    metab_base <- metab(p)
+    # add Delta(w) = s * w^n * (1 - (w/w_mat)^(1 - n)) to the growth rate below
+    # maturity, chosen so that maturity is reached at the age the von Bertalanffy
+    # curve (with its negative t0) predicts. Delta vanishes at w_mat, so the
+    # growth rate stays continuous there, and above maturity the growth is
+    # unchanged. Since g_vb + Delta = (A + s) w^n - (B + s/u_mat) w is again a
+    # von Bertalanffy form, the age to maturity has a closed form which we invert
+    # for s. Its w^n term is supplied by the encounter (income) and its w term by
+    # the metabolic loss, keeping consumption allometric (~ w^n) and respiration
+    # linear (~ w).
+    Delta <- matrix(0, nrow(sp), length(w))
+    metab_extra <- matrix(0, nrow(sp), length(w))
+    enc_extra <- matrix(0, nrow(sp), length(w))
     for (i in seq_len(nrow(sp))) {
         if (is.na(sp$t0[i]) || sp$t0[i] >= 0) next
-        u_inf <- sp$w_inf[i] ^ (1 / sp$b[i])
-        u_min <- p@w[p@w_min_idx[i]] ^ (1 / sp$b[i])
-        u_mat <- sp$w_mat[i] ^ (1 / sp$b[i])
+        b_i <- sp$b[i]
+        n_i <- 1 - 1 / b_i
+        A_i <- b_i * sp$k_vb[i] * sp$w_inf[i] ^ (1 / b_i)
+        B_i <- b_i * sp$k_vb[i]
+        u_min <- p@w[p@w_min_idx[i]] ^ (1 / b_i)
+        u_mat <- sp$w_mat[i] ^ (1 / b_i)
+        u_inf <- sp$w_inf[i] ^ (1 / b_i)
         # von Bertalanffy age at maturity with the given (negative) t0
         t_mat <- sp$t0[i] - log(1 - u_mat / u_inf) / sp$k_vb[i]
-        age <- function(c) {
-            log((u_inf - c * u_min) / (u_inf - c * u_mat)) / (c * sp$k_vb[i])
+        if (t_mat <= 0) {
+            stop("Species ", sp$species[i], ": t0 = ", sp$t0[i], " is too ",
+                 "negative; maturity cannot be reached in positive time.")
         }
-        # Smallest maturity age reducing metab alone can reach (c -> 0 limit)
-        floor_age <- (u_mat - u_min) / (sp$k_vb[i] * u_inf)
-        below <- p@w < sp$w_mat[i]
-        if (t_mat > floor_age) {
-            # Reachable by reducing the metabolic loss alone.
-            c <- stats::uniroot(function(c) age(c) - t_mat,
-                                interval = c(1e-8, 1))$root
-            metab_base[i, below] <- c * metab_base[i, below]
-        } else {
-            # Zero metabolic loss is not fast enough, so also raise the intake.
-            metab_base[i, below] <- 0
-            d <- floor_age / t_mat
-            ext_encounter(p)[i, below] <- d * ext_encounter(p)[i, below]
-            message("Species ", sp$species[i], ": t0 = ", sp$t0[i],
-                    " requires faster growth; ",
-                    "intake below maturity raised by a factor of ",
-                    signif(d, 3), " to reach maturity at the von Bertalanffy age.")
+        # Age from w_min to w_mat for the modified von Bertalanffy rate
+        # (A + s) w^n - (B + s/u_mat) w, as a function of the amplitude s.
+        age <- function(s) {
+            B_t <- B_i + s / u_mat
+            u_inf_t <- (A_i + s) / B_t
+            log((u_inf_t - u_min) / (u_inf_t - u_mat)) / (B_t / b_i)
         }
-        repro[i, below] <- 0
+        # age(s) decreases monotonically from the plain von Bertalanffy transit
+        # time at s = 0 towards 0. If maturity is already reached in time no
+        # speed-up is needed; otherwise bracket and solve age(s) = t_mat.
+        if (t_mat >= age(0)) next
+        s_hi <- 1
+        while (age(s_hi) > t_mat) s_hi <- s_hi * 2
+        s <- stats::uniroot(function(s) age(s) - t_mat, c(0, s_hi))$root
+
+        below <- w < sp$w_mat[i]
+        wb <- w[below]
+        Delta[i, below] <- s * wb ^ n_i * (1 - (wb / sp$w_mat[i]) ^ (1 - n_i))
+        enc_extra[i, below] <- s * wb ^ n_i / sp$alpha[i]   # w^n term -> income
+        metab_extra[i, below] <- (s / u_mat) * wb           # w term -> metab
+        message("Species ", sp$species[i], ": t0 = ", sp$t0[i], " < 0; growth ",
+                "below maturity sped up to reach maturity at the von Bertalanffy ",
+                "age (this raises juvenile intake).")
     }
 
-    metab(p) <- pmax(metab_base - repro, 0)
+    # Reduce the metabolic loss by the reproduction investment for the target
+    # growth. The pmax() guards against tiny negative values from floating-point
+    # rounding near w_inf, where the reduction equals the metabolic loss.
+    g_target <- vb + Delta
+    repro <- psi / (1 - psi) * g_target
+    repro[vb == 0] <- 0
+    metab(p) <- pmax(metab(p) + metab_extra - repro, 0)
+    ext_encounter(p) <- ext_encounter(p) + enc_extra
 
     # Set power-law mortality
     # Choose a positive coefficient so that the juvenile biomass density

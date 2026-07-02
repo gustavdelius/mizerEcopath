@@ -270,7 +270,7 @@ maturity, which shows up as a kink in the growth curve.
 
 ```{r}
 #| label: fig-discontinuity
-#| echo: false
+#| code-fold: true
 #| fig-width: 7
 #| fig-height: 4.2
 #| fig-cap: "Growth rate near the maturity weight for a species with a negative
