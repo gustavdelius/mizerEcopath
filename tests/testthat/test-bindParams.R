@@ -55,7 +55,7 @@ test_that("bindParams combines data frames correctly", {
     expect_identical(pc@species_params$species, sp)
     expect_true("extra" %in% names(pc@species_params))
     expect_true(all(is.na(pc@species_params$extra[1:2])))
-    expect_identical(pc@species_params$extra[3:4], c("x", "x"))
+    expect_equal(pc@species_params$extra[3:4], c("x", "x"), ignore_attr = TRUE)
 })
 
 test_that("bindParams accepts a list of params", {

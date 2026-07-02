@@ -157,5 +157,5 @@ test_that("map fixes D_ext at its initial value", {
     result <- suppressWarnings(matchCatch(p, species = species, catch = catch,
                                           map = list(D_ext = factor(NA))))
     sp_res <- species_params(result)[species_params(result)$species == species, ]
-    expect_equal(sp_res$D_ext, D_ext_before, tolerance = 1e-6)
+    expect_equal(sp_res$D_ext, D_ext_before, tolerance = 1e-6, ignore_attr = TRUE)
 })

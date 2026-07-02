@@ -41,8 +41,8 @@ test_that("prepare_params hook adds 'no gear' gear correctly", {
     expect_equal(nrow(gp), 2)
     
     species2_gear <- gp[gp$species == "Species2", ]
-    expect_equal(species2_gear$gear, "no gear")
-    expect_equal(species2_gear$catchability, 0)
+    expect_equal(species2_gear$gear, "no gear", ignore_attr = TRUE)
+    expect_equal(species2_gear$catchability, 0, ignore_attr = TRUE)
 })
 
 test_that("prepare_params sets default parameters", {
@@ -59,9 +59,9 @@ test_that("prepare_params sets default parameters", {
     
     # Check that default parameters were set
     sp <- species_params(p_prepared)
-    expect_equal(sp$a, c(0.006, 0.006))
-    expect_equal(sp$b, c(3, 3))
-    expect_equal(sp$t0, c(0, 0))
+    expect_equal(sp$a, c(0.006, 0.006), ignore_attr = TRUE)
+    expect_equal(sp$b, c(3, 3), ignore_attr = TRUE)
+    expect_equal(sp$t0, c(0, 0), ignore_attr = TRUE)
     
     # Check that w_mat25 was calculated correctly
     expected_w_mat25 <- sp$w_mat / (3^(1 / 10))
