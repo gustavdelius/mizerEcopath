@@ -1,0 +1,454 @@
+---
+title: "A mizer model with von Bertalanffy growth"
+author: "Gustav Delius"
+format:
+  html:
+    toc: true
+    html-math-method: mathjax
+vignette: >
+  %\VignetteIndexEntry{A mizer model with von Bertalanffy growth}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+
+The function `newVonBertalanffyParams()` builds a
+[mizer](https://sizespectrum.org/mizer/) model whose individuals, in the
+steady state of the model, grow along a prescribed von Bertalanffy growth
+curve. This is less immediate than it sounds. In mizer the growth of an
+individual is not a parameter but an **emergent** quantity: it is what is left
+of the assimilated food intake after paying for metabolism, and of that surplus
+only the part not diverted into reproduction contributes to somatic growth. To
+make this emergent growth reproduce a given von Bertalanffy curve we therefore
+have to choose the feeding, metabolic and reproductive terms with some care.
+
+This vignette derives the construction from the ground up. We start from the von
+Bertalanffy curve itself, translate it into the energy budget that mizer uses,
+add reproduction, and finally deal with the awkward case of a negative
+von Bertalanffy age offset $t_0$, where a naive implementation produces a
+discontinuity in the growth rate at maturity and where we show how to avoid it.
+
+The von Bertalanffy parameters are supplied in the `w_inf`, `k_vb` and `t0`
+columns of the species parameter data frame, together with the weight–length
+exponent `b`, the maturity weight `w_mat` and the maximum weight `w_max`.
+
+## Von Bertalanffy growth in length and weight
+
+The von Bertalanffy model describes growth in length $l$ by
+
+$$
+\frac{dl}{dt} = k_{vb}\,(L_\infty - l),
+\qquad
+l(t) = L_\infty\left(1 - e^{-k_{vb}(t - t_0)}\right),
+$$ {#eq-vb-length}
+
+where $L_\infty$ is the asymptotic length, $k_{vb}$ the growth rate constant and
+$t_0$ the (hypothetical) age at which length is zero.
+
+Mizer works in terms of weight $w$, related to length by the allometric law
+$w = a\,l^{b}$, so that the asymptotic weight is $w_\infty = a\,L_\infty^{b}$. It
+is convenient to introduce the variable
+
+$$
+u = w^{1/b} = a^{1/b}\, l ,
+\qquad
+u_\infty = w_\infty^{1/b} = a^{1/b}\, L_\infty ,
+$$
+
+which is simply length up to the constant factor $a^{1/b}$. Because $u$ is
+proportional to $l$, it satisfies the same linear equation,
+
+$$
+\frac{du}{dt} = k_{vb}\,(u_\infty - u),
+\qquad
+u(t) = u_\infty\left(1 - e^{-k_{vb}(t - t_0)}\right).
+$$ {#eq-vb-u}
+
+Transforming back to weight with $w = u^{b}$ and
+$\frac{dw}{dt} = b\,u^{b-1}\frac{du}{dt}$, and using $u^{b-1} = w^{\,1-1/b}$,
+gives the von Bertalanffy growth rate in weight,
+
+$$
+\frac{dw}{dt} = g_{vb}(w) = A\,w^{n} - B\,w
+$$
+where
+$$
+n = 1 - \frac1b,\quad
+A = b\,k_{vb}\,w_\infty^{1/b},\quad
+B = b\,k_{vb}.
+$$ {#eq-vb-weight}
+
+This is the growth rate returned by `vonBertalanffyGrowth()`. It is positive for
+$w < w_\infty$ and vanishes at $w = w_\infty$, where $A\,w_\infty^{n} = B\,w_\infty$.
+The exponent relation $n = 1 - 1/b$ is what ties the mizer growth exponent to the
+weight–length exponent $b$.
+
+## The mizer energy budget
+
+In mizer an individual of weight $w$ encounters food at a rate $E(w)$ and can
+ingest at most $h\,w^{n}$ (the maximum intake). The fraction of the maximum that
+is actually realised is the *feeding level*
+$f = E / (E + h\,w^{n})$, and the assimilated energy income is
+$\alpha\,E\,(1 - f)$, where $\alpha$ is the assimilation efficiency. After
+subtracting the metabolic loss rate $\mathrm{metab}(w)$, the energy available for
+growth and reproduction is
+
+$$
+E_r(w) = \alpha\,E(w)\,\big(1 - f(w)\big) - \mathrm{metab}(w).
+$$
+
+The construction removes every complication that would make $E_r$ deviate from a
+pure power law:
+
+- **Satiation is switched off** by setting $h = \infty$, so $f = 0$ and the
+  income is simply $\alpha\,E(w)$.
+- **Predation and resource interactions are switched off**, so all of $E(w)$ is
+  an externally prescribed encounter rate rather than something that depends on
+  the evolving spectrum.
+- **The metabolic loss is linear**, $\mathrm{metab}(w) = B\,w$, obtained by
+  setting the standard-metabolism coefficient to zero and the activity
+  coefficient to $k = b\,k_{vb} = B$.
+
+With these choices we only have to fix the encounter rate so that the income is
+the power law $\alpha\,E(w) = A\,w^{n}$, i.e.
+
+$$
+E(w) = \frac{A}{\alpha}\,w^{n}.
+$$
+
+The energy available for growth and reproduction is then exactly the von
+Bertalanffy rate,
+
+$$
+E_r(w) = \alpha\,E(w) - \mathrm{metab}(w) = A\,w^{n} - B\,w = g_{vb}(w).
+$$ {#eq-Er}
+
+Before we account for reproduction, an individual therefore grows at precisely
+the von Bertalanffy rate.
+
+## External mortality
+
+For completeness we note that the model also imposes a power-law external
+mortality $\mu(w) = \mu_0\, w^{\,n-1}$, with the coefficient $\mu_0$ chosen so
+that the steady-state juvenile biomass density $w\,N(w)$ has a small negative
+slope (here $-0.2$). This gives a realistic steady-state size spectrum but does
+not influence the individual growth curve, which is our concern here, so we do
+not dwell on it.
+
+## Reproduction
+
+Mizer does not put all of the surplus energy $E_r$ into somatic growth. A
+size-dependent fraction $\psi(w)$, the *maturity ogive*, is diverted into
+reproduction, so that the **somatic** growth rate is
+
+$$
+g(w) = \big(1 - \psi(w)\big)\,E_r(w),
+$$ {#eq-somatic}
+
+and the remaining $\psi(w)\,E_r(w)$ funds egg production. The ogive rises
+smoothly from $0$ below the maturity weight $w_{mat}$ towards $1$ at the
+reproduction cut-off weight $w_{\text{repro,max}}$. Above $w_{mat}$ its switching
+factor has essentially saturated and
+
+$$
+\psi(w) \;\approx\; \left(\frac{w}{w_{\text{repro,max}}}\right)^{1-n}
+\qquad (w \gtrsim w_{mat}).
+$$ {#eq-psi}
+
+If we did nothing, @eq-somatic would make the somatic growth
+$(1-\psi)\,g_{vb}$, which falls below the von Bertalanffy curve as soon as
+$\psi > 0$. To keep the *somatic* growth on the von Bertalanffy curve we need the
+surplus energy to satisfy $(1-\psi)\,E_r = g_{vb}$, that is
+
+$$
+E_r(w) = \frac{g_{vb}(w)}{1 - \psi(w)}.
+$$
+
+Since the unmodified budget @eq-Er already delivers $E_r = g_{vb}$, we achieve
+this by **reducing the metabolic loss** by
+
+$$
+\Delta_{\text{repro}}(w)
+= \frac{g_{vb}(w)}{1-\psi(w)} - g_{vb}(w)
+= \frac{\psi(w)}{1-\psi(w)}\,g_{vb}(w).
+$$ {#eq-repro}
+
+The reduced energy spent on metabolism is exactly the energy that now flows into
+reproduction, so the total budget still balances.
+
+It is worth checking that this reduction never exceeds the metabolic loss itself,
+which would make the metabolic rate negative. Setting
+$w_{\text{repro,max}} = w_\infty$, so that $\psi = (w/w_\infty)^{1-n} = u/u_\infty$
+in the saturated regime, and writing $g_{vb}$ in the variable $u$ as
+$g_{vb} = b\,k_{vb}\,u^{\,b-1}(u_\infty - u)$, we find
+
+$$
+\begin{split}
+\Delta_{\text{repro}}
+&= \frac{u/u_\infty}{1 - u/u_\infty}\; b\,k_{vb}\,u^{\,b-1}(u_\infty - u)\\
+&= \frac{u}{u_\infty - u}\; b\,k_{vb}\,u^{\,b-1}(u_\infty - u)\\
+&= b\,k_{vb}\,u^{b}
+= B\,w
+= \mathrm{metab}(w).
+\end{split}
+$$ {#eq-repro-identity}
+
+This identity holds throughout the mature range where the ogive has saturated,
+$\psi = (w/w_\infty)^{1-n}$: there the reproduction investment equals the entire
+metabolic loss, so the reduced metabolic rate is zero and the power-law income
+$A\,w^{n}$ is shared between somatic growth $g_{vb}$ and reproduction. In the
+maturation transition just above $w_{mat}$ the ogive has not yet saturated,
+$\psi$ is smaller, and the reduction is strictly less than $B\,w$. Either way it
+never exceeds $B\,w$, so the metabolic rate stays non-negative (and somatic
+growth stops only at $w_\infty$, where $g_{vb} = 0$).
+
+## A negative age offset $t_0$
+
+Everything so far assumed that a fish starting from the egg weight $w_{min}$ at
+age $0$ can follow the von Bertalanffy curve. This breaks down when the fitted
+$t_0$ is **negative**. From @eq-vb-length the von Bertalanffy curve then places
+the fish at a *positive* size already at age zero,
+
+$$
+w(0) = w_\infty\left(1 - e^{k_{vb} t_0}\right)^{b} > w_{min},
+$$
+
+because $e^{k_{vb} t_0} < 1$ when $t_0 < 0$. A biological birth at a negative age
+makes no sense, and mizer must start every fish at the egg weight $w_{min}$,
+which is far below $w(0)$. The model simply cannot follow the von Bertalanffy
+curve over the whole juvenile range.
+
+What we *can* ask for is that the fish reaches the maturity weight $w_{mat}$ at
+the age the von Bertalanffy curve predicts, and that it grows along the von
+Bertalanffy curve from maturity onwards. Inverting @eq-vb-u, the von Bertalanffy
+age at maturity is
+
+$$
+t_{mat}
+= t_0 - \frac{1}{k_{vb}}\log\!\left(1 - \frac{u_{mat}}{u_\infty}\right)
+= t_0 - \frac{1}{k_{vb}}\log\!\left(1 - \left(\frac{w_{mat}}{w_\infty}\right)^{1/b}\right),
+$$ {#eq-tmat}
+
+with $u_{mat} = w_{mat}^{1/b}$. A negative $t_0$ makes $t_{mat}$ smaller: the fish
+must reach maturity *sooner* than the plain von Bertalanffy rate would allow from
+$w_{min}$. We therefore have to speed up growth below maturity.
+
+## The problem with a constant speed-up
+
+The obvious way to speed up juvenile growth is to lower the metabolic loss below
+maturity by a constant factor $c \in (0,1]$, replacing $\mathrm{metab} = B\,w$
+with $c\,B\,w$ for $w < w_{mat}$. The growth rate below maturity becomes
+$A\,w^{n} - c\,B\,w$, which in the variable $u$ is again a von Bertalanffy form,
+
+$$
+\frac{du}{dt} = c\,k_{vb}\left(\frac{u_\infty}{c} - u\right),
+$$
+
+with rate $c\,k_{vb}$ and a raised asymptote $u_\infty/c$. Its age from $w_{min}$
+to $w_{mat}$ has the closed form
+
+$$
+\mathrm{age}(c) = \frac{1}{c\,k_{vb}}
+\log\!\frac{u_\infty - c\,u_{min}}{u_\infty - c\,u_{mat}},
+$$
+
+which decreases as $c$ decreases, so one can try to solve $\mathrm{age}(c) = t_{mat}$
+for $c$. The fastest growth this can produce is at $c = 0$ (no metabolic loss at
+all); if even that is too slow, one has to inject extra energy by raising the
+intake instead.
+
+The trouble is that this speed-up is applied at **full strength right up to**
+$w_{mat}$. At maturity the growth rate jumps from $A\,w_{mat}^{n} - c\,B\,w_{mat}$
+just below to the von Bertalanffy value $A\,w_{mat}^{n} - B\,w_{mat}$ just above —
+a downward step of size $(1-c)\,B\,w_{mat}$. There is a second, subtler jump as
+well: if the reproduction compensation of @eq-repro is simply switched off below
+$w_{mat}$, then, because the ogive $\psi$ is already positive just below
+maturity, the somatic growth there carries an uncompensated factor $(1-\psi)$ and
+jumps by that factor at $w_{mat}$. Either way the growth rate is discontinuous at
+maturity, which shows up as a kink in the growth curve.
+
+```{r}
+#| label: fig-discontinuity
+#| echo: false
+#| fig-width: 7
+#| fig-height: 4.2
+#| fig-cap: "Growth rate near the maturity weight for a species with a negative
+#|   $t_0$ (illustrative parameters). The constant-factor speed-up (dashed)
+#|   reaches maturity at the von Bertalanffy age but drops discontinuously onto
+#|   the von Bertalanffy curve at $w_{mat}$. The tapering speed-up (solid) hits
+#|   the same maturity age while joining the von Bertalanffy curve continuously.
+#|   Both coincide with the von Bertalanffy rate (grey) above maturity."
+
+# Illustrative parameters (a mildly negative t0, so the constant-factor
+# speed-up is feasible and its discontinuity can be shown cleanly).
+b <- 3; k <- 0.38; w_inf <- 430; t0 <- -0.3; w_mat <- 69; w_min <- 1e-3
+n <- 1 - 1 / b
+A <- b * k * w_inf^(1 / b); B <- b * k
+uf <- function(w) w^(1 / b)
+u_inf <- uf(w_inf); u_mat <- uf(w_mat); u_min <- uf(w_min)
+
+g_vb <- function(w) A * w^n - B * w
+t_mat <- t0 - log(1 - u_mat / u_inf) / k
+
+# constant-factor speed-up: solve for c
+age_c <- function(c) log((u_inf - c * u_min) / (u_inf - c * u_mat)) / (c * k)
+c_star <- uniroot(function(c) age_c(c) - t_mat, c(1e-8, 1))$root
+g_const <- function(w) ifelse(w < w_mat, A * w^n - c_star * B * w, g_vb(w))
+
+# tapering speed-up: Delta = s * w^n * (1 - (w / w_mat)^(1 - n)), solve for s.
+# g_vb + Delta is again a von Bertalanffy form, so the age has a closed form.
+Delta <- function(w, s) ifelse(w < w_mat, s * w^n * (1 - (w / w_mat)^(1 - n)), 0)
+age_s <- function(s) {
+    A_t <- A + s; B_t <- B + s / u_mat; k_t <- B_t / b   # modified vB coefficients
+    log((A_t / B_t - u_min) / (A_t / B_t - u_mat)) / k_t
+}
+s_star <- uniroot(function(s) age_s(s) - t_mat, c(0, 1e5))$root
+g_taper <- function(w) g_vb(w) + Delta(w, s_star)
+
+w <- seq(w_min, 1.6 * w_mat, length.out = 600)
+plot(w, g_vb(w), type = "l", col = "grey70", lwd = 6,
+     xlab = "weight w", ylab = "growth rate dw/dt",
+     ylim = c(0, max(g_const(w))))
+lines(w, g_const(w), col = "firebrick", lwd = 2, lty = 2)
+lines(w, g_taper(w), col = "steelblue", lwd = 2)
+abline(v = w_mat, col = "grey40", lty = 3)
+text(w_mat, 0, expression(w[mat]), pos = 4, col = "grey40")
+legend("topleft", bty = "n",
+       col = c("grey70", "firebrick", "steelblue"),
+       lwd = c(6, 2, 2), lty = c(1, 2, 1),
+       legend = c("von Bertalanffy", "constant speed-up (discontinuous)",
+                  "tapering speed-up (continuous)"))
+```
+
+## A tapering speed-up
+
+The fix is to make the speed-up **vanish at maturity** so that the growth rate
+joins the von Bertalanffy curve continuously. Instead of a constant reduction we
+add a term $\Delta(w)$ to the growth rate that tapers to zero at $w_{mat}$:
+
+$$
+\Delta(w) =
+\begin{cases}
+s\,w^{n}\left(1 - \left(\dfrac{w}{w_{mat}}\right)^{1-n}\right), & w < w_{mat},\\[2ex]
+0, & w \ge w_{mat},
+\end{cases}
+$$ {#eq-delta}
+
+with a single amplitude $s \ge 0$. The factor $1 - (w/w_{mat})^{1-n}$ vanishes at
+$w_{mat}$ and is positive below (since $1 - n = 1/b > 0$), so $\Delta$ is
+non-negative and vanishes at maturity. The target somatic growth
+
+$$
+g_{\text{target}}(w) = g_{vb}(w) + \Delta(w)
+$$ {#eq-gtarget}
+
+is therefore continuous at maturity, equal to $g_{vb}$ above it and faster below.
+
+The reason for this particular shape is that $\Delta$ is again of von Bertalanffy
+form. Expanding,
+
+$$
+\Delta(w) = s\,w^{n} - \frac{s}{u_{mat}}\,w
+= A_\Delta\,w^{n} + B_\Delta\,w,
+\qquad
+A_\Delta = s,\quad B_\Delta = -\frac{s}{u_{mat}},
+$$
+
+using $w_{mat}^{-(1-n)} = w_{mat}^{\,n-1} = 1/u_{mat}$. Hence the below-maturity
+growth
+
+$$
+g_{\text{target}}(w) = (A + s)\,w^{n} - \Big(B + \tfrac{s}{u_{mat}}\Big)\,w
+= \tilde A\,w^{n} - \tilde B\,w
+$$
+
+is itself a von Bertalanffy rate, with a faster growth constant
+$\tilde k = \tilde B / b = k_{vb} + s/(b\,u_{mat})$ and a lower asymptote
+$\tilde u_\infty = \tilde A/\tilde B \in (u_{mat}, u_\infty)$. Below maturity the
+fish thus grows along a von Bertalanffy curve that has been steepened just enough
+to reach $w_{mat}$ on time, and which crosses the original curve exactly at
+$w_{mat}$.
+
+Because the below-maturity growth is a von Bertalanffy rate, the age to reach
+maturity has the same closed form as in @eq-vb-u, and the amplitude $s$ is fixed
+by requiring maturity at the von Bertalanffy age @eq-tmat:
+
+$$
+\mathrm{age}(s) =
+\frac{1}{\tilde k}\,
+\log\frac{\tilde u_\infty - u_{min}}{\tilde u_\infty - u_{mat}} = t_{mat}.
+$$ {#eq-age-s}
+
+As $s$ increases from $0$, $\tilde k$ grows and $\tilde u_\infty$ falls towards
+$u_{mat}$, so $\mathrm{age}(s)$ decreases monotonically from the plain von
+Bertalanffy transit time at $s = 0$ towards $0$ as $s \to \infty$. Any target age
+$t_{mat} > 0$ is therefore reachable — unlike the constant-factor scheme, there is
+no lower bound on the attainable maturity age. Equation @eq-age-s is a single
+closed-form expression, solved for $s$ numerically.
+
+### Realising it in the energy budget
+
+It remains to realise $g_{\text{target}}$ within the mizer budget while keeping
+the reproduction compensation of @eq-repro. Because the below-maturity target is
+itself a von Bertalanffy rate $\tilde A\,w^{n} - \tilde B\,w$, we realise it in
+exactly the way the main curve was built in @eq-Er and @eq-repro: the $w^{n}$
+term is carried by the (allometric) encounter income and the $w$ term by the
+(linear) metabolic loss, with the reproduction investment again drawn from the
+metabolic loss. Writing
+
+$$
+\tilde A(w) = A + s\,\mathbb{1}[w < w_{mat}],
+\qquad
+\tilde B(w) = B + \frac{s}{u_{mat}}\,\mathbb{1}[w < w_{mat}],
+$$
+
+so that $\tilde A\,w^{n} - \tilde B\,w = g_{\text{target}}(w)$, we set
+
+$$
+E(w) = \frac{\tilde A(w)\,w^{n}}{\alpha},
+\qquad
+\mathrm{metab}(w) = \tilde B(w)\,w \;-\; \frac{\psi(w)}{1-\psi(w)}\,g_{\text{target}}(w).
+$$ {#eq-split}
+
+The subtracted term is the reproduction investment, generalising @eq-repro from
+$g_{vb}$ to the target growth $g_{\text{target}}$; it stays below $\tilde B\,w$
+(as in @eq-repro-identity), so the metabolic loss remains non-negative. One
+checks directly that $\alpha E - \mathrm{metab} = g_{\text{target}}/(1-\psi)$, and
+hence, from @eq-somatic, the somatic growth is exactly
+$(1-\psi)\,g_{\text{target}}/(1-\psi) = g_{\text{target}}$, as intended.
+
+This is the decomposition we want: the speed-up raises the **encounter income**
+through its $w^{n}$ term ($A \to A + s$) and the **metabolic loss** through its
+$w$ term ($B \to B + s/u_{mat}$), rather than being absorbed into a reduction of
+the metabolic loss. Consumption therefore stays allometric ($\propto w^{n}$) and
+respiration linear ($\propto w$) throughout. Below maturity, where $\psi \approx
+0$, this is simply $\alpha E = (A+s)\,w^{n}$ and $\mathrm{metab} = (B+s/u_{mat})\,w$.
+
+The construction avoids both discontinuities of the previous section. The
+constant-factor jump is gone because $\Delta$ tapers to zero at $w_{mat}$; the
+reproduction jump is gone because the reproduction investment
+$\tfrac{\psi}{1-\psi}g_{\text{target}}$ is applied continuously across maturity
+rather than switched off below it. The growth rate is therefore continuous. The
+encounter and metabolic rates *individually* step by $s\,w_{mat}^{n}$ at $w_{mat}$
+— the coefficients $\tilde A, \tilde B$ switch there — but these steps are equal
+and cancel in the growth rate $\alpha E - \mathrm{metab}$, so they leave the
+growth curve smooth. Species with $t_0 \ge 0$ have $s = 0$, so
+$\tilde A = A$, $\tilde B = B$ and nothing about their construction changes.
+
+## Summary
+
+The construction reproduces a von Bertalanffy growth curve in a mizer steady
+state by assigning each term of the energy budget a definite role:
+
+| Term | Choice | Purpose |
+|------|--------|---------|
+| Encounter $E(w)$ | $\tilde A(w)\,w^{n}/\alpha$, with $\tilde A = A + s$ below $w_{mat}$ | supplies the allometric income; carries the speed-up's $w^{n}$ term |
+| Metabolic loss | $\tilde B(w)\,w$, with $\tilde B = B + s/u_{mat}$ below $w_{mat}$, minus the reproduction investment | linear respiration; carries the speed-up's $w$ term and funds reproduction |
+| Maturity ogive $\psi$ | mizer default with $w_{\text{repro,max}} = w_\infty$ | splits surplus into soma and reproduction |
+| Speed-up $\Delta(w)$ | $s\,w^{n}(1 - (w/w_{mat})^{1-n})$, $s$ from @eq-age-s | corrects a negative $t_0$ without a discontinuity |
+
+The result is a model whose steady-state somatic growth equals the von
+Bertalanffy rate above maturity, reaches maturity at the von Bertalanffy age even
+when $t_0 < 0$, and has a growth rate that is continuous everywhere, including at
+the maturity weight.
