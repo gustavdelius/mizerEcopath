@@ -102,19 +102,31 @@ prepare_data <- function(params, species = 1, catch,
         # catch data is very poor and would be matched by curves that are still
         # large at the end of the observation interval.
         min_length <- (sps$w_min / sps$a) ^ (1 / sps$b)
-        observed_bins <- rbind(observed_bins, data.frame(bin_start = min_length,
-                                                         bin_end = min(catch$length), count = 0, gear = unique(catch$gear))) # add diff gears
+        lower_bins <- data.frame(bin_start = min_length,
+                                 bin_end = min(catch$length),
+                                 count = 0,
+                                 gear = unique(catch$gear),
+                                 row.names = NULL)
+        observed_bins <- rbind(observed_bins, lower_bins)
         max_idx <- which.max(catch$length)
         max_length <- catch$length[max_idx] + catch$dl[max_idx]
         l_max <- (sps$w_max / sps$a) ^ (1 / sps$b)
-        observed_bins <- rbind(observed_bins, data.frame(bin_start = max_length,
-                                                         bin_end = l_max, count = 0, gear = unique(catch$gear)))  # add diff gears
-        observed_bins <- observed_bins |> arrange(gear, bin_start)  # better for different gears
+        upper_bins <- data.frame(bin_start = max_length,
+                                 bin_end = l_max,
+                                 count = 0,
+                                 gear = unique(catch$gear),
+                                 row.names = NULL)
+        observed_bins <- rbind(observed_bins, upper_bins)
+        # ordering better for different gears
+        observed_bins <- observed_bins |> arrange(gear, bin_start)
 
         # Create a comprehensive set of bin edges covering all observed bins
-        bin_edges <- sort(unique(c(observed_bins$bin_start, observed_bins$bin_end)))
-        bins <- data.frame( bin_start = head(bin_edges, -1), bin_end   = tail(bin_edges, -1))
-        all_combos <- tidyr::expand_grid(gear=unique(observed_bins$gear),bins)
+        bin_edges <- sort(unique(c(observed_bins$bin_start,
+                                   observed_bins$bin_end)))
+        bins <- data.frame( bin_start = head(bin_edges, -1),
+                            bin_end   = tail(bin_edges, -1))
+        all_combos <- tidyr::expand_grid(gear = unique(observed_bins$gear),
+                                         bins)
 
         # Define full bins covering the observed range
         full_bins <- all_combos |>
@@ -124,7 +136,9 @@ prepare_data <- function(params, species = 1, catch,
         # Extract counts, bin boundaries and widths
         counts_wide <- full_bins |>
             select(gear, bin_start, bin_end, count) |>
-            tidyr::pivot_wider(names_from = gear, values_from = count, values_fill = 0)
+            tidyr::pivot_wider(names_from = gear,
+                               values_from = count,
+                               values_fill = 0)
         # Keep counts as a matrix with one column per gear, ordered to match
         # the model gear order (`gps$gear`) so that column g lines up with the
         # selectivity and yield of gear g in the C++ objective function.
@@ -168,8 +182,15 @@ prepare_data <- function(params, species = 1, catch,
     } else {
         biomass_cutoff_idx <- as.integer(sum(w < biomass_cutoff))
     }
-    # The cutoff index for R is one more than the C++ index
-    biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
+    # The cutoff index for R is one more than the C++ index.
+    # Prefer using biomass_observed if specified; otherwise calculate from current spectrum N.
+    if (!is.null(sps$biomass_observed) &&
+        !is.na(sps$biomass_observed) &&
+        sps$biomass_observed > 0) {
+        biomass <- sps$biomass_observed
+    } else {
+        biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
+    }
     growth <- getEGrowth(params)[sp_select, w_select]
     if (use_counts) {
         # Precompute weights for interpolation
@@ -221,7 +242,9 @@ prepare_data <- function(params, species = 1, catch,
     # Prepare data list for TMB
     if (second_order) {
         flux_limiter <- params@second_order_w[["flux"]]
-        chi_full <- mizer:::flux_limiter_psi(params, initialN(params), getEGrowth(params), flux_limiter)
+        chi_full <- mizer:::flux_limiter_chi(params, initialN(params),
+                                             getEGrowth(params),
+                                             flux_limiter)
         chi <- chi_full[sp_select, w_select]
     } else {
         chi <- rep(0, length(w))
@@ -232,7 +255,7 @@ prepare_data <- function(params, species = 1, catch,
         counts = counts,
         bin_index = weight_list$bin_index,
         f_index = weight_list$f_index,
-        sel_func = ifelse(gps$sel_func=='double_sigmoid_length',1,2), # different selectivity functions
+        sel_func = ifelse(gps$sel_func == 'double_sigmoid_length', 1, 2),
         coeff_fj = weight_list$coeff_fj,
         coeff_fj1 = weight_list$coeff_fj1,
         dw = dw,
@@ -337,10 +360,10 @@ precompute_weights <- function(w_bin_boundaries, w) {
 
 #' Validate and extract catch data for a single species
 #'
-#' This helper function ensures that the catch data frame contains the required columns,
-#' extracts only the rows for the specified species.
-#' @param catch A data frame containing the observed binned catch data with columns
-#'   `length`, `dl`, and `count` (or `catch`).
+#' This helper function ensures that the catch data frame contains the required
+#' columns, extracts only the rows for the specified species.
+#' @param catch A data frame containing the observed binned catch data with
+#'   columns `length`, `dl`, and `count` (or `catch`).
 #' @param species The species name to extract from the catch data.
 #' @export
 valid_catch <- function(catch, species) {

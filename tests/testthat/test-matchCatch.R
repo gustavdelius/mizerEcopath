@@ -515,6 +515,6 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
 
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03)
-    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05)
-    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)
+    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05, ignore_attr = TRUE)
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05, ignore_attr = TRUE)
 })

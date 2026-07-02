@@ -282,26 +282,30 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         map$log_catchability <- factor(rep(NA, length(data$sel_func)))
     }
 
-    lower_bounds <- NULL
-    upper_bounds <- NULL
-
-    for (p in names(initial_params)) {
-        lb <- lower_bounds_list[[p]]
-        ub <- upper_bounds_list[[p]]
-
-        if (!is.null(map[[p]])) {
-            keep <- !is.na(as.vector(map[[p]]))
-            lb <- lb[keep]
-            ub <- ub[keep]
-        }
-        lower_bounds <- c(lower_bounds, lb)
-        upper_bounds <- c(upper_bounds, ub)
-    }
-
     # Prepare the objective function.
 
     obj <- TMB::MakeADFun(data = data, parameters = initial_params, map = map,
                           DLL = "mizerEcopath", silent = TRUE, debug = FALSE)
+
+    lower_bounds <- numeric(length(obj$par))
+    upper_bounds <- numeric(length(obj$par))
+
+    par_names <- names(obj$par)
+    for (pname in unique(par_names)) {
+        indices <- which(par_names == pname)
+        lb <- lower_bounds_list[[pname]]
+        ub <- upper_bounds_list[[pname]]
+        if (!is.null(map[[pname]])) {
+            m_vec <- as.vector(map[[pname]])
+            non_na_m <- m_vec[!is.na(m_vec)]
+            unique_lvls <- unique(non_na_m)
+            keep_idx <- vapply(unique_lvls, function(lvl) which(m_vec == lvl)[1], integer(1))
+            lb <- lb[keep_idx]
+            ub <- ub[keep_idx]
+        }
+        lower_bounds[indices] <- lb
+        upper_bounds[indices] <- ub
+    }
 
     # Perform the optimization.
     optim_result <- nlminb(obj$par, obj$fn, obj$gr,

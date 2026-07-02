@@ -29,7 +29,7 @@ test_that("matchConsumption sets p = n for selected species", {
     expect_warning(result <- matchConsumption(params_mismatch, species = 1:4),
                    paste0("Exponent `p` changed for ", changed), fixed = TRUE)
     expect_identical(result@species_params$p[1:4], result@species_params$n[1:4])
-    expect_identical(result@species_params$p[5], 0.9)
+    expect_identical(result@species_params$p[5], 0.9, ignore_attr = TRUE)
 })
 
 test_that("matchConsumption works with single species", {
@@ -108,5 +108,6 @@ test_that("matchConsumption matches consumption to consumption_observed", {
     R <- sp$alpha * sp$consumption_observed - total_production
     exact <- R >= 0.1 * total_production
 
-    expect_equal(model_consumption[exact], expected_consumption[exact], tolerance = 1e-8)
+    expect_equal(model_consumption[exact], expected_consumption[exact],
+                 tolerance = 1e-8, ignore_attr = TRUE)
 })

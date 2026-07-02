@@ -7,12 +7,12 @@
 valid_catch(catch, species)
 }
 \arguments{
-\item{catch}{A data frame containing the observed binned catch data with columns
-\code{length}, \code{dl}, and \code{count} (or \code{catch}).}
+\item{catch}{A data frame containing the observed binned catch data with
+columns \code{length}, \code{dl}, and \code{count} (or \code{catch}).}
 
 \item{species}{The species name to extract from the catch data.}
 }
 \description{
-This helper function ensures that the catch data frame contains the required columns,
-extracts only the rows for the specified species.
+This helper function ensures that the catch data frame contains the required
+columns, extracts only the rows for the specified species.
 }

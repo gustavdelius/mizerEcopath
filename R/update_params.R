@@ -70,6 +70,8 @@ update_params <- function(params, species = 1, pars, data) {
 
     gp_res <- data.frame( l50 = l50, l25 = l25, l50_right = l50_right, l25_right = l25_right, catchability = catchability)
 
+    # Convert gps to standard data frame so row/column assignments preserve column types
+    gps <- as.data.frame(gps)
     gps[,'l50'] <- gp_res$l50
     gps[,'l25'] <- gp_res$l25
     gps[,'l50_right'] <- ifelse(gps$sel_func=='double_sigmoid_length', gp_res$l50_right, NA)
@@ -111,14 +113,23 @@ update_params <- function(params, species = 1, pars, data) {
     params <- setReproduction(params)
 
     # Calculate the new steady state
-
     params <- mizer::steadySingleSpecies(params, species = species)
-    # Rescale it to get the observed biomass
-    params <- matchBiomasses(params, species = species)
-    # Set the reproduction level to zero
+
+    # Rescale steady state biomass to match the target biomass:
+    # Use matchBiomasses() if biomass_observed is specified, else scale to the reference
+    # biomass used in prepare_data() to maintain consistent scaling with the TMB optimization.
+    if (!is.null(sps$biomass_observed) && !is.na(sps$biomass_observed) && sps$biomass_observed > 0) {
+        params <- matchBiomasses(params, species = species)
+    } else {
+        w_select <- params@w >= data$w[1] & params@w <= data$w[length(data$w)]
+        cur_bm <- sum((params@initial_n[sp_select, w_select] * params@w[w_select] * params@dw[w_select])[(data$biomass_cutoff_idx + 1):length(data$w)])
+        params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * (data$biomass / cur_bm)
+    }
+
+    # Set the reproduction level to zero (suppress warnings from small erepro adjustments)
     rl <- numeric(length(species))
     names(rl) <- species
-    params <- setBevertonHolt(params, reproduction_level = rl)
+    params <- suppressWarnings(setBevertonHolt(params, reproduction_level = rl))
 
     return(params)
 }
