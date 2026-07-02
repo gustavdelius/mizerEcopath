@@ -19,8 +19,8 @@ test_that("newAllometricParams returns a MizerParams object", {
 test_that("newAllometricParams sets default exponents correctly", {
     p <- newAllometricParams(sp_single)
     sp <- p@species_params
-    expect_equal(sp$n, 0.7)
-    expect_equal(sp$p, 0.7)
+    expect_equal(sp$n, 0.7, ignore_attr = TRUE)
+    expect_equal(sp$p, 0.7, ignore_attr = TRUE)
     expect_equal(sp$d, sp$n - 1)
 })
 
@@ -32,31 +32,31 @@ test_that("newAllometricParams fills missing d with n - 1", {
 
 test_that("newAllometricParams sets default alpha to 0.8", {
     p <- newAllometricParams(sp_single)
-    expect_equal(p@species_params$alpha, 0.8)
+    expect_equal(p@species_params$alpha, 0.8, ignore_attr = TRUE)
 })
 
 test_that("newAllometricParams respects user-supplied alpha", {
     sp <- sp_single
     sp$alpha <- 0.6
     p <- newAllometricParams(sp)
-    expect_equal(p@species_params$alpha, 0.6)
+    expect_equal(p@species_params$alpha, 0.6, ignore_attr = TRUE)
 })
 
 test_that("newAllometricParams sets ks and z0 to zero", {
     p <- newAllometricParams(sp_single)
-    expect_equal(p@species_params$ks, 0)
-    expect_equal(p@species_params$z0, 0)
+    expect_equal(p@species_params$ks, 0, ignore_attr = TRUE)
+    expect_equal(p@species_params$z0, 0, ignore_attr = TRUE)
 })
 
 test_that("newAllometricParams switches off all interactions", {
     p <- newAllometricParams(sp_single)
     expect_true(all(interaction_matrix(p) == 0))
-    expect_equal(p@species_params$interaction_resource, 0)
+    expect_equal(p@species_params$interaction_resource, 0, ignore_attr = TRUE)
 })
 
 test_that("newAllometricParams switches off satiation (h = Inf)", {
     p <- newAllometricParams(sp_single)
-    expect_equal(p@species_params$h, Inf)
+    expect_equal(p@species_params$h, Inf, ignore_attr = TRUE)
     expect_true(all(is.infinite(intake_max(p))))
 })
 

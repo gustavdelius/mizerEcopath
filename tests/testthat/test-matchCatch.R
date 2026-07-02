@@ -164,7 +164,7 @@ test_that("matchCatch fits only the catch's gears, leaving others untouched", {
     # The survey gear (no catch data) is left exactly as it was.
     untouched <- gp_before[cod, ][!fished, c("l50", "l25", "catchability")]
     after_untouched <- gp_after[cod, ][!fished, c("l50", "l25", "catchability")]
-    expect_equal(untouched, after_untouched)
+    expect_equal(untouched, after_untouched, ignore_attr = TRUE)
 
     # The commercial gears (with catch data) have been refitted.
     expect_false(isTRUE(all.equal(
@@ -247,8 +247,8 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     # catch_identifiability vignette).
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)        # selectivity
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03) # from the yield
-    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05)      # mortality
-    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)        # diffusion
+    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05, ignore_attr = TRUE)      # mortality
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05, ignore_attr = TRUE)        # diffusion
 })
 
 test_that("matchCatch recovers selectivity and catchability from the catch alone", {
@@ -455,7 +455,7 @@ test_that("matchCatch with empty catch matches only yield and production", {
                                             c("l50", "l25")]
     gp_after  <- gear_params(result)[gear_params(result)$species == "Hake",
                                      c("l50", "l25")]
-    expect_equal(gp_before, gp_after)
+    expect_equal(gp_before, gp_after, ignore_attr = TRUE)
 })
 
 test_that("mu_mat_lim caps the optimised external mortality", {

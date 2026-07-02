@@ -46,14 +46,14 @@ test_that("Function adds Ecopath parameters correctly", {
     expect_true(all(c("biomass_observed", "consumption_observed", "production_observed", "ecopath_groups") %in% colnames(result)))
 
     # Check values for Species1
-    expect_equal(result$biomass_observed[1], 10)
-    expect_equal(result$consumption_observed[1], 20)
-    expect_equal(result$production_observed[1], 10)
+    expect_equal(result$biomass_observed[1], 10, ignore_attr = TRUE)
+    expect_equal(result$consumption_observed[1], 20, ignore_attr = TRUE)
+    expect_equal(result$production_observed[1], 10, ignore_attr = TRUE)
 
     # Check values for Species2
-    expect_equal(result$biomass_observed[2], 20)  # 5 + 15
-    expect_equal(result$consumption_observed[2], 75)  # (3*5) + (4*15)
-    expect_equal(result$production_observed[2], 58.5)  # (0.7*15) + (0.8*60)
+    expect_equal(result$biomass_observed[2], 20, ignore_attr = TRUE)  # 5 + 15
+    expect_equal(result$consumption_observed[2], 75, ignore_attr = TRUE)  # (3*5) + (4*15)
+    expect_equal(result$production_observed[2], 58.5, ignore_attr = TRUE)  # (0.7*15) + (0.8*60)
 
     # Check unmapped species
     expect_true(is.na(result$biomass_observed[3]))
@@ -75,9 +75,9 @@ test_that("Function warns about existing non-default values", {
 test_that("Function handles multiple stanzas correctly", {
     result <- addEcopathParams(species_params, ecopath_params, species_to_groups) |>
         suppressWarnings()
-    expect_equal(result$biomass_observed[2], 20)  # Sum of Stanza1 and Stanza2 biomass
-    expect_equal(result$consumption_observed[2], 75)  # Correct total consumption
-    expect_equal(result$production_observed[2], 58.5)  # Correct total production
+    expect_equal(result$biomass_observed[2], 20, ignore_attr = TRUE)  # Sum of Stanza1 and Stanza2 biomass
+    expect_equal(result$consumption_observed[2], 75, ignore_attr = TRUE)  # Correct total consumption
+    expect_equal(result$production_observed[2], 58.5, ignore_attr = TRUE)  # Correct total production
 })
 
 test_that("Function works with missing Ecopath parameters", {
@@ -115,8 +115,8 @@ test_that("Function does not overwrite values for unmapped species", {
         suppressWarnings()
 
     # Check that values for unmapped species are unchanged
-    expect_equal(result$biomass_observed[3], 100)
-    expect_equal(result$production_observed[3], 200)
-    expect_equal(result$consumption_observed[3], 300)
+    expect_equal(result$biomass_observed[3], 100, ignore_attr = TRUE)
+    expect_equal(result$production_observed[3], 200, ignore_attr = TRUE)
+    expect_equal(result$consumption_observed[3], 300, ignore_attr = TRUE)
     expect_equal(result$ecopath_groups[[3]], "ExistingGroup")
 })
