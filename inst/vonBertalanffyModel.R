@@ -1,110 +1,60 @@
-library(mizerEcopath)
+# Script to fit von Bertalanffy growth parameters and match catch data
 library(dplyr)
 library(mizer)
-newVonBertalanffyParams <- function(species_params, no_w = 200, max_w = NULL) {
-    sp <- validGivenSpeciesParams(species_params)
-
-    # Impose relation between exponents
-    sp <- set_species_param_default(sp, "n", 1 - 1 / sp$b)
-    sp$p <- sp$n
-    sp <- set_species_param_default(sp, "d", sp$n - 1)
-
-    # Set default assimilation efficiency
-    sp <- set_species_param_default(sp, "alpha", 0.8)
-
-    # Switch off metabolic respiration
-    sp$ks <- 0
-    # Switch off constant mortality
-    sp$z0 <- 0
-
-    # Generate a default mizer model with the desired species We extend the
-    # resource spectrum over the entire size range to ensure that all species
-    # have sufficient prey throughout their life.
-
-    if (is.null(max_w)) {max_w <- max(sp$w_max)}
-
-    if (max_w < max(sp$w_max)) {
-        warning("The maximum weight provided (max_w) is lower than the
-                maximum size of the fish. The model has been generated with
-                the latter")
-    }
-
-    max_w <- max(max_w, sp$w_max)
-
-    p <- newMultispeciesParams(sp, no_w = no_w, info_level = 0,
-                               # extend resource over entire size range
-                               max_w = max_w,
-                               w_pp_cutoff = max_w * (1 + 1e-9),
-                               resource_dynamics = "resource_constant",
-                               n = 0.7)
-    sp <- p@species_params
-
-    # Switch off all interactions
-    interaction_matrix(p)[] <- 0
-    sp$interaction_resource <- 0
-
-    # Switch off satiation
-    sp$h <- Inf
-    intake_max(p)[] <- Inf
-
-    # Set constant metabolic rate
-    sp$k <- sp$b * sp$k_vb
-
-    # Set power-law encounter rate (the coefficient will be adjusted below)
-    sp$E_ext <- sp$b * sp$k_vb * sp$w_inf^(1/sp$b) / sp$alpha
-
-    species_params(p) <- sp
-
-    # Subtract reproduction investment from metabolic loss rate
-    metab(p) <- metab(p) - getERepro(p)
-
-    # Set power-law mortality
-    # Choose a positive coefficient so that the juvenile biomass density
-    # has a slightly negative slope (of -0.2).
-    sp$z_ext <- sp$alpha * sp$E_ext * (1 + 0.2 - sp$n)
-
-    species_params(p) <- sp
-    # Match Biomasses
-    p <- matchBiomasses(p)
-    # Set to steady state
-    p <- steadySingleSpecies(p, keep = "biomass")
-    p <- setBevertonHolt(p, reproduction_level = 0)
-
-    return(p)
-}
+library(mizerEcopath)
 
 Jess_sp <- celtic_params@species_params |>
     select(species, a, b, age_mat, w_mat, w_max,
            biomass_cutoff, biomass_observed,
            pred_kernel_type, beta, sigma,
            kernel_exp, kernel_l_l, kernel_u_l, kernel_l_r, kernel_u_r)
-James_sp <- readRDS("~/Git/mizerEcopath/inst/James_sp.rds")
+James_sp <- readRDS("inst/James_sp.rds")
 sp <- James_sp |>
-    select(species, w_inf, k_vb, t0,
+    select(species, w_inf, k_vb, t0, w_mat, biomass_observed,
            production_observed, consumption_observed) |>
     inner_join(Jess_sp, by = "species")
 
-sp$D_ext <- 1
+saveRDS(sp, "inst/sp.rds")
+
+# Load pre-packaged species parameters for Celtic Sea model
+sp <- readRDS("inst/sp.rds")
+
+# Initialize von Bertalanffy params using mizerEcopath helper
 p <- newVonBertalanffyParams(sp)
 
+# Attach gear parameters matching the selected species
 gp <- gear_params(celtic_params) |>
     filter(species %in% sp$species)
+gp$l50_right <- gp$l50 + 5
+gp$l25_right <- gp$l50 + 10
+gp$sel_func[gp$gear == "Gillnet"] <- "double_sigmoid_length"
 gear_params(p) <- gp
 initial_effort(p) <- 1
+
+# Bring single-species models to steady state and set Beverton-Holt stock-recruitment
 p <- steadySingleSpecies(p) |>
     setBevertonHolt()
+p <- matchBiomasses(p)
 
+# Fit selectivity/catchability to match observed Celtic Sea catches
 p <- matchCatch(p, catch = celtic_catch, production_lambda = 0,
-                yield_lambda = 100)
+                yield_lambda = 1)
 
-p <- tuneEcopath(p, catch = celtic_catch, diet = reduced_dm)
-
-plotSpectra(p, power = 2, resource = FALSE)
-plotBiomassVsSpecies(p)
+# Plot resulting yield comparison
 plotYieldVsSpecies(p)
-plot_catch(p, catch = celtic_catch, species = "Cod")
-plotProductionVsSpecies(p)
+plotBiomassVsSpecies(p)
+plotlySpectra(p, power = 2, resource = FALSE)
+plotlyFMort(p)
 p@species_params$z_ext
+gp <- gear_params(p)
+View(gp[gp$gear == "Gillnet", ])
+
+pb <- p
+p <- pb
+p <- matchDiet(p, reduced_dm)
+warnings()
+
+plotSpectra(p, power = 2)
 p@species_params$D_ext
-sim <- project(p, t_max = 10)
-plotBiomass(sim)
+plot(getMort(p), log_y = TRUE)
+p@gear_params$catchability
