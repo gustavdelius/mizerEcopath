@@ -89,10 +89,18 @@ For a **control** named `"foo"` the engine expects two functions:
 - `fooControl(input, output, session, params, params_old, flags, trigger_update, ...)`
   — the server logic that reacts to those widgets.
 
-Optionally you may define a string `fooControlTitle` to give the sidebar section
-a heading; otherwise the heading is the name itself. Control names should start
-with a **lower-case** letter (the UI function name is used verbatim, while the
-server function name has its first letter lower-cased internally).
+The engine renders the section heading for you, so `fooControlUI()` should
+**not** produce its own heading — it returns only its input widgets. The heading
+text is taken from an optional string `fooControlTitle`; if you do not define one
+it defaults to the control name. You may also define a string
+`fooControlDescription`, which is shown as a tooltip both on the heading and on
+the sidebar link that jumps to the control. The heading carries an anchor whose
+id is the control name, so those sidebar links (and any `href="#foo"` links you
+put in a tab's help text) scroll to it.
+
+Control names should start with a **lower-case** letter (the UI function name is
+used verbatim, while the server function name has its first letter lower-cased
+internally).
 
 For a **tab** named `"Foo"` (or `"foo"`) the engine expects:
 
@@ -196,7 +204,6 @@ The built-in `growthControl` is a good model to imitate:
 growthControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "predation"), "Predation"),
         sliderInput("gamma", "Search volume coefficient 'gamma'",
                     value = sp$gamma,
                     min = signif(sp$gamma / 2, 3),
@@ -227,6 +234,11 @@ Note the differences from a tab:
 - The **UI function receives `p`** — a plain, already-isolated `MizerParams`
   object — and `input`. You read the selected species' parameters directly from
   `p@species_params[input$sp, ]` to set the slider's initial value and range.
+- The **UI function returns only its widgets** — no heading. The engine adds the
+  section heading (from `growthControlTitle`, or the control name) above them, so
+  you never write a `tags$h3()` of your own. A control may still include *inner*
+  sub-headings for grouping (as `otherControl` does with its "Mort" heading); it
+  is only the top-level section heading that the engine owns.
 - The **server function receives the reactive `params` and `params_old`**, plus
   a `flags` environment. After changing a parameter you commit the change with
   one of the helper functions described below.
@@ -260,7 +272,6 @@ coefficient `h`:
 intakeControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "intake"), "Intake"),
         sliderInput("h", "Max intake coefficient 'h'",
                     value = sp$h,
                     min = signif(sp$h / 2, 3),
@@ -284,8 +295,10 @@ intakeControl <- function(input, output, session, params, params_old, flags, ...
     ignoreInit = TRUE, ignoreNULL = TRUE)
 }
 
-# Give the sidebar section a heading
+# Heading shown above the control (without this it would default to "intake")
 intakeControlTitle <- "Intake"
+# Optional tooltip shown on the heading and on the sidebar link to the control
+intakeControlDescription <- "Adjust the maximum intake rate coefficient 'h'."
 
 tuneParams(celtic_params, controls = c("growth", "intake"))
 ```
@@ -496,7 +509,9 @@ hands the observed `catch` and `diet` data to its tabs.
 - Add a **control** by defining `fooControlUI(p, input)` and
   `fooControl(input, output, session, params, params_old, flags, ...)`,
   remembering the `flags` guard and committing changes with
-  `tuneParams_update_species()`.
+  `tuneParams_update_species()`. Return only the widgets: the engine renders the
+  heading from `fooControlTitle` (or the control name), with an optional
+  `fooControlDescription` tooltip.
 - Commit changes with the right helper: `tuneParams_update_params()`,
   `tuneParams_update_species()`, `tuneParams_update_abundance()` or
   `tuneParams_add_to_logs()`.

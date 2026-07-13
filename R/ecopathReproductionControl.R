@@ -55,7 +55,6 @@ ecopathReproductionControlUI <- function(params, input) {
     l_mat25 <- (sps$w_mat25 / sps$a) ^ (1 / sps$b)
     l_repro_max <- (sps$w_repro_max / sps$a) ^ (1 / sps$b)
     tagList(
-        tags$h3(tags$a(id = "reproduction"), "Reproduction"),
         sliderInput("l_mat", "l_mat", value = l_mat,
                     min = signif(l_mat / 2, 2),
                     max = signif(l_mat * 1.5, 2)),
@@ -75,3 +74,5 @@ ecopathReproductionControlUI <- function(params, input) {
 }
 
 ecopathReproductionControlTitle <- "Reproduction"
+ecopathReproductionControlDescription <-
+    "Set the maturity size, the width of the maturity ogive, the maximum reproduction size and the reproductive investment exponent."

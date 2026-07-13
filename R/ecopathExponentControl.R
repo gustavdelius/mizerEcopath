@@ -82,7 +82,6 @@ ecopathExponentControl <- function(input, output, session, params, params_old,
 ecopathExponentControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "exponent"), "Allometric exponents"),
         sliderInput("n", "Exponent of consumption",
                     value = sp[["n"]],
                     min = sp[["n"]] - 0.02,
@@ -100,3 +99,5 @@ ecopathExponentControlUI <- function(params, input) {
                     step = 0.005)
     )
 }
+
+ecopathExponentControlTitle <- "Allometric exponents"

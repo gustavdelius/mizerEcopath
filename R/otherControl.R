@@ -82,7 +82,6 @@ otherControlUI <- function(p, input) {
     mat_idx <- sum(p@w < sp$w_mat)
     mu_mat <- ext_mort(p)[input$sp, mat_idx]
     tagList(
-        tags$h3(tags$a(id = "other"), "Other"),
         sliderInput("ks", "Coefficient of standard metabolism 'ks'",
                     value = sp$ks,
                     min = signif(sp$ks / 2, 2),
@@ -109,3 +108,5 @@ otherControlUI <- function(p, input) {
                     max = 1)
     )
 }
+
+otherControlTitle <- "Other"

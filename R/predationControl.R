@@ -114,7 +114,6 @@ predationControl <- function(input, output, session, params, params_old,
 predationControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "predation"), "Predation"),
         sliderInput("gamma", "Predation rate coefficient 'gamma'",
                     value = sp$gamma,
                     min = signif(sp$gamma / 2, 3),
@@ -141,3 +140,5 @@ predationControlUI <- function(p, input) {
                     step = 0.05)
     )
 }
+
+predationControlTitle <- "Predation"

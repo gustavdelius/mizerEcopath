@@ -139,8 +139,7 @@ fishingControlUI <- function(p, input) {
     
     effort <- p@initial_effort[[gear]]
     gp <- gp[gp$gear == gear, ]
-    l1 <- list(tags$h3(tags$a(id = "fishing"), "Fishing"),
-               selectInput("gear", "Gear to tune:", gears, 
+    l1 <- list(selectInput("gear", "Gear to tune:", gears,
                            selected = gear),
                sliderInput("catchability", "Catchability",
                            value = gp$catchability,
@@ -198,3 +197,5 @@ fishingControlUI <- function(p, input) {
     }
     l1
 }
+
+fishingControlTitle <- "Fishing"

@@ -311,8 +311,16 @@ tuningGadget <- function(params,
                         tags$div(
                             class = "section-links",
                             lapply(controls, function(section) {
-                                tags$a(control_title(section),
-                                       href = paste0("#", section))
+                                link <- tags$a(control_title(section),
+                                               href = paste0("#", section))
+                                description <- control_description(section)
+                                if (!is.null(description)) {
+                                    link <- prompter::add_prompt(
+                                        link,
+                                        message = description,
+                                        position = "right")
+                                }
+                                link
                             })
                         ),
                         data.step = 4,
@@ -323,7 +331,16 @@ tuningGadget <- function(params,
                     ),
                     tags$head(tags$style(
                         type = 'text/css',
-                        '#params { max-height: 60vh; overflow-y: auto; }'
+                        paste(
+                            # Scrollable sidebar
+                            "#params { max-height: 60vh; overflow-y: auto; }",
+                            # Smaller section headings
+                            "#params h3 { font-size: 1.1rem;",
+                            "margin-top: 12px; margin-bottom: 6px; }",
+                            # Let a heading (and so its 'fit' tooltip) span the
+                            # full sidebar width instead of shrinking to its text
+                            "#params [class*='hint--'] { display: block; }",
+                            sep = " ")
                     )),
                     data.step = 3,
                     data.intro = "Here you find controls for changing model parameters. The controls for species-specific parameters are for the species you have chosen above. Many of the controls are sliders that you can move by dragging or by clicking. As you change parameters, the plots in the main panel will update immediately."
@@ -416,8 +433,12 @@ tuningGadget <- function(params,
 
             lapply(controls,
                    function(section) {
-                       do.call(paste0(section, "ControlUI"),
-                               list(p = p, input = input))
+                       ui <- do.call(paste0(section, "ControlUI"),
+                                     list(p = p, input = input))
+                       # The engine always renders the control's heading (with
+                       # the description as a tooltip), so control UI functions
+                       # never produce their own.
+                       tagList(control_title_tag(section), ui)
                    })
         })
 

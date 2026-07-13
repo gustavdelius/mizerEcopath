@@ -202,8 +202,7 @@ ecopathFishingControlUI <- function(params, input) {
     }
 
     gp <- gp[gp$gear == gear, ]
-    l1 <- list(tags$h3(tags$a(id = "fishing"), "Fishing"),
-               selectInput("gear", "Gear to tune:", gears,
+    l1 <- list(selectInput("gear", "Gear to tune:", gears,
                            selected = gear),
                sliderInput("catchability", "Catchability",
                            value = log10(gp$catchability),
@@ -259,3 +258,5 @@ ecopathFishingControlUI <- function(params, input) {
 }
 
 ecopathFishingControlTitle <- "Fishing"
+ecopathFishingControlDescription <-
+    "Tune the catchability and the selectivity curve of each gear to match the observed catch size distributions."

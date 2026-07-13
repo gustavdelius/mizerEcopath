@@ -59,7 +59,6 @@ ecopathDiffusionControl <- function(input, output, session, params, params_old,
 ecopathDiffusionControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "cohorts"), "Cohorts"),
         sliderInput("spawning_mu", "Mean time of spawning",
                     value = sp$spawning_mu,
                     min = 0,
@@ -89,3 +88,5 @@ ecopathDiffusionControlUI <- function(params, input) {
 }
 
 ecopathDiffusionControlTitle <- "Cohorts"
+ecopathDiffusionControlDescription <-
+    "Control the timing and concentration of spawning, the annulus formation and the growth diffusion strength used when fitting age-at-size data."

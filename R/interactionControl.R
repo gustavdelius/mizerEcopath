@@ -64,7 +64,6 @@ interactionControl <- function(input, output, session, params,
 interactionControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     l1 <- list(
-        tags$h3(tags$a(id = "interaction"), "Interaction matrix"),
         sliderInput("interaction_resource", "Resource",
                     value = sp$interaction_resource,
                     min = 0,
@@ -87,3 +86,5 @@ interactionControlUI <- function(p, input) {
     )
     l1
 }
+
+interactionControlTitle <- "Interaction matrix"

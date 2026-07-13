@@ -51,7 +51,6 @@ ecopathOtherControl <- function(input, output, session, params, params_old,
 ecopathOtherControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "other"), "Other"),
         tags$h3(tags$a(id = "ext_mort"), "Mort"),
         sliderInput("mu_mat", "External mortality at maturity size",
                     value = sp$mu_mat,
@@ -62,3 +61,5 @@ ecopathOtherControlUI <- function(params, input) {
 }
 
 ecopathOtherControlTitle <- "Other"
+ecopathOtherControlDescription <-
+    "Adjust the external mortality at maturity size (scaling the external mortality at all sizes by the same factor) and the metabolic rate."

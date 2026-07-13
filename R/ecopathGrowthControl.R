@@ -51,8 +51,6 @@ ecopathGrowthControl <- function(input, output, session, params, params_old, fla
 ecopathGrowthControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3("Encounter"),
-
         popify(
             sliderInput("Eiw", "External encounter coefficient 'Eiw'",
                         value = sp$Eiw,
@@ -67,3 +65,5 @@ ecopathGrowthControlUI <- function(p, input) {
 }
 
 ecopathGrowthControlTitle <- "Encounter"
+ecopathGrowthControlDescription <-
+    "Adjust the external encounter rate coefficient 'Eiw' to boost growth with food from outside the model, without changing the internal predation dynamics."
