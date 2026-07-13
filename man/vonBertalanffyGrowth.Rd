@@ -36,3 +36,4 @@ The growth rate is evaluated on the size grid \code{w} of the MizerParams object
 and is set to zero at sizes above \code{w_inf}, where the von Bertalanffy
 expression would otherwise turn negative.
 }
+\keyword{internal}

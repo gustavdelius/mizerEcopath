@@ -22,6 +22,7 @@
 #' @param object A `MizerParams` object.
 #'
 #' @return An array (species x size) with the von Bertalanffy growth rates.
+#' @keywords internal
 #' @export
 vonBertalanffyGrowth <- function(object) {
     UseMethod("vonBertalanffyGrowth")
