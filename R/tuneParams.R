@@ -8,6 +8,15 @@
 #' meant for tuning the dynamics of the model. That should be done in a second
 #' step using functions like `setRmax()` or `changeResource()`.
 #'
+#' While you tune, changing a parameter recalculates only the size spectrum of
+#' the selected species. The growth and mortality rates it is solved from are
+#' evaluated from the previous state, with the abundances of every species and of
+#' the resource --- including the selected species itself --- held fixed. The
+#' rest of the community therefore does not respond, and neither does the
+#' species' own recomputed abundance feed back into its rates, until you press
+#' the "steady" button, which runs the full model to its multi-species steady
+#' state. See `vignette("extending_the_tuning_gadget")` for details.
+#'
 #' There is an "Instructions" button near the top left of the gadget that gives
 #' you a quick overview of the user interface.
 #'
@@ -25,6 +34,8 @@
 #'   entries are `"growth"` (using [matchGrowth()]), `"biomass"` (using
 #'   [matchBiomasses()]) and `"yield"` (using [matchYields()]).
 #'
+#' @seealso [tuningGadget()] for the underlying engine and how to add your own
+#'   controls and tabs; the article `vignette("extending_the_tuning_gadget")`.
 #' @return The tuned MizerParams object
 #' @md
 #' @export
