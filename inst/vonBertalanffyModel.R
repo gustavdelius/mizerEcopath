@@ -4,13 +4,13 @@ library(mizer)
 library(mizerEcopath)
 
 Jess_sp <- celtic_params@species_params |>
-    select(species, a, b, age_mat, w_mat, w_max,
-           biomass_cutoff, biomass_observed,
+    select(species, w_mat, w_max,
+           #biomass_cutoff, #biomass_observed,
            pred_kernel_type, beta, sigma,
            kernel_exp, kernel_l_l, kernel_u_l, kernel_l_r, kernel_u_r)
 James_sp <- readRDS("inst/James_sp.rds")
 sp <- James_sp |>
-    select(species, w_inf, k_vb, t0, w_mat, biomass_observed,
+    select(species, a, b, w_inf, k_vb, t0, w_mat, biomass_observed,
            production_observed, consumption_observed) |>
     inner_join(Jess_sp, by = "species")
 
@@ -25,9 +25,13 @@ p <- newVonBertalanffyParams(sp)
 # Attach gear parameters matching the selected species
 gp <- gear_params(celtic_params) |>
     filter(species %in% sp$species)
-gp$l50_right <- gp$l50 + 5
-gp$l25_right <- gp$l50 + 10
-gp$sel_func[gp$gear == "Gillnet"] <- "double_sigmoid_length"
+
+#gp$l50_right <- gp$l50 + 5
+#gp$l25_right <- gp$l50 + 10
+#gp$sel_func[gp$gear == "Gillnet"] <- "double_sigmoid_length"
+
+gp$yield_observed <- gp$yield_observed / 3
+gp$yield_observed[gp$species == "Herring"] <- 0
 gear_params(p) <- gp
 initial_effort(p) <- 1
 
@@ -40,14 +44,17 @@ p <- matchBiomasses(p)
 p <- matchCatch(p, catch = celtic_catch, production_lambda = 0,
                 yield_lambda = 1)
 
+p <- tuneEcopath(p, catch = celtic_catch, diet = reduced_dm)
+
 # Plot resulting yield comparison
 plotYieldVsSpecies(p)
 plotBiomassVsSpecies(p)
 plotlySpectra(p, power = 2, resource = FALSE)
 plotlyFMort(p)
 p@species_params$z_ext
-gp <- gear_params(p)
-View(gp[gp$gear == "Gillnet", ])
+gps <- gear_params(p)
+View(gps[gps$gear == "Gillnet", ])
+View(gps[gps$species == "Herring", ])
 
 pb <- p
 p <- pb
