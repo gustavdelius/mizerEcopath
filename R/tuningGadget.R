@@ -183,7 +183,49 @@ tuningGadget <- function(params,
           }
         });});"))),
         tags$head(
-            tags$style(HTML(".center{float:center;}"))),
+            tags$style(HTML("
+                .center{float:center;}
+                /* Flex row used to lay buttons out compactly in the sidebar */
+                .sidebar-btn-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 4px;
+                    margin-bottom: 10px;
+                }
+                .sidebar-btn-row .btn { margin: 0; }
+                /* Let the main action button expand to fill the row */
+                #sp_steady { flex: 1 1 auto; }
+                /* Species selector with prev/next buttons on either side */
+                .sp-select-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-bottom: 8px;
+                }
+                /* Dropdown keeps its natural width (set via selectInput width) */
+                .sp-select-grow { flex: 0 0 auto; }
+                .sp-select-grow .form-group { margin-bottom: 0; }
+                .sp-select-grow .shiny-label-null { display: none; }
+                .sp-nav-btn { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
+                /* Section jump-links styled as small pills */
+                .section-links {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 4px;
+                    margin-bottom: 2px;
+                }
+                .section-links a {
+                    font-size: 12px;
+                    line-height: 1.4;
+                    padding: 1px 8px;
+                    border: 1px solid #ced4da;
+                    border-radius: 12px;
+                    text-decoration: none;
+                    white-space: nowrap;
+                }
+                .section-links a:hover { background-color: #e9ecef; }
+            "))),
 
         sidebarLayout(
 
@@ -191,36 +233,60 @@ tuningGadget <- function(params,
             sidebarPanel(
                 width = 3,
                 introBox(
-                    prompter::add_prompt(
-                        actionButton("help", "Help"),
-                        message = "Start the introductory instructions",
-                        position = "right"),
-                    prompter::add_prompt(
-                        downloadButton("download_params", ""),
-                        message = "Download the current params object",
-                        position = "right"),
-                    prompter::add_prompt(
-                        actionButton("done", "Return", icon = icon("check"),
-                                     onclick = "setTimeout(function(){window.close();},500);"),
-                        message = "Return the current params objects to R"),
+                    tags$div(
+                        class = "sidebar-btn-row",
+                        prompter::add_prompt(
+                            actionButton("help", "Help",
+                                         icon = icon("circle-question")),
+                            message = "Start the introductory instructions",
+                            position = "right"),
+                        prompter::add_prompt(
+                            downloadButton("download_params", ""),
+                            message = "Download the current params object",
+                            position = "bottom"),
+                        prompter::add_prompt(
+                            actionButton("done", "Return", icon = icon("check"),
+                                         onclick = "setTimeout(function(){window.close();},500);"),
+                            message = "Return the current params objects to R",
+                            position = "bottom")
+                    ),
                     data.step = 8,
                     data.position = "right",
                     data.intro = "At any point you can press the download button to save the current state of the params object. When you press the 'Return' button, the gadget will close and the current params object will be returned. The undo log will be cleared."
                 ),
                 introBox(
-                    prompter::add_prompt(
-                        actionButton("sp_steady", action_label),
-                        message = action_tooltip,
-                        position = "right"),
-                    prompter::add_prompt(
-                        actionButton("undo_all", "", icon = icon("angles-left")),
-                        message = "Undo all changes"),
-                    prompter::add_prompt(
-                        actionButton("undo", "", icon = icon("angle-left")),
-                        message = "Go back to previous steady state"),
-                    prompter::add_prompt(
-                        actionButton("redo", "", icon = icon("angle-right")),
-                        message = "Go forward to next steady state"),
+                    uiOutput("sp_sel"),
+                    data.step = 2,
+                    data.position = "right",
+                    data.intro = "Here you select the species whose parameters you want to change or whose properties you want to concentrate on."
+                ),
+                introBox(
+                    tags$div(
+                        class = "sidebar-btn-row",
+                        prompter::add_prompt(
+                            actionButton("sp_steady", action_label,
+                                         class = "btn-primary"),
+                            message = action_tooltip,
+                            position = "right"),
+                        tags$div(
+                            class = "btn-group",
+                            role = "group",
+                            prompter::add_prompt(
+                                actionButton("undo_all", "",
+                                             icon = icon("angles-left")),
+                                message = "Undo all changes",
+                                position = "bottom"),
+                            prompter::add_prompt(
+                                actionButton("undo", "",
+                                             icon = icon("angle-left")),
+                                message = "Go back to previous steady state",
+                                position = "bottom"),
+                            prompter::add_prompt(
+                                actionButton("redo", "",
+                                             icon = icon("angle-right")),
+                                message = "Go forward to next steady state",
+                                position = "bottom"))
+                    ),
                     data.step = 5,
                     data.intro = "Each time you change a parameter, only the size spectrum of the selected species is recalculated. The growth and death rates it is calculated from are taken from the previous state, with the abundances of all species and of the resource - including the selected species itself - held fixed. So nothing responds to your change. In an interacting model, to let the whole community re-equilibrate you then press the action button or use the keyboard shortcut. Do this frequently, before changing the parameters too much. Otherwise there is the risk that the steady state can not be found any more. You can go backwards and forwards among the previously calculated steady states with the 'Undo All', 'Undo' and 'Redo' buttons.",
                     data.position = "right"
@@ -228,37 +294,30 @@ tuningGadget <- function(params,
 
                 introBox(
                     prompter::add_prompt(
-                        checkboxGroupInput("match", "Match:",
+                        checkboxGroupInput("match", NULL,
                                            choices = match_choices,
                                            selected = match_selected,
                                            inline = TRUE),
-                        message = "Choose quantities to match to observations automatically"),
+                        message = "Choose quantities to match to observations automatically",
+                        position = "right"),
                     data.step = 6,
                     data.position = "right",
                     data.intro = "Here you can specify that each time you hit the action button the selected quantities are matched to their observed values. This does of course not mean that a perfect match will be achieved in the steady state. But usually each time you hit the button the match will improve."
                 ),
 
                 introBox(
-                    prompter::add_prompt(
-                        uiOutput("sp_sel"),
-                        message = "Select target species",
-                        position = "right"),
-                    data.step = 2,
-                    data.position = "right",
-                    data.intro = "Here you select the species whose parameters you want to change or whose properties you want to concentrate on."
-                ),
-                introBox(
                     introBox(
                         # Add links to input sections
-                        lapply(controls, function(section) {
-                            list("->",
-                                 tags$a(control_title(section),
-                                        href = paste0("#", section)))
-                        }),
+                        tags$div(
+                            class = "section-links",
+                            lapply(controls, function(section) {
+                                tags$a(control_title(section),
+                                       href = paste0("#", section))
+                            })
+                        ),
                         data.step = 4,
                         data.position = "right",
                         data.intro = "There are many parameters, organised into sections. To avoid too much scrolling you can click on a link to jump to a section."),
-                    tags$br(),
                     tags$div(id = "params",
                              uiOutput("sp_params")
                     ),
@@ -322,16 +381,28 @@ tuningGadget <- function(params,
         output$sp_sel <- renderUI({
             p <- isolate(params())
             species <- as.character(p@species_params$species[!is.na(p@A)])
-            tagList(
-                selectInput("sp", "Species to tune:", species),
+            # Width of the drop-down is set to fit the longest species name
+            sp_width <- paste0(max(nchar(species), 0) + 6, "ch")
+            tags$div(
+                class = "sp-select-row",
                 prompter::add_prompt(
-                    actionButton("previous_sp", HTML("<u>p</u>revious")),
+                    actionButton("previous_sp", NULL,
+                                 icon = icon("angle-left"),
+                                 class = "sp-nav-btn"),
                     message = "Select previous species. Keyboard shortcut: p",
                     position = "right"),
                 prompter::add_prompt(
-                    actionButton("next_sp", HTML("<u>n</u>ext")),
+                    tags$div(
+                        class = "sp-select-grow",
+                        selectInput("sp", NULL, species, width = sp_width)),
+                    message = "Select target species",
+                    position = "bottom"),
+                prompter::add_prompt(
+                    actionButton("next_sp", NULL,
+                                 icon = icon("angle-right"),
+                                 class = "sp-nav-btn"),
                     message = "Select next species. Keyboard shortcut: n",
-                    position = "right"))
+                    position = "bottom"))
             })
         # Sliders for the species parameters
         output$sp_params <- renderUI({
