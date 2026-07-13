@@ -57,6 +57,11 @@ prepare_data <- function(params, species = 1, catch,
             stop("Data frame 'catch' must contain columns 'length', 'dl', and 'count' (or 'catch').")
         }
         catch <- dplyr::ungroup(catch)
+        # Normalise the count column name: accept `catch` as an alternative to
+        # `count`, so the rest of the function can rely on a `count` column.
+        if (!("count" %in% names(catch)) && "catch" %in% names(catch)) {
+            catch$count <- catch$catch
+        }
         ispec <- species
         catch <- catch |> filter( species == ispec)
 
@@ -91,7 +96,7 @@ prepare_data <- function(params, species = 1, catch,
         # Sort bins
         # catch <- catch[order(catch$length), ]   # better as follows for different gears
         observed_bins <- catch |>
-            mutate(bin_start = length, bin_end = length + dl, count = catch) |>
+            mutate(bin_start = length, bin_end = length + dl) |>
             select(bin_start, bin_end, count, gear) |>
             arrange(gear, bin_start)
         # if (any(observed_bins$bin_end[-nrow(observed_bins)] >
