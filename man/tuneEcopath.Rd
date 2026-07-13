@@ -64,7 +64,15 @@ side panel with controls for various model parameters and a main panel with
 tabs for various diagnostic plots.
 }
 \details{
-This gadget is meant for tuning a model to match Ecopath data.
+This gadget is meant for tuning a model to match Ecopath data and
+observed size distributions.
+
+The model tuned here is non-interacting, so each species is always tuned
+within a fixed background: changing a parameter recalculates only the selected
+species' size spectrum and never affects the other species. Pressing the
+"match" button runs optimisers that bring the model closer to the observed
+data. See \code{vignette("extending_the_tuning_gadget")} for how the gadget works
+and how to extend it.
 
 There is an "Instructions" button near the top left of the gadget that gives
 you a quick overview of the user interface.
@@ -72,4 +80,8 @@ you a quick overview of the user interface.
 After you click the "Return" button in the side panel, the function will
 return the parameter object in the state at that time, with \code{Rmax} set to
 \code{Inf} and \code{erepro} set to the value it had after the last match to Ecopath.
+}
+\seealso{
+\code{\link[=tuningGadget]{tuningGadget()}} for the underlying engine and how to add your own
+controls and tabs; the article \code{vignette("extending_the_tuning_gadget")}.
 }

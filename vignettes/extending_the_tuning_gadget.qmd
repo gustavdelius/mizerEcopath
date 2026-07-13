@@ -1,0 +1,510 @@
+---
+title: "Understanding and Extending the Tuning Gadget"
+author: "Gustav Delius"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+vignette: >
+  %\VignetteIndexEntry{Understanding and Extending the Tuning Gadget}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| include: false
+# The code chunks in this article define Shiny UI/server functions and launch
+# interactive gadgets, so we do not evaluate them when the article is built.
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Introduction
+
+mizerEcopath ships two interactive tools for tuning a model by hand:
+
+- `tuneParams()` has a **"steady"** button. Each time you press it the model is
+  projected to its multi-species steady state with `mizer::steady()`. This tool
+  is meant for hand-tuning fully interacting, multi-species models.
+- `tuneEcopath()` has a **"match"** button. Each time you press it a set of
+  optimisers is run to match the model to Ecopath data. This tool is meant for
+  non-interacting models with a fixed growth rate and a power-law mortality.
+
+Although the two serve different workflows, they are *not* two separate apps.
+Both are thin wrappers around a single shared engine, `tuningGadget()`. The
+sidebar, the tabbed main panel, the species selector, the undo/redo log, the
+flow of the reactive parameter object, and the action button are all defined
+once, in `tuningGadget()`. The two functions differ only in the configuration
+they hand to that engine:
+
+| | `tuneParams()` | `tuneEcopath()` |
+|---|---|---|
+| action button | "steady" (shortcut `s`) | "match" (shortcut `m`) |
+| what the button does | `mizer::steady()` | `matchGrowth()`, `matchCatch()`, ... |
+| controls shown | `predation`, `fishing`, ... | `ecopathGrowth`, `ecopathFishing`, ... |
+| tabs shown | `Spectra`, `Growth`, `Death`, ... | `ecopathSpectra`, `ecopathGrowth`, ... |
+
+This article explains how that engine works so that you can adapt it to your own
+workflow: pick and choose which controls and tabs to show, write your own
+controls and tabs, and — for the more adventurous — call `tuningGadget()`
+directly with your own action button.
+
+## Anatomy of the gadget
+
+The gadget has two parts:
+
+- A **sidebar** containing the action button, the undo/redo buttons, the
+  `Match:` checkboxes, the species selector, and a stack of *parameter
+  controls*. Each control is a small block of input widgets (usually sliders)
+  that change the parameters of the currently selected species.
+- A **main panel** containing a set of *tabs*. Each tab shows one or more
+  diagnostic plots computed from the current model.
+
+Controls and tabs are the two kinds of plug-in. You choose which ones appear
+through the `controls` and `tabs` arguments, and you can add your own by
+following a naming convention described below.
+
+## The simplest customisation: choosing controls and tabs
+
+Both `controls` and `tabs` are plain character vectors. To show fewer panels,
+pass a shorter vector; to reorder them, reorder the vector. For example, a
+stripped-down growth-tuning session:
+
+```{r}
+tuneParams(params,
+           controls = c("growth"),
+           tabs = c("Growth", "Spectra"))
+```
+
+This is exactly how the convenience wrapper `tuneGrowth()` is defined — it is
+just a preset of `tuneParams()` with a short `controls`/`tabs` list.
+
+Each name in these vectors is resolved to a pair of functions by a naming
+convention. That convention is the key to writing your own panels.
+
+## The naming convention
+
+For a **control** named `"foo"` the engine expects two functions:
+
+- `fooControlUI(p, input)` — returns the input widgets for the sidebar.
+- `fooControl(input, output, session, params, params_old, flags, trigger_update, ...)`
+  — the server logic that reacts to those widgets.
+
+Optionally you may define a string `fooControlTitle` to give the sidebar section
+a heading; otherwise the heading is the name itself. Control names should start
+with a **lower-case** letter (the UI function name is used verbatim, while the
+server function name has its first letter lower-cased internally).
+
+For a **tab** named `"Foo"` (or `"foo"`) the engine expects:
+
+- `fooTabUI(params, ...)` — returns the tab layout.
+- `fooTab(input, output, session, params, params_old, logs, trigger_update, ...)`
+  — the server logic that produces the tab's outputs.
+
+Optionally define a string `fooTabTitle` to label the tab; otherwise the label
+is the name you passed. The engine lower-cases the first letter of a tab entry
+before looking up its functions, so your functions must start with a lower-case
+letter (`fooTab`, not `FooTab`), but you may still pass a capitalised entry like
+`"Foo"` to get a nicer default tab label.
+
+The functions are found by name on the search path, so **defining them in your
+global environment is enough** — you do not need to add them to a package.
+
+## Writing a new tab
+
+The package ships a template you can copy, `exampleTab.R`. Here is its essence:
+
+```{r}
+exampleTabUI <- function(...) {
+    tagList(
+        plotlyOutput("plot_example"),
+        radioButtons("example_prop", "Show",
+                     choices = c("Proportion", "Rate"),
+                     selected = "Proportion",
+                     inline = TRUE)
+    )
+}
+
+exampleTab <- function(input, output, session, params, logs, ...) {
+    output$plot_example <- renderPlotly({
+        plotlyDeath(params(),
+                    species = input$sp,
+                    proportion = (input$example_prop == "Proportion"))
+    })
+}
+
+# Optional: the label shown on the tab rider
+exampleTabTitle <- "E.g."
+```
+
+A few things to note about the signatures:
+
+- The UI function receives **only `params`** (a Shiny `reactiveVal`). If you need
+  the current model to lay out the UI, read it with `isolate(params())`. If you
+  do not, you can just write `function(...)` as above.
+- The server function receives the reactive `params` plus the other reactive
+  machinery. Inside a `render*()` block, call `params()` (reactively) to get the
+  current model; it re-renders automatically whenever the model changes.
+- `input$sp` always holds the name of the currently selected species, so most
+  tabs plot the selected species.
+
+To use it, list its name alongside the built-in tabs:
+
+```{r}
+tuneParams(celtic_params, tabs = c("Spectra", "Growth", "Example"))
+```
+
+### A worked example
+
+Suppose we want a tab that plots the growth curve of the selected species next
+to the community size spectrum. We define the UI and server functions and pass
+the tab's name to `tuneParams()`:
+
+```{r}
+myGrowthTabUI <- function(...) {
+    tagList(
+        plotOutput("my_growth_curve"),
+        plotlyOutput("my_spectrum")
+    )
+}
+
+myGrowthTab <- function(input, output, session, params, ...) {
+    output$my_growth_curve <- renderPlot({
+        plotGrowthCurves(params(), species = input$sp)
+    })
+    output$my_spectrum <- renderPlotly({
+        plotSpectra(params(), power = 2, highlight = input$sp)
+    })
+}
+
+myGrowthTabTitle <- "My growth"
+
+tuneParams(celtic_params, tabs = c("Spectra", "myGrowth"))
+```
+
+Because these functions live in the global environment, the engine finds them by
+name — no package installation required.
+
+## Writing a new control
+
+A control changes model parameters. Its UI function builds the widgets from the
+*current* value of the parameters for the selected species, and its server
+function reacts to those widgets and pushes the changed model back into the app.
+
+The built-in `growthControl` is a good model to imitate:
+
+```{r}
+growthControlUI <- function(p, input) {
+    sp <- p@species_params[input$sp, ]
+    tagList(
+        tags$h3(tags$a(id = "predation"), "Predation"),
+        sliderInput("gamma", "Search volume coefficient 'gamma'",
+                    value = sp$gamma,
+                    min = signif(sp$gamma / 2, 3),
+                    max = signif(sp$gamma * 1.5, 3),
+                    step = sp$gamma / 50, ticks = FALSE)
+    )
+}
+
+growthControl <- function(input, output, session, params, params_old, flags, ...) {
+    observeEvent(input$gamma, {
+        p <- params()
+        sp <- input$sp
+        # Skip the first fire after a species switch (see "The flags pattern")
+        if (!identical(sp, flags$sp_old_pred)) {
+            flags$sp_old_pred <- sp
+            return()
+        }
+        p@species_params[sp, "gamma"] <- input$gamma
+        p <- setSearchVolume(p)
+        tuneParams_update_species(sp, p, params, params_old)
+    },
+    ignoreInit = TRUE, ignoreNULL = TRUE)
+}
+```
+
+Note the differences from a tab:
+
+- The **UI function receives `p`** — a plain, already-isolated `MizerParams`
+  object — and `input`. You read the selected species' parameters directly from
+  `p@species_params[input$sp, ]` to set the slider's initial value and range.
+- The **server function receives the reactive `params` and `params_old`**, plus
+  a `flags` environment. After changing a parameter you commit the change with
+  one of the helper functions described below.
+
+### The `flags` pattern
+
+There is a subtlety. When you switch to a different species, the sidebar sliders
+are rebuilt to show that species' values. Rebuilding a slider fires its
+`observeEvent`, which — if you did nothing to prevent it — would immediately
+write the newly displayed value back into the model, potentially corrupting it.
+
+To avoid this, controls stash the last species they saw in the shared `flags`
+environment and bail out on the first fire after a switch:
+
+```{r}
+if (!identical(sp, flags$sp_old_pred)) {
+    flags$sp_old_pred <- sp
+    return()
+}
+```
+
+Use a **unique flag name per control** (here `sp_old_pred`) so controls do not
+interfere with one another.
+
+### A worked example
+
+Here is a self-contained control that adds a slider for the maximum intake rate
+coefficient `h`:
+
+```{r}
+intakeControlUI <- function(p, input) {
+    sp <- p@species_params[input$sp, ]
+    tagList(
+        tags$h3(tags$a(id = "intake"), "Intake"),
+        sliderInput("h", "Max intake coefficient 'h'",
+                    value = sp$h,
+                    min = signif(sp$h / 2, 3),
+                    max = signif(sp$h * 1.5, 3),
+                    step = sp$h / 50, ticks = FALSE)
+    )
+}
+
+intakeControl <- function(input, output, session, params, params_old, flags, ...) {
+    observeEvent(input$h, {
+        p <- params()
+        sp <- input$sp
+        if (!identical(sp, flags$sp_old_intake)) {
+            flags$sp_old_intake <- sp
+            return()
+        }
+        p@species_params[sp, "h"] <- input$h
+        p <- setMaxIntakeRate(p)
+        tuneParams_update_species(sp, p, params, params_old)
+    },
+    ignoreInit = TRUE, ignoreNULL = TRUE)
+}
+
+# Give the sidebar section a heading
+intakeControlTitle <- "Intake"
+
+tuneParams(celtic_params, controls = c("growth", "intake"))
+```
+
+## The reactive state and the update helpers
+
+Understanding two reactive values makes the rest of the framework fall into
+place.
+
+- **`params`** — a `reactiveVal` holding the model as it is currently displayed.
+  Every plot reads from it; every control writes to it.
+- **`params_old`** — a `reactiveVal` holding the abundances of the last
+  *committed* steady state. It serves as a fixed reference community, as
+  explained next. It is updated only when you press the action button or move
+  through the undo log, never by an ordinary slider change.
+
+### Single-species updates and the frozen environment
+
+To make sense of `params_old` you first have to understand what happens when you
+change a parameter.
+
+When you drag a slider you want to see the effect at once. Computing the true
+multi-species steady state — what the action button does — is far too slow to
+run on every slider movement. So while you tune, the gadget does something
+cheaper and deliberately more local. When you change a parameter of the selected
+species, it recomputes **only that species' steady-state size spectrum**, and it
+does so from *frozen rates*. Before anything is recomputed, the abundances of
+every species and of the resource — including the selected species itself — are
+set back to the previous state. The growth and mortality rates for the selected
+species are then evaluated from that state and held fixed while its new spectrum
+is solved for.
+
+This matters because the rates a fish experiences are not a property of that fish
+alone. Its growth rate depends on how much prey is available and its death rate
+on how many predators there are, and those depend on the abundances of the whole
+community — the other species, the resource, and the selected species itself
+(through cannibalism or competition for shared prey, for example). Evaluating
+every rate at the previous state freezes all of this at once. In particular it
+freezes the selected species' own contribution: within a single update its
+recomputed spectrum does not feed back into the rates that produced it. The
+update simply answers one question — holding every rate at what it was in the
+previous state, what spectrum would this species relax to?
+
+The consequence is that **there is no feedback**. If you make the selected
+species grow faster, you immediately see its own spectrum shift, but its prey are
+not depleted in response and its predators do not become more numerous. In
+reality all of those would change, and would in turn feed back on the focal
+species. Those multi-species feedbacks are worked out only when you press the
+action button, which projects the whole community forward together until
+everything settles into a mutually consistent steady state.
+
+In a *non-interacting* model — the kind tuned by `tuneEcopath()` — species do
+not prey on one another, so each species always lives in a fixed background.
+There the single-species update is not an approximation but the whole story, and
+the action button's job is to match the model to data rather than to resolve any
+community feedback.
+
+This is exactly what `params_old` is for. The frozen environment has to be a
+*fixed reference*. If instead each recomputation started from the currently
+displayed model, the environment would drift as you worked: dragging a slider
+one way and then back would not return you to where you started, because each
+update would build on the perturbed result of the last one, and small changes
+would silently accumulate. To prevent this, every single-species update first
+resets all abundances to those stored in `params_old` — the abundances of the
+last committed steady state — and only then re-solves the focal species. So
+`params_old` holds the reference community against which all your in-between
+tweaks are measured, and it changes only when you deliberately commit a new
+steady state (via the action button) or step through the undo/redo log.
+
+The helper `tuneParams_update_species()` performs this whole dance for you:
+
+```{r}
+# inside tuneParams_update_species(sp, p, params, params_old):
+p@initial_n <- params_old()@initial_n   # reset ALL abundances (incl. the focal
+                                        # species) to the previous state
+p <- steadySingleSpecies(p)             # evaluate rates from that state, then
+                                        # re-solve only the focal species
+tuneParams_update_params(p, params)     # display the result
+```
+
+so in your own controls you normally just call it and do not manipulate the
+abundances yourself.
+
+### The helper functions
+
+You do not manipulate the reactive values directly. Instead you call one of the
+exported helper functions, choosing the one that matches your intent:
+
+| Helper | Use it when |
+|---|---|
+| `tuneParams_update_params(p, params)` | You changed the model directly and want to display it (marks the state as changed, enables Undo). No steady-state calculation. Typical in **tabs**. |
+| `tuneParams_update_species(sp, p, params, params_old)` | You changed a growth/encounter parameter and want that species re-solved to its single-species steady state before display. Typical in **controls**. |
+| `tuneParams_update_abundance(p, sp, params, params_old)` | You edited a species' abundance directly and want the change to persist (it also writes into `params_old`). |
+| `tuneParams_add_to_logs(logs, p, params)` | You want to commit a state *and* push an entry onto the undo log. Typical in **action handlers**. |
+| `error_fun(e)` | The standard "invalid parameters" modal, for use as the `error` argument of `tryCatch()`. |
+
+Two more pieces of shared state are occasionally useful:
+
+- **`trigger_update`** — a `reactiveVal`. Calling `trigger_update(runif(1))`
+  forces the sidebar sliders to rebuild. Do this after an action that changes
+  parameters behind the sliders' backs (for example, an optimiser), so the
+  displayed slider values catch up.
+- **`logs`** — an environment holding the on-disk undo/redo log. You rarely
+  touch it except by passing it to `tuneParams_add_to_logs()`.
+
+## The action button
+
+The single large button in the sidebar (the "steady" button in `tuneParams()`,
+the "match" button in `tuneEcopath()`) is fully configurable. Four arguments to
+`tuningGadget()` define it:
+
+- `action_label` — the button's HTML label, e.g. `HTML("<u>s</u>teady")`.
+- `action_tooltip` — the hover text.
+- `action_key` — the JavaScript key code of its keyboard shortcut (`83` for `s`,
+  `77` for `m`).
+- `action_handler` — the function that runs when it is pressed.
+
+The handler has the signature
+
+```{r}
+function(p, input, session, params, params_old, logs, flags, trigger_update, ...)
+```
+
+where `p` is the current model. A handler typically transforms `p`, then commits
+the result. The steady handler is essentially
+
+```{r}
+tuneParams_steady_handler <- function(p, input, session, params, params_old,
+                                      logs, flags, trigger_update, ...) {
+    p <- mizer::steady(p)
+    params_old(p)
+    tuneParams_add_to_logs(logs, p, params)
+}
+```
+
+while the Ecopath match handler runs a sequence of `match*()` optimisers instead
+of `steady()`.
+
+### The `Match:` checkboxes
+
+The checkboxes above the species selector are wired to the action button through
+`input$match`. You define which options appear and which are ticked by default:
+
+```{r}
+tuningGadget(
+    ...,
+    match_choices  = c("growth", "biomass", "yield"),
+    match_selected = c("none")
+)
+```
+
+Your `action_handler` reads `input$match` to decide what to do. For example the
+steady handler optionally calls `matchGrowth()`, `matchBiomasses()` or
+`matchYield()` depending on which boxes are ticked before running to steady
+state.
+
+## Startup and shutdown hooks
+
+Three optional hooks let you inject package-specific behaviour without touching
+the engine:
+
+- `prepare_params_hook(p) -> p` runs once at launch, after the shared
+  `prepare_params()`. Use it to set defaults or derived parameters your controls
+  and tabs assume. `tuneEcopath()` uses it to set encounter, gonad and diffusion
+  defaults and to run an initial `steadySingleSpecies()`.
+- `finalise_params_hook(p) -> p` runs when the user presses "Return" or
+  downloads the model. Use it to undo any temporary setup. `tuneParams()` uses it
+  to remove a temporary "no gear" gear it added in its prepare hook.
+- `update_species_hook(sp, p) -> p` runs inside
+  `tuneParams_update_species()`, right after `steadySingleSpecies()`, every time
+  a single species is recomputed. `tuneEcopath()` uses it to call
+  `matchBiomasses()` so that biomass is preserved as parameters are tuned.
+
+## Building a fully custom gadget
+
+Because "steady" and "match" are just two instances of the same action
+mechanism, you can build a third variant by calling `tuningGadget()` directly.
+This is how `tuneParams()` itself is written:
+
+```{r}
+myTuner <- function(params, ...) {
+    tuningGadget(
+        params = params,
+        controls = c("growth", "intake"),
+        tabs = c("Spectra", "myGrowth", "Death"),
+        match_choices = c("growth", "biomass"),
+        match_selected = c("none"),
+        action_label = HTML("<u>s</u>teady"),
+        action_tooltip = "Find steady state. Keyboard shortcut: s",
+        action_key = 83,
+        action_handler = tuneParams_steady_handler,
+        ...
+    )
+}
+```
+
+You can supply extra arguments that your tabs need through `tab_extra_args` (a
+named list passed to every tab server function) — this is how `tuneEcopath()`
+hands the observed `catch` and `diet` data to its tabs.
+
+## Summary
+
+- `tuningGadget()` is the shared engine; `tuneParams()` and `tuneEcopath()` are
+  presets that differ only in configuration.
+- Show or hide panels by editing the `controls` and `tabs` vectors.
+- Add a **tab** by defining `fooTabUI(params, ...)` and
+  `fooTab(input, output, session, params, ...)` (see `exampleTab.R`).
+- Add a **control** by defining `fooControlUI(p, input)` and
+  `fooControl(input, output, session, params, params_old, flags, ...)`,
+  remembering the `flags` guard and committing changes with
+  `tuneParams_update_species()`.
+- Commit changes with the right helper: `tuneParams_update_params()`,
+  `tuneParams_update_species()`, `tuneParams_update_abundance()` or
+  `tuneParams_add_to_logs()`.
+- Replace the whole action button by passing your own `action_handler` (and
+  `action_label`/`action_key`) to `tuningGadget()`.
+
+## See also
+
+`tuningGadget()`, `tuneParams()`, `tuneEcopath()`, `tuneGrowth()`, and the
+reference index sections "gadget tabs" and "gadget controls" for the full list
+of built-in panels you can imitate.

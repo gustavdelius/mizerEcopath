@@ -6,7 +6,15 @@
 #' side panel with controls for various model parameters and a main panel with
 #' tabs for various diagnostic plots.
 #'
-#' @details This gadget is meant for tuning a model to match Ecopath data.
+#' @details This gadget is meant for tuning a model to match Ecopath data and
+#' observed size distributions.
+#'
+#' The model tuned here is non-interacting, so each species is always tuned
+#' within a fixed background: changing a parameter recalculates only the selected
+#' species' size spectrum and never affects the other species. Pressing the
+#' "match" button runs optimisers that bring the model closer to the observed
+#' data. See `vignette("extending_the_tuning_gadget")` for how the gadget works
+#' and how to extend it.
 #'
 #' There is an "Instructions" button near the top left of the gadget that gives
 #' you a quick overview of the user interface.
@@ -34,6 +42,8 @@
 #' @param return_app Boolean. For testing purposes only.
 #' @param ... Other params needed by individual tabs.
 #'
+#' @seealso [tuningGadget()] for the underlying engine and how to add your own
+#'   controls and tabs; the article `vignette("extending_the_tuning_gadget")`.
 #' @return The tuned MizerParams object
 #' @md
 #' @export

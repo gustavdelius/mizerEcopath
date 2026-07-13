@@ -85,6 +85,22 @@ directly to build custom tuning gadgets.
 The function opens a shiny gadget with a sidebar of parameter controls and a
 main panel of diagnostic tabs.
 }
+\section{How parameter changes take effect}{
+When you change a model parameter, only the steady-state size spectrum of the
+currently selected species is recalculated. The growth and mortality rates
+that drive this recalculation are first evaluated from the previous state of
+the model --- with the abundances of every species and of the resource,
+\emph{including the selected species itself}, held fixed --- and are then kept
+constant while the new spectrum is solved for. So the prey and predators of
+the selected species do not react to your change, and neither does the
+species' own recomputed abundance feed back into its rates: there is no
+multi-species feedback within a single update. In an interacting model, to let
+the whole community respond and settle into a new, mutually consistent steady
+state you must press the action button (the "steady" button in
+\code{\link[=tuneParams]{tuneParams()}}). See \code{vignette("extending_the_tuning_gadget")} for a fuller
+explanation.
+}
+
 \section{Undo functionality}{
 The gadget keeps a log of all steady states you create while working with the
 gadget. You can go back to the last steady state by hitting the "Undo"

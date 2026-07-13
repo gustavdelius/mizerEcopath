@@ -54,6 +54,15 @@ This gadget is meant for tuning a model to steady state. It is not
 meant for tuning the dynamics of the model. That should be done in a second
 step using functions like \code{setRmax()} or \code{changeResource()}.
 
+While you tune, changing a parameter recalculates only the size spectrum of
+the selected species. The growth and mortality rates it is solved from are
+evaluated from the previous state, with the abundances of every species and of
+the resource --- including the selected species itself --- held fixed. The
+rest of the community therefore does not respond, and neither does the
+species' own recomputed abundance feed back into its rates, until you press
+the "steady" button, which runs the full model to its multi-species steady
+state. See \code{vignette("extending_the_tuning_gadget")} for details.
+
 There is an "Instructions" button near the top left of the gadget that gives
 you a quick overview of the user interface.
 
@@ -64,4 +73,8 @@ state.
 
 At any time the gadget allows the user to download the current params object
 as an .rds file via the "Download" button.
+}
+\seealso{
+\code{\link[=tuningGadget]{tuningGadget()}} for the underlying engine and how to add your own
+controls and tabs; the article \code{vignette("extending_the_tuning_gadget")}.
 }

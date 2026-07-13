@@ -7,6 +7,22 @@
 #' The function opens a shiny gadget with a sidebar of parameter controls and a
 #' main panel of diagnostic tabs.
 #'
+#' # How parameter changes take effect
+#'
+#' When you change a model parameter, only the steady-state size spectrum of the
+#' currently selected species is recalculated. The growth and mortality rates
+#' that drive this recalculation are first evaluated from the previous state of
+#' the model --- with the abundances of every species and of the resource,
+#' *including the selected species itself*, held fixed --- and are then kept
+#' constant while the new spectrum is solved for. So the prey and predators of
+#' the selected species do not react to your change, and neither does the
+#' species' own recomputed abundance feed back into its rates: there is no
+#' multi-species feedback within a single update. In an interacting model, to let
+#' the whole community respond and settle into a new, mutually consistent steady
+#' state you must press the action button (the "steady" button in
+#' [tuneParams()]). See `vignette("extending_the_tuning_gadget")` for a fuller
+#' explanation.
+#'
 #' # Undo functionality
 #'
 #' The gadget keeps a log of all steady states you create while working with the
@@ -206,7 +222,7 @@ tuningGadget <- function(params,
                         actionButton("redo", "", icon = icon("angle-right")),
                         message = "Go forward to next steady state"),
                     data.step = 5,
-                    data.intro = "Each time you change a parameter, the spectrum of the selected species is immediately recalculated. However to calculate the true multi-species steady state you have to press the action button or use the keyboard shortcut. Do this frequently, before changing the parameters too much. Otherwise there is the risk that the steady state can not be found any more. You can go backwards and forwards among the previously calculated steady states with the 'Undo All', 'Undo' and 'Redo' buttons.",
+                    data.intro = "Each time you change a parameter, only the size spectrum of the selected species is recalculated. The growth and death rates it is calculated from are taken from the previous state, with the abundances of all species and of the resource - including the selected species itself - held fixed. So nothing responds to your change. In an interacting model, to let the whole community re-equilibrate you then press the action button or use the keyboard shortcut. Do this frequently, before changing the parameters too much. Otherwise there is the risk that the steady state can not be found any more. You can go backwards and forwards among the previously calculated steady states with the 'Undo All', 'Undo' and 'Redo' buttons.",
                     data.position = "right"
                 ),
 
