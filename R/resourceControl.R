@@ -35,7 +35,6 @@ resourceControl <- function(input, output, session, params, flags, ...) {
 resourceControlUI <- function(p, input) {
 
     tagList(
-        tags$h3(tags$a(id = "resource"), "Resource"),
         numericInput("lambda", "Sheldon exponent 'lambda'",
                      value = p@resource_params$lambda,
                      min = 1.9, max = 2.2, step = 0.005),
@@ -46,3 +45,4 @@ resourceControlUI <- function(p, input) {
                      min = 1e-10,
                      max = 1e3))
 }
+resourceControlTitle <- "Resource"

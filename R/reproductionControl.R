@@ -47,7 +47,6 @@ reproductionControl <- function(input, output, session, params, params_old,
 reproductionControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "reproduction"), "Reproduction"),
         sliderInput("w_mat", "w_mat", value = sp$w_mat,
                     min = signif(sp$w_mat / 2, 2),
                     max = signif(sp$w_mat * 1.5, 2)),
@@ -66,3 +65,5 @@ reproductionControlUI <- function(p, input) {
     )
 }
 
+
+reproductionControlTitle <- "Reproduction"

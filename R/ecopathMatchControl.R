@@ -41,7 +41,6 @@ ecopathMatchControl <- function(input, output, session, params, params_old,
 ecopathMatchControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "match"), "Matching strength"),
         sliderInput("production_lambda", "Production",
                     value = sp[["production_lambda"]],
                     min = sp[["production_lambda"]] - 2,
@@ -56,3 +55,5 @@ ecopathMatchControlUI <- function(params, input) {
 }
 
 ecopathMatchControlTitle <- "Matching"
+ecopathMatchControlDescription <-
+    "Set the strength with which production and yield are matched to their observed values each time you hit the action button."

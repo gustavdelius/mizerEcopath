@@ -329,3 +329,54 @@ control_title <- function(control) {
     }
     control
 }
+
+#' Return the description for the control
+#'
+#' This function returns the description for the control, if the control author
+#' has defined one in a variable `<control>ControlDescription`. The description
+#' is used as a tooltip on the control's title and on the link to the control in
+#' the sidebar. If no description is defined, `NULL` is returned and no tooltip
+#' is shown.
+#'
+#' @param control The control name
+#' @return The control description string, or `NULL` if none is defined
+#' @keywords internal
+#' @export
+control_description <- function(control) {
+    desc_var <- paste0(control, "ControlDescription")
+    if (!is.null(description <- get0(desc_var))) {
+        if (!is.string(description)) {
+            stop(desc_var, " should contain a string with the description for the control")
+        }
+        return(description)
+    }
+    NULL
+}
+
+#' Build the title tag for a control
+#'
+#' The engine always renders the heading for a control, so that control UI
+#' functions never need to produce their own. The heading text is the title
+#' defined by the control author via a `<control>ControlTitle` variable, or
+#' otherwise the control name (see [control_title()]). The heading includes an
+#' anchor (with the control name as its id) so that the sidebar link can scroll
+#' to it and, if the control defines a description, a tooltip showing that
+#' description.
+#'
+#' @param control The control name
+#' @return A shiny `<h3>` tag with the control title
+#' @keywords internal
+#' @export
+control_title_tag <- function(control) {
+    title <- tags$h3(tags$a(id = control), control_title(control))
+    description <- control_description(control)
+    if (!is.null(description)) {
+        # The heading sits inside the scrollable, narrow sidebar, which clips
+        # any tooltip that extends past its edges. Placing the tooltip below the
+        # heading and sizing it to the heading's full width (which CSS forces to
+        # the sidebar width) keeps it on screen and lets the text wrap.
+        title <- prompter::add_prompt(title, message = description,
+                                      position = "bottom", size = "fit")
+    }
+    title
+}

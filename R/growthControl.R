@@ -42,7 +42,6 @@ growthControl <- function(input, output, session, params, params_old, flags,
 growthControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     tagList(
-        tags$h3(tags$a(id = "predation"), "Predation"),
         popify(sliderInput("gamma", "Search volume coefficient 'gamma'",
                     value = sp$gamma,
                     min = signif(sp$gamma / 2, 3),
@@ -52,3 +51,5 @@ growthControlUI <- function(p, input) {
                content= "This slider adjusts the coefficient `h` of the maximum intake rate at the same time as `gamma` to keep the feeding level at the smallest size unchanged.")
         )
 }
+
+growthControlTitle <- "Predation"

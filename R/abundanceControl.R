@@ -42,10 +42,11 @@ abundanceControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
     n0 <- p@initial_n[sp$species, p@w_min_idx[sp$species]]
     tagList(
-        tags$h3(tags$a(id = "abundance"), "Abundance"),
         sliderInput("n0", "Egg density",
                     value = n0,
                     min = signif(n0 / 10, 3),
                     max = signif(n0 * 2, 3),
                     step = n0 / 50))
 }
+
+abundanceControlTitle <- "Abundance"
