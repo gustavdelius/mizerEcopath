@@ -190,16 +190,16 @@ tuningGadget <- function(params,
                     display: flex;
                     flex-wrap: wrap;
                     align-items: center;
+                    justify-content: center;
                     gap: 4px;
                     margin-bottom: 10px;
                 }
                 .sidebar-btn-row .btn { margin: 0; }
-                /* Let the main action button expand to fill the row */
-                #sp_steady { flex: 1 1 auto; }
                 /* Species selector with prev/next buttons on either side */
                 .sp-select-row {
                     display: flex;
                     align-items: center;
+                    justify-content: center;
                     gap: 4px;
                     margin-bottom: 8px;
                 }
@@ -207,6 +207,17 @@ tuningGadget <- function(params,
                 .sp-select-grow { flex: 0 0 auto; }
                 .sp-select-grow .form-group { margin-bottom: 0; }
                 .sp-select-grow .shiny-label-null { display: none; }
+                /* The prompter tooltip on the dropdown shows on :hover, but the
+                   selectize control leaves the wrapper in a stale :hover state
+                   after the user clicks it, leaving the tooltip stuck open.
+                   Once the dropdown is focused (i.e. the user has clicked it),
+                   suppress the tooltip so it disappears immediately. */
+                .sp-select-grow:focus-within:after,
+                .sp-select-grow:focus-within:before {
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    transition-delay: 0s !important;
+                }
                 .sp-nav-btn { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
                 /* Section jump-links styled as small pills */
                 .section-links {
@@ -263,11 +274,6 @@ tuningGadget <- function(params,
                 introBox(
                     tags$div(
                         class = "sidebar-btn-row",
-                        prompter::add_prompt(
-                            actionButton("sp_steady", action_label,
-                                         class = "btn-primary"),
-                            message = action_tooltip,
-                            position = "right"),
                         tags$div(
                             class = "btn-group",
                             role = "group",
@@ -280,11 +286,24 @@ tuningGadget <- function(params,
                                 actionButton("undo", "",
                                              icon = icon("angle-left")),
                                 message = "Go back to previous steady state",
-                                position = "bottom"),
+                                position = "bottom")),
+                        prompter::add_prompt(
+                            actionButton("sp_steady", action_label,
+                                         class = "btn-primary"),
+                            message = action_tooltip,
+                            position = "right"),
+                        tags$div(
+                            class = "btn-group",
+                            role = "group",
                             prompter::add_prompt(
                                 actionButton("redo", "",
                                              icon = icon("angle-right")),
                                 message = "Go forward to next steady state",
+                                position = "bottom"),
+                            prompter::add_prompt(
+                                actionButton("redo_all", "",
+                                             icon = icon("angles-right")),
+                                message = "Redo all changes",
                                 position = "bottom"))
                     ),
                     data.step = 5,
@@ -383,6 +402,7 @@ tuningGadget <- function(params,
 
         if (logs$idx == length(logs$files)) {
             shinyjs::disable("redo")
+            shinyjs::disable("redo_all")
         }
         if (logs$idx <= 1) {
             # There is nothing to undo if there is nothing older in the logs
@@ -534,9 +554,11 @@ tuningGadget <- function(params,
             if (is.null(attr(p_old, "changes")) && logs$idx > 1) {
                 logs$idx <- logs$idx - 1
                 shinyjs::enable("redo")
+                shinyjs::enable("redo_all")
                 p_new <- readRDS(logs$files[logs$idx])
             } else {
                 shinyjs::disable("redo")
+                shinyjs::disable("redo_all")
             }
             if (logs$idx <= 1) {
                 shinyjs::disable("undo")
@@ -562,11 +584,32 @@ tuningGadget <- function(params,
             trigger_update(runif(1))
             shinyjs::enable("undo")
             shinyjs::enable("undo_all")
-            if (logs$idx == length(logs$files)) shinyjs::disable("redo")
+            if (logs$idx == length(logs$files)) {
+                shinyjs::disable("redo")
+                shinyjs::disable("redo_all")
+            }
+        })
+        ## Redo All ####
+        observeEvent(input$redo_all, {
+            if (logs$idx >= length(logs$files)) return()
+            logs$idx <- length(logs$files)
+            p <- readRDS(logs$files[logs$idx])
+            params(p)
+            params_old(p)
+            # Trigger an update of sliders
+            rm(list = ls(flags), pos = flags)
+            trigger_update(runif(1))
+            shinyjs::enable("undo")
+            shinyjs::enable("undo_all")
+            shinyjs::disable("redo")
+            shinyjs::disable("redo_all")
         })
         ## Undo All ####
         observeEvent(input$undo_all, {
-            if (logs$idx > 1) shinyjs::enable("redo")
+            if (logs$idx > 1) {
+                shinyjs::enable("redo")
+                shinyjs::enable("redo_all")
+            }
             shinyjs::disable("undo")
             shinyjs::disable("undo_all")
             logs$idx <- 1

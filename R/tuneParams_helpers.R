@@ -248,6 +248,7 @@ tuneParams_add_to_logs <- function(logs, p, params) {
     logs$files <- append(logs$files[min(1, logs$idx):logs$idx], file)
     logs$idx <- logs$idx + 1
     shinyjs::disable("redo")
+    shinyjs::disable("redo_all")
     if (logs$idx > 1) {
         shinyjs::enable("undo")
         shinyjs::enable("undo_all")
