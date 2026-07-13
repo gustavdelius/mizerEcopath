@@ -448,7 +448,7 @@ for (s in species_params(params)$species) {
     n <- params@species_params[s, "n"]
     g_0 <- growth[1] / w[1]^n
     d_0 <- d_over_g * g_0
-    diffusion(params)[s, ] <- d_0 * w^(n + 1)
+    ext_diffusion(params)[s, ] <- d_0 * w^(n + 1)
 }
 
 # Solve for steady state using the upwind scheme
