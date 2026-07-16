@@ -44,15 +44,14 @@ build_obj <- function(params, species, catch, log_D_ext) {
     gps <- gear_params(params)[gear_params(params)$species == species, ]
     s <- species_params(params)$species == species
     sps <- species_params(params)[s, ]
-    mat_idx <- sum(params@w < sps$w_mat)
-    mu_mat <- ext_mort(params)[s, mat_idx]
+    z_ext <- ext_mort(params)[s, 1] / params@w[1]^sps$d
     ip <- list(
         logit_l50 = qlogis((gps$l50 - min(data$l)) / (max(data$l) - min(data$l))),
         log_ratio_left = qlogis((gps$l50 - gps$l25) / gps$l50),
         log_l50_right_offset = 1,
         log_ratio_right = 1,
         log_catchability = log(gps$catchability),
-        mu_mat = mu_mat,
+        z_ext = z_ext,
         m = sps$m,
         log_D_ext = log_D_ext
     )

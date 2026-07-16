@@ -6,7 +6,7 @@
 #'     automatically adjusts `ks` to keep the metabolic rate at maturity
 #'     size constant.
 #' *   **k**: Activity rate coefficient.
-#' *   **mu_mat**: External mortality at maturity size. Changing this scales
+#' *   **z_ext**: External mortality at 1g. Changing this scales
 #'     the external mortality at all other sizes by the same factor.
 #' *   **alpha**: Assimilation efficiency.
 #'
@@ -16,16 +16,15 @@
 otherControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observe({
-        req(input$alpha, input$ks, input$k, input$mu_mat)
+        req(input$alpha, input$ks, input$k, input$z_ext)
         p <- isolate(params())
         sp <- isolate(input$sp)
         if (!identical(sp, flags$sp_old_other)) {
             flags$sp_old_other <- sp
             return()
         }
-        # determine external mortality at maturity
-        mat_idx <- sum(p@w < p@species_params[sp, "w_mat"])
-        mu_mat <- ext_mort(p)[input$sp, mat_idx]
+        # determine external mortality at 1g
+        z_ext <- ext_mort(p)[input$sp, 1] / p@w[1]^p@species_params[sp, "d"]
         
         # Update slider min/max so that they are a fixed proportion of the
         # parameter value
@@ -36,12 +35,12 @@ otherControl <- function(input, output, session, params, params_old,
                           min = signif(input$k / 2, 2),
                           max = signif((input$k + 0.1) * 1.5, 2))
         
-        if (mu_mat != input$mu_mat) {
-            updateSliderInput(session, "mu_mat",
-                              min = signif(input$mu_mat / 2, 2),
-                              max = signif((input$mu_mat + 0.1) * 1.5, 2))
+        if (z_ext != input$z_ext) {
+            updateSliderInput(session, "z_ext",
+                              min = signif(input$z_ext / 2, 2),
+                              max = signif((input$z_ext + 0.1) * 1.5, 2))
             # re-calculate ext_mort.
-            ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$mu_mat / mu_mat)
+            ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$z_ext / z_ext)
         }
 
         p@species_params[sp, "alpha"] <- input$alpha
@@ -78,9 +77,8 @@ otherControl <- function(input, output, session, params, params_old,
 #' @inheritParams abundanceControlUI
 otherControlUI <- function(p, input) {
     sp <- p@species_params[input$sp, ]
-    # determine external mortality at maturity
-    mat_idx <- sum(p@w < sp$w_mat)
-    mu_mat <- ext_mort(p)[input$sp, mat_idx]
+    # determine external mortality at 1g
+    z_ext <- ext_mort(p)[input$sp, 1] / p@w[1]^sp$d
     tagList(
         sliderInput("ks", "Coefficient of standard metabolism 'ks'",
                     value = sp$ks,
@@ -97,10 +95,10 @@ otherControlUI <- function(p, input) {
                     max = signif((sp$k + 0.1) * 1.5, 2),
                     step = 0.01),
         tags$h3(tags$a(id = "ext_mort"), "Mort"),
-        sliderInput("mu_mat", "External mortality at maturity size",
-                    value = mu_mat,
-                    min = signif(mu_mat / 2, 2),
-                    max = signif((mu_mat + 0.1) * 1.5, 2),
+        sliderInput("z_ext", "External mortality at 1g",
+                    value = z_ext,
+                    min = signif(z_ext / 2, 2),
+                    max = signif((z_ext + 0.1) * 1.5, 2),
                     step = 0.05),
         sliderInput("alpha", "Assimilation efficiency 'alpha'",
                     value = sp$alpha,

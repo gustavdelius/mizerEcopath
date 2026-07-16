@@ -24,7 +24,7 @@
 #   - respects the yield_lambda parameter
 #   - fits m when freed via map (m > n)
 #   - moves D_ext from its starting value when free
-#   - mu_mat_lim caps the optimised external mortality
+#   - z_ext_lim caps the optimised external mortality
 #   - map fixes a specified parameter at its initial value
 #
 # Missing-data and edge cases:
@@ -217,7 +217,7 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]
     l50_true  <- gp_true$l50
     q_true    <- gp_true$catchability
-    mu_true   <- species_params(sg)[s, "mu_mat"]
+    mu_true   <- ext_mort(sg)[s, 1] / sg@w[1]^species_params(sg)[s, "d"]
     D_true    <- species_params(sg)[s, "D_ext"]
     prod_true <- getProduction(sg)[species]
 
@@ -229,7 +229,7 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     gp$catchability[gi] <- 1
     gear_params(pp) <- gp
     spp <- species_params(pp)
-    spp$mu_mat[s] <- mu_true * 4
+    spp$z_ext[s] <- mu_true * 4
     spp$D_ext[s]  <- D_true / 4
     spp$production_observed[s] <- prod_true
     pp@ext_diffusion[s, ] <- spp$D_ext[s] * pp@w^(spp$n[s] + 1)
@@ -247,7 +247,7 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     # catch_identifiability vignette).
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)        # selectivity
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03) # from the yield
-    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05, ignore_attr = TRUE)      # mortality
+    expect_equal(sp_fit$z_ext, mu_true, tolerance = 0.05, ignore_attr = TRUE)      # mortality
     expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05, ignore_attr = TRUE)        # diffusion
 })
 
@@ -276,7 +276,7 @@ test_that("matchCatch recovers selectivity and catchability from the catch alone
     gp$catchability[gi] <- 1
     gear_params(pp) <- gp
     spp <- species_params(pp)
-    spp$mu_mat[s] <- spp$mu_mat[s] * 4
+    spp$z_ext[s] <- spp$z_ext[s] * 4
     species_params(pp) <- spp
 
     fit <- suppressWarnings(matchCatch(
@@ -458,13 +458,13 @@ test_that("matchCatch with empty catch matches only yield and production", {
     expect_equal(gp_before, gp_after, ignore_attr = TRUE)
 })
 
-test_that("mu_mat_lim caps the optimised external mortality", {
+test_that("z_ext_lim caps the optimised external mortality", {
     tight_lim <- 0.5
     result <- suppressWarnings(matchCatch(celtic_params, species = "Hake",
                                           catch = celtic_catch,
-                                          mu_mat_lim = tight_lim))
-    mu_mat <- species_params(result)[species_params(result)$species == "Hake", "mu_mat"]
-    expect_lte(mu_mat, tight_lim + 1e-6)
+                                          z_ext_lim = tight_lim))
+    z_ext <- species_params(result)[species_params(result)$species == "Hake", "z_ext"]
+    expect_lte(z_ext, tight_lim + 1e-6)
 })
 
 test_that("map argument fixes the specified parameter at its initial value", {
@@ -490,7 +490,7 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
     gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]
     l50_true  <- gp_true$l50
     q_true    <- gp_true$catchability
-    mu_true   <- species_params(sg)[s, "mu_mat"]
+    mu_true   <- ext_mort(sg)[s, 1] / sg@w[1]^species_params(sg)[s, "d"]
     D_true    <- species_params(sg)[s, "D_ext"]
     prod_true <- getProduction(sg)[species]
 
@@ -501,7 +501,7 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
     gp$catchability[gi] <- 1
     gear_params(pp) <- gp
     spp <- species_params(pp)
-    spp$mu_mat[s] <- mu_true * 4
+    spp$z_ext[s] <- mu_true * 4
     spp$D_ext[s]  <- D_true / 4
     spp$production_observed[s] <- prod_true
     pp@ext_diffusion[s, ] <- spp$D_ext[s] * pp@w^(spp$n[s] + 1)
@@ -515,6 +515,6 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
 
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03)
-    expect_equal(sp_fit$mu_mat, mu_true, tolerance = 0.05)
+    expect_equal(sp_fit$z_ext, mu_true, tolerance = 0.05)
     expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)
 })

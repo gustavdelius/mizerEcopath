@@ -28,8 +28,8 @@ ecopathOtherControlUI(params, input)
 A tagList with sliders for the exponents
 }
 \description{
-This control adjusts the external mortality at maturity and the metabolic
-rate. If the external mortality at maturity size is changed, then the
+This control adjusts the external mortality at 1g and the metabolic
+rate. If the external mortality at 1g is changed, then the
 external mortality at all other sizes is scaled by the same factor.
 }
 \seealso{

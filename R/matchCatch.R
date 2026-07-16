@@ -12,9 +12,9 @@
 #' * `l25_right`: The length at which the gear selectivity is 25% on the right
 #'   side (only for `double_sigmoid_length` selectivity).
 #' * `catchability`: The catchability of the gear.
-#' * `mu_mat`: The coefficient of the power-law external mortality
-#'   `mu(w) = mu_mat * (w / w_mat)^d`, where `d` is taken from
-#'   `species_params$d` and `w_mat` is the weight at maturity.
+#' * `z_ext`: The coefficient of the power-law external mortality
+#'   `mu(w) = z_ext * w^d`, where `d` is taken from
+#'   `species_params$d`.
 #'
 #' The observed yield per gear is taken from the `yield_observed` column of
 #' `gear_params(params)`. The observed production is taken from the
@@ -77,17 +77,17 @@
 #'   * `dl`: The width of each bin.
 #'   * `catch`: The observed count for each bin.
 #' @param lambda The slope of the community spectrum, used to set the upper
-#'   bound on `mu_mat`. Default is 2.05.
+#'   bound on `z_ext`. Default is 2.05.
 #' @param yield_lambda A parameter that controls the strength of the penalty for
 #'   deviation from the observed yield.
 #' @param production_lambda A parameter that controls the strength of the penalty
 #'   for deviation from the observed production.
-#' @param mu_mat_lim Upper bound on the optimised `mu_mat` value. The hard
+#' @param z_ext_lim Upper bound on the optimised `z_ext` value. The hard
 #'   upper bound derived from `lambda` and growth rate is further capped at
 #'   this value. Default is 5.
 #' @param map An optional named list that fixes specific parameters during
 #'   optimisation. Use the user-facing parameter names (`"l50"`, `"l25"`,
-#'   `"l50_right"`, `"l25_right"`, `"catchability"`, `"mu_mat"`, `"m"`).
+#'   `"l50_right"`, `"l25_right"`, `"catchability"`, `"z_ext"`, `"m"`).
 #'   Each element should be a `factor` vector where `NA` entries fix the
 #'   corresponding parameter at its initial value; see [TMB::MakeADFun()].
 #'   By default `m` (the metabolic-rate exponent) is fixed.
@@ -114,7 +114,7 @@
 #'
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                        yield_lambda = 1, production_lambda = 1,
-                       mu_mat_lim = 5, map = list(m = factor(NA)))
+                       z_ext_lim = 5, map = list(m = factor(NA)))
 {
     species <- valid_species_arg(params, species = species,
                                  error_on_empty = TRUE)
@@ -126,7 +126,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
                                  lambda = lambda,
                                  yield_lambda = yield_lambda,
                                  production_lambda = production_lambda,
-                                 mu_mat_lim = mu_mat_lim, map = map)
+                                 z_ext_lim = z_ext_lim, map = map)
         }
         return(params)
     }
@@ -152,11 +152,11 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
     mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[mat_idx]
-    if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
-        # determine external mortality at maturity
-        mu_mat <- ext_mort(params)[sp_select, mat_idx]
+    if (!"z_ext" %in% names(sps) || is.na(sps$z_ext) || (sps$z_ext == 0 && ext_mort(params)[sp_select, 1] > 0)) {
+        # determine external mortality at 1g
+        z_ext <- ext_mort(params)[sp_select, 1] / params@w[1]^sps$d
     } else {
-        mu_mat <- sps$mu_mat
+        z_ext <- sps$z_ext
     }
 
     # Initial parameter estimates
@@ -175,7 +175,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
 
         log_catchability = log(ifelse(gps$catchability <= 0, 1e-8, gps$catchability)),
 
-        mu_mat = mu_mat,
+        z_ext = z_ext,
 
         m = ifelse(any(names(sps)=='m'), sps$m, 1),
 
@@ -190,7 +190,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
     # With g(w) = g w^n and mu(w) = mu w^{n-1}, the exponent of the juvenile
     # spectrum is -mu/g-n. The exponent of the community spectrum is -lambda.
     g_mat <- getEReproAndGrowth(params)[sp_select, mat_idx]
-    mu_mat_max <- g_mat / w_mat * (lambda - sps$n)
+    z_ext_max <- (g_mat / w_mat * (lambda - sps$n)) / w_mat^sps$d
 
     lower_bounds_list <- list(
         logit_l50 = rep(-10, length(data$sel_func)),
@@ -198,7 +198,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_l50_right_offset = rep(-10, length(data$sel_func)),
         log_ratio_right = rep(-10, length(data$sel_func)),
         log_catchability = rep(-10, length(data$sel_func)),
-        mu_mat = 0.2,
+        z_ext = 0.2,
         m = sps$n * 1.01,
         log_D_ext = -20
     )
@@ -209,7 +209,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_l50_right_offset = rep(10, length(data$sel_func)),
         log_ratio_right = rep(10, length(data$sel_func)),
         log_catchability = rep(10, length(data$sel_func)),
-        mu_mat = min(mu_mat_max,mu_mat_lim),
+        z_ext = min(z_ext_max, z_ext_lim),
         m = 3,
         log_D_ext = 15
     )
@@ -222,7 +222,7 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
             "l50_right" = "log_l50_right_offset",
             "l25_right" = "log_ratio_right",
             "catchability" = "log_catchability",
-            "mu_mat" = "mu_mat",
+            "z_ext" = "z_ext",
             "m" = "m",
             "D_ext" = "log_D_ext"
         )

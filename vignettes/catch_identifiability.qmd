@@ -270,7 +270,7 @@ This is the situation we usually face: the total landed weight of a stock
 is recorded, but an independent estimate of its production is not. What can
 we then learn, and what stays out of reach?
 
-We hold mortality (`mu_mat`) fixed at a range of values spanning a factor
+We hold mortality (`z_ext`) fixed at a range of values spanning a factor
 of four around the truth, and at each one fit the catch shape **and** the
 yield, but supply **no** production penalty (`production_lambda = 0`). The
 gear selectivity, catchability and diffusion are free. If mortality were
@@ -281,16 +281,16 @@ identifiable from the catch and yield, only the true value would fit well.
 #| warning: false
 catch_obs <- model_catch_data(p0, species)
 obs_pdf   <- catch_obs$catch / sum(catch_obs$catch)
-mu0       <- sps$mu_mat
+mu0       <- sps$z_ext
 
 mus <- c(0.5, 0.75, 1, 1.5, 2) * mu0
 fits <- lapply(mus, function(mu) {
     pp <- p0
-    sp <- species_params(pp); sp$mu_mat[s] <- mu; species_params(pp) <- sp
+    sp <- species_params(pp); sp$z_ext[s] <- mu; species_params(pp) <- sp
     suppressWarnings(matchCatch(
         pp, species = species, catch = catch_obs,
         yield_lambda = 1, production_lambda = 0,           # yield only
-        map = list(m = factor(NA), mu_mat = factor(NA))))  # mortality fixed
+        map = list(m = factor(NA), z_ext = factor(NA))))  # mortality fixed
 })
 
 summary_tab <- do.call(rbind, Map(function(mu, fit) {
@@ -300,7 +300,7 @@ summary_tab <- do.call(rbind, Map(function(mu, fit) {
     tv  <- 0.5 * sum(abs(obs_pdf - pm))
     nll <- -sum(catch_obs$catch * log(pmax(pm, 1e-300)))  # catch-shape NLL
     data.frame(
-        mu_mat       = round(mu, 3),
+        z_ext       = round(mu, 3),
         l50          = round(gpf$l50, 1),
         catchability = round(gpf$catchability, 3),
         D_ext        = signif(spf$D_ext, 3),
@@ -342,7 +342,7 @@ for (i in seq_along(fits)) {
     lines(catch_obs$length, model_catch_pdf(fits[[i]], species, catch_obs$length),
           col = cols[i], lwd = 2)
 }
-legend("topright", legend = paste0("mu_mat = ", round(mus, 2)),
+legend("topright", legend = paste0("z_ext = ", round(mus, 2)),
        col = cols, lwd = 2, bty = "n")
 ```
 
@@ -390,10 +390,10 @@ the fits, while the yield stays pinned to its observed value:
 ```{r}
 #| fig-cap: "With the yield matched but production unconstrained, the fitted yield (open circles) is flat across mortality assumptions, while the implied production (filled circles) rises. Yield carries no information about mortality; production carries some."
 op <- par(mar = c(4, 4, 2, 4))
-plot(summary_tab$mu_mat, summary_tab$production, type = "b", pch = 19,
-     xlab = "assumed mu_mat", ylab = "production", main = "")
+plot(summary_tab$z_ext, summary_tab$production, type = "b", pch = 19,
+     xlab = "assumed z_ext", ylab = "production", main = "")
 par(new = TRUE)
-plot(summary_tab$mu_mat, summary_tab$yield, type = "b", pch = 1, lty = 2,
+plot(summary_tab$z_ext, summary_tab$yield, type = "b", pch = 1, lty = 2,
      axes = FALSE, xlab = "", ylab = "", ylim = c(0, max(summary_tab$yield) * 1.3))
 axis(4); mtext("yield", side = 4, line = 2.5)
 legend("topleft", c("production", "yield"), pch = c(19, 1), lty = c(1, 2),
@@ -407,7 +407,7 @@ So if you calibrate to **yield only**, the result is:
 |----------|-------------------------------|
 | Gear selectivity ($l_{50}, l_{25}$) | **Well determined** by the catch shape |
 | Catchability $q$ | **Well determined** by the yield |
-| Mortality (`mu_mat`) | **Unbiased but imprecise** — recovered on average, bounded from above by the catch, loose below; trades off against diffusion |
+| Mortality (`z_ext`) | **Unbiased but imprecise** — recovered on average, bounded from above by the catch, loose below; trades off against diffusion |
 | Diffusion (`D_ext`) | **Unbiased but imprecise** — trades off against mortality; precision falls as the sample shrinks |
 | Production | Follows the imprecise mortality |
 
@@ -467,7 +467,7 @@ fit_from <- function(l50_0, mu_0, D_0, use_production) {
     gp$l50[gi] <- l50_0; gp$l25[gi] <- l50_0 - 4; gp$catchability[gi] <- 1
     gear_params(pp) <- gp
     sp <- species_params(pp)
-    sp$mu_mat[s] <- mu_0; sp$D_ext[s] <- D_0
+    sp$z_ext[s] <- mu_0; sp$D_ext[s] <- D_0
     sp$production_observed[s] <- if (use_production) prod_true else NA
     pp@ext_diffusion[s, ] <- D_0 * pp@w^(sp$n[s] + 1)
     species_params(pp) <- sp
@@ -478,7 +478,7 @@ fit_from <- function(l50_0, mu_0, D_0, use_production) {
     gf <- gear_params(fit); gi <- which(gf$species == species)
     spf <- species_params(fit)[s, ]
     data.frame(l50_start = l50_0, mu_start = mu_0, D_start = D_0,
-               l50 = round(gf$l50[gi], 1), mu_mat = round(spf$mu_mat, 3),
+               l50 = round(gf$l50[gi], 1), z_ext = round(spf$z_ext, 3),
                D_ext = signif(spf$D_ext, 3),
                production = round(getProduction(fit)[species], 3))
 }
@@ -487,8 +487,8 @@ fit_from <- function(l50_0, mu_0, D_0, use_production) {
 starts <- list(c(30, 0.10, 3), c(40, 0.60, 20),
                c(55, 1.50, 0.1), c(70, 3.00, 0.01))
 
-cat(sprintf("truth:  l50 = %.1f   mu_mat = %.2f   D_ext = %.1f   production = %.3f\n",
-            l50_true, sps$mu_mat, sps$D_ext, prod_true))
+cat(sprintf("truth:  l50 = %.1f   z_ext = %.2f   D_ext = %.1f   production = %.3f\n",
+            l50_true, sps$z_ext, sps$D_ext, prod_true))
 ```
 
 **Without a production constraint:**
@@ -502,7 +502,7 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], FALSE))) |>
 
 Every start converges to the *same* solution — the optimiser is robust to
 its initial values; we cannot make it diverge by starting it badly. And the
-solution is essentially the truth: `l50` ≈ 35.4, `mu_mat` ≈ 0.29 and
+solution is essentially the truth: `l50` ≈ 35.4, `z_ext` ≈ 0.29 and
 `D_ext` ≈ 12.4, against the true 35.4, 0.29 and 12.4. So from a *perfect*
 catch the parameters can be recovered — even the mortality and diffusion,
 despite the shallow valley between them, and *without* the production
@@ -520,7 +520,7 @@ do.call(rbind, lapply(starts, function(x) fit_from(x[1], x[2], x[3], TRUE))) |>
 ```
 
 Supplying the production changes the destination hardly at all here —
-`mu_mat` ≈ 0.29, `D_ext` ≈ 12.4, production ≈ 0.32 — because with a noise-free
+`z_ext` ≈ 0.29, `D_ext` ≈ 12.4, production ≈ 0.32 — because with a noise-free
 catch the optimiser already had what it needed to find the truth. On perfect
 data the two calibrations agree, and both are essentially right. That is the
 reassuring part, and it is worth stating plainly: the objective is
@@ -568,7 +568,7 @@ fit_sample <- function(seed, n_total, use_production) {
         pp, species = species, catch = catch, yield_lambda = 1,
         production_lambda = if (use_production) 1 else 0, map = list(m = factor(NA))))
     spf <- species_params(fit)[s, ]
-    c(mu_mat = spf$mu_mat, D_ext = spf$D_ext)
+    c(z_ext = spf$z_ext, D_ext = spf$D_ext)
 }
 
 # A realistic sample size (n = 2000), with and without production, plus a very
@@ -581,15 +581,15 @@ noprod_1e5  <- t(sapply(seeds, fit_sample, n_total = 1e5,  use_production = FALS
 ```
 
 ```{r}
-#| fig-cap: "Fitted (mu_mat, D_ext) for six random catch datasets of a realistic size (n = 2000 fish) drawn from the same true model (star). Without production (open circles) the fits scatter widely along the mortality-diffusion valley but centre on the truth. With production (red triangles) the mortality is pinned on it (the diffusion stays looser, spreading vertically). The scatter is variance, not bias."
-xr <- range(c(noprod_2000[, 1], prod_2000[, 1], sps$mu_mat))
+#| fig-cap: "Fitted (z_ext, D_ext) for six random catch datasets of a realistic size (n = 2000 fish) drawn from the same true model (star). Without production (open circles) the fits scatter widely along the mortality-diffusion valley but centre on the truth. With production (red triangles) the mortality is pinned on it (the diffusion stays looser, spreading vertically). The scatter is variance, not bias."
+xr <- range(c(noprod_2000[, 1], prod_2000[, 1], sps$z_ext))
 yr <- range(c(noprod_2000[, 2], prod_2000[, 2], sps$D_ext))
 plot(NULL, xlim = xr, ylim = yr,
-     xlab = "fitted mu_mat", ylab = "fitted D_ext",
+     xlab = "fitted z_ext", ylab = "fitted D_ext",
      main = "Six random datasets (n = 2000) from one true model")
 points(noprod_2000[, 1], noprod_2000[, 2], pch = 1,  col = "blue", cex = 1.4, lwd = 2)
 points(prod_2000[, 1],   prod_2000[, 2],   pch = 17, col = "red")
-points(sps$mu_mat, sps$D_ext, pch = 8, cex = 2.2, lwd = 2)
+points(sps$z_ext, sps$D_ext, pch = 8, cex = 2.2, lwd = 2)
 legend("topleft", bty = "n",
        pch = c(8, 1, 17), col = c("black", "blue", "red"),
        pt.cex = c(1.5, 1.4, 1),
@@ -600,14 +600,14 @@ Every fit still converges cleanly — the optimiser is reliable here as
 before. But without production the answer it returns swings with the data:
 
 - **It is variance, not bias.** Across the six datasets the no-production
-  fits (open circles) scatter along the valley — `mu_mat` ranges over a
+  fits (open circles) scatter along the valley — `z_ext` ranges over a
   factor of two or more, with `D_ext` tracking it — but they *centre on the
   truth* (the star). There is no systematic offset; a single fit is simply an
   imprecise draw. The spread is sampling variability, large *because* the
   likelihood is so flat that a little noise tilts a nearly level surface into
   a minimum somewhere new.
 - **The spread shrinks with more data.** At fifty times the sample
-  (`noprod_1e5`, not plotted) the no-production `mu_mat` tightens to roughly
+  (`noprod_1e5`, not plotted) the no-production `z_ext` tightens to roughly
   0.26–0.32 — still scattered, still centred on the truth, but far narrower.
   Precision, not correctness, is what the sample size buys; that is the
   signature of variance.
@@ -616,7 +616,7 @@ Throughout, the selectivity and catchability (not plotted) stay put from
 dataset to dataset — even at `n = 2000`, `l50` holds to within a few tenths
 of a centimetre. It is specifically the mortality–diffusion pair that is
 unstable. And **the production constraint tames it** (red triangles): with an
-accurate production the `mu_mat` estimates collapse onto a narrow band around
+accurate production the `z_ext` estimates collapse onto a narrow band around
 the truth (here roughly 0.25–0.29, several times tighter than without), even
 as the diffusion stays looser — the red points still spread vertically —
 because production bears directly on mortality, not on the diffusion, which
