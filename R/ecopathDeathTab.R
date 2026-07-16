@@ -23,7 +23,7 @@ ecopathDeathTab <- function(input, output, session, params, logs,
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
-            p <- setFeedingLevels(params = p, f = 0.6, f_c = 0.2)
+            # p <- setFeedingLevels(params = p, f = 0.6, f_c = 0.2)
             p <- matchDiet(p, diet)
         }
         plotlyDeathX(p, species = input$sp,

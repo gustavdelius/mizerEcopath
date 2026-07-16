@@ -16,9 +16,9 @@ ecopathDietTab <- function(input, output, session, params, logs,
         req(input$sp)
         p <- params()
         if (!is.null(diet)) {
-            p<-setFeedingLevels(params=p, f=0.6, f_c=0.2)
+            #p<-setFeedingLevels(params=p, f=0.6, f_c=0.2)
             p <- matchDiet(p, diet_matrix = diet)
-            p<-steadySingleSpecies(p)
+            # p <- steadySingleSpecies(p)
         }
         plotDiet(p, input$sp, xtrans = input$xtrans)
     })
