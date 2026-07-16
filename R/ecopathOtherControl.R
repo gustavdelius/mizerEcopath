@@ -1,7 +1,7 @@
 #' Ecopath-specific other parameter control
 #'
-#' This control adjusts the external mortality at maturity and the metabolic
-#' rate. If the external mortality at maturity size is changed, then the
+#' This control adjusts the external mortality at 1g and the metabolic
+#' rate. If the external mortality at 1g is changed, then the
 #' external mortality at all other sizes is scaled by the same factor.
 #'
 #' @param input Reactive holding the inputs
@@ -16,29 +16,28 @@
 ecopathOtherControl <- function(input, output, session, params, params_old,
                          flags, ...) {
     observe({
-        req(input$mu_mat)
+        req(input$z_ext)
         p <- isolate(params())
         sp <- isolate(input$sp)
         if (!identical(sp, flags$sp_old_other)) {
             flags$sp_old_other <- sp
             return()
         }
-        mat_idx <- sum(p@w < p@species_params[sp, "w_mat"])
-        mu_mat <- ext_mort(p)[input$sp, mat_idx]
+        z_ext <- ext_mort(p)[input$sp, 1] / p@w[1]^p@species_params[sp, "d"]
 
-        if (mu_mat != input$mu_mat) {
-            updateSliderInput(session, "mu_mat",
-                              min = signif(input$mu_mat / 2, 2),
-                              max = signif((input$mu_mat + 0.1) * 1.5, 2))
-            if (mu_mat > 0) {
-                ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$mu_mat / mu_mat)
+        if (z_ext != input$z_ext) {
+            updateSliderInput(session, "z_ext",
+                              min = signif(input$z_ext / 2, 2),
+                              max = signif((input$z_ext + 0.1) * 1.5, 2))
+            if (z_ext > 0) {
+                ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$z_ext / z_ext)
             } else {
-                ext_mort(p)[sp, ] <- input$mu_mat *
-                    (p@w / p@w[mat_idx]) ^ p@species_params[sp, "d"]
+                ext_mort(p)[sp, ] <- input$z_ext *
+                    p@w ^ p@species_params[sp, "d"]
             }
         }
 
-        p@species_params[sp, "mu_mat"] <- input$mu_mat
+        p@species_params[sp, "z_ext"] <- input$z_ext
         p <- setMetabolicRate(p, reset = TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })
@@ -52,14 +51,14 @@ ecopathOtherControlUI <- function(params, input) {
     sp <- params@species_params[input$sp, ]
     tagList(
         tags$h3(tags$a(id = "ext_mort"), "Mort"),
-        sliderInput("mu_mat", "External mortality at maturity size",
-                    value = sp$mu_mat,
-                    min = signif(sp$mu_mat / 2, 2),
-                    max = signif((sp$mu_mat + 0.1) * 1.5, 2),
+        sliderInput("z_ext", "External mortality at 1g",
+                    value = sp$z_ext,
+                    min = signif(sp$z_ext / 2, 2),
+                    max = signif((sp$z_ext + 0.1) * 1.5, 2),
                     step = 0.05)
     )
 }
 
 ecopathOtherControlTitle <- "Other"
 ecopathOtherControlDescription <-
-    "Adjust the external mortality at maturity size (scaling the external mortality at all sizes by the same factor) and the metabolic rate."
+    "Adjust the external mortality at 1g (scaling the external mortality at all sizes by the same factor) and the metabolic rate."

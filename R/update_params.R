@@ -20,11 +20,11 @@ update_params <- function(params, species = 1, pars, data) {
     params <- validParams(params)
     sp <- species_params(params)
 
-    # Need to add mu_mat column if it does not exist
+    # Need to add z_ext column if it does not exist
     # TODO: change once we have introduced a standard species param for this
     mat_idx <- colSums(outer(params@w, sp$w_mat, "<"))
-    mu_mat <- ext_mort(params)[cbind(seq_len(nrow(sp)), mat_idx)]
-    params <- set_species_param_default(params, "mu_mat", mu_mat)
+    z_ext <- ext_mort(params)[cbind(seq_len(nrow(sp)), mat_idx)] / sp$w_mat^sp$d
+    params <- set_species_param_default(params, "z_ext", z_ext)
 
     species <- valid_species_arg(params, species, error_on_empty = TRUE)
     if (length(species) > 1) {
@@ -91,12 +91,9 @@ update_params <- function(params, species = 1, pars, data) {
     sps$m <- pars[["m"]]
 
     # recalculate the power-law mortality rate
-    sps$mu_mat <- pars[["mu_mat"]]
-    # Note that `mu_mat` is the mortality at the w just below w_mat
-    mat_idx <- sum(params@w < sps$w_mat)
-    w_mat <- params@w[mat_idx]
+    sps$z_ext <- pars[["z_ext"]]
     ext_mort(params)[sp_select, ] <-
-        pars[["mu_mat"]] * (params@w / w_mat)^sps$d
+        pars[["z_ext"]] * params@w^sps$d
 
     # Update the external-diffusion power law from the optimised D_ext so that
     # the steady state below (which is diffusion-aware) uses the same diffusion

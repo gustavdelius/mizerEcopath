@@ -34,7 +34,7 @@ the other categories. It includes:
 automatically adjusts \code{ks} to keep the metabolic rate at maturity
 size constant.
 \item \strong{k}: Activity rate coefficient.
-\item \strong{mu_mat}: External mortality at maturity size. Changing this scales
+\item \strong{z_ext}: External mortality at 1g. Changing this scales
 the external mortality at all other sizes by the same factor.
 \item \strong{alpha}: Assimilation efficiency.
 }

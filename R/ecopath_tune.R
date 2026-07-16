@@ -104,10 +104,10 @@ ecopath_prepare_hook <- function(p) {
     # Determine gonad proportion
     current <- getGonadicProduction(p) / getProduction(p)
     p <- set_species_param_default(p, "gonad_proportion", current)
-    # Determine mu_mat
+    # Determine z_ext
     mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
-    mu_mat <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)]
-    p <- set_species_param_default(p, "mu_mat", mu_mat)
+    z_ext <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)] / p@species_params$w_mat^p@species_params$d
+    p <- set_species_param_default(p, "z_ext", z_ext)
     # Determine D_ext, the coefficient of the external-diffusion power law
     # d(w) = D_ext * w^(n+1), from the ext_diffusion slot (or legacy d_over_g).
     # Assign directly so any stale `D_ext` column is overwritten with the value
