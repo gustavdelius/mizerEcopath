@@ -13,6 +13,9 @@ sp <- James_sp |>
     select(species, a, b, w_mat, age_mat, w_inf, k_vb, t0) |>
     inner_join(Jess_sp, by = "species")
 
+rownames(sp) <- sp$species
+sp["Cod", "kernel_l_l"] <- 4.1
+
 load("inst/species_info_GD_length.Rdata")
 # n:            no. of rows in survey data in which the category occurs
 # Snfish:       no. of fish in the category (sometimes there is >1 fish in
@@ -57,13 +60,9 @@ sp <- readRDS("inst/sp.rds")
 #p <- newVonBertalanffyParams(sp)
 p <- newAllometricParams(sp)
 
-plotDeath(p, species = "Hake", proportion = FALSE)
+plotSpectra(p, resource = FALSE, power = 2)
 p@species_params$z_ext
-p@given_species_params$z_ext
-p@species_params$d
-p@given_species_params$d
-given_species_params(p)$d <- -.25
-p <- setExtMort(p)
+p@species_params$D_ext
 
 # Attach gear parameters matching the selected species
 gp <- data.frame(species = sp$species,
@@ -83,10 +82,26 @@ p <- steadySingleSpecies(p) |>
 p <- matchBiomasses(p)
 
 # Fit selectivity/catchability to match observed Celtic Sea catches
-p <- matchCatch(p, catch = catch_df, production_lambda = 0,
+pm <- matchCatch(p, catch = catch_df, production_lambda = 0,
                 yield_lambda = 1)
 
-#p <- tuneEcopath(p, catch = catch_df, diet = reduced_dm)
+plotSpectra(pm, resource = FALSE, power = 2)
+p@species_params$z_ext
+pm@species_params$z_ext
+p@species_params$D_ext
+pm@species_params$D_ext
+
+p@given_species_params$z_ext
+pm@given_species_params$z_ext
+p@given_species_params$D_ext
+pm@given_species_params$D_ext
+
+pd <- matchDiet(pm, reduced_dm)
+plotDeath(pd, species = "Cod")
+plotDeath(pd, species = "Whiting", proportion = FALSE)
+plotDiet(pd, species = "Whiting")
+plotDeath(pd, species = "Hake", proportion = FALSE)
+
 
 # Plot resulting yield comparison
 plotYieldVsSpecies(p)
@@ -95,11 +110,6 @@ plotlySpectra(p, power = 2, resource = FALSE)
 plotlyFMort(p)
 p@species_params$z_ext
 p@species_params$D_ext
-
-pd <- matchDiet(p, reduced_dm)
-plotDeath(pd, species = "Cod")
-plotDeath(pd, species = "Whiting")
-plotDeath(pd, species = "Hake", proportion = FALSE)
 
 plotSpectra(pd, power = 2)
 pd@species_params$D_ext
