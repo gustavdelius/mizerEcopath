@@ -71,15 +71,23 @@ bindParams <- function(...) {
 
     # Helper: align columns across data frames and rbind ----
     align_rbind <- function(dfs) {
+        # Determine the union of column names across all data frames
+        # so we can add any missing columns (filled with NA) before
+        # row-binding them together.
         all_cols <- Reduce(union, lapply(dfs, names))
         dfs <- lapply(dfs, function(df) {
-            df[setdiff(all_cols, names(df))] <- NA
-            df[all_cols]
+            missing <- setdiff(all_cols, names(df))
+            for (col in missing) df[[col]] <- NA
+            df[, all_cols, drop = FALSE]
         })
-        do.call(rbind, c(dfs, list(stringsAsFactors = FALSE)))
+        res <- do.call(rbind, c(dfs, list(stringsAsFactors = FALSE,
+                                          make.row.names = FALSE)))
+        rownames(res) <- NULL
+        res[] <- lapply(res, unname)
+        res
     }
 
-    # Combine data frames ----
+    # Combine species_params, given_species_params, and gear_params data frames ----
     p@species_params <-
         align_rbind(lapply(params_list, function(x) x@species_params))
     p@given_species_params <-

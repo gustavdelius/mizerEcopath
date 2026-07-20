@@ -34,11 +34,12 @@ plotYieldVsSizeByGear <- function( model, catch, species = 1, return_df = FALSE)
         df <- rbind(df, data.frame( Length=l, Catch_l=catch_l,
                                     Gear=i, Type="Estimated"))
 
-        cind <- which(catch$gear==i)
+        cind <- which(catch$gear==i & catch$species==spname)
 
         len <- catch$length[cind]
+        dl <- catch$dl[cind]
         catch_l <- catch$catch[cind]
-        catch_l <- catch_l/sum(catch_l)
+        catch_l <- catch_l/sum(catch_l * dl)
 
         df <- rbind(df, data.frame(Length=len, Catch_l=catch_l,
                                    Gear=i, Type = "Observed"))
