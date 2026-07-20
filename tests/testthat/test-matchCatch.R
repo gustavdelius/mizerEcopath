@@ -201,7 +201,14 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
     # data is generated from the single-species steady state, which the fit's
     # solver can reproduce exactly.
     species <- "Haddock"
-    sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
+    # The catch-recovery experiment is a single-species idealisation: the fit's
+    # C++ solver represents background mortality as a power law z_ext * w^d, so
+    # the truth must be generated from a model whose only non-fishing mortality
+    # is that power law. `makeNoninteracting()` folds the predation mortality
+    # into the external mortality (and predation encounter into the external
+    # encounter), leaving a self-consistent single-species model.
+    sg <- steadySingleSpecies(makeNoninteracting(make_celtic_single_gear()),
+                              species = species)
     s  <- species_params(sg)$species == species
     # Make the synthetic experiment self-consistent: the "observed" yield must be
     # this single-species model's own yield, not the celtic multispecies value
@@ -258,7 +265,14 @@ test_that("matchCatch recovers selectivity and catchability from the catch alone
     # mortality becomes imprecise without production - see the
     # catch_identifiability vignette - so they are not asserted tightly here.)
     species <- "Haddock"
-    sg <- steadySingleSpecies(make_celtic_single_gear(), species = species)
+    # The catch-recovery experiment is a single-species idealisation: the fit's
+    # C++ solver represents background mortality as a power law z_ext * w^d, so
+    # the truth must be generated from a model whose only non-fishing mortality
+    # is that power law. `makeNoninteracting()` folds the predation mortality
+    # into the external mortality (and predation encounter into the external
+    # encounter), leaving a self-consistent single-species model.
+    sg <- steadySingleSpecies(makeNoninteracting(make_celtic_single_gear()),
+                              species = species)
     s  <- species_params(sg)$species == species
     # Self-consistent "observed" yield (see the with-production test above).
     gp0 <- gear_params(sg); gi0 <- which(gp0$species == species)
@@ -478,7 +492,8 @@ test_that("map argument fixes the specified parameter at its initial value", {
 
 test_that("matchCatch recovers the true parameters when second_order_w is TRUE", {
     species <- "Haddock"
-    sg <- make_celtic_single_gear()
+    # See the note on `makeNoninteracting()` in the first-order recovery test.
+    sg <- makeNoninteracting(make_celtic_single_gear())
     second_order_w(sg) <- TRUE
     sg <- steadySingleSpecies(sg, species = species)
     s  <- species_params(sg)$species == species
@@ -515,6 +530,6 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
 
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
     expect_equal(gp_fit$catchability, q_true, tolerance = 0.03)
-    expect_equal(sp_fit$z_ext, mu_true, tolerance = 0.05)
-    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05)
+    expect_equal(sp_fit$z_ext, mu_true, tolerance = 0.05, ignore_attr = TRUE)
+    expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05, ignore_attr = TRUE)
 })
