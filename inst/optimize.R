@@ -32,17 +32,16 @@ sp_select <- sp$species == species
 sps <- sp[sp_select, ]
 gps <- gp[gp$species == species, ]
 
-if (!"mu_mat" %in% names(sps) || is.na(sps$mu_mat)) {
-    # determine external mortality at maturity
-    mat_idx <- sum(params@w < sps$w_mat)
-    mu_mat <- ext_mort(params)[sp_select, mat_idx]
+if (!"z_ext" %in% names(sps) || is.na(sps$z_ext)) {
+    # determine external mortality at 1g
+    z_ext <- ext_mort(params)[sp_select, 1] / params@w[1]^sps$d
 } else {
-    mu_mat <- sps$mu_mat
+    z_ext <- sps$z_ext
 }
 
 # Initial parameter estimates
 initial_params <- c(l50 = gps$l50, ratio = gps$l25 / gps$l50,
-                    mu_mat = mu_mat,
+                    z_ext = z_ext,
                     # we need non-zero catchability to match catch
                     catchability = max(gps$catchability, 1e-8))
 
@@ -53,9 +52,9 @@ obj <- MakeADFun(data = data,
                  silent = TRUE)
 
 # Set parameter bounds
-lower_bounds <- c(l50 = 5, ratio = 0.1, mu_mat = 0,
+lower_bounds <- c(l50 = 5, ratio = 0.1, z_ext = 0,
                   catchability = 1e-8)
-upper_bounds <- c(l50 = Inf, ratio = 0.99, mu_mat = Inf,
+upper_bounds <- c(l50 = Inf, ratio = 0.99, z_ext = Inf,
                   catchability = Inf)
 
 # Perform the optimization.

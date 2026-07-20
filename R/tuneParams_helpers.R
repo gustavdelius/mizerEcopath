@@ -16,7 +16,7 @@ tuning_env <- new.env(parent = emptyenv())
 prepare_params <- function(p, hook = NULL) {
     p@species_params$species <- as.character(p@species_params$species)
     rownames(p@species_params) <- p@species_params$species
-    p <- set_species_param_default(p, "a", 0.006)
+    p <- set_species_param_default(p, "a", 0.01)
     p <- set_species_param_default(p, "b", 3)
     p <- set_species_param_default(p, "k_vb", NA)
     p <- set_species_param_default(p, "t0", 0)

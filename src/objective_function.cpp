@@ -264,7 +264,7 @@ Type objective_function<Type>::operator() ()
     PARAMETER_VECTOR(log_l50_right_offset);
     PARAMETER_VECTOR(log_ratio_right);
     PARAMETER_VECTOR(log_catchability);
-    PARAMETER(mu_mat);
+    PARAMETER(z_ext);
     PARAMETER(m);
     PARAMETER(log_D_ext);
 
@@ -291,7 +291,7 @@ Type objective_function<Type>::operator() ()
         }
     }
 
-    vector<Type> mort = mu_mat * pow(w / w_mat, d) + total_F_mort;
+    vector<Type> mort = z_ext * pow(w, d) + total_F_mort;
 
     vector<Type> growth = calculate_growth(w, ergr, matur, m, n, w_repro_max, defaults_edition);
 

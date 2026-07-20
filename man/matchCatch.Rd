@@ -11,7 +11,7 @@ matchCatch(
   lambda = 2.05,
   yield_lambda = 1,
   production_lambda = 1,
-  mu_mat_lim = 5,
+  z_ext_lim = 5,
   map = list(m = factor(NA))
 )
 }
@@ -34,7 +34,7 @@ contain the following columns:
 }}
 
 \item{lambda}{The slope of the community spectrum, used to set the upper
-bound on \code{mu_mat}. Default is 2.05.}
+bound on \code{z_ext}. Default is 2.05.}
 
 \item{yield_lambda}{A parameter that controls the strength of the penalty for
 deviation from the observed yield.}
@@ -42,13 +42,13 @@ deviation from the observed yield.}
 \item{production_lambda}{A parameter that controls the strength of the penalty
 for deviation from the observed production.}
 
-\item{mu_mat_lim}{Upper bound on the optimised \code{mu_mat} value. The hard
+\item{z_ext_lim}{Upper bound on the optimised \code{z_ext} value. The hard
 upper bound derived from \code{lambda} and growth rate is further capped at
 this value. Default is 5.}
 
 \item{map}{An optional named list that fixes specific parameters during
 optimisation. Use the user-facing parameter names (\code{"l50"}, \code{"l25"},
-\code{"l50_right"}, \code{"l25_right"}, \code{"catchability"}, \code{"mu_mat"}, \code{"m"}).
+\code{"l50_right"}, \code{"l25_right"}, \code{"catchability"}, \code{"z_ext"}, \code{"m"}).
 Each element should be a \code{factor} vector where \code{NA} entries fix the
 corresponding parameter at its initial value; see \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
 By default \code{m} (the metabolic-rate exponent) is fixed.}
@@ -73,9 +73,9 @@ side (only for \code{double_sigmoid_length} selectivity).
 \item \code{l25_right}: The length at which the gear selectivity is 25\% on the right
 side (only for \code{double_sigmoid_length} selectivity).
 \item \code{catchability}: The catchability of the gear.
-\item \code{mu_mat}: The coefficient of the power-law external mortality
-\code{mu(w) = mu_mat * (w / w_mat)^d}, where \code{d} is taken from
-\code{species_params$d} and \code{w_mat} is the weight at maturity.
+\item \code{z_ext}: The coefficient of the power-law external mortality
+\code{mu(w) = z_ext * w^d}, where \code{d} is taken from
+\code{species_params$d}.
 }
 
 The observed yield per gear is taken from the \code{yield_observed} column of
