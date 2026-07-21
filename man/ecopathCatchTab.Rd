@@ -27,10 +27,17 @@ ecopathCatchTabUI(...)
 \description{
 This tab provides diagnostic plots for comparison with catch data:
 \itemize{
-\item \strong{Total yield plot}: A bar-like plot showing circles (model)
-and squares (observed) for each species caught by the gear.
 \item \strong{Catch size distribution}: Detailed size breakdown of
 yield for the selected species and gear.
+\item \strong{Yield inputs}: Numeric fields for editing the observed yield
+(\code{yield_observed}) and the yield weight (\code{yield_weight}) for the selected
+species and gear. The \code{yield_weight} sets how strongly the deviation of
+the model yield from the observed yield is penalised in \code{matchCatch()}.
+\item \strong{Yield comparison}: The model yield for the selected species and gear,
+alongside the observed yield and the resulting contribution to the loss
+function.
+\item \strong{Total yield plot}: A bar-like plot showing circles (model)
+and squares (observed) for each species caught by the gear.
 }
 }
 \seealso{

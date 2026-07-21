@@ -9,8 +9,6 @@ matchCatch(
   species = NULL,
   catch,
   lambda = 2.05,
-  yield_lambda = 1,
-  production_lambda = 1,
   z_ext_lim = 5,
   map = list(m = factor(NA))
 )
@@ -35,12 +33,6 @@ contain the following columns:
 
 \item{lambda}{The slope of the community spectrum, used to set the upper
 bound on \code{z_ext}. Default is 2.05.}
-
-\item{yield_lambda}{A parameter that controls the strength of the penalty for
-deviation from the observed yield.}
-
-\item{production_lambda}{A parameter that controls the strength of the penalty
-for deviation from the observed production.}
 
 \item{z_ext_lim}{Upper bound on the optimised \code{z_ext} value. The hard
 upper bound derived from \code{lambda} and growth rate is further capped at
@@ -92,18 +84,24 @@ The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch
 size distribution given the probabilities predicted by the model plus the sum
 of squares difference between the log of the observed yield and the log of
-the predicted yield, multiplied by \code{yield_lambda}, as well as the sum of
+the predicted yield, multiplied by a yield weight, as well as the sum of
 squares difference between the log of the observed production and the log of
-the predicted production, multiplied by \code{production_lambda}.
+the predicted production, multiplied by a production weight.
+
+The yield weight is species-gear-specific: it is taken from the
+\code{yield_weight} column of \code{gear_params(params)}, defaulting to 1 for every
+gear when that column is absent. The production weight is species-specific:
+it is taken from the \code{production_weight} column of \code{species_params(params)},
+defaulting to 1 when that column is absent.
 
 The function deals with missing data in the following way, for each species
 individually:
 \itemize{
-\item If the observed yield is not available (no positive \code{yield_observed} in
-\code{gear_params}), \code{yield_lambda} is set to 0 and only the catch size
-distribution and production are matched.
+\item If the observed yield is not available for a gear (no positive
+\code{yield_observed} in \code{gear_params}), that gear's yield weight is set to 0 and
+only the catch size distribution and production are matched for it.
 \item If the observed production is not available (no \code{production_observed} in
-\code{species_params}), \code{production_lambda} is set to 0 and only the catch size
+\code{species_params}), the production weight is set to 0 and only the catch size
 distribution and yield are matched.
 \item If the observed catch size distribution is not available (empty \code{catch}),
 only the observed yield and the observed production are matched. The

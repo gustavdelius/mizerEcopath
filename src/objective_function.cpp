@@ -248,8 +248,8 @@ Type objective_function<Type>::operator() ()
     // DATA_VECTOR(growth);
     DATA_SCALAR(w_mat);
     DATA_SCALAR(d);
-    DATA_SCALAR(yield_lambda);
-    DATA_SCALAR(production_lambda);
+    DATA_VECTOR(yield_weight);
+    DATA_SCALAR(production_weight);
     DATA_VECTOR(matur);
     DATA_VECTOR(ergr);
     DATA_SCALAR(n);
@@ -394,8 +394,10 @@ Type objective_function<Type>::operator() ()
             multinomial_nll += mult_val;
             nll += mult_val;
 
-            if (yield_lambda > 0) {
-                Type yield_val = yield_lambda * pow(log(model_yield(g) / yield(g)), Type(2));
+            // The species-gear-specific `yield_weight` weights this gear's
+            // yield penalty.
+            if (yield_weight(g) > 0) {
+                Type yield_val = yield_weight(g) * pow(log(model_yield(g) / yield(g)), Type(2));
                 yield_nll += yield_val;
                 nll += yield_val;
             }
@@ -406,25 +408,26 @@ Type objective_function<Type>::operator() ()
 
     // else {
     //
-    //   if (yield_lambda > 0) {
+    //   if (yield_weight(0) > 0) {
     //     // **Calculate model yield**
     //     vector<Type> yield_per_bin = catch_dens * w * dw;
     //     Type model_yield = yield_per_bin.sum();
     //     REPORT(model_yield);
     //     // Penalise deviation from observed yield
-    //     nll += yield_lambda * pow(log(model_yield / yield), Type(2));
+    //     nll += yield_weight(0) * pow(log(model_yield / yield(0)), Type(2));
     //   }
     //
     // }
 
     Type production_nll = Type(0.0);
-    if (production_lambda > 0) {
+    if (production_weight > 0) {
         // **Calculate production**
         vector<Type> production_per_bin = N * growth * dw;
         Type model_production = production_per_bin.sum();
         REPORT(model_production);
-        // **Add penalty for deviation from observed production**
-        production_nll = production_lambda * pow(log(model_production / production), Type(2));
+        // The species-specific `production_weight` weights this penalty for
+        // deviation from the observed production.
+        production_nll = production_weight * pow(log(model_production / production), Type(2));
         nll += production_nll;
     }
 
@@ -442,6 +445,7 @@ Type objective_function<Type>::operator() ()
     REPORT(mort);
     REPORT(growth);
     REPORT(d_diff);
+    REPORT(model_yield);
     REPORT(multinomial_nll);
     REPORT(yield_nll);
     REPORT(production_nll);

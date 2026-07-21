@@ -17,17 +17,12 @@
 #'   * `length`: The start of each bin.
 #'   * `dl`: The width of each bin.
 #'   * `catch`: The observed count for each bin.
-#' @param yield_lambda A parameter that controls the strength of the penalty for
-#'   deviation from the observed yield.
-#' @param production_lambda A parameter that controls the strength of the penalty
-#'   for deviation from the observed production.
 #'
 #' @return A list with the data to be passed to the TMB objective function. If
 #'   there is no catch data for the species, the function returns NULL.
 #' @keywords internal
 #' @export
-prepare_data <- function(params, species = 1, catch,
-                         yield_lambda = 1, production_lambda = 1) {
+prepare_data <- function(params, species = 1, catch) {
 
     # Validate MizerParams object and extract data for the selected species
     params <- validParams(params)
@@ -122,8 +117,15 @@ prepare_data <- function(params, species = 1, catch,
                                  gear = unique(catch$gear),
                                  row.names = NULL)
         observed_bins <- rbind(observed_bins, upper_bins)
-        # ordering better for different gears
-        observed_bins <- observed_bins |> arrange(gear, bin_start)
+        # Several catch rows (or an added padding bin) can map to the same
+        # (gear, bin_start, bin_end). Collapse them by summing their counts so
+        # that every bin is unique. Otherwise the `pivot_wider()` below would
+        # map several values into a single cell, turn the count column into a
+        # list-column and then fail with "Can't convert `fill` to <list>".
+        observed_bins <- observed_bins |>
+            group_by(gear, bin_start, bin_end) |>
+            summarise(count = sum(count), .groups = "drop") |>
+            arrange(gear, bin_start)
 
         # Create a comprehensive set of bin edges covering all observed bins
         bin_edges <- sort(unique(c(observed_bins$bin_start,
@@ -209,10 +211,19 @@ prepare_data <- function(params, species = 1, catch,
     w_mat_idx <- sum(params@w < sps$w_mat)
     w_mat <- params@w[w_mat_idx]
 
-    # If production is not observed
+    # Weight for the production penalty. The species-specific `production_weight`
+    # species parameter weights the deviation of the model production from the
+    # observed production. When the column is absent it defaults to 1.
+    if (!is.null(sps$production_weight) && !is.na(sps$production_weight)) {
+        production_weight <- as.numeric(sps$production_weight)
+    } else {
+        production_weight <- 1
+    }
+    # If production is not observed it cannot contribute a penalty, so the
+    # weight is forced to zero and the (unused) target to a safe value.
     if (is.null(sps$production_observed) || is.na(sps$production_observed)) {
-        production_lambda <- 0
-        production <- 0
+        production_weight <- 0
+        production <- 1
         if (!use_counts) {
             # Not enough data
             return(NULL)
@@ -221,13 +232,27 @@ prepare_data <- function(params, species = 1, catch,
         production <- sps$production_observed
     }
 
-    # If yield is not observed
-    if (is.null(gps$yield_observed) || any(is.na(gps$yield_observed)) ||
-        any(!(gps$yield_observed > 0))) {
-        yield <- 0
-        yield_lambda <- 0
+    # Per-gear weight for the yield penalty. The species-gear-specific
+    # `yield_weight` gear parameter weights the deviation of the model yield
+    # from the observed yield. When the `yield_weight` column is absent it
+    # defaults to 1 for every gear.
+    n_g <- nrow(gps)
+    if (!is.null(gps$yield_weight)) {
+        yield_weight <- as.numeric(gps$yield_weight)
+        yield_weight[is.na(yield_weight)] <- 0
+    } else {
+        yield_weight <- rep(1, n_g)
+    }
+    # A gear whose yield is not observed cannot contribute a yield penalty, so
+    # its weight is forced to zero and its (unused) target yield to a safe value.
+    if (is.null(gps$yield_observed)) {
+        yield <- rep(1, n_g)
+        yield_weight <- rep(0, n_g)
     } else {
         yield <- gps$yield_observed
+        no_yield <- is.na(yield) | !(yield > 0)
+        yield[no_yield] <- 1
+        yield_weight[no_yield] <- 0
     }
 
     # Estimation of m
@@ -275,8 +300,8 @@ prepare_data <- function(params, species = 1, catch,
         # growth = growth,
         w_mat = w_mat,
         d = sps$d,
-        yield_lambda = yield_lambda,
-        production_lambda = production_lambda,
+        yield_weight = yield_weight,
+        production_weight = production_weight,
         matur = matur,
         ergr = ergr,
         n = n,

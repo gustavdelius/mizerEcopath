@@ -272,7 +272,7 @@ we then learn, and what stays out of reach?
 
 We hold mortality (`z_ext`) fixed at a range of values spanning a factor
 of four around the truth, and at each one fit the catch shape **and** the
-yield, but supply **no** production penalty (`production_lambda = 0`). The
+yield, but supply **no** production penalty (`production_weight = 0`). The
 gear selectivity, catchability and diffusion are free. If mortality were
 identifiable from the catch and yield, only the true value would fit well.
 
@@ -286,10 +286,12 @@ mu0       <- sps$z_ext
 mus <- c(0.5, 0.75, 1, 1.5, 2) * mu0
 fits <- lapply(mus, function(mu) {
     pp <- p0
-    sp <- species_params(pp); sp$z_ext[s] <- mu; species_params(pp) <- sp
+    sp <- species_params(pp)
+    sp$z_ext[s] <- mu
+    sp$production_weight[s] <- 0                           # yield only
+    species_params(pp) <- sp
     suppressWarnings(matchCatch(
         pp, species = species, catch = catch_obs,
-        yield_lambda = 1, production_lambda = 0,           # yield only
         map = list(m = factor(NA), z_ext = factor(NA))))  # mortality fixed
 })
 
@@ -421,7 +423,7 @@ if you want to sharpen the mortality.
 
 ## What closes the gap
 
-Adding an observed production to the objective (`production_lambda > 0`)
+Adding an observed production to the objective (`production_weight > 0`)
 gives the optimiser a constraint that *does* vary along the valley, so it
 sharpens the mortality — and with it the diffusion. The catch and yield pin
 the mortality only weakly, through the faint downhill tilt of the valley
@@ -472,8 +474,7 @@ fit_from <- function(l50_0, mu_0, D_0, use_production) {
     pp@ext_diffusion[s, ] <- D_0 * pp@w^(sp$n[s] + 1)
     species_params(pp) <- sp
     fit <- suppressWarnings(matchCatch(
-        pp, species = species, catch = catch_obs, yield_lambda = 1,
-        production_lambda = if (use_production) 1 else 0,
+        pp, species = species, catch = catch_obs,
         map = list(m = factor(NA))))
     gf <- gear_params(fit); gi <- which(gf$species == species)
     spf <- species_params(fit)[s, ]
@@ -560,13 +561,11 @@ fit_sample <- function(seed, n_total, use_production) {
     gp <- gear_params(pp); gi <- which(gp$species == species)
     gp$l50[gi] <- 45; gp$l25[gi] <- 41           # same (mediocre) start every time
     gear_params(pp) <- gp
-    if (use_production) {
-        spp <- species_params(pp); spp$production_observed[s] <- prod_true
-        species_params(pp) <- spp
-    }
+    spp <- species_params(pp)
+    spp$production_observed[s] <- if (use_production) prod_true else NA
+    species_params(pp) <- spp
     fit <- suppressWarnings(matchCatch(
-        pp, species = species, catch = catch, yield_lambda = 1,
-        production_lambda = if (use_production) 1 else 0, map = list(m = factor(NA))))
+        pp, species = species, catch = catch, map = list(m = factor(NA))))
     spf <- species_params(fit)[s, ]
     c(z_ext = spf$z_ext, D_ext = spf$D_ext)
 }

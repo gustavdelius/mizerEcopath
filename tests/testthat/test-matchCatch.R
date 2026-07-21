@@ -21,7 +21,7 @@
 #   - works with multiple gears, incl. double_sigmoid_length
 #
 # Optional / free parameters:
-#   - respects the yield_lambda parameter
+#   - respects the yield_weight gear parameter
 #   - fits m when freed via map (m > n)
 #   - moves D_ext from its starting value when free
 #   - z_ext_lim caps the optimised external mortality
@@ -244,7 +244,7 @@ test_that("matchCatch recovers the true parameters from a self-consistent catch"
 
     fit <- suppressWarnings(matchCatch(
         pp, species = species, catch = catch,
-        yield_lambda = 1, production_lambda = 1, map = list(m = factor(NA))))
+        map = list(m = factor(NA))))
     gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
     sp_fit <- species_params(fit)[s, ]
 
@@ -291,11 +291,12 @@ test_that("matchCatch recovers selectivity and catchability from the catch alone
     gear_params(pp) <- gp
     spp <- species_params(pp)
     spp$z_ext[s] <- spp$z_ext[s] * 4
+    spp$production_weight[s] <- 0            # match from the catch alone
     species_params(pp) <- spp
 
     fit <- suppressWarnings(matchCatch(
         pp, species = species, catch = catch,
-        yield_lambda = 1, production_lambda = 0, map = list(m = factor(NA))))
+        map = list(m = factor(NA))))
     gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
 
     expect_equal(gp_fit$l50, l50_true, tolerance = 0.02)
@@ -342,14 +343,17 @@ test_that("matchCatch updates gear selectivity parameters for the selected speci
                          gp_after[sp_idx, c("l50", "l25", "catchability")]))
 })
 
-test_that("matchCatch respects the yield_lambda parameter", {
+test_that("matchCatch respects the yield_weight gear parameter", {
     result_default <- matchCatch(celtic_params, species = "Hake",
                                  catch = celtic_catch) |>
         suppressWarnings()
     gp_default <- gear_params(result_default)
 
-    result_mod <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch,
-                             yield_lambda = 10) |>
+    p_mod <- celtic_params
+    gp <- gear_params(p_mod)
+    gp$yield_weight <- 10
+    gear_params(p_mod) <- gp
+    result_mod <- matchCatch(p_mod, species = "Hake", catch = celtic_catch) |>
         suppressWarnings()
     gp_mod <- gear_params(result_mod)
 
@@ -524,7 +528,7 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
 
     fit <- suppressWarnings(matchCatch(
         pp, species = species, catch = catch,
-        yield_lambda = 1, production_lambda = 1, map = list(m = factor(NA))))
+        map = list(m = factor(NA))))
     gp_fit <- gear_params(fit)[gear_params(fit)$species == species, ]
     sp_fit <- species_params(fit)[s, ]
 
