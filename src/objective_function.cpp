@@ -379,7 +379,7 @@ Type objective_function<Type>::operator() ()
             }
 
             vector<Type> probs(c_bins);
-            probs.fill(Type(1e-10));
+            probs.fill(Type(0.0));
 
             for (int k = 0; k < num_segs; k++) {
                 int i = bin_index(k);
@@ -388,6 +388,14 @@ Type objective_function<Type>::operator() ()
                 probs(i) += coeff_fj(k) * dens_per_bin_g(j) + coeff_fj1(k) * dens_per_bin_g(j+1);
             }
 
+            // Normalise before applying the floor that guards against log(0), so
+            // that this term is invariant under a rescaling of the gear's
+            // catchability. An absolute floor swamps the signal for a gear with
+            // very small catchability (e.g. a survey gear at 1e-12), leaving the
+            // likelihood flat in l50/l25 so that the optimiser never moves away
+            // from its starting values.
+            probs /= probs.sum();
+            probs += Type(1e-10);
             probs /= probs.sum();
 
             Type mult_val = -dmultinom(counts_g, probs, true) / counts_g.sum();
