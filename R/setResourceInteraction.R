@@ -17,6 +17,23 @@
 #' `params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")`
 #' will set the resource dynamics to semichemostat.
 #'
+#' The amount that a species can absorb is limited by the requirement that the
+#' extra resource encounter rate must not exceed the external encounter rate at
+#' any size, because it is subtracted from the latter. This is imposed with a
+#' tolerance: the extra resource encounter rate may exceed the external
+#' encounter rate by up to `tol` times the total encounter rate at that size.
+#' Hence the total encounter rate, and with it the steady state, changes by at
+#' most a relative amount `tol`. Without this tolerance a single size at which
+#' the external encounter rate is exactly zero (as produced by
+#' [makeInteracting()] when predation on fish already covers the whole intake)
+#' would prevent the species from absorbing anything at all.
+#'
+#' Because of this, restricting the resource to small sizes with `w_pp_cutoff`
+#' helps: it makes the resource encounter rate of large predators negligible
+#' compared to their total encounter rate, so their largest sizes no longer
+#' constrain how much they can absorb at the sizes where they do feed on the
+#' resource.
+#'
 #' Note: The function ensures that the resource level passed to setResource()
 #' is strictly between 0 and 1, as required by mizer. If any value of
 #' resource_level is greater than or equal to 1, it is set to just below 1
@@ -26,10 +43,13 @@
 #' @param params A mizer params object
 #' @param resource_dynamics Optional. Character string specifying the resource
 #'   dynamics to use. If NULL (default), the current resource dynamics are kept.
+#' @param tol The relative change in the total encounter rate that is
+#'   tolerated. Defaults to 1e-10. See Details.
 #' @return The modified mizer params object with increased `interaction_resource`
 #'   species parameters and correspondingly decreased external encounter rate.
 #' @export
-setResourceInteraction <- function(params, resource_dynamics = NULL) {
+setResourceInteraction <- function(params, resource_dynamics = NULL,
+                                   tol = 1e-10) {
     # Optionally set resource dynamics if specified by the user
     if (!is.null(resource_dynamics)) {
         resource_dynamics(params) <- resource_dynamics
@@ -49,27 +69,27 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     params@species_params$interaction_resource <- 1
     encounter <- getResourceEncounterRate(params)
 
-    # Then calculate the ratio of the external encounter rate to the
-    # encounter rate achieved with interaction_resource = 1
-    ratio <- params@ext_encounter / encounter
-    # ratio is NaN where both ext_encounter and encounter are zero, and Inf
-    # where encounter is zero but ext_encounter is not. Set these to Inf so
-    # they do not affect the minimum calculation below. A ratio of exactly
-    # zero (ext_encounter is zero but encounter is not) is a legitimate,
-    # often binding, constraint and must be kept.
+    # Increasing `interaction_resource` by `r` adds `r * encounter` to the
+    # resource encounter rate at each size, and that has to be taken out of
+    # the external encounter rate. So the binding constraint is
+    #     r * encounter <= ext_encounter    at every size.
+    # We allow the extra resource encounter to overshoot the external
+    # encounter rate by at most `tol` times the total encounter rate. Without
+    # this allowance any size at which `ext_encounter` happens to be exactly
+    # zero would force `r = 0`, no matter how minute the resource encounter
+    # there is. With it, sizes where the resource contributes a negligible
+    # part of the diet stop being a constraint, so restricting the resource to
+    # small sizes (via `w_pp_cutoff`) frees up the large predators.
+    allowance <- params@ext_encounter + tol * old_encounter
+    ratio <- allowance / encounter
+    # ratio is NaN where both allowance and encounter are zero, and Inf where
+    # encounter is zero but allowance is not. Set these to Inf so they do not
+    # affect the minimum calculation below.
     ratio[!is.finite(ratio)] <- Inf
-    # Sizes at which a species has negligible abundance (relative to its own
-    # peak abundance) do not meaningfully affect the dynamics, so the
-    # encounter rate there should not be allowed to constrain the ratio.
-    # `w_max` is not a reliable cutoff for this: some species already have
-    # negligible abundance well before `w_max`.
-    n <- initialN(params)
-    sel <- n / apply(n, 1, max) > 1e-10
-    ratio[!sel] <- Inf
     # The minimum ratio is the maximum that can be absorbed from the external
     # encounter rate
     ratio <- apply(ratio, 1, min)
-    # If a species did not have any ext_encounter at any size:
+    # If a species does not encounter the resource at any size:
     ratio[ratio == Inf] <- 0
 
     # Increase the resource interaction
@@ -84,11 +104,24 @@ setResourceInteraction <- function(params, resource_dynamics = NULL) {
     # Rounding errors could give negative values
     params@ext_encounter[params@ext_encounter < 0] <- 0
 
+    # The construction above bounds the relative change in the total encounter
+    # rate by `tol`. It can still be exceeded because `getResourceEncounterRate()`
+    # sums over `getPredKernel()` whereas `getEncounter()` uses mizer's FFT
+    # convolution, and the two disagree by around 1e-6 in relative terms at the
+    # very smallest sizes. Large `interaction_resource` values carry that
+    # disagreement into the total encounter rate.
     rel_diff <- abs(getEncounter(params) - old_encounter) / old_encounter
-    rel_diff[!sel] <- 0
-    if (max(rel_diff[is.finite(rel_diff)], 0) > 1e-10) {
-        print(max(rel_diff[is.finite(rel_diff)], 0))
-        stop("Encounter rate changed significantly")
+    rel_diff[!is.finite(rel_diff)] <- 0
+    max_rel_diff <- apply(rel_diff, 1, max)
+    affected <- max_rel_diff > 2 * tol
+    if (any(affected)) {
+        warning("The encounter rate changed for the following species: ",
+                paste0(names(max_rel_diff)[affected], " (",
+                       signif(max_rel_diff[affected], 3), ")",
+                       collapse = ", "),
+                ". The numbers in brackets give the maximum relative change ",
+                "in the encounter rate over all sizes. If these are large ",
+                "then the model may no longer be at steady state.")
     }
 
     # Set the resource capacity so that the the steady-state resource

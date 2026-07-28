@@ -4,13 +4,16 @@
 \alias{setResourceInteraction}
 \title{Set resource interaction to absorb external encounter rate}
 \usage{
-setResourceInteraction(params, resource_dynamics = NULL)
+setResourceInteraction(params, resource_dynamics = NULL, tol = 1e-10)
 }
 \arguments{
 \item{params}{A mizer params object}
 
 \item{resource_dynamics}{Optional. Character string specifying the resource
 dynamics to use. If NULL (default), the current resource dynamics are kept.}
+
+\item{tol}{The relative change in the total encounter rate that is
+tolerated. Defaults to 1e-10. See Details.}
 }
 \value{
 The modified mizer params object with increased \code{interaction_resource}
@@ -34,6 +37,23 @@ resource_dynamics argument. This allows you to switch between dynamic and
 constant resource regimes directly through this function. For example:
 \code{params <- setResourceInteraction(params, resource_dynamics = "resource_semichemostat")}
 will set the resource dynamics to semichemostat.
+
+The amount that a species can absorb is limited by the requirement that the
+extra resource encounter rate must not exceed the external encounter rate at
+any size, because it is subtracted from the latter. This is imposed with a
+tolerance: the extra resource encounter rate may exceed the external
+encounter rate by up to \code{tol} times the total encounter rate at that size.
+Hence the total encounter rate, and with it the steady state, changes by at
+most a relative amount \code{tol}. Without this tolerance a single size at which
+the external encounter rate is exactly zero (as produced by
+\code{\link[=makeInteracting]{makeInteracting()}} when predation on fish already covers the whole intake)
+would prevent the species from absorbing anything at all.
+
+Because of this, restricting the resource to small sizes with \code{w_pp_cutoff}
+helps: it makes the resource encounter rate of large predators negligible
+compared to their total encounter rate, so their largest sizes no longer
+constrain how much they can absorb at the sizes where they do feed on the
+resource.
 
 Note: The function ensures that the resource level passed to setResource()
 is strictly between 0 and 1, as required by mizer. If any value of

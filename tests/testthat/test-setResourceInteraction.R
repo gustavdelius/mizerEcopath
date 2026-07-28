@@ -34,8 +34,10 @@ test_that("setResourceInteraction works", {
 
     # Test interaction_resource increased for first species
     expect_true(params_new@species_params$interaction_resource[1] > initial_interaction[1])
-    # but stayed the same for the second
-    expect_identical(params_new@species_params$interaction_resource[2], initial_interaction[2])
+    # The second species has no external encounter rate to absorb, so it can
+    # only gain the negligible amount permitted by the `tol` argument.
+    expect_equal(params_new@species_params$interaction_resource[2],
+                 initial_interaction[2], tolerance = 1e-8)
 
     # Test external encounter rate decreased
     expect_true(all(params_new@ext_encounter <= initial_ext_encounter))
