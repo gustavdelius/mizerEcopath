@@ -39,7 +39,7 @@ ecopathCatchTab <- function(input, output, session, params, logs,
     output$plotCatchDist <- renderPlotly({
         plotlyYieldVsSize(params(), species = req(input$sp),
                           gear = input$gear,
-                          catch = catch, x_var = input$catch_x)
+                          catch = catch, x_var = "Length")
     })
 
     # Slider for the weight of the catch size distribution penalty ----
@@ -167,9 +167,6 @@ ecopathCatchTab <- function(input, output, session, params, logs,
 ecopathCatchTabUI <- function(...) {
     tagList(
         plotlyOutput("plotCatchDist"),
-        radioButtons("catch_x", "Show size in:",
-                     choices = c("Weight", "Length"),
-                     selected = "Length", inline = TRUE),
         uiOutput("ecopath_catch_dist_weight"),
         uiOutput("ecopath_yield_inputs"),
         textOutput("ecopath_yield_compare"),

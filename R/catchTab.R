@@ -58,7 +58,7 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
     output$plotCatchDist <- renderPlotly({
         plotlyYieldVsSize(params(), species = req(input$sp),
                           gear = input$gear,
-                          catch = catch, x_var = input$catch_x)
+                          catch = catch, x_var = "Length")
     })
     
     # Select clicked species ----
@@ -181,9 +181,6 @@ catchTabUI <- function(...) {
                title = "Match yields",
                content = "Moves the entire size spectrum for each species up or down to give the observed yield. It does that by multiplying the egg density by the ratio of observed yield to model yield. After that adjustment you should run to steady state by hitting the Steady button, after which the yield will be a bit off again. You can repeat this process if you like to get ever closer to the observed yield."),
         plotlyOutput("plotCatchDist"),
-        radioButtons("catch_x", "Show size in:",
-                     choices = c("Weight", "Length"),
-                     selected = "Length", inline = TRUE),
         h1("Total yield and size distribution of catch"),
         h2("Total yield"),
         p("The upper plot compares the yearly yield for each species in the model to the observed yield, if available."),
