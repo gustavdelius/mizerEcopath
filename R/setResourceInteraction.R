@@ -105,11 +105,9 @@ setResourceInteraction <- function(params, resource_dynamics = NULL,
     params@ext_encounter[params@ext_encounter < 0] <- 0
 
     # The construction above bounds the relative change in the total encounter
-    # rate by `tol`. It can still be exceeded because `getResourceEncounterRate()`
-    # sums over `getPredKernel()` whereas `getEncounter()` uses mizer's FFT
-    # convolution, and the two disagree by around 1e-6 in relative terms at the
-    # very smallest sizes. Large `interaction_resource` values carry that
-    # disagreement into the total encounter rate.
+    # rate by `tol`, and `getResourceEncounterRate()` computes the resource
+    # encounter rate the same way `getEncounter()` does, so this should not
+    # trigger. It is kept as a guard because the bound is easy to invalidate.
     rel_diff <- abs(getEncounter(params) - old_encounter) / old_encounter
     rel_diff[!is.finite(rel_diff)] <- 0
     max_rel_diff <- apply(rel_diff, 1, max)
@@ -134,20 +132,58 @@ setResourceInteraction <- function(params, resource_dynamics = NULL,
 
 #' Get resource encounter rate
 #'
-#' This function returns the resource encounter rate for predators.
+#' This function returns the part of the encounter rate that comes from feeding
+#' on the resource, i.e., the contribution that `interaction_resource` scales.
+#'
+#' The calculation mirrors that in [mizer::mizerEncounter()] exactly, with the
+#' fish prey removed from the prey spectrum, so that the result agrees with
+#' [mizer::getEncounter()] to machine precision. In particular it uses the same
+#' fast Fourier transform to evaluate the convolution integral, unless the
+#' predation kernel has been set by hand, in which case mizer sums over the
+#' predation kernel array instead and so do we.
+#'
+#' Using the same method matters because functions like
+#' [setResourceInteraction()] subtract this rate from the external encounter
+#' rate and rely on the total encounter rate being left unchanged. Note that
+#' mizer's Fourier transform evaluates a circular convolution, so at the very
+#' smallest sizes the result includes a small spurious contribution from prey at
+#' the top of the weight grid. That artefact is reproduced here on purpose,
+#' because it is present in the encounter rate that drives the model.
 #'
 #' @param params A mizer params object
 #' @return A matrix (species x size) of resource encounter rates
+#' @importFrom stats mvfft
 #' @export
 getResourceEncounterRate <- function(params) {
-    pred_kernel <- getPredKernel(params)
     n_pp <- initialNResource(params)
-    phi_resource <- params@species_params$interaction_resource *
-        rowSums(sweep(
-            pred_kernel, 3, params@dw_full * params@w_full * n_pp,
-            "*",
-            check.margin = FALSE
-        ), dims = 2)
-    encounter <- params@search_vol * phi_resource
+    # idx_sp are the index values of params@w_full such that
+    # params@w_full[idx_sp] = params@w
+    idx_sp <- (length(params@w_full) - length(params@w) + 1):length(params@w_full)
+
+    # If the user has set a custom predation kernel then mizer can not use the
+    # fft and neither can we.
+    if (!is.null(comment(params@pred_kernel))) {
+        phi_resource <- params@species_params$interaction_resource *
+            rowSums(sweep(
+                params@pred_kernel, 3, params@dw_full * params@w_full * n_pp,
+                "*",
+                check.margin = FALSE
+            ), dims = 2)
+        return(params@search_vol * phi_resource)
+    }
+
+    prey <- outer(params@species_params$interaction_resource, n_pp)
+    prey <- sweep(prey, 2, params@w_full * params@dw_full, "*")
+    avail_energy <- Re(base::t(mvfft(base::t(params@ft_pred_kernel_e) *
+                                         mvfft(base::t(prey)),
+                                     inverse = TRUE))) /
+        length(params@w_full)
+    avail_energy <- avail_energy[, idx_sp, drop = FALSE]
+    # Due to numerical errors we might get negative or very small entries that
+    # should be 0
+    avail_energy[avail_energy < 1e-18] <- 0
+
+    encounter <- params@search_vol * avail_energy
+    dimnames(encounter) <- dimnames(params@search_vol)
     return(encounter)
 }

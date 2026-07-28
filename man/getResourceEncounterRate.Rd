@@ -13,5 +13,22 @@ getResourceEncounterRate(params)
 A matrix (species x size) of resource encounter rates
 }
 \description{
-This function returns the resource encounter rate for predators.
+This function returns the part of the encounter rate that comes from feeding
+on the resource, i.e., the contribution that \code{interaction_resource} scales.
+}
+\details{
+The calculation mirrors that in \code{\link[mizer:mizerEncounter]{mizer::mizerEncounter()}} exactly, with the
+fish prey removed from the prey spectrum, so that the result agrees with
+\code{\link[mizer:getEncounter]{mizer::getEncounter()}} to machine precision. In particular it uses the same
+fast Fourier transform to evaluate the convolution integral, unless the
+predation kernel has been set by hand, in which case mizer sums over the
+predation kernel array instead and so do we.
+
+Using the same method matters because functions like
+\code{\link[=setResourceInteraction]{setResourceInteraction()}} subtract this rate from the external encounter
+rate and rely on the total encounter rate being left unchanged. Note that
+mizer's Fourier transform evaluates a circular convolution, so at the very
+smallest sizes the result includes a small spurious contribution from prey at
+the top of the weight grid. That artefact is reproduced here on purpose,
+because it is present in the encounter rate that drives the model.
 }
