@@ -82,17 +82,19 @@ reproduction level is set to zero via \code{\link[mizer:setBevertonHolt]{mizer::
 
 The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch
-size distribution given the probabilities predicted by the model plus the sum
-of squares difference between the log of the observed yield and the log of
-the predicted yield, multiplied by a yield weight, as well as the sum of
-squares difference between the log of the observed production and the log of
-the predicted production, multiplied by a production weight.
+size distribution given the probabilities predicted by the model, multiplied
+by a catch distribution weight, plus the sum of squares difference between
+the log of the observed yield and the log of the predicted yield, multiplied
+by a yield weight, as well as the sum of squares difference between the log
+of the observed production and the log of the predicted production,
+multiplied by a production weight.
 
-The yield weight is species-gear-specific: it is taken from the
-\code{yield_weight} column of \code{gear_params(params)}, defaulting to 1 for every
-gear when that column is absent. The production weight is species-specific:
-it is taken from the \code{production_weight} column of \code{species_params(params)},
-defaulting to 1 when that column is absent.
+The catch distribution weight and the yield weight are species-gear-specific:
+they are taken from the \code{catch_dist_weight} and \code{yield_weight} columns of
+\code{gear_params(params)}, each defaulting to 1 for every gear when the column is
+absent. The production weight is species-specific: it is taken from the
+\code{production_weight} column of \code{species_params(params)}, defaulting to 1 when
+that column is absent.
 
 The function deals with missing data in the following way, for each species
 individually:
@@ -104,8 +106,9 @@ only the catch size distribution and production are matched for it.
 \code{species_params}), the production weight is set to 0 and only the catch size
 distribution and yield are matched.
 \item If the observed catch size distribution is not available (empty \code{catch}),
-only the observed yield and the observed production are matched. The
-selectivity parameters are held fixed.
+or if a gear's \code{catch_dist_weight} is zero, only the observed yield and the
+observed production are matched. The selectivity parameters of the affected
+gears are held fixed.
 \item If neither catch size data nor observed production are available, the
 function issues a warning and returns \code{params} unchanged.
 }

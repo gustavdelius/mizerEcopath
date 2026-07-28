@@ -22,6 +22,8 @@
 #
 # Optional / free parameters:
 #   - respects the yield_weight gear parameter
+#   - respects the catch_dist_weight gear parameter, which when zero leaves
+#     the selectivity unchanged
 #   - fits m when freed via map (m > n)
 #   - moves D_ext from its starting value when free
 #   - z_ext_lim caps the optimised external mortality
@@ -360,6 +362,43 @@ test_that("matchCatch respects the yield_weight gear parameter", {
     sp_idx <- which(gp_mod$species == "Hake")
     expect_false(all(gp_default[sp_idx, c("l50", "l25", "catchability")] ==
                          gp_mod[sp_idx, c("l50", "l25", "catchability")]))
+})
+
+test_that("matchCatch respects the catch_dist_weight gear parameter", {
+    result_default <- matchCatch(celtic_params, species = "Hake",
+                                 catch = celtic_catch) |>
+        suppressWarnings()
+    gp_default <- gear_params(result_default)
+
+    p_mod <- celtic_params
+    gp <- gear_params(p_mod)
+    gp$catch_dist_weight <- 10
+    gear_params(p_mod) <- gp
+    result_mod <- matchCatch(p_mod, species = "Hake", catch = celtic_catch) |>
+        suppressWarnings()
+    gp_mod <- gear_params(result_mod)
+
+    sp_idx <- which(gp_mod$species == "Hake")
+    expect_false(all(gp_default[sp_idx, c("l50", "l25", "catchability")] ==
+                         gp_mod[sp_idx, c("l50", "l25", "catchability")]))
+})
+
+test_that("a zero catch_dist_weight leaves the selectivity unchanged", {
+    p_mod <- celtic_params
+    gp <- gear_params(p_mod)
+    gp$catch_dist_weight <- 0
+    gear_params(p_mod) <- gp
+    result <- suppressWarnings(matchCatch(p_mod, species = "Hake",
+                                          catch = celtic_catch))
+    # With no size-distribution penalty the selectivity parameters are
+    # unidentified and so are held at their initial values, but the catchability
+    # is still free to match the observed yield.
+    sp_idx <- gear_params(p_mod)$species == "Hake"
+    expect_equal(gear_params(p_mod)[sp_idx, c("l50", "l25")],
+                 gear_params(result)[sp_idx, c("l50", "l25")],
+                 ignore_attr = TRUE)
+    expect_false(all(gear_params(p_mod)[sp_idx, "catchability"] ==
+                         gear_params(result)[sp_idx, "catchability"]))
 })
 
 test_that("matchCatch handles invalid species inputs gracefully", {

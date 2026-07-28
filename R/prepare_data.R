@@ -255,6 +255,18 @@ prepare_data <- function(params, species = 1, catch) {
         yield_weight[no_yield] <- 0
     }
 
+    # Per-gear weight for the catch size distribution penalty. The
+    # species-gear-specific `catch_dist_weight` gear parameter scales the
+    # negative log likelihood of the observed catch size distribution given the
+    # size distribution predicted by the model. When the column is absent it
+    # defaults to 1 for every gear.
+    if (!is.null(gps$catch_dist_weight)) {
+        catch_dist_weight <- as.numeric(gps$catch_dist_weight)
+        catch_dist_weight[is.na(catch_dist_weight)] <- 0
+    } else {
+        catch_dist_weight <- rep(1, n_g)
+    }
+
     # Estimation of m
 
     ergr <- getEReproAndGrowth(params)[sp_select, w_select]
@@ -301,6 +313,7 @@ prepare_data <- function(params, species = 1, catch) {
         w_mat = w_mat,
         d = sps$d,
         yield_weight = yield_weight,
+        catch_dist_weight = catch_dist_weight,
         production_weight = production_weight,
         matur = matur,
         ergr = ergr,

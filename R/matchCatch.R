@@ -28,17 +28,19 @@
 #'
 #' The function estimates these parameters by minimizing an objective function.
 #' The objective function is the negative log likelihood of the observed catch
-#' size distribution given the probabilities predicted by the model plus the sum
-#' of squares difference between the log of the observed yield and the log of
-#' the predicted yield, multiplied by a yield weight, as well as the sum of
-#' squares difference between the log of the observed production and the log of
-#' the predicted production, multiplied by a production weight.
+#' size distribution given the probabilities predicted by the model, multiplied
+#' by a catch distribution weight, plus the sum of squares difference between
+#' the log of the observed yield and the log of the predicted yield, multiplied
+#' by a yield weight, as well as the sum of squares difference between the log
+#' of the observed production and the log of the predicted production,
+#' multiplied by a production weight.
 #'
-#' The yield weight is species-gear-specific: it is taken from the
-#' `yield_weight` column of `gear_params(params)`, defaulting to 1 for every
-#' gear when that column is absent. The production weight is species-specific:
-#' it is taken from the `production_weight` column of `species_params(params)`,
-#' defaulting to 1 when that column is absent.
+#' The catch distribution weight and the yield weight are species-gear-specific:
+#' they are taken from the `catch_dist_weight` and `yield_weight` columns of
+#' `gear_params(params)`, each defaulting to 1 for every gear when the column is
+#' absent. The production weight is species-specific: it is taken from the
+#' `production_weight` column of `species_params(params)`, defaulting to 1 when
+#' that column is absent.
 #'
 #' The function deals with missing data in the following way, for each species
 #' individually:
@@ -52,8 +54,9 @@
 #' distribution and yield are matched.
 #'
 #' -  If the observed catch size distribution is not available (empty `catch`),
-#' only the observed yield and the observed production are matched. The
-#' selectivity parameters are held fixed.
+#' or if a gear's `catch_dist_weight` is zero, only the observed yield and the
+#' observed production are matched. The selectivity parameters of the affected
+#' gears are held fixed.
 #'
 #' -  If neither catch size data nor observed production are available, the
 #' function issues a warning and returns `params` unchanged.
@@ -211,6 +214,8 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         log_D_ext = 15
     )
 
+    n_g <- length(data$sel_func)
+
     if (!is.null(map)) {
         # Traducir los nombres amigables a los nombres internos del optimizador
         name_translation <- c(
@@ -239,7 +244,6 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         # parameter for every gear of the species.
         per_gear <- c("logit_l50", "log_ratio_left", "log_l50_right_offset",
                       "log_ratio_right", "log_catchability")
-        n_g <- length(data$sel_func)
         for (p in intersect(names(map), per_gear)) {
             if (length(map[[p]]) == 1 && n_g > 1) {
                 map[[p]] <- factor(rep(as.vector(map[[p]]), n_g))
@@ -266,11 +270,26 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         }
     }
 
+    # The catch size distribution is the only thing that informs the shape of a
+    # gear's selectivity curve. A gear contributes no size-distribution penalty
+    # when there is no size data at all (`use_counts == 0`) or when its
+    # `catch_dist_weight` is zero, so its selectivity parameters are fixed at
+    # their initial values. Leaving them free would give zero-gradient "phantom"
+    # parameters that corrupt nlminb's Hessian approximation.
+    no_dist <- data$use_counts == 0 | data$catch_dist_weight == 0
+    if (any(no_dist)) {
+        for (p in c("logit_l50", "log_ratio_left",
+                    "log_l50_right_offset", "log_ratio_right")) {
+            map_vec <- if (is.null(map[[p]])) {
+                seq_len(n_g)
+            } else {
+                as.vector(map[[p]])
+            }
+            map_vec[no_dist] <- NA
+            map[[p]] <- factor(map_vec)
+        }
+    }
     if (!data$use_counts) {
-        map$logit_l50 <- factor(rep(NA, length(data$sel_func)))
-        map$log_ratio_left <- factor(rep(NA, length(data$sel_func)))
-        map$log_l50_right_offset <- factor(rep(NA, length(data$sel_func)))
-        map$log_ratio_right <- factor(rep(NA, length(data$sel_func)))
         # Without a catch size distribution there is nothing to inform the
         # diffusion, so keep it fixed at its initial value.
         if (is.null(map$log_D_ext)) map$log_D_ext <- factor(NA)

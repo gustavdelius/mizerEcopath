@@ -106,6 +106,11 @@ ecopath_prepare_hook <- function(p) {
     if (!"yield_weight" %in% names(p@gear_params)) {
         p@gear_params$yield_weight <- 1
     }
+    # Species-gear-specific weight for the catch size distribution penalty in
+    # matchCatch(), edited on the Catch tab. Defaults to 1.
+    if (!"catch_dist_weight" %in% names(p@gear_params)) {
+        p@gear_params$catch_dist_weight <- 1
+    }
     # Determine gonad proportion
     current <- getGonadicProduction(p) / getProduction(p)
     p <- set_species_param_default(p, "gonad_proportion", current)

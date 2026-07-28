@@ -46,7 +46,7 @@ There should be a tab where the current match to all the data can be seen at the
 
 For example death of all species on Death tab. Jess has nice survey tab and lots of ideas.
 
-The per-species production penalty factor `production_weight` can be edited on the Death tab and the per-gear yield penalty factor `yield_weight` on the Catch tab.
+The per-species production penalty factor `production_weight` can be edited on the Death tab and the per-gear yield penalty factor `yield_weight` as well as the per-gear catch size distribution penalty factor `catch_dist_weight` on the Catch tab.
 
 If there are multiple gears per species, all the gears for the current species
 
@@ -56,7 +56,7 @@ Should have slimmed-down versions for specific tasks, building on Jess's experie
 
 The parameter estimation should be extended to estimate the selectivity and catchability parameters of multiple gears for each species.
 
-Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will usually need a selectivity gear that decreases again at larger sizes. It is possible to select a different penalty factor `yield_weight` for each gear (edited on the Catch tab). The gear that selects fish up to the largest size may need to get increased weight in order to force the size spectrum to drop of appropriately.
+Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will usually need a selectivity gear that decreases again at larger sizes. It is possible to select a different penalty factor `yield_weight` for each gear (edited on the Catch tab). The gear that selects fish up to the largest size may need to get increased weight in order to force the size spectrum to drop of appropriately. Similarly the weight `catch_dist_weight` given to the mismatch in the catch size distribution can be chosen separately for each gear, so that gears with poorly sampled size distributions can be downweighted.
 
 We use double-sigmoid but could in the distant future experiment to find another suitable functional form for the selectivity curve. One possibility would be sigmoid times power law. But we should also ask the experts in Spain.
 

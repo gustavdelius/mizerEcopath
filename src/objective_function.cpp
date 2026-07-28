@@ -249,6 +249,7 @@ Type objective_function<Type>::operator() ()
     DATA_SCALAR(w_mat);
     DATA_SCALAR(d);
     DATA_VECTOR(yield_weight);
+    DATA_VECTOR(catch_dist_weight);
     DATA_SCALAR(production_weight);
     DATA_VECTOR(matur);
     DATA_VECTOR(ergr);
@@ -398,7 +399,11 @@ Type objective_function<Type>::operator() ()
             probs += Type(1e-10);
             probs /= probs.sum();
 
-            Type mult_val = -dmultinom(counts_g, probs, true) / counts_g.sum();
+            // The species-gear-specific `catch_dist_weight` weights this gear's
+            // penalty for the mismatch between the observed and the modelled
+            // catch size distribution.
+            Type mult_val = catch_dist_weight(g) *
+                (-dmultinom(counts_g, probs, true) / counts_g.sum());
             multinomial_nll += mult_val;
             nll += mult_val;
 

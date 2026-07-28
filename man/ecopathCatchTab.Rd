@@ -29,6 +29,10 @@ This tab provides diagnostic plots for comparison with catch data:
 \itemize{
 \item \strong{Catch size distribution}: Detailed size breakdown of
 yield for the selected species and gear.
+\item \strong{Size distribution weight}: A slider for the \code{catch_dist_weight} gear
+parameter of the selected species and gear. It sets how strongly the
+mismatch between the observed and the modelled catch size distribution is
+penalised in \code{matchCatch()}.
 \item \strong{Yield inputs}: Numeric fields for editing the observed yield
 (\code{yield_observed}) and the yield weight (\code{yield_weight}) for the selected
 species and gear. The \code{yield_weight} sets how strongly the deviation of

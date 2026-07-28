@@ -3,6 +3,10 @@
 #' This tab provides diagnostic plots for comparison with catch data:
 #' *   **Catch size distribution**: Detailed size breakdown of
 #'     yield for the selected species and gear.
+#' *   **Size distribution weight**: A slider for the `catch_dist_weight` gear
+#'     parameter of the selected species and gear. It sets how strongly the
+#'     mismatch between the observed and the modelled catch size distribution is
+#'     penalised in `matchCatch()`.
 #' *   **Yield inputs**: Numeric fields for editing the observed yield
 #'     (`yield_observed`) and the yield weight (`yield_weight`) for the selected
 #'     species and gear. The `yield_weight` sets how strongly the deviation of
@@ -37,6 +41,38 @@ ecopathCatchTab <- function(input, output, session, params, logs,
                           gear = input$gear,
                           catch = catch, x_var = input$catch_x)
     })
+
+    # Slider for the weight of the catch size distribution penalty ----
+    output$ecopath_catch_dist_weight <- renderUI({
+        p <- isolate(params())
+        sp <- req(input$sp)
+        gear <- req(input$gear)
+        spgear <- paste(sp, gear, sep = ", ")
+        gp <- p@gear_params
+        if (!spgear %in% rownames(gp)) return(NULL)
+        wt <- if ("catch_dist_weight" %in% names(gp)) {
+            gp[spgear, "catch_dist_weight"]
+        } else {
+            1
+        }
+        if (is.na(wt)) wt <- 0
+        sliderInput("catch_dist_weight",
+                    paste0("Size distribution weight for ", spgear),
+                    value = wt, min = 0,
+                    max = signif(max(5, wt * 2), 2), step = 0.05)
+    })
+
+    # Adjust the weight of the catch size distribution penalty ----
+    observeEvent(input$catch_dist_weight, {
+        p <- params()
+        spgear <- paste(req(input$sp), req(input$gear), sep = ", ")
+        if (!spgear %in% rownames(p@gear_params)) return()
+        if (!"catch_dist_weight" %in% names(p@gear_params)) {
+            p@gear_params$catch_dist_weight <- 1
+        }
+        p@gear_params[spgear, "catch_dist_weight"] <- input$catch_dist_weight
+        tuneParams_update_params(p, params)
+    }, ignoreInit = TRUE)
 
     # Input fields for observed yield and yield weight ----
     output$ecopath_yield_inputs <- renderUI({
@@ -134,6 +170,7 @@ ecopathCatchTabUI <- function(...) {
         radioButtons("catch_x", "Show size in:",
                      choices = c("Weight", "Length"),
                      selected = "Length", inline = TRUE),
+        uiOutput("ecopath_catch_dist_weight"),
         uiOutput("ecopath_yield_inputs"),
         textOutput("ecopath_yield_compare"),
         plotOutput("plotTotalYield")
