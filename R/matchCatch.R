@@ -30,19 +30,25 @@
 #' The objective function is the negative log likelihood of the observed catch
 #' size distribution given the probabilities predicted by the model plus the sum
 #' of squares difference between the log of the observed yield and the log of
-#' the predicted yield, multiplied by `yield_lambda`, as well as the sum of
+#' the predicted yield, multiplied by a yield weight, as well as the sum of
 #' squares difference between the log of the observed production and the log of
-#' the predicted production, multiplied by `production_lambda`.
+#' the predicted production, multiplied by a production weight.
+#'
+#' The yield weight is species-gear-specific: it is taken from the
+#' `yield_weight` column of `gear_params(params)`, defaulting to 1 for every
+#' gear when that column is absent. The production weight is species-specific:
+#' it is taken from the `production_weight` column of `species_params(params)`,
+#' defaulting to 1 when that column is absent.
 #'
 #' The function deals with missing data in the following way, for each species
 #' individually:
 #'
-#' -  If the observed yield is not available (no positive `yield_observed` in
-#' `gear_params`), `yield_lambda` is set to 0 and only the catch size
-#' distribution and production are matched.
+#' -  If the observed yield is not available for a gear (no positive
+#' `yield_observed` in `gear_params`), that gear's yield weight is set to 0 and
+#' only the catch size distribution and production are matched for it.
 #'
 #' -  If the observed production is not available (no `production_observed` in
-#' `species_params`), `production_lambda` is set to 0 and only the catch size
+#' `species_params`), the production weight is set to 0 and only the catch size
 #' distribution and yield are matched.
 #'
 #' -  If the observed catch size distribution is not available (empty `catch`),
@@ -78,10 +84,6 @@
 #'   * `catch`: The observed count for each bin.
 #' @param lambda The slope of the community spectrum, used to set the upper
 #'   bound on `z_ext`. Default is 2.05.
-#' @param yield_lambda A parameter that controls the strength of the penalty for
-#'   deviation from the observed yield.
-#' @param production_lambda A parameter that controls the strength of the penalty
-#'   for deviation from the observed production.
 #' @param z_ext_lim Upper bound on the optimised `z_ext` value. The hard
 #'   upper bound derived from `lambda` and growth rate is further capped at
 #'   this value. Default is 5.
@@ -113,7 +115,6 @@
 #' @export
 #'
 matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
-                       yield_lambda = 1, production_lambda = 1,
                        z_ext_lim = 5, map = list(m = factor(NA)))
 {
     species <- valid_species_arg(params, species = species,
@@ -124,16 +125,12 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         for (s in species) {
             params <- matchCatch(params, species = s, catch = catch,
                                  lambda = lambda,
-                                 yield_lambda = yield_lambda,
-                                 production_lambda = production_lambda,
                                  z_ext_lim = z_ext_lim, map = map)
         }
         return(params)
     }
 
-    data <- prepare_data(params, species = species, catch,
-                         yield_lambda = yield_lambda,
-                         production_lambda = production_lambda)
+    data <- prepare_data(params, species = species, catch)
 
     if (is.null(data)) {
         warning(species, " can not be matched because neither catches ",
@@ -278,8 +275,16 @@ matchCatch <- function(params, species = NULL, catch, lambda = 2.05,
         # diffusion, so keep it fixed at its initial value.
         if (is.null(map$log_D_ext)) map$log_D_ext <- factor(NA)
     }
-    if (data$yield_lambda == 0) {
+    # Catchability is only identified for a gear whose yield is being matched
+    # (the catch size distribution alone fixes only the shape, not the level).
+    # Fix the catchability of any gear whose yield weight is zero.
+    zero_weight <- data$yield_weight == 0
+    if (all(zero_weight)) {
         map$log_catchability <- factor(rep(NA, length(data$sel_func)))
+    } else if (any(zero_weight) && is.null(map$log_catchability)) {
+        cat_map <- seq_along(data$sel_func)
+        cat_map[zero_weight] <- NA
+        map$log_catchability <- factor(cat_map)
     }
 
     # Prepare the objective function.

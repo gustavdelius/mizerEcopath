@@ -52,8 +52,7 @@ tuneEcopath <- function(params, catch = NULL, diet = NULL,
                                      "ecopathDiffusion",
                                      "ecopathFishing",
                                      "ecopathReproduction",
-                                     "ecopathOther",
-                                     "ecopathMatch"),
+                                     "ecopathOther"),
                         tabs = c("ecopathSurvey",
                                  "ecopathSpectra",
                                  "ecopathCatch",
@@ -99,22 +98,17 @@ ecopath_prepare_hook <- function(p) {
     # Compute encounter rate coefficient Eiw = ext_encounter / w^n
     Eiw <- getExtEncounter(p)[, 1] / p@w[1] ^ p@species_params$n
     p <- set_species_param_default(p, "Eiw", Eiw)
-    p <- set_species_param_default(p, "yield_lambda", 0)
-    p <- set_species_param_default(p, "production_lambda", 0)
+    # Species-specific weight for the production penalty in matchCatch(), edited
+    # on the Death tab. Defaults to 1.
+    p <- set_species_param_default(p, "production_weight", 1)
+    # Species-gear-specific weight for the yield penalty in matchCatch(), edited
+    # on the Catch tab. Defaults to 1 (the previous global default weight).
+    if (!"yield_weight" %in% names(p@gear_params)) {
+        p@gear_params$yield_weight <- 1
+    }
     # Determine gonad proportion
     current <- getGonadicProduction(p) / getProduction(p)
     p <- set_species_param_default(p, "gonad_proportion", current)
-    # Determine z_ext
-    mat_idx <- colSums(outer(p@w, p@species_params$w_mat, "<"))
-    z_ext <- ext_mort(p)[cbind(seq_len(no_sp), mat_idx)] / p@species_params$w_mat^p@species_params$d
-    p <- set_species_param_default(p, "z_ext", z_ext)
-    # Determine D_ext, the coefficient of the external-diffusion power law
-    # d(w) = D_ext * w^(n+1), from the ext_diffusion slot (or legacy d_over_g).
-    # Assign directly so any stale `D_ext` column is overwritten with the value
-    # consistent with the ext_diffusion slot.
-    p@species_params$D_ext <- vapply(seq_len(no_sp), function(i) {
-        diffusion_coefficient(p, seq_len(no_sp) == i, p@species_params$n[i])
-    }, numeric(1))
     p <- set_species_param_default(p, "spawning_mu", 0.5)
     p <- set_species_param_default(p, "spawning_kappa", 5)
     p <- set_species_param_default(p, "annuli_min_age", 0)
@@ -151,9 +145,10 @@ ecopath_match_handler <- function(p, catch, params, params_old, logs,
             }
         }
         if ("catch" %in% input$match) {
-            p <- matchCatch(p, species = input$sp, catch = catch,
-                            production_lambda = 10^input$production_lambda,
-                            yield_lambda = 10^input$yield_lambda)
+            # The yield and production penalty weights are provided by the
+            # per-gear `yield_weight` (edited on the Catch tab) and the
+            # per-species `production_weight` (edited on the Death tab).
+            p <- matchCatch(p, species = input$sp, catch = catch)
             pb <- matchBiomasses(p)
             if (!isTRUE(all.equal(getBiomass(p, use_cutoff = TRUE),
                                   getBiomass(pb, use_cutoff = TRUE)))) {

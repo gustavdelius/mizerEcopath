@@ -38,7 +38,6 @@ Other gadget controls:
 \code{\link[=ecopathDiffusionControl]{ecopathDiffusionControl()}},
 \code{\link[=ecopathExponentControl]{ecopathExponentControl()}},
 \code{\link[=ecopathFishingControl]{ecopathFishingControl()}},
-\code{\link[=ecopathMatchControl]{ecopathMatchControl()}},
 \code{\link[=ecopathOtherControl]{ecopathOtherControl()}},
 \code{\link[=ecopathReproductionControl]{ecopathReproductionControl()}},
 \code{\link[=fishingControl]{fishingControl()}},

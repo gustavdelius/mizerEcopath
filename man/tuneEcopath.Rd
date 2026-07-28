@@ -9,7 +9,7 @@ tuneEcopath(
   catch = NULL,
   diet = NULL,
   controls = c("ecopathGrowth", "ecopathDiffusion", "ecopathFishing",
-    "ecopathReproduction", "ecopathOther", "ecopathMatch"),
+    "ecopathReproduction", "ecopathOther"),
   tabs = c("ecopathSurvey", "ecopathSpectra", "ecopathCatch", "ecopathGrowth",
     "ecopathRepro", "ecopathDiet", "ecopathDeath"),
   match = c("growth", "yield", "catch", "consumption"),

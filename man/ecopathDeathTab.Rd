@@ -30,6 +30,14 @@ allows the user to explore:
 \itemize{
 \item \strong{Mortality density}: Breakdown of various mortality sources by size
 and species.
+\item \strong{Production inputs}: Numeric fields for editing the observed production
+(\code{production_observed}) and the production weight (\code{production_weight})
+for the selected species. The \code{production_weight} sets how strongly the
+deviation of the model production from the observed production is
+penalised in \code{matchCatch()}.
+\item \strong{Production comparison}: The model production for the selected species,
+alongside the observed production and the resulting contribution to the
+loss function.
 \item \strong{Production vs Species}: Comparison of biomass produced across
 all species in the model.
 }

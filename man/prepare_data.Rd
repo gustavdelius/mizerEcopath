@@ -4,13 +4,7 @@
 \alias{prepare_data}
 \title{Prepare a TMB Objective Function for Optimising Model Parameters}
 \usage{
-prepare_data(
-  params,
-  species = 1,
-  catch,
-  yield_lambda = 1,
-  production_lambda = 1
-)
+prepare_data(params, species = 1, catch)
 }
 \arguments{
 \item{params}{A MizerParams object}
@@ -27,12 +21,6 @@ single gear).
 \item \code{dl}: The width of each bin.
 \item \code{catch}: The observed count for each bin.
 }}
-
-\item{yield_lambda}{A parameter that controls the strength of the penalty for
-deviation from the observed yield.}
-
-\item{production_lambda}{A parameter that controls the strength of the penalty
-for deviation from the observed production.}
 }
 \value{
 A list with the data to be passed to the TMB objective function. If
