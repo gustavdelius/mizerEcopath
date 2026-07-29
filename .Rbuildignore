@@ -9,3 +9,4 @@
 ^\.claude$
 ^vignettes/Celtic Sea Model\.qmd$
 ^CLAUDE.md
+^\.posit/assistant$

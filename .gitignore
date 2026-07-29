@@ -10,5 +10,3 @@ inst/doc
 docs/*.md
 docs/*/*.md
 /.quarto/
-.positai
-.claude

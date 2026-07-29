@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "files": {
+    "analyse-and-plot/SKILL.md": "bc5b397544305138cb0ab848b05d24ff",
+    "build-multispecies-model/SKILL.md": "f67c9d6ee34517050e1777d1a84d28ed",
+    "calibrate-model/SKILL.md": "5577c61885cfcf0bdb901e7df5268647",
+    "change-parameters/SKILL.md": "66119421907db003d8c280b700547261",
+    "extend-mizer/SKILL.md": "30bc6d39c39c24cb9e725d427c9061fb",
+    "run-simulation/SKILL.md": "219aa151be7da931385ad625b4631ae7",
+    "set-up-fishing/SKILL.md": "5fd3e701bc12ed22a9a8c3f737576bae"
+  }
+}

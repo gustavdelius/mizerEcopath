@@ -1,0 +1,6 @@
+# mizerAgents: start - managed by setup_mizer_agent(), edits are overwritten
+[mcp_servers."r-mizer"]
+command = "Rscript"
+args = ["-e", "btw::btw_mcp_server(btw::btw_tools('docs', 'env', 'sessioninfo', 'ide', 'run', 'pkg'))"]
+env = { BTW_RUN_R_ENABLED = "true" }
+# mizerAgents: end - add your own config above this block, not below
