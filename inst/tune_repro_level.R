@@ -15,7 +15,7 @@ library(mizerExperimental)
 # Relative difference between the yield a little above and a little below the
 # current F. Positive means the peak is above F_cur, negative that it is below.
 side <- function(params, sp, F_cur, d = 1.25) {
-    y <- suppressMessages(getYieldVsF(params, sp,
+    y <- suppressMessages(getYieldVsF(params, sp, gear = "commercial",
                                       F_range = c(F_cur / d, F_cur * d)))
     lo <- y$yield[which.min(abs(y$F - F_cur / d))]
     hi <- y$yield[which.min(abs(y$F - F_cur * d))]
@@ -53,7 +53,8 @@ tune <- function(params, sp, F_cur, rl_lo = 0.01, rl_hi = 0.99,
 # in log F because the grid is multiplicative.
 peak <- function(params, sp, F_cur,
                  mult = seq(1/4, 1.5, 1/8)) {
-    y <- suppressMessages(getYieldVsF(params, sp, F_range = F_cur * mult))
+    y <- suppressMessages(getYieldVsF(params, sp,  gear = "commercial",,
+                                      F_range = F_cur * mult))
     y <- y[order(y$F), ]
     pl <- ggplot(y, aes(x = F, y = yield)) +
         geom_line() +

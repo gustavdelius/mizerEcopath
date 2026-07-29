@@ -72,11 +72,16 @@ catch <- catch |>
     select(-factor)
 
 # Species params ----
-
+ICES_FMSY <- readr::read_csv("inst/ICES_FMSY.csv") |>
+    group_by(SpeciesName) |>
+    summarise(FMSY = mean(FMSY, na.rm = TRUE)) |>
+    rename(Scientific_name = SpeciesName)
 Jess_sp <- celtic_params@species_params |>
-    select(species,
+    left_join(ICES_FMSY) |>
+    select(species, Scientific_name,
            pred_kernel_type, beta, sigma,
-           kernel_exp, kernel_l_l, kernel_u_l, kernel_l_r, kernel_u_r)
+           kernel_exp, kernel_l_l, kernel_u_l,
+           kernel_l_r, kernel_u_r, FMSY)
 James_sp <- readRDS("inst/James_sp.rds")
 sp <- James_sp |>
     select(species, a, b, w_mat, age_mat, w_inf, k_vb, t0) |>
