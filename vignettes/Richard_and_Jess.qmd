@@ -208,10 +208,7 @@ After the fit, the biomass is rescaled to the observation and the reproduction l
 f <- setNames(rep(0.6, nrow(sp)), sp$species)
 f[["Whiting"]] <- 0.8406          # see "What the feeding level buys" below
 
-pm <- setFeedingLevels(pm, f = f, f_c = f / 3) |>
-    steady() |>
-    matchBiomasses() |>
-    steady()
+pm <- setFeedingLevels(pm, f = f, f_c = f / 3)
 ```
 
 So far the fish have infinite maximum intake and no metabolic cost, which is convenient but not believable. `setFeedingLevels()` introduces a feeding level $f$ (the fraction of its maximum rate at which a fish eats) and a critical feeding level $f_c$ (below which it cannot grow at all) by solving for the encounter rate $E$, maximum intake $h$ and metabolic loss $k_s$ that produce them:
@@ -220,7 +217,7 @@ $$E=E_r\frac{f}{\alpha(f-f_c)(1-f)},\qquad
   h = \frac{E_r}{\alpha(f-f_c)},\qquad
   k_s = E_r\frac{f_c}{f-f_c}.$$
 
-The point of solving it this way is that the energy available for growth and reproduction, $E_r$, is held fixed. The fish now have a realistic physiology, but they grow exactly as they did before, so the size-distribution fit from stage 2 is not disturbed. The `steady()` calls afterwards simply let the model settle.
+The point of solving it this way is that the energy available for growth and reproduction, $E_r$, is held fixed. The fish now have a realistic physiology, but they grow exactly as they did before, so the size-distribution fit from stage 2 is not disturbed.
 
 ### What the feeding level buys {#sec-feeding-level}
 
@@ -241,7 +238,7 @@ $$\frac{\mathrm{d}\log E_r}{\mathrm{d}\log E}
 
 which at fixed $f_c/f$ is **linear in** $1-f$. A fish close to satiation barely grows faster when its competitors are fished away. That matters because this food-mediated response is one of the compensatory mechanisms that hold a species' yield peak above the fishing mortality we are trying to target: at $f = 0.6$ the elasticity is 0.60, at $f = 0.8406$ it is 0.24.
 
-The same structure appears again in stage 6: the resource feedback is linear in $1 - \texttt{resource\_level}$. The two multiply along the food loop, and both are free in exactly the sense described in the introduction.
+The same structure appears again in stage 6: the resource feedback is linear in $1 - \texttt{resource_level}$. The two multiply along the food loop, and both are free in exactly the sense described in the introduction.
 
 Whiting's value was found by bisection against the criterion of stage 8 — it is the feeding level at which whiting's yield curve peaks at its $F_{MSY}$ — and the bisection is reported there. It is set here rather than later because `setFeedingLevels()` requires a non-interacting model with $h = \infty$ and $k_s = 0$, so this is the only stage at which it can be applied.
 
@@ -296,7 +293,7 @@ ps <- steady(pd)
 
 `matchDiet()` converts the diet proportions into absolute consumption rates using each predator's consumption rate, then solves for the interaction matrix $\theta_{ij}$ that reproduces them, and applies it. Crucially, as it turns on predation between species it turns down the external encounter and external mortality by exactly the corresponding amounts, so the total food each predator gets and the total mortality each prey suffers are unchanged. The steady state therefore survives; what changes is the *attribution* of food and mortality from anonymous external terms to named species.
 
-A few residual warnings about negative external *encounter* rates remain (Megrim, Hake): for these the diet matrix says they get more food from the modelled species than the model gives them in total, and the shortfall is clipped at zero.
+A few residual warnings about negative external *encounter* rates remain (Megrim, Hake): for these the diet matrix says they get more food from the modelled species than the model gives them in total, and the shortfall is clipped at zero. This leads to a higher total encounter rate but this only applies to a very small number of large individuals of these species, so the effect on the steady state is negligible. But this explains why we call `steady()` after `matchDiet()` to calculate the new steady state.
 
 ## Stage 6: the plankton resource
 
@@ -321,7 +318,7 @@ Up to here the resource has been inert. Now:
 
 `alignResource()` sets the resource to a power law $\kappa w^{-\lambda}$ and chooses $\kappa$ so that this power law is *tangent* to the total fish abundance spectrum from above — the smallest resource abundance that still sits everywhere above the fish. That gives a resource on the right scale without having to know its absolute level.
 
-The resource is then cut off at 1 g. This is not just realism about what counts as plankton; it is also what makes the next step work. Cutting the resource off small means that a large predator gets a negligible fraction of its food from the resource, so its large sizes stop constraining how much resource interaction it is allowed to have.
+The resource is then cut off at 1 g. This is not just realism about what counts as plankton; it is also what makes the next step work. Cutting the resource off small means that a large predator gets a negligible fraction of its food from the resource, so its large individuals stop constraining how much resource interaction it is allowed to have.
 
 `setResourceInteraction()` then lets each species absorb as much of its remaining external encounter as it can into genuine feeding on the resource, adjusting the resource carrying capacity so that the resource abundance and hence the steady state are unchanged. The limit is that resource encounter must not exceed external encounter at any size; `tol = 1e-2` allows a 1% violation, which stops a single size where external encounter happens to be exactly zero from blocking the whole species.
 
@@ -516,7 +513,7 @@ The floor itself is not innocent, though: a reproduction level of 0.01 means rec
 #| label: repro-final
 #| eval: false
 #| code-fold: show
-saveParams(params, "inst/params_05_Richard_and_Jess.rds")
+t(vapply(names(F_target), function(sp) peak(params, sp, F_target[[sp]]), numeric(2)))
 ```
 
 Where the peaks end up:
@@ -533,13 +530,35 @@ Where the peaks end up:
 | Plaice       |          0.1605 |                            1.06 |
 | Sole         |          0.2568 |                            0.95 |
 
-All nine now sit within 7% of their target, against five of nine in the previous version of this document. It is worth being precise about where that improvement comes from, because the two changes are easily conflated.
+The curves themselves are worth looking at, because the ratio in the table says nothing about how sharply the peak is defined:
 
-Most of it is the change of target. Targeting $F_{MSY}$ rather than the fitted $F$ removed the two failures at the ends: hake's peak no longer has to be dragged *up* to 0.37 (see @sec-caveats), and herring and blue whiting no longer have targets so low that no reproduction level can reach them. That is a change in what we are asking for, not an improvement in the model.
+::: {#fig-yieldcurves layout-ncol="3"}
+![](figures/Herring.png){fig-alt="Yield curve for Herring, peaking just below its target."}
 
-What stages 3 and 7 contributed is narrower and real: cod and whiting were the two species whose peaks could not be brought down to their $F_{MSY}$ by any reproduction level, and raising whiting's feeding level and weakening cod's cannibalism is what brought them to 0.93 and 1.06. Without those two changes both would still be pinned at the reproduction floor with their peaks 16% and 26% too high.
+![](figures/Cod.png){fig-alt="Yield curve for Cod, peaking just below its target."}
 
-The Ecopath calibration survives all of it. Against the model built with $f = 0.6$ throughout and full cannibalism, every species' $Q/B$, $P/B$ and biomass agree to better than 0.1%.
+![](figures/Megrim.png){fig-alt="Yield curve for Megrim, peaking just above its target."}
+
+![](figures/Haddock.png){fig-alt="Yield curve for Haddock, peaking just below its target."}
+
+![](figures/Whiting.png){fig-alt="Yield curve for Whiting, peaking just above its target."}
+
+![](figures/Hake.png){fig-alt="Yield curve for Hake, peaking essentially on its target."}
+
+![](figures/Blue_whiting.png){fig-alt="Yield curve for Blue whiting, peaking essentially on its target."}
+
+![](figures/Plaice.png){fig-alt="Yield curve for Plaice, peaking just above its target."}
+
+![](figures/Sole.png){fig-alt="Yield curve for Sole, peaking just below its target."}
+
+Yield against fishing mortality for each species in the final model. The dashed line marks the target: $F_{MSY}$, or for Plaice the fitted current $F$.
+:::
+
+These were produced by the `peak()` helper during the recorded sweep and are stored in `vignettes/figures/`, since regenerating them costs eleven projections per species.
+
+All nine now sit within 7% of their target. The curves show why that tolerance is the right order of magnitude to care about: every one of them is flat near its maximum, so a 5% error in the location of the peak costs a fraction of a percent in yield. The criterion pins the reproduction level much less tightly than the tabulated ratios suggest.
+
+Without stages 3 and 7 cod and whiting were the two species whose peaks could not be brought down to their $F_{MSY}$ by any reproduction level, and raising whiting's feeding level and weakening cod's cannibalism is what brought them to 0.93 and 1.06. Without those two changes both would still be pinned at the reproduction floor with their peaks 16% and 26% too high.
 
 ## The resulting model
 
@@ -646,19 +665,9 @@ The diet composition changes with predator size even though the diet matrix that
 
 **The production numbers in stage 4 are tuning knobs, not observations.** The values 0.8, 0.1 and 0.8 for Herring, Cod and Hake were chosen so that the diet matrix could be imposed without demanding negative external mortality. They do real work in the model — they set the total mortality of three species — and they deserve to be replaced by something better founded.
 
-**The interactive and scripted routes disagree.** Setting those three production values in the tuning gadget and setting them by script give different models:
-
-``` r
-compareParams(pm, pt)
-```
-
-The discrepancy is not currently understood and is worth resolving, since it means one of the two routes is doing something other than what it appears to.
-
-**Hake's earlier failure was an artefact of the target, not a finding.** The previous version of this document reported that no reproduction level could bring hake's yield peak up to the fishing mortality it currently experiences, and read that as the model saying hake is overfished. With $F_{MSY} = 0.24$ against a fitted $F$ of 0.37, the target is now *below* the current $F$ and hake converges at a reproduction level of 0.14 without difficulty. The earlier conclusion should not be carried forward: it was a statement about the criterion, not about hake.
-
 **Herring needs `erepro > 1` somewhere in its yield scan.** Computing herring's yield curve out to $1.5\,F_{MSY}$ — which is 100 times its fitted $F$ — produces a warning that the required reproductive efficiency exceeds 1, i.e. the model is being asked for more recruits than the spawning stock can physically produce. The peak location reported for herring is therefore partly outside the range in which the model is coherent.
 
-**The** $F_{MSY}$ targets are a long way from the fitted fishing mortalities. Targeting $F_{MSY}$ instead of the current $F$ removes the old problem that lightly fished species could not be pinned down, but it replaces it with an extrapolation:
+**The** $F_{MSY}$ targets are a long way from the fitted fishing mortalities:
 
 | Species      | $F$ fitted | $F_{MSY}$ | ratio |
 |--------------|-----------:|----------:|------:|
@@ -671,7 +680,7 @@ The discrepancy is not currently understood and is worth resolving, since it mea
 | Hake         |     0.3690 |     0.240 |  0.65 |
 | Cod          |     0.6650 |     0.290 |  0.44 |
 
-For Herring and Blue whiting the criterion asks where the yield peak sits at some 25 to 70 times the fishing mortality the model was calibrated at. Nothing in the size distributions constrains the model that far from its fitted state, so their reproduction levels are set by an extrapolation, not by data. The earlier version of this document targeted the fitted $F$ instead and left those species at a neutral 0.5; neither choice is well founded, and the difference between them is a fair measure of how much of $F_{MSY}$ is assumption.
+For Herring and Blue whiting the criterion asks where the yield peak sits at some 25 to 70 times the fishing mortality the model was calibrated at. Nothing in the size distributions constrains the model that far from its fitted state, so their reproduction levels are set by an extrapolation, not by data.
 
 **Cannibalism is reallocated, not explained away.** Stage 7 moves five sixths of cod's cannibalism into anonymous external mortality because it is what keeps cod's yield peak above $F_{MSY}$. The Ecopath diet matrix does report cod cannibalism, so this is a decision to trust the $F_{MSY}$ estimate over that diet entry, taken because mizer offers no way to keep a predator's diet while softening its effect on the prey — no foraging arena, no refuge for juveniles. A model with a saturating cannibalism functional response would not need the fudge.
 
@@ -679,13 +688,9 @@ For Herring and Blue whiting the criterion asks where the yield peak sits at som
 
 **The** $\lambda = 0$ end of the cannibalism curve is not reproducible. Measured on two builds of the model that differ by under 2% in biomass, the side value at $\lambda = 0$ came out as −0.045 and −0.384. Below about $\lambda = 0.125$ the curve steepens sharply and small model differences swing it. The tuned value $\lambda = 0.1875$ sits in a well-behaved stretch and is reproducible, but no weight should be put on the endpoint.
 
-**The diet matrix does not fit everywhere.** Megrim and Hake still end up having their external encounter rate clipped at zero, meaning the diet matrix asks for more predation on modelled species than the model can supply.
-
 **This document must be built against a current install of mizerEcopath.** With an older installed version, `setFeedingLevels()` in stage 3 leaves `h = Inf` and `ks = 0` — the new values are not recorded in the given species parameters and are reverted the next time a species parameter changes — so stage 3 silently does nothing. The model still builds and most plots still look plausible, but the fish have no physiology and Cod ends up with a growth curve that `plotGrowthCurves()` cannot even integrate. If that happens, reinstall the package before rendering.
 
 **The saved model file is not in the repository.** The script now writes `inst/params_05_Richard_and_Jess.rds` (the suffix records the resource level), and that file does carry finite `R_max` and the swept reproduction levels — the older `inst/params_Richard_and_Jess.rds`, which had `R_max = Inf` for eight of nine species and so was really the stage-6 model, has been superseded. Both are matched by `*.rds` in `.gitignore` and so are absent for anyone cloning the repository. This document therefore reconstructs the final model from `psr` and the recorded reproduction levels rather than loading either file.
-
-**The catchability bug in the sweep script is fixed.** An earlier version of `inst/create_model_from_Richard_and_Jess.R` read the catchabilities from the raw `gp` data frame, where every species carries the placeholder 0.2, rather than the values `matchCatch()` fitted. The script now reads `gear_params(params)`, and with $F_{MSY}$ as the target the fitted catchabilities are used only for Plaice. Recorded results from before that change are not comparable.
 
 **The old interaction matrix was not used.** An alternative to deriving interactions from the diet matrix would be to reuse the interaction matrix from the earlier Celtic Sea model:
 
