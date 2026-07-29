@@ -88,7 +88,7 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
         p_old <- params_old()
         p@initial_n <- p_old@initial_n
 
-        p <- steadySingleSpecies(p)
+        p <- steadySingleSpecies(p, keep = "biomass")
 
         # Apply update_species_hook if set by tuningGadget()
         hook <- tuning_env$update_species_hook
