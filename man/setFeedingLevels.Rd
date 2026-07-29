@@ -20,7 +20,10 @@ to 0.2.}
 }
 \value{
 A \linkS4class{MizerParams} object with updated \eqn{h, k_s},
-and \code{ext_encounter} rates.
+and \code{ext_encounter} rates. The new \eqn{h} and \eqn{k_s} are also
+recorded in the given species parameters, so that they are not reverted to
+\eqn{h = \infty} and \eqn{k_s = 0} the next time a species parameter is
+changed.
 }
 \description{
 This function takes a tuned, non-interacting allometric model (where initially

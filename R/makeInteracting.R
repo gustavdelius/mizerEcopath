@@ -35,7 +35,12 @@ makeInteracting <- function(params, interaction,
     }
 
     interaction_matrix(params) <- interaction
+    sp_before <- params@species_params
     params@species_params$interaction_resource <- interaction_resource
+    # Record it so that a later recalculation does not reset it to its default.
+    params@given_species_params <-
+        record_given_species_params(params@given_species_params,
+                                    params@species_params, sp_before)
 
     # Temporarily switch off external encounter to measure predation and
     # resource encounter

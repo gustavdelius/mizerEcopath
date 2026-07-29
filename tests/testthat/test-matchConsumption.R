@@ -111,3 +111,15 @@ test_that("matchConsumption matches consumption to consumption_observed", {
     expect_equal(model_consumption[exact], expected_consumption[exact],
                  tolerance = 1e-8, ignore_attr = TRUE)
 })
+
+test_that("matchConsumption protects the ks it computed", {
+    result <- suppressWarnings(matchConsumption(celtic_params))
+
+    changed <- result
+    species_params(changed)$biomass_observed <-
+        species_params(changed)$biomass_observed
+
+    expect_equal(species_params(changed)$ks, species_params(result)$ks)
+    expect_equal(species_params(changed)$p, species_params(result)$p)
+    expect_equal(unname(getConsumption(changed)), unname(getConsumption(result)))
+})

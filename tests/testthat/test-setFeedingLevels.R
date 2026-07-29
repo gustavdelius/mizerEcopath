@@ -74,3 +74,29 @@ test_that("setFeedingLevels works", {
     f_wanted[] <- 0.3
     expect_equal(f_c, f_wanted)
     })
+
+test_that("setFeedingLevels survives a later species parameter change", {
+    sp_params <- species_params(NS_params)
+    sp_params$n <- 0.7
+    sp_params$p <- 0.7
+    params <- newAllometricParams(sp_params, no_w = 200)
+    params <- setFeedingLevels(params, f = 0.7, f_c = 0.3)
+
+    # The new h and ks must be recorded among the given species params,
+    # otherwise the recalculation triggered by any species parameter change
+    # reverts them to the h = Inf, ks = 0 of the allometric model.
+    expect_equal(given_species_params(params)$h, species_params(params)$h)
+    expect_equal(given_species_params(params)$ks, species_params(params)$ks)
+
+    changed <- params
+    species_params(changed)$production_observed <- 1
+
+    expect_equal(species_params(changed)$h, species_params(params)$h)
+    expect_equal(species_params(changed)$ks, species_params(params)$ks)
+    # `ignore_attr` because the rates carry the params object, which now has
+    # the extra `production_observed` column.
+    expect_equal(getFeedingLevel(changed), getFeedingLevel(params),
+                 ignore_attr = "params")
+    expect_equal(getEReproAndGrowth(changed), getEReproAndGrowth(params),
+                 ignore_attr = "params")
+})

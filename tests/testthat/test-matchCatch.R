@@ -576,3 +576,43 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
     expect_equal(sp_fit$z_ext, mu_true, tolerance = 0.05, ignore_attr = TRUE)
     expect_equal(sp_fit$D_ext, D_true, tolerance = 0.05, ignore_attr = TRUE)
 })
+
+test_that("matchCatch protects the parameters it optimised", {
+    result <- suppressWarnings(
+        matchCatch(celtic_params, species = "Hake", catch = celtic_catch))
+    s <- which(species_params(result)$species == "Hake")
+
+    for (par in c("z_ext", "D_ext")) {
+        expect_equal(given_species_params(result)[[par]][s],
+                     species_params(result)[[par]][s],
+                     ignore_attr = TRUE, info = par)
+    }
+
+    # Only Hake was matched, so no other species may have been pinned.
+    given_before <- given_species_params(celtic_params)
+    given_after <- given_species_params(result)
+    n_other <- nrow(species_params(result)) - length(s)
+    for (par in c("z_ext", "D_ext")) {
+        expected <- if (is.null(given_before[[par]])) {
+            # The column did not exist before, so it is created all-NA and only
+            # filled in for the matched species.
+            rep(NA_real_, n_other)
+        } else {
+            given_before[[par]][-s]
+        }
+        expect_equal(given_after[[par]][-s], expected,
+                     ignore_attr = TRUE, info = par)
+    }
+
+    # `m` is held fixed by the default `map`, so it must not be recorded.
+    expect_equal(given_after$m, given_before$m, ignore_attr = TRUE)
+
+    # A later species parameter change must not undo the fit.
+    changed <- result
+    species_params(changed)$biomass_observed <-
+        species_params(changed)$biomass_observed
+    expect_equal(species_params(changed)$z_ext[s],
+                 species_params(result)$z_ext[s])
+    expect_equal(species_params(changed)$D_ext[s],
+                 species_params(result)$D_ext[s])
+})

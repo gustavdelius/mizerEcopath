@@ -44,7 +44,10 @@
 #'   to 0.2.
 #'
 #' @return A \linkS4class{MizerParams} object with updated \eqn{h, k_s},
-#'   and \code{ext_encounter} rates.
+#'   and \code{ext_encounter} rates. The new \eqn{h} and \eqn{k_s} are also
+#'   recorded in the given species parameters, so that they are not reverted to
+#'   \eqn{h = \infty} and \eqn{k_s = 0} the next time a species parameter is
+#'   changed.
 #' @export
 setFeedingLevels <- function(params, f, f_c) {
     sp <- params@species_params
@@ -159,7 +162,18 @@ setFeedingLevels <- function(params, f, f_c) {
     sp$h <- E_r_0 / (alpha * (f - f_c))
 
     # Update the params object
+    sp_before <- params@species_params
     params@species_params <- sp
+
+    # Record the new `h` and `ks` among the given species parameters as well.
+    # Without this they live only in `params@species_params` while the given
+    # values still hold the `h = Inf`, `ks = 0` of the allometric model this
+    # function was called on. Any later change to a species parameter
+    # recalculates `species_params` from `given_species_params` and would
+    # silently undo this function.
+    params@given_species_params <-
+        record_given_species_params(params@given_species_params,
+                                    params@species_params, sp_before)
 
     # Comment out so that internal calculations will be triggered in the next step
     comment(params@intake_max) <- NULL
