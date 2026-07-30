@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,10 +43,15 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
-    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
+    <li><a class="dropdown-item" href="../articles/catch_identifiability.html">How precisely does the catch size distribution determine the parameters?</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic Sea Status Quo Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
+    <li><a class="dropdown-item" href="../articles/extending_the_tuning_gadget.html">Understanding and Extending the Tuning Gadget</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess_vB.html">A Celtic Sea model with von Bertalanffy growth</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess.html">A Celtic Sea model from Richard's and Jess's data</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
+    <li><a class="dropdown-item" href="../articles/von_bertalanffy.html">A mizer model with von Bertalanffy growth</a></li>
   </ul>
 </li>
       </ul>
@@ -86,55 +91,39 @@
 </h2>
 <p>The first difficulty is that we do not want to model the details of all the species that make up the ecosystem. There are too many and about most of them we know too little. Most species are not undergoing stock assessment, so we do not even know how abundant they are. Given that the growth and death rates for the species that we do care about depend on the abundances of all their prey and predator species, we have a potential problem.</p>
 <p>The way we circumvent our lack of detailed knowledge of the abundances of all species in the ecosystem at all sizes is to make use of the observation by Sheldon that the total abundance of organisms in the ocean follows approximately a power law</p>
-<p><span class="math display">\[
-N_c(w) = N_c w^{-\lambda}
-\]</span></p>
+<p><span class="math display">\[N_c(w) = N_c w^{-\lambda}\]</span></p>
 <p>with the exponent <span class="math inline">\(\lambda\approx 2\)</span>. The <span class="math inline">\(N_c\)</span> on the right-hand side is just a constant that is independent of <span class="math inline">\(w\)</span>. The subscript <span class="math inline">\(c\)</span> stands for “community”, i.e., we are not disaggregating by species.</p>
 <p>All the individuals making up this community can be both predator on smaller individuals and prey for larger individuals. With the allometric assumptions made for the physiological rates in mizer, this leads to power-law encounter and natural mortality rates:</p>
-<p><span class="math display">\[
-E_i(w) = E_i w^n,\qquad\qquad \mu_{nat.i}(w)=\mu_{nat.i} w^{d}.
-\]</span></p>
+<p><span class="math display">\[E_i(w) = E_i w^n,\qquad\qquad \mu_{nat.i}(w)=\mu_{nat.i} w^{d}.\]</span></p>
 <p>The subscript <span class="math inline">\(i\)</span> labels the species. The subscript <span class="math inline">\(nat\)</span> on the mortality rate denotes that this is the mortality from natural sources. Metabolic scaling theory suggests that the metabolic exponent <span class="math inline">\(n\)</span> lies somewhere between <span class="math inline">\(n=2/3\)</span> and <span class="math inline">\(n=3/4\)</span> and the mortality exponent is <span class="math inline">\(d=n-1\)</span>, but neither is crucial for our methodology. We could even have species-specific values for <span class="math inline">\(n\)</span> and <span class="math inline">\(d\)</span>.</p>
+<p>TODO: Discuss the choice <span class="math inline">\(n = 1 - 1/b\)</span> where <span class="math inline">\(b\)</span> is the exponent in the weight-length relationship <span class="math inline">\(w = a l^b\)</span>.</p>
 <p>The fact that we assume that the total encounter rate and the natural mortality rate are allometric (i.e., described by a power law) does not mean that the growth and total mortality rates that determine the species size spectra are also allometric, as we will now see.</p>
 </section><section class="level2" data-number="2"><h2 data-number="2" id="sec-growth">
 <span class="header-section-number">2</span> Growth Rate<a class="anchor" aria-label="anchor" href="#sec-growth"></a>
 </h2>
 <p>The rate <span class="math inline">\(g_i(w)\)</span> at which an individual of species <span class="math inline">\(i\)</span> and weight <span class="math inline">\(w\)</span> grows is determined by the rate <span class="math inline">\(E_i(w)\)</span> at which it encounters prey, but only part of the encountered prey contributes to the growth rate. In the mizer model, the energy available for growth and reproduction is</p>
-<p><span class="math display">\[
-E_{r.i}(w) = \alpha_i(1-f_i(w))E_i(w) - k_i(w)
-\]</span></p>
+<p><span class="math display">\[E_{r.i}(w) = \alpha_i(1-f_i(w))E_i(w) - k_i(w)\]</span></p>
 <p>where <span class="math inline">\(k_i(w)\)</span> is the metabolic respiration rate, <span class="math inline">\(\alpha_i\)</span> is the proportion of the consumed food that is assimilated and <span class="math inline">\(f_i(w)\)</span> is the feeding level</p>
-<p><span class="math display">\[
-f_i(w)=\frac{E_i(w)}{E_i(w)+h_i(w)}
-\]</span></p>
+<p><span class="math display">\[f_i(w)=\frac{E_i(w)}{E_i(w)+h_i(w)}\]</span></p>
 <p>that takes into account that the fish have a maximum consumption rate <span class="math inline">\(h_i(w)\)</span>.</p>
 <p>We now assume that the maximum consumption rate and the metabolic respiration rate both are allometric rates with the same metabolic exponent as the encounter rate:</p>
-<p><span class="math display">\[
-h_i(w)=h_i w^n,\qquad\qquad k_i(w)=k_iw^n.
-\]</span></p>
+<p><span class="math display">\[h_i(w)=h_i w^n,\qquad\qquad k_i(w)=k_iw^n.\]</span></p>
 <p>This guarantees that the the energy available for growth and reproduction is also allometric:</p>
-<p><span id="eq-Er"><span class="math display">\[
-E_{r.i}(w) = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.
-\tag{1}\]</span></span></p>
+<p><span class="math display">\[E_{r.i}(w) = \left(\alpha_i\frac{E_i h_i}{E_i+h_i} - k_i\right)w^n=E_{r.i}w^n.\]</span> {#eq-Er}</p>
 <p>At the first stage of estimating parameters we only need to estimate the effective rates <span class="math inline">\(E_{r.i}\)</span>. We will then discuss how to set <span class="math inline">\(h_i\)</span> and <span class="math inline">\(k_i\)</span> in <a href="#sec-feeding-levels" class="quarto-xref">Section 5.1</a>.</p>
-<p>A proportion <span class="math inline">\(\psi(w)\)</span> of the total available energy is invested into reproduction instead of somatic growth, so that the resulting growth rate is</p>
-<p><span class="math display">\[
-g_i(w)=(1-\psi_i(w))E_{r.i}w^n.
-\]</span></p>
-<p>Because investment into reproduction only happens after individuals have reached maturity size, <span class="math inline">\(\psi(w)\)</span> is not allometric and hence neither is the growth rate <span class="math inline">\(g_i(w)\)</span>.</p>
+<p>A proportion <span class="math inline">\(\psi_i(w)\)</span> of the total available energy is invested into reproduction instead of somatic growth, so that the resulting growth rate is</p>
+<p><span class="math display">\[g_i(w)=(1-\psi_i(w))E_{r.i}w^n.\]</span></p>
+<p>Because investment into reproduction only happens after individuals have reached maturity size, <span class="math inline">\(\psi_i(w)\)</span> is not allometric and hence neither is the growth rate <span class="math inline">\(g_i(w)\)</span>.</p>
 <p>In mizer, the proportion <span class="math inline">\(\psi_i(w)\)</span> has two factors:</p>
-<p><span class="math display">\[
-\psi_i(w) = \left(1-\left(\frac{w}{w_{mat.i}}\right)^{-U}\right)^{-1}\cdot\left(\frac{w}{w_{\infty.i}}\right)^{m_i-n}.
-\]</span></p>
+<p><span class="math display">\[\psi_i(w) = \left(1-\left(\frac{w}{w_{mat.i}}\right)^{-U}\right)^{-1}\cdot\left(\frac{w}{w_{\infty.i}}\right)^{m_i-n}.\]</span></p>
 <p>The first factor, involving the maturity size <span class="math inline">\(w_{mat.i}\)</span> is a sigmoidal maturity ogive that represents the proportion of individuals that are mature at size <span class="math inline">\(w\)</span>. The parameter <span class="math inline">\(U\)</span> determines the steepness of the sigmoid and thus for example the size at which 25% of individuals are mature.</p>
-<p>The second factor involving the asymptotic size <span class="math inline">\(w_{\infty,i}\)</span> describes the rate at which mature individuals increase their investment into reproduction as they grow. A choice of <span class="math inline">\(m_i=1\)</span> corresponds to an investment that scales linearly with weight. The above expression for <span class="math inline">\(\psi_i(w)\)</span> is valid for <span class="math inline">\(w\leq w_{\infty.i}\)</span>. Beyond <span class="math inline">\(w_{\infty.i}\)</span> all energy is invested into reproduction and growth stops.</p>
+<p>The second factor involving the asymptotic size <span class="math inline">\(w_{\infty,i}\)</span> describes the rate at which mature individuals increase their investment into reproduction as they grow. At <span class="math inline">\(w_{\infty, i}\)</span> all income of mature individuals is invested into reproduction and their growth stops. A choice of <span class="math inline">\(m_i=1\)</span> corresponds to an investment that scales linearly with weight.</p>
+<p>TODO: Add a section about the Diffusion Rate</p>
 </section><section class="level2" data-number="3"><h2 data-number="3" id="mortality-rate">
 <span class="header-section-number">3</span> Mortality Rate<a class="anchor" aria-label="anchor" href="#mortality-rate"></a>
 </h2>
 <p>To get the total mortality rate we need to add the fishing mortality:</p>
-<p><span class="math display">\[
-\mu_i(w)=\mu_{nat.i}(w)+F_i(w).
-\]</span></p>
+<p><span class="math display">\[\mu_i(w)=\mu_{nat.i}(w)+F_i(w).\]</span></p>
 <p>The fishing mortality <span class="math inline">\(F_i(w)\)</span> is the sum over the mortality from all the different gears from all the different fishing fleets that target a species, each of which has its own selectivity parameters. These parameters have to be tuned later using landings data from these fleets.</p>
 <p>Because of the size-selectivity of fishing, the fishing mortality rate is not an allometric rate, and hence neither is the total mortality rate.</p>
 </section><section class="level2" data-number="4"><h2 data-number="4" id="optimising-growth-and-mortality-parameters">
@@ -146,41 +135,35 @@ g_i(w)=(1-\psi_i(w))E_{r.i}w^n.
 <li><p>For mortality: <span class="math inline">\(\mu_{nat.i}\)</span>, the selectivity parameters for each gear and species, the fishing effort for each gear.</p></li>
 </ul>
 <p>We need to choose the model parameters so that the model predictions agree with observations. Observations however are highly variable from year to year and from place to place. We are currently interested in estimating average growth and mortality rates.</p>
-<p>Some parameters are comparatively easy to observe directly or you may be happy to take parameter values estimated by others and posted on <a href="fishbase.org">Fishbase</a>. The maturity size <span class="math inline">\(w_{mat}\)</span> is an example where there are many observations of maturity at size from surveys. Others do not have such a large impact on the model so that you are happy to stick with mizer’s default value. Those parameters you can fix and do not need to optimise over. But most parameters are not directly observable because of how difficult it is to observe fish in the wild.</p>
+<p>Some parameters are comparatively easy to observe directly or you may be happy to take parameter values estimated by others and posted on <a href="fishbase.org">Fishbase</a>. The maturity size <span class="math inline">\(w_{mat}\)</span> is an example where there are many observations of maturity at size from surveys. Some other parameters only have a less important impact on the model so that you are happy to stick with mizer’s default values for them. Those parameters you can fix and do not need to optimise over. But most parameters are not directly observable because of how difficult it is to observe fish in the wild.</p>
 <p>We now make the strong assumption that the averaged observations across the study area and across several years should be well-described by the steady state of the mizer model.</p>
 <p>To determine all growth and mortality parameters, we need several sets of observations. The more observations the better. We then want to choose the parameters by the principle of maximum likelihood, i.e., we choose the parameter values that make the observations most likely. We are combining different sources of data, each of which has its own likelihood function. We do this by creating an objective function that add the different likelihood functions multiplied by different weights that reflect the relative strength of the data sources.</p>
 <section class="level3" data-number="4.1"><h3 data-number="4.1" id="size-distribution-in-surveys-and-landings">
 <span class="header-section-number">4.1</span> Size distribution in Surveys and Landings<a class="anchor" aria-label="anchor" href="#size-distribution-in-surveys-and-landings"></a>
 </h3>
 <p>The steady state abundances <span class="math inline">\(N_i(w)\)</span> are determined by the growth and mortality rates according to the equation</p>
-<p><span class="math display">\[
-\frac{\partial g_i(w)N_i(w)}{\partial w}=\mu_i(w)N_i(w).
-\]</span></p>
-<p>The abundance densities <span class="math inline">\(N_i(w)\)</span> are of course not directly observable. What is observed is the size distribution of catches. These could be either the catches from surveys or those from fishing, where survey data is often better if the surveys are designed to avoid biases towards particular sizes. This data is usually available in the form of numbers of fish caught in different size classes. Let <span class="math inline">\(C_{g,i,l}\)</span> denote the number of fish of species <span class="math inline">\(i\)</span> in length class <span class="math inline">\(l\)</span> caught by a gear <span class="math inline">\(g\)</span>.</p>
-<p>The choice of size classes differ. Let us assume that after conversion to weight classes, class <span class="math inline">\(l\)</span> spans the weight range from <span class="math inline">\(w_l^-\)</span> to <span class="math inline">\(w_l^+\)</span>. In the model we calculate the rates <span class="math inline">\(Cr_{g,i,l}\)</span> at which fish are caught in size class <span class="math inline">\(l\)</span> are related to abundance densities <span class="math inline">\(N_i(w)\)</span> multiplied by the fishing mortality rates:<br><span class="math display">\[
-R_{g,i,l} = \int_{w_l^-}^{w_l^+}F_{g,i}(w)N_i(w)dw.
-\]</span></p>
+<p><span class="math display">\[\frac{\partial g_i(w)N_i(w)}{\partial w}=\mu_i(w)N_i(w).\]</span></p>
+<p>TODO: Include diffusion.</p>
+<p>The abundance densities <span class="math inline">\(N_i(w)\)</span> are of course not directly observable. What is observed is the size distribution of catches. These could be either the catches from surveys or those from fishing, where survey data is often better if the surveys are designed to avoid biases towards particular sizes. This data is usually available in the form of numbers of fish caught in different size classes. Let <span class="math inline">\(C_{g,i,l}\)</span> denote the number of fish of species <span class="math inline">\(i\)</span> in length class <span class="math inline">\(l\)</span> caught by a gear <span class="math inline">\(g\)</span> per year.</p>
+<p>The choice of size classes differ. Let us assume that after conversion to weight classes, class <span class="math inline">\(l\)</span> spans the weight range from <span class="math inline">\(w_l^-\)</span> to <span class="math inline">\(w_l^+\)</span>. In the model we calculate the rates <span class="math inline">\(R_{g,i,l}\)</span> at which fish are caught in size class <span class="math inline">\(l\)</span> are related to abundance densities <span class="math inline">\(N_i(w)\)</span> multiplied by the fishing mortality rates:<br></p>
+<p><span class="math display">\[R_{g,i,l} = \int_{w_l^-}^{w_l^+}F_{g,i}(w)N_i(w)dw.\]</span></p>
 <p>These rates can now be normalised to probabilities <span class="math inline">\(p_{g,i,l} = R_{g,i,l} / Z_{g,i}\)</span> where <span class="math inline">\(Z_{g,i}=\sum_l R_{g,i,l}\)</span>.</p>
 <p>The counts <span class="math inline">\(C_{g,i,l}\)</span> should be viewed as draws from a multinormal distribution with those probabilities. This gives us the likelihood function</p>
-<p><span class="math display">\[
-L_{C} =
-\]</span></p>
+<p><span class="math display">\[L_{C} = \]</span></p>
+<p>TODO: Complete</p>
 </section><section class="level3" data-number="4.2"><h3 data-number="4.2" id="yield-and-biomass">
 <span class="header-section-number">4.2</span> Yield and Biomass<a class="anchor" aria-label="anchor" href="#yield-and-biomass"></a>
 </h3>
 <p>Note that due to the normalisation, the probabilities above do not change if we rescale the abundance <span class="math inline">\(N_i(w)\)</span> or the fishing mortalities <span class="math inline">\(F_{g,i}(w)\)</span> by size-independent factors. Also the equation for the <span class="math inline">\(N_i(w)\)</span> is invariant under a size-independent rescaling of <span class="math inline">\(N_i(w)\)</span>.</p>
 <p>If we have knowledge of the total biomass <span class="math inline">\(B_i\)</span> of all individuals of a species above a certain size <span class="math inline">\(w_{cutoff}\)</span> (this cutoff could be the maturity size <span class="math inline">\(w_{mat}\)</span> if we have information about the spawning stock biomass only) then we can use that to fix the scale of <span class="math inline">\(N_i(w)\)</span> because</p>
-<p><span class="math display">\[
-B_i = \int_{w_{cutoff}}^\infty w N_i(w)dw.
-\]</span></p>
+<p><span class="math display">\[B_i = \int_{w_{cutoff}}^\infty w N_i(w)dw.\]</span></p>
 <p>If we have knowledge of the total yields <span class="math inline">\(Y_{g,i}\)</span>, i.e., the total biomass caught of species <span class="math inline">\(i\)</span> by gear <span class="math inline">\(g\)</span> per year, then we can determine the scale of <span class="math inline">\(F_{g,i}(w)\)</span> because</p>
-<p><span class="math display">\[
-Y_{g,i} = \int w F_{g,i}(w)N_i(w)dw.
-\]</span></p>
+<p><span class="math display">\[Y_{g,i} = \int w F_{g,i}(w)N_i(w)dw.\]</span></p>
 </section><section class="level3" data-number="4.3"><h3 data-number="4.3" id="age-at-length">
 <span class="header-section-number">4.3</span> Age at Length<a class="anchor" aria-label="anchor" href="#age-at-length"></a>
 </h3>
 <p>It is common for fisheries surveys to determine the age of individuals in a length-stratified subsamples of the survey catch. The model can predict the age distribution in such a sample. Because the sample consists of only those individuals that have survived to their current length, the model prediction will depend on both growth and mortality. Thus this data gives us information about both. For details of the contribution of this data to the objective function see …</p>
+<p>TODO: Discuss using observed age at maturity instead</p>
 </section><section class="level3" data-number="4.4"><h3 data-number="4.4" id="production-and-consumption">
 <span class="header-section-number">4.4</span> Production and Consumption<a class="anchor" aria-label="anchor" href="#production-and-consumption"></a>
 </h3>
@@ -193,7 +176,7 @@ Y_{g,i} = \int w F_{g,i}(w)N_i(w)dw.
 </section><section class="level3" data-number="4.6"><h3 data-number="4.6" id="consistency-checks">
 <span class="header-section-number">4.6</span> Consistency Checks<a class="anchor" aria-label="anchor" href="#consistency-checks"></a>
 </h3>
-<p>Reproductive efficiency.</p>
+<p>TODO: Expand. For example Reproductive efficiency.</p>
 </section></section><section class="level2" data-number="5"><h2 data-number="5" id="sec-predation">
 <span class="header-section-number">5</span> Predation<a class="anchor" aria-label="anchor" href="#sec-predation"></a>
 </h2>
@@ -201,46 +184,31 @@ Y_{g,i} = \int w F_{g,i}(w)N_i(w)dw.
 <section class="level3" data-number="5.1"><h3 data-number="5.1" id="sec-feeding-levels">
 <span class="header-section-number">5.1</span> Feeding Levels<a class="anchor" aria-label="anchor" href="#sec-feeding-levels"></a>
 </h3>
-<p>So far we have only been concerned with estimating the rate <span class="math inline">\(E_r(w)\)</span> at which energy needs to be available for growth and reproduction. We did not have to worry about how this energy arises from the encounter of prey. But now that we want to switch on predator-prey interactions, we need to know the rate of prey encounter <span class="math inline">\(E(w)\)</span>. We know from <a href="#sec-growth" class="quarto-xref">Section 2</a> that both rates are allometric with exponent <span class="math inline">\(n\)</span>, i.e., <span class="math inline">\(E_r(w)=E_rw^n\)</span> and <span class="math inline">\(E(w)=Ew^n\)</span>. From <a href="#eq-Er" class="quarto-xref">Equation 1</a> we know how the coefficient of these power laws are related:</p>
-<p><span class="math display">\[
-E_{r.i} = \alpha_i\frac{E_i h_i}{E_i+h_i} - k_i.
-\]</span></p>
+<p>So far we have only been concerned with estimating the rate <span class="math inline">\(E_{r.i}(w)\)</span> at which energy needs to be available for growth and reproduction. We did not have to worry about how this energy arises from the encounter of prey. But now that we want to switch on predator-prey interactions, we need to know the rate of prey encounter <span class="math inline">\(E_i(w)\)</span>. We know from <a href="#sec-growth" class="quarto-xref">Section 2</a> that both rates are allometric with exponent <span class="math inline">\(n\)</span>, i.e., <span class="math inline">\(E_{r.i}(w)=E_{r.i}w^n\)</span> and <span class="math inline">\(E_i(w)=E_iw^n\)</span>. From <strong>?@eq-Er</strong> we know how the coefficient of these power laws are related:</p>
+<p><span class="math display">\[E_{r.i} = \alpha_i\frac{E_i h_i}{E_i+h_i} - k_i.\]</span></p>
 <p>where <span class="math inline">\(h_i\)</span> is the coefficient of the allometric maximum intake rate and <span class="math inline">\(k_i\)</span> is the coefficient of the allometric metabolic respiration rate. We have by now chosen a value for <span class="math inline">\(E_{r.i}\)</span>, so we will use the above equation to determine</p>
-<p><span class="math display">\[
-E_i=\frac{h_i(E_{r.i}+k_i)}{\alpha_ih_i-(E_{r.i}+k_i)}
-\]</span></p>
+<p><span class="math display">\[E_i=\frac{h_i(E_{r.i}+k_i)}{\alpha_ih_i-(E_{r.i}+k_i)}\]</span></p>
 <p>It is difficult to know what the right values are for the coefficient <span class="math inline">\(h_i\)</span> of the maximum intake rate or the coefficient <span class="math inline">\(k_i\)</span> of the metabolic respiration rate. So it may be useful to change from these two parameters to parameters that are more easily reasoned about: the feeding level <span class="math inline">\(f_i\)</span> and the critical feeding level <span class="math inline">\(f_{c.i}\)</span>.</p>
-<p>The feeding level <span class="math inline">\(f(w)\)</span>, already introduced in <strong>?@eq-feeding-level</strong>, encodes the level of satiation of the fish that occurs if, due to the finite maximum intake rate, the fish can only take in a fraction <span class="math inline">\(1-f(w)\)</span> of the encountered prey. Perhaps the name “satiation level” would describe the situation better: <span class="math inline">\(f=1\)</span> would mean totally satiated and <span class="math inline">\(f=0\)</span> means</p>
-<p><span class="math display">\[
-E=E_r\frac{f}{\alpha(f-f_c)(1-f)}
-\]</span> <span class="math display">\[
-h = E_r\frac{1}{\alpha(f-f_c)}
-\]</span></p>
-<p><span class="math display">\[
-k = E_r\frac{f_c}{f-f_c}
-\]</span></p>
+<p>The feeding level <span class="math inline">\(f(w)\)</span>, already introduced in <strong>?@eq-feeding-level</strong>, encodes the level of satiation of the fish that occurs if, due to the finite maximum intake rate, the fish can only take in a fraction <span class="math inline">\(1-f(w)\)</span> of the encountered prey. Perhaps the name “satiation level” would describe the situation better: <span class="math inline">\(f=1\)</span> would mean totally satiated and <span class="math inline">\(f=0\)</span> means TODO</p>
+<p><span class="math display">\[E=E_r\frac{f}{\alpha(f-f_c)(1-f)}\]</span></p>
+<p><span class="math display">\[h = E_r\frac{1}{\alpha(f-f_c)}\]</span></p>
+<p><span class="math display">\[k = E_r\frac{f_c}{f-f_c}\]</span></p>
 </section><section class="level3" data-number="5.2"><h3 data-number="5.2" id="internal-and-external-rates">
 <span class="header-section-number">5.2</span> Internal and External Rates<a class="anchor" aria-label="anchor" href="#internal-and-external-rates"></a>
 </h3>
 <p>The species that we model explicitly are forming part of the power-law community <span class="math inline">\(N_c\)</span> that gave rise to the allometric encounter and natural mortality rates. The predation encounter and predation mortality among the modelled species represents a part of those rates. But there is also a part that comes from sources that are external to the model, so we split the rates into internal and external rates:</p>
-<p><span class="math display">\[
-E_i(w) = E_{int.i}(w) + E_{ext.i}(w),\qquad\qquad \mu_{nat.i}(w)=\mu_{int.i}(w)+\mu_{ext.i}(w).
-\]</span></p>
+<p><span class="math display">\[E_i(w) = E_{int.i}(w) + E_{ext.i}(w),\qquad\qquad \mu_{nat.i}(w)=\mu_{int.i}(w)+\mu_{ext.i}(w).\]</span></p>
 <p>As we turn on the predation interactions and hence the internal rates, the external rates are reduced, keeping the total rates unchanged. This is important, because that means that the steady state size distribution does not change as we switch on the interactions, so the match to observations that we have achieved by optimising the parameters in the previous section is preserved.</p>
 </section><section class="level3" data-number="5.3"><h3 data-number="5.3" id="predation-rate">
 <span class="header-section-number">5.3</span> Predation Rate<a class="anchor" aria-label="anchor" href="#predation-rate"></a>
 </h3>
-<p>In mizer, the rate at which a predator predates on particular prey is proportional to the product the predator’s preference for that kind of prey and the abundance of that prey. We have already discussed the prey abundance. We now need to model the predation preferences. In mizer the predation preference depends both on the relative size of the prey and on its species identity. In fact, the preference function factorises into the predation kernel <span class="math inline">\(\phi_i(w, w')\)</span> that expresses the preference of a predator of species <span class="math inline">\(i\)</span> and size <span class="math inline">\(w\)</span> for prey of size <span class="math inline">\(w'\)</span> and an interaction matrix <span class="math inline">\(\theta_{ij}\)</span> that expresses the preference of a predator of species <span class="math inline">\(i\)</span> on prey of species <span class="math inline">\(j\)</span>:</p>
-<p><span class="math display">\[
-\phi_{ij}(w,w')=\theta_{ij}\cdot\phi_i(w,w').
-\]</span></p>
+<p>In mizer, the rate at which a predator predates on particular prey is proportional to the product of the predator’s preference for that kind of prey and the abundance of that prey. We have already discussed the prey abundance. We now need to model the predation preferences. In mizer the predation preference depends both on the relative size of the prey and on its species identity. In fact, the preference function factorises into the predation kernel <span class="math inline">\(\phi_i(w, w')\)</span> that expresses the preference of a predator of species <span class="math inline">\(i\)</span> and size <span class="math inline">\(w\)</span> for prey of size <span class="math inline">\(w'\)</span> and an interaction matrix <span class="math inline">\(\theta_{ij}\)</span> that expresses the preference of a predator of species <span class="math inline">\(i\)</span> on prey of species <span class="math inline">\(j\)</span>:</p>
+<p><span class="math display">\[\phi_{ij}(w,w')=\theta_{ij}\cdot\phi_i(w,w').\]</span></p>
 </section><section class="level3" data-number="5.4"><h3 data-number="5.4" id="sec-size-dependent-predation">
 <span class="header-section-number">5.4</span> Size Preference<a class="anchor" aria-label="anchor" href="#sec-size-dependent-predation"></a>
 </h3>
 <p>The size preference is given by the “predation kernel” <span class="math inline">\(\phi_i(w,w')\)</span>. We assume that the size preference depends only on the relative size of predator and prey, i.e., <span class="math inline">\(\phi_i(w,w')=\phi_i(w/w')\)</span>. Traditionally it was assumed that the distribution of predator/prey size ratios was a lognormal distribution,</p>
-<p><span class="math display">\[
-\phi_i(w/w') \propto \exp\left(-\frac{(\log(w/w'/\beta))^2}{2\sigma_i^2}\right),
-\]</span></p>
+<p><span class="math display">\[\phi_i(w/w') \propto \exp\left(-\frac{(\log(w/w'/\beta))^2}{2\sigma_i^2}\right),\]</span></p>
 <p>with <span class="math inline">\(\beta\)</span> being the most preferred predator/prey size ratio and <span class="math inline">\(\sigma\)</span> describing how willing the predator is to eat prey of different sizes.</p>
 <p>However for some species the assumption of a lognormal predation kernel is in conflict with observational data, in particular stomach data. This applies for example for filter feeders whose size preference is determined by its morphology: it filters everything in the size range from the smallest items that are retained by the gill rakers to the largest items that fit into its mouth. In this case a truncated exponential distribution often fits well. Some species switch between two different predation modes, at attack mode where they go after larger prey and one where they just go after the most convenient prey. In this case a lognormal mixture model might be appropriate.</p>
 <p>There is a sister package <a href="https://gustavdelius.github.io/mizerStomach/" class="external-link">mizerStomach</a> that, given stomach data, helps with determining the most appropriate predation kernel, under the assumption that the prey abundance is described by the Sheldon spectrum <span class="math inline">\(N_c(w)=N_c w^{-\lambda}\)</span>.</p>
@@ -248,9 +216,7 @@ E_i(w) = E_{int.i}(w) + E_{ext.i}(w),\qquad\qquad \mu_{nat.i}(w)=\mu_{int.i}(w)+
 <span class="header-section-number">5.5</span> Species Preference<a class="anchor" aria-label="anchor" href="#sec-species-interaction"></a>
 </h3>
 <p>One way to determine the species interaction matrix <span class="math inline">\(\theta_{ij}\)</span> is to use diet information. If one knows the rate <span class="math inline">\(D_{ij}\)</span> at which species <span class="math inline">\(i\)</span> consumes biomass from species <span class="math inline">\(j\)</span> then one can compare that to the prediction from the mizer model:</p>
-<p><span class="math display">\[
-DC_{ij} =
-\]</span></p>
+<p><span class="math display">\[DC_{ij} = \]</span></p>
 </section></section><section class="level2" data-sec-density-dependence="" data-number="6"><h2 data-sec-density-dependence="" data-number="6" id="sources-of-density-dependence">
 <span class="header-section-number">6</span> Sources of Density Dependence<a class="anchor" aria-label="anchor" href="#sources-of-density-dependence"></a>
 </h2>

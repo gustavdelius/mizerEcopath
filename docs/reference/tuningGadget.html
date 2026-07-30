@@ -17,7 +17,7 @@ directly to build custom tuning gadgets."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,10 +30,15 @@ directly to build custom tuning gadgets."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
-    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
+    <li><a class="dropdown-item" href="../articles/catch_identifiability.html">How precisely does the catch size distribution determine the parameters?</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic Sea Status Quo Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
+    <li><a class="dropdown-item" href="../articles/extending_the_tuning_gadget.html">Understanding and Extending the Tuning Gadget</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess_vB.html">A Celtic Sea model with von Bertalanffy growth</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess.html">A Celtic Sea model from Richard's and Jess's data</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
+    <li><a class="dropdown-item" href="../articles/von_bertalanffy.html">A mizer model with von Bertalanffy growth</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -139,8 +144,8 @@ shared parameter finalisation to apply package-specific cleanup.</p></dd>
 
 <dt id="arg-update-species-hook">update_species_hook<a class="anchor" aria-label="anchor" href="#arg-update-species-hook"></a></dt>
 <dd><p>An optional function <code>(sp, p) -&gt; p</code> called inside
-<code><a href="tuneParams_update_species.html">tuneParams_update_species()</a></code> after <code>steadySingleSpecies()</code> to apply
-package-specific post-processing (e.g., <code>matchBiomasses()</code>).</p></dd>
+<code><a href="tuneParams_update_species.html">tuneParams_update_species()</a></code> after <code><a href="https://sizespectrum.org/mizer/reference/steadySingleSpecies.html" class="external-link">steadySingleSpecies()</a></code> to apply
+package-specific post-processing (e.g., <code><a href="https://sizespectrum.org/mizer/reference/matchBiomasses.html" class="external-link">matchBiomasses()</a></code>).</p></dd>
 
 
 <dt id="arg-tab-extra-args">tab_extra_args<a class="anchor" aria-label="anchor" href="#arg-tab-extra-args"></a></dt>
@@ -151,7 +156,7 @@ functions (e.g., <code>list(catch = catch, diet = diet)</code>).</p></dd>
 <dt id="arg-preserve">preserve<a class="anchor" aria-label="anchor" href="#arg-preserve"></a></dt>
 <dd><p>Specifies whether the <code>reproduction_level</code> should be
 preserved or the maximum reproduction rate <code>R_max</code> or the reproductive
-efficiency <code>erepro</code> (Default). See <code><a href="https://sizespectrum.org/mizer/reference/setBevertonHolt.html" class="external-link">mizer::setBevertonHolt()</a></code> for an explanation
+efficiency <code>erepro</code> (Default). See <code><a href="https://sizespectrum.org/mizer/reference/setBevertonHolt.html" class="external-link">setBevertonHolt()</a></code> for an explanation
 of the <code>reproduction_level</code>.</p></dd>
 
 
@@ -172,6 +177,22 @@ return a shinyApp object instead of running the gadget.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function opens a shiny gadget with a sidebar of parameter controls and a
 main panel of diagnostic tabs.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="how-parameter-changes-take-effect">How parameter changes take effect<a class="anchor" aria-label="anchor" href="#how-parameter-changes-take-effect"></a></h2>
+    <p>When you change a model parameter, only the steady-state size spectrum of the
+currently selected species is recalculated. The growth and mortality rates
+that drive this recalculation are first evaluated from the previous state of
+the model — with the abundances of every species and of the resource,
+<em>including the selected species itself</em>, held fixed — and are then kept
+constant while the new spectrum is solved for. So the prey and predators of
+the selected species do not react to your change, and neither does the
+species' own recomputed abundance feed back into its rates: there is no
+multi-species feedback within a single update. In an interacting model, to let
+the whole community respond and settle into a new, mutually consistent steady
+state you must press the action button (the "steady" button in
+<code><a href="tuneParams.html">tuneParams()</a></code>). See <code><a href="../articles/extending_the_tuning_gadget.html">vignette("extending_the_tuning_gadget")</a></code> for a fuller
+explanation.</p>
     </div>
     <div class="section level2">
     <h2 id="undo-functionality">Undo functionality<a class="anchor" aria-label="anchor" href="#undo-functionality"></a></h2>

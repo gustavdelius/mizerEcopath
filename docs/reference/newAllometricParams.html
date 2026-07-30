@@ -23,7 +23,7 @@ are set to zero."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,10 +36,15 @@ are set to zero."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
-    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
+    <li><a class="dropdown-item" href="../articles/catch_identifiability.html">How precisely does the catch size distribution determine the parameters?</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic Sea Status Quo Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
+    <li><a class="dropdown-item" href="../articles/extending_the_tuning_gadget.html">Understanding and Extending the Tuning Gadget</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess_vB.html">A Celtic Sea model with von Bertalanffy growth</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess.html">A Celtic Sea model from Richard's and Jess's data</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
+    <li><a class="dropdown-item" href="../articles/von_bertalanffy.html">A mizer model with von Bertalanffy growth</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -68,7 +73,7 @@ are set to zero.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">newAllometricParams</span><span class="op">(</span><span class="va">species_params</span>, no_w <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">newAllometricParams</span><span class="op">(</span><span class="va">species_params</span>, no_w <span class="op">=</span> <span class="fl">200</span>, max_w <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -81,6 +86,11 @@ are set to zero.</p>
 
 <dt id="arg-no-w">no_w<a class="anchor" aria-label="anchor" href="#arg-no-w"></a></dt>
 <dd><p>The number of weight bins to use in the model</p></dd>
+
+
+<dt id="arg-max-w">max_w<a class="anchor" aria-label="anchor" href="#arg-max-w"></a></dt>
+<dd><p>The maximum weight used to the model.
+Maximum fish weight by default.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -100,15 +110,19 @@ default value used by Ecopath.</p>
 species reaches its maturity weight <code>w_mat</code> by the age at maturity
 <code>age_mat</code>.  The mortality-rate coefficient is then derived from that growth
 rate and set so that the juvenile biomass spectrum has a slope of –0.2.</p>
-<p>The function uses <code>matchBiomasses()</code> to match the biomass to the observations
-and <code>steadySingleSpecies()</code> to bring each species to steady state. It then
-calls <code>setBevertonHolt()</code> to set the reproduction level to zero</p>
+<p>The function uses <code><a href="https://sizespectrum.org/mizer/reference/matchBiomasses.html" class="external-link">matchBiomasses()</a></code> to match the biomass to the observations
+and <code><a href="https://sizespectrum.org/mizer/reference/steadySingleSpecies.html" class="external-link">steadySingleSpecies()</a></code> to bring each species to steady state. It then
+calls <code><a href="https://sizespectrum.org/mizer/reference/setBevertonHolt.html" class="external-link">setBevertonHolt()</a></code> to set the reproduction level to zero</p>
 <p>Because the model does not make use of the resource spectrum, the resource
 dynamics is switched off. Even though it isn't being used yet, an initial
 resource abundance power law is set up that stretches over the entire size
 range with an exponent of <code>lambda = 2.05</code> and an arbitrary coefficient of
 <code>kappa = 10^11</code>. The exponent of the resource replenishment rate is
 set to <code>n = 0.7</code>.</p>
+<p>If you plan to fit several single-species models as a preliminary step
+to generating a multi-species model, it is necessary that the maximum
+weight of all species be the same. To achieve this, you must select the
+largest weight among all species in <code>max_w</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

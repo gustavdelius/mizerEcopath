@@ -17,7 +17,7 @@ distribution, the observed yield and the observed production, if available."></h
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,10 +30,15 @@ distribution, the observed yield and the observed production, if available."></h
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
-    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
+    <li><a class="dropdown-item" href="../articles/catch_identifiability.html">How precisely does the catch size distribution determine the parameters?</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic Sea Status Quo Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
+    <li><a class="dropdown-item" href="../articles/extending_the_tuning_gadget.html">Understanding and Extending the Tuning Gadget</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess_vB.html">A Celtic Sea model with von Bertalanffy growth</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess.html">A Celtic Sea model from Richard's and Jess's data</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
+    <li><a class="dropdown-item" href="../articles/von_bertalanffy.html">A mizer model with von Bertalanffy growth</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -64,10 +69,8 @@ distribution, the observed yield and the observed production, if available.</p>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">catch</span>,</span>
 <span>  lambda <span class="op">=</span> <span class="fl">2.05</span>,</span>
-<span>  yield_lambda <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  production_lambda <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  mu_mat_lim <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  map <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  z_ext_lim <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>m <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,21 +101,11 @@ contain the following columns:</p><ul><li><p><code>species</code>: The species f
 
 <dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
 <dd><p>The slope of the community spectrum, used to set the upper
-bound on <code>mu_mat</code>. Default is 2.05.</p></dd>
+bound on <code>z_ext</code>. Default is 2.05.</p></dd>
 
 
-<dt id="arg-yield-lambda">yield_lambda<a class="anchor" aria-label="anchor" href="#arg-yield-lambda"></a></dt>
-<dd><p>A parameter that controls the strength of the penalty for
-deviation from the observed yield.</p></dd>
-
-
-<dt id="arg-production-lambda">production_lambda<a class="anchor" aria-label="anchor" href="#arg-production-lambda"></a></dt>
-<dd><p>A parameter that controls the strength of the penalty
-for deviation from the observed production.</p></dd>
-
-
-<dt id="arg-mu-mat-lim">mu_mat_lim<a class="anchor" aria-label="anchor" href="#arg-mu-mat-lim"></a></dt>
-<dd><p>Upper bound on the optimised <code>mu_mat</code> value. The hard
+<dt id="arg-z-ext-lim">z_ext_lim<a class="anchor" aria-label="anchor" href="#arg-z-ext-lim"></a></dt>
+<dd><p>Upper bound on the optimised <code>z_ext</code> value. The hard
 upper bound derived from <code>lambda</code> and growth rate is further capped at
 this value. Default is 5.</p></dd>
 
@@ -120,7 +113,7 @@ this value. Default is 5.</p></dd>
 <dt id="arg-map">map<a class="anchor" aria-label="anchor" href="#arg-map"></a></dt>
 <dd><p>An optional named list that fixes specific parameters during
 optimisation. Use the user-facing parameter names (<code>"l50"</code>, <code>"l25"</code>,
-<code>"l50_right"</code>, <code>"l25_right"</code>, <code>"catchability"</code>, <code>"mu_mat"</code>, <code>"m"</code>).
+<code>"l50_right"</code>, <code>"l25_right"</code>, <code>"catchability"</code>, <code>"z_ext"</code>, <code>"m"</code>).
 Each element should be a <code>factor</code> vector where <code>NA</code> entries fix the
 corresponding parameter at its initial value; see <code><a href="https://rdrr.io/pkg/TMB/man/MakeADFun.html" class="external-link">TMB::MakeADFun()</a></code>.
 By default <code>m</code> (the metabolic-rate exponent) is fixed.</p></dd>
@@ -141,9 +134,9 @@ side (only for <code>double_sigmoid_length</code> selectivity).</p></li>
 <li><p><code>l25_right</code>: The length at which the gear selectivity is 25% on the right
 side (only for <code>double_sigmoid_length</code> selectivity).</p></li>
 <li><p><code>catchability</code>: The catchability of the gear.</p></li>
-<li><p><code>mu_mat</code>: The coefficient of the power-law external mortality
-<code>mu(w) = mu_mat * (w / w_mat)^d</code>, where <code>d</code> is taken from
-<code>species_params$d</code> and <code>w_mat</code> is the weight at maturity.</p></li>
+<li><p><code>z_ext</code>: The coefficient of the power-law external mortality
+<code>mu(w) = z_ext * w^d</code>, where <code>d</code> is taken from
+<code>species_params$d</code>.</p></li>
 </ul><p>The observed yield per gear is taken from the <code>yield_observed</code> column of
 <code>gear_params(params)</code>. The observed production is taken from the
 <code>production_observed</code> column of <code>species_params(params)</code>.</p>
@@ -154,21 +147,29 @@ each species is then rescaled to match the observed biomass and the
 reproduction level is set to zero via <code><a href="https://sizespectrum.org/mizer/reference/setBevertonHolt.html" class="external-link">mizer::setBevertonHolt()</a></code>.</p>
 <p>The function estimates these parameters by minimizing an objective function.
 The objective function is the negative log likelihood of the observed catch
-size distribution given the probabilities predicted by the model plus the sum
-of squares difference between the log of the observed yield and the log of
-the predicted yield, multiplied by <code>yield_lambda</code>, as well as the sum of
-squares difference between the log of the observed production and the log of
-the predicted production, multiplied by <code>production_lambda</code>.</p>
+size distribution given the probabilities predicted by the model, multiplied
+by a catch distribution weight, plus the sum of squares difference between
+the log of the observed yield and the log of the predicted yield, multiplied
+by a yield weight, as well as the sum of squares difference between the log
+of the observed production and the log of the predicted production,
+multiplied by a production weight.</p>
+<p>The catch distribution weight and the yield weight are species-gear-specific:
+they are taken from the <code>catch_dist_weight</code> and <code>yield_weight</code> columns of
+<code>gear_params(params)</code>, each defaulting to 1 for every gear when the column is
+absent. The production weight is species-specific: it is taken from the
+<code>production_weight</code> column of <code>species_params(params)</code>, defaulting to 1 when
+that column is absent.</p>
 <p>The function deals with missing data in the following way, for each species
-individually:</p><ul><li><p>If the observed yield is not available (no positive <code>yield_observed</code> in
-<code>gear_params</code>), <code>yield_lambda</code> is set to 0 and only the catch size
-distribution and production are matched.</p></li>
+individually:</p><ul><li><p>If the observed yield is not available for a gear (no positive
+<code>yield_observed</code> in <code>gear_params</code>), that gear's yield weight is set to 0 and
+only the catch size distribution and production are matched for it.</p></li>
 <li><p>If the observed production is not available (no <code>production_observed</code> in
-<code>species_params</code>), <code>production_lambda</code> is set to 0 and only the catch size
+<code>species_params</code>), the production weight is set to 0 and only the catch size
 distribution and yield are matched.</p></li>
 <li><p>If the observed catch size distribution is not available (empty <code>catch</code>),
-only the observed yield and the observed production are matched. The
-selectivity parameters are held fixed.</p></li>
+or if a gear's <code>catch_dist_weight</code> is zero, only the observed yield and the
+observed production are matched. The selectivity parameters of the affected
+gears are held fixed.</p></li>
 <li><p>If neither catch size data nor observed production are available, the
 function issues a warning and returns <code>params</code> unchanged.</p></li>
 </ul><p>The catch predicted by the model is calculated by integrating the
@@ -196,34 +197,41 @@ objective function.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu">matchCatch</span><span class="op">(</span><span class="va">celtic_params</span>, species <span class="op">=</span> <span class="st">"Hake"</span>, catch <span class="op">=</span> <span class="va">celtic_catch</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Hake has zero growth rate after maturity size</span>
 <span class="r-in"><span><span class="fu"><a href="plot_catch.html">plot_catch</a></span><span class="op">(</span><span class="va">params</span>, species <span class="op">=</span> <span class="st">"Hake"</span>, catch <span class="op">=</span> <span class="va">celtic_catch</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="matchCatch-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># The function leaves the biomass of the species unchanged</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">getBiomass</span><span class="op">(</span><span class="va">params</span>, use_cutoff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>          <span class="fu">getBiomass</span><span class="op">(</span><span class="va">celtic_params</span>, use_cutoff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://sizespectrum.org/mizer/reference/getBiomass.html" class="external-link">getBiomass</a></span><span class="op">(</span><span class="va">params</span>, use_cutoff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>          <span class="fu"><a href="https://sizespectrum.org/mizer/reference/getBiomass.html" class="external-link">getBiomass</a></span><span class="op">(</span><span class="va">celtic_params</span>, use_cutoff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>          tol <span class="op">=</span> <span class="fl">1e-4</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span><span class="co"># It also leaves the energy available to an individual for reproduction</span></span></span>
 <span class="r-in"><span><span class="co"># and growth unchanged</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">getEReproAndGrowth</span><span class="op">(</span><span class="va">params</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>          <span class="fu">getEReproAndGrowth</span><span class="op">(</span><span class="va">celtic_params</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://sizespectrum.org/mizer/reference/getEReproAndGrowth.html" class="external-link">getEReproAndGrowth</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>          <span class="fu"><a href="https://sizespectrum.org/mizer/reference/getEReproAndGrowth.html" class="external-link">getEReproAndGrowth</a></span><span class="op">(</span><span class="va">celtic_params</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "Attributes: &lt; Component “params”: Attributes: &lt; Component “catchability”: Mean relative difference: 0.4664792 &gt; &gt;"                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2] "Attributes: &lt; Component “params”: Attributes: &lt; Component “ext_diffusion”: Mean relative difference: 0.7575277 &gt; &gt;"                          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "Attributes: &lt; Component “params”: Attributes: &lt; Component “gear_params”: Component “l50”: Mean relative difference: 0.01827629 &gt; &gt;"          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "Attributes: &lt; Component “params”: Attributes: &lt; Component “gear_params”: Component “l25”: Mean relative difference: 0.01481484 &gt; &gt;"          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "Attributes: &lt; Component “params”: Attributes: &lt; Component “gear_params”: Component “catchability”: Mean relative difference: 0.4664792 &gt; &gt;"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "Attributes: &lt; Component “params”: Attributes: &lt; Component “given_species_params”: Length mismatch: comparison on first 21 components &gt; &gt;"    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "Attributes: &lt; Component “params”: Attributes: &lt; Component “given_species_params”: Component “erepro”: Mean relative difference: 131.705 &gt; &gt;" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "Attributes: &lt; Component “params”: Attributes: &lt; Component “given_species_params”: Component “R_max”: Mean absolute difference: Inf &gt; &gt;"      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "Attributes: &lt; Component “params”: Attributes: &lt; Component “given_species_params”: Component “D_ext”: Mean relative difference: 0.7575277 &gt; &gt;"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10] "Attributes: &lt; Component “params”: Attributes: &lt; Component “initial_n”: Mean relative difference: 13.01327 &gt; &gt;"                               </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [11] "Attributes: &lt; Component “params”: Attributes: &lt; Component “mu_b”: Mean relative difference: 1.303149 &gt; &gt;"                                    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [12] "Attributes: &lt; Component “params”: Attributes: &lt; Component “selectivity”: Mean relative difference: 0.01597085 &gt; &gt;"                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "Attributes: &lt; Component “params”: Attributes: &lt; Component “species_params”: Component “erepro”: Mean relative difference: 131.705 &gt; &gt;"       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [14] "Attributes: &lt; Component “params”: Attributes: &lt; Component “species_params”: Component “R_max”: Mean absolute difference: Inf &gt; &gt;"            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "Attributes: &lt; Component “params”: Attributes: &lt; Component “species_params”: Component “z_ext”: Mean relative difference: 1 &gt; &gt;"              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [16] "Attributes: &lt; Component “params”: Attributes: &lt; Component “species_params”: Component “D_ext”: Mean relative difference: 0.7575277 &gt; &gt;"      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [17] "Attributes: &lt; Component “params”: Attributes: &lt; Component “time_modified”: Mean absolute difference: 869680.7 &gt; &gt;"                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [18] "Mean relative difference: 0.008655613"                                                                                                       </span>
 <span class="r-in"><span><span class="co"># The initial size spectrum is set to the steady state size spectrum</span></span></span>
-<span class="r-in"><span><span class="va">params_steady</span> <span class="op">&lt;-</span> <span class="fu">steadySingleSpecies</span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Herring has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Cod has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Megrim has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Monkfish has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Haddock has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Whiting has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Hake has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Blue whiting has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Plaice has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Mackerel has zero growth rate after maturity size</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Sole has zero growth rate after maturity size</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">initialN</span><span class="op">(</span><span class="va">params</span><span class="op">)</span>, <span class="fu">initialN</span><span class="op">(</span><span class="va">params_steady</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Mean relative difference: 0.01874523"</span>
+<span class="r-in"><span><span class="va">params_steady</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sizespectrum.org/mizer/reference/steadySingleSpecies.html" class="external-link">steadySingleSpecies</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://sizespectrum.org/mizer/reference/initialN-set.html" class="external-link">initialN</a></span><span class="op">(</span><span class="va">params</span><span class="op">)</span>, <span class="fu"><a href="https://sizespectrum.org/mizer/reference/initialN-set.html" class="external-link">initialN</a></span><span class="op">(</span><span class="va">params_steady</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Attributes: &lt; Component “params”: Attributes: &lt; Component “initial_n”: Mean relative difference: 0.0001951721 &gt; &gt;" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2] "Attributes: &lt; Component “params”: Attributes: &lt; Component “time_modified”: Mean absolute difference: 0.6098933 &gt; &gt;"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "Mean relative difference: 0.0001951721"                                                                            </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

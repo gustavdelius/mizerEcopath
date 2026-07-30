@@ -4,9 +4,9 @@
 .Ruserdata
 inst/doc
 *_files
-*.rds
 *.so
 *.o
 docs/*.md
 docs/*/*.md
 /.quarto/
+.posit/assistant

@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mizerEcopath</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9100</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,10 +43,15 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/build.html">Building a mizer model</a></li>
-    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic_Sea_Status_Quo_Model</a></li>
+    <li><a class="dropdown-item" href="../articles/catch_identifiability.html">How precisely does the catch size distribution determine the parameters?</a></li>
+    <li><a class="dropdown-item" href="../articles/Celtic_Sea_Status_Quo_Model.html">Celtic Sea Status Quo Model</a></li>
     <li><a class="dropdown-item" href="../articles/diffusion.html">Incorporating predation diffusion</a></li>
     <li><a class="dropdown-item" href="../articles/ecopath_to_mizer.html">From Ecopath to Mizer</a></li>
+    <li><a class="dropdown-item" href="../articles/extending_the_tuning_gadget.html">Understanding and Extending the Tuning Gadget</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess_vB.html">A Celtic Sea model with von Bertalanffy growth</a></li>
+    <li><a class="dropdown-item" href="../articles/Richard_and_Jess.html">A Celtic Sea model from Richard's and Jess's data</a></li>
     <li><a class="dropdown-item" href="../articles/todo.html">Todo list</a></li>
+    <li><a class="dropdown-item" href="../articles/von_bertalanffy.html">A mizer model with von Bertalanffy growth</a></li>
   </ul>
 </li>
       </ul>
@@ -95,7 +100,7 @@
 <li><p>Compare the fixes for gear switching in the app</p></li>
 <li><p>catchSelectivity() tried to set the selectivity not from gear parameters but exactly representing the observed landings. This proved problematic when starting with a model that was not already pretty well tuned. Also the code is not yet up to scratch. Archive into a branch for future development.</p></li>
 <li><p>Remove steps from addCatch(). Make old biomass column in landings continue to work. Update docs. Potentially use single helper.</p></li>
-<li><p>Add species params for external rates and for diffusion to core mizer. Can build on <code><a href="https://sizespectrum.org/mizer/reference/setDiffusion.html" class="external-link">setDiffusion()</a></code> in this package. change from d_over_g</p></li>
+<li><p>Add species params for external rates and for diffusion to core mizer. Can build on <code>setDiffusion()</code> in this package. change from d_over_g</p></li>
 <li><p>Remove all these erepro warnings</p></li>
 <li><p>Convenience function for adding kernel parameters</p></li>
 </ul>
@@ -103,13 +108,13 @@
 </h2>
 <p>There should be a tab where the current match to all the data can be seen at the same time. This would be an extension of the current “catch” tab where below the fit to the catch size distribution one can also see all the other data that is being used in the parameter estimation. Currently that is the yield and the production, but we may add the reproductive success and the consumption later.</p>
 <p>For example death of all species on Death tab. Jess has nice survey tab and lots of ideas.</p>
-<p>On this tab it should be possible to change the penalty factors <code>yield_lambda</code> and <code>production_lambda</code>, which currently can not be changed from within the shiny gadget.</p>
+<p>The per-species production penalty factor <code>production_weight</code> can be edited on the Death tab and the per-gear yield penalty factor <code>yield_weight</code> as well as the per-gear catch size distribution penalty factor <code>catch_dist_weight</code> on the Catch tab.</p>
 <p>If there are multiple gears per species, all the gears for the current species</p>
 <p>Should have slimmed-down versions for specific tasks, building on Jess’s experience.</p>
 </section><section class="level2"><h2 id="multiple-gears-per-species">Multiple gears per species<a class="anchor" aria-label="anchor" href="#multiple-gears-per-species"></a>
 </h2>
 <p>The parameter estimation should be extended to estimate the selectivity and catchability parameters of multiple gears for each species.</p>
-<p>Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will usually need a selectivity gear that decreases again at larger sizes. There should be the possibility of selecting a different penalty factor <code>yield_lambda</code> for each gear, initially chosen proportional to observed yield. The gear that selects fish up to the largest size may need to get increased weight in order to force the size spectrum to drop of appropriately.</p>
+<p>Only the gear that catches the largest fish should use the standard sigmoidal gear. The other gears will usually need a selectivity gear that decreases again at larger sizes. It is possible to select a different penalty factor <code>yield_weight</code> for each gear (edited on the Catch tab). The gear that selects fish up to the largest size may need to get increased weight in order to force the size spectrum to drop of appropriately. Similarly the weight <code>catch_dist_weight</code> given to the mismatch in the catch size distribution can be chosen separately for each gear, so that gears with poorly sampled size distributions can be downweighted.</p>
 <p>We use double-sigmoid but could in the distant future experiment to find another suitable functional form for the selectivity curve. One possibility would be sigmoid times power law. But we should also ask the experts in Spain.</p>
 <p>It might be easiest to use the generalised selectivity curve for all species but put a penalty on the amount of decrease at larger sizes. That way as much as possible of the decrease in catches at large sizes will be modelled through a decrease in abundance and a decrease in selectivity will be used only when needed.</p>
 </section><section class="level2"><h2 id="fusion-with-tuneparams">Fusion with tuneParams<a class="anchor" aria-label="anchor" href="#fusion-with-tuneparams"></a>
