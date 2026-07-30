@@ -155,7 +155,7 @@ The fit is free to change the external mortality coefficient `z_ext`, and with o
 pm <- matchCatch(p, catch = catch)
 ```
 
-`matchCatch()` adjusts, per species, the selectivity parameters of both gears, the catchability of the commercial gear, the growth-diffusion coefficient `D_ext` and the external mortality coefficient `z_ext`, minimising the negative log likelihood of the observed catch size distributions plus squared log-differences in yield and in production. Selectivity and mortality have to be fitted together because the predicted catch distribution is the product of the selectivity curve and the size spectrum, and the spectrum is itself shaped by the balance of growth and mortality. The objective is written in C++ and differentiated by TMB, which is what makes a joint fit practical. Crucially it takes the *energy available for growth and reproduction as given data*, so the von Bertalanffy growth curve of stage 1 is untouched.
+`matchCatch()` adjusts, per species, the selectivity parameters of both gears, the catchability of the commercial gear, the growth-diffusion coefficient `D_ext` and the external mortality coefficient `z_ext`, minimising the negative log likelihood of the observed catch size distributions plus squared log-differences in yield and in production. Selectivity, mortality and diffusion have to be fitted together because the predicted catch distribution is the product of the selectivity curve and the size spectrum, and the spectrum is itself shaped by the balance of growth, diffusion and mortality. The objective is written in C++ and differentiated by TMB, which is what makes a joint fit practical. Crucially it takes the *energy available for growth and reproduction as given data*, so the von Bertalanffy growth curve of stage 1 is untouched.
 
 ### How well does it fit? {#sec-dome}
 
@@ -209,7 +209,7 @@ nll |> arrange(gear, species) |>
 That number is worth putting in context, because it is the one place where this build can be compared with the allometric one on equal terms. Rebuilding stages 1 and 2 four ways gives:
 
 | Starting model | Survey selectivity | Commercial selectivity | Mean excess NLL per fish |
-|------------------|------------------|------------------|------------------:|
+|------------------|------------------|------------------|-----------------:|
 | Allometric | sigmoid | sigmoid | 0.1926 |
 | von Bertalanffy | sigmoid | sigmoid | 0.1671 |
 | von Bertalanffy | dome (all nine) | sigmoid | 0.0595 |
@@ -334,7 +334,7 @@ psr <- steady(psr, tol = 1e-12, t_max = 200)
 Finally the resource is given semichemostat dynamics and a resource level of 0.5. Setting the resource level does not move the resource — `setResource()` adjusts the carrying capacity and the replenishment rate together — it sets how hard the resource pushes back. From the semichemostat balance $N_R = c_R r/(r+\mu)$,
 
 $$\frac{\mathrm{d}\log N_R}{\mathrm{d}\log\mu} = -\frac{\mu}{r+\mu}
-  = -\left(1 - \texttt{resource\_level}\right),$$
+  = -\left(1 - \texttt{resource_level}\right),$$
 
 the same linear form as the feeding-level elasticity of @sec-satiation. This is the second response-only knob.
 
@@ -550,7 +550,7 @@ for (s in names(Ft)) {
 ```
 
 | Species | $F_\text{target}$ | $F_\text{peak}$ | $F_\text{peak}/F_\text{target}$ |
-|---------------------|----------------:|----------------:|----------------:|
+|------------------|-----------------:|-----------------:|-----------------:|
 | Herring | 0.2600 | 0.2729 | 1.05 |
 | **Cod** | 0.2900 | 0.3792 | **1.31** |
 | Megrim | 0.2700 | 0.2779 | 1.03 |
@@ -699,8 +699,8 @@ The observed curves are noisy because they are raw 1 cm bins; what matters is wh
 
 Ranking the panels by the excess negative log likelihood per fish of @sec-dome makes it easier to know where to look:
 
-| worst | | | best |
-|---|---|---|---|
+| worst |   |   | best |
+|------------------|------------------|------------------|------------------|
 | **commercial** | Herring 0.260, Cod 0.136 | Hake 0.094, Megrim 0.093 | Whiting 0.007, Haddock 0.015, Sole 0.029 |
 | **survey** | Hake 0.203, Herring 0.138 | Haddock 0.102, Cod 0.099, Blue whiting 0.096 | Megrim 0.004, Sole 0.008, Plaice 0.059 |
 
@@ -852,11 +852,7 @@ data.frame(species = sp$species,
 
 **Consumption and respiration are discontinuous at `w_mat` for the two species with negative `t0`.** `newVonBertalanffyParams()` reaches the von Bertalanffy age at maturity for Whiting and Blue whiting by adding a juvenile speed-up below `w_mat`, supplying its $w^n$ term as external encounter and its $w$ term as metabolic loss. The two terms are equal at `w_mat`, so *somatic growth* is continuous there and @fig-growth is unaffected — but each term individually steps to zero, so the encounter rate falls by a factor of 5.4 for Blue whiting at 77 g and 1.6 for Whiting at 165 g, with matching steps in respiration. Everything derived from consumption rather than from growth therefore has a kink at `w_mat` for these two species: the diet composition (visibly, in @fig-diet), $Q/B$ integrated over the juvenile range, and the size-resolved respiration. A speed-up profile that tapered to zero smoothly instead of being truncated would avoid this, at the cost of the closed-form inversion for its amplitude that the current implementation relies on. Since the two species concerned are the ones whose $F_{MSY}$ targets are the furthest extrapolations, this is worth knowing but is not the main thing wrong with them.
 
-**Reproductive efficiency stays well inside its physical limit, but the tuning bracket did not.** The largest `erepro` in the final model is Megrim's 0.099, and @fig-repro-efficiency shows the realised efficiency is smaller still, so no species comes close to the value of 1 at which the model would be demanding more larval biomass than the spawning stock can produce. Nor does any of the yield scans of @sec-peaks trigger such a demand — a point of difference from the allometric build, where Herring's scan does.
-
-The bisection itself was another matter. `tune_peak()` brackets from above at $r_l = 0.9995$, which is past the point where the required `erepro` would exceed 1 for *every* species: the crossing lies at 0.961 for Herring, 0.991 for Megrim and between 0.987 and 0.99997 for the rest. A species genuinely reported "at upper bound" would therefore have been returning a reproduction level from a region where the model is incoherent, and the first sweep did briefly assign Megrim $r_l = 0.9995$ before later sweeps settled it at 0.907. The helper now caps the upper bracket just below each species' crossing point, which leaves the converged answer unchanged — every capped bound sits above the reproduction level actually in use, and `erepro` at the cap is at most 0.85.
-
-**The** $F_{MSY}$ targets are far from the fitted fishing mortalities for two species:
+**The** $F_{MSY}$ **targets are far from the fitted fishing mortalities for two species**:
 
 | Species      | $F$ fitted | $F_{MSY}$ | ratio |
 |--------------|-----------:|----------:|------:|
@@ -874,7 +870,5 @@ For Herring and Blue whiting the criterion asks where the yield peak lies at 27 
 **The survey dome is a licence as well as a fix.** Giving Megrim, Blue whiting and Plaice a dome-shaped survey selectivity improves the fit enormously (@sec-dome), but it does so by letting the *observation* model explain a fall-off that would otherwise have to be explained by the size spectrum. The survey data consequently constrains those three species' mortality less tightly than it does the other six. The one visible benefit is that Blue whiting's `z_ext` comes off the optimiser's lower bound.
 
 **Reproduction levels are conditional on the stage-7 knobs, and vice versa.** Herring's feeding level and the two link multipliers were each chosen against the yield-peak criterion holding the other species' reproduction levels fixed, and the stage-8 sweep then moves those. The three Jacobi sweeps reported are a truncated iteration of the *reproduction levels only*; the outer loop over the stage-7 knobs was iterated twice by hand.
-
-**`setResourceInteraction()` leaves a trap.** It writes `interaction_resource` into `species_params` but not into `given_species_params`, which still holds the zeros that `newVonBertalanffyParams()` put there. Any later assignment of the form `species_params(params)$x <- ...` recomputes the whole frame from the given values and silently switches every species' resource feeding off — a change that leaves the object looking healthy while removing a third of some species' food. Post-stage-6 code in this build therefore writes through `given_species_params()` or through the array setters instead.
 
 **Numerical scheme.** Like the allometric build, this model uses mizer's default first-order upwind flux, which carries numerical diffusion. That is consistent with `matchCatch()`, whose TMB objective solves the steady state on the same scheme, but it means the growth diffusion `D_ext` that stage 2 fits is a fitted *total* rather than a biological one. Any study of the model's dynamics rather than its steady states should rebuild with `second_order_w = TRUE` and project with `method = "tr_bdf2"`, and should expect the size distributions to shift slightly when it does.

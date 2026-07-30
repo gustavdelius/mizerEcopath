@@ -41,7 +41,7 @@ This document builds a nine-species mizer model of the Celtic Sea from data asse
 The model is built in a sequence of stages. Each stage adds one piece of biological structure, and each stage is arranged so that it does not destroy what the previous stages achieved. That is the central idea, and it is worth stating up front:
 
 1.  **Single-species scaffolding.** Start from a model in which every species grows and dies according to pure power laws and nothing interacts with anything. Such a model can be solved essentially by hand, so we can put it exactly where we want it.
-2.  **Fit to size data.** Adjust gear selectivity, catchability and external mortality so that the steady state reproduces the observed catch and survey size distributions, the observed yield, and the observed biomass.
+2.  **Fit to size data.** Adjust gear selectivity, catchability, growth diffusion and external mortality so that the steady state reproduces the observed catch and survey size distributions, the observed yield, and the observed biomass.
 3.  **Add physiology.** Introduce a finite maximum intake rate and a metabolic cost, *without* changing the energy available for growth and reproduction, so the fit from stage 2 survives.
 4.  **Give three species more mortality**, because otherwise the diet matrix in the next stage cannot be imposed.
 5.  **Add species interactions.** Replace part of the anonymous "external" food and mortality by explicit predation, chosen to reproduce an observed diet matrix — again arranged to preserve the steady state.
@@ -185,13 +185,13 @@ In steady state, mortality and production are two sides of the same coin: what a
 pm <- matchCatch(p, catch = catch)
 ```
 
-`matchCatch()` adjusts, per species, the selectivity parameters $l_{50}$ and $l_{25}$ of both gears, the catchability of the commercial gear, and the external mortality coefficient `z_ext`, by minimising
+`matchCatch()` adjusts, per species, the selectivity parameters $l_{50}$ and $l_{25}$ of both gears, the catchability of the commercial gear, the growth-diffusion coefficient `D_ext` and the external mortality coefficient `z_ext`, by minimising
 
 - the negative log likelihood of the observed catch size distributions given the size distributions the model predicts, plus
 - the squared difference in log yield (commercial gear only, because the survey gear has `yield_weight = 0`), plus
 - the squared difference in log production, i.e. the anchor above.
 
-The reason selectivity and mortality have to be fitted *together* is that the model's predicted catch distribution is the product of the selectivity curve and the species' size spectrum, and the size spectrum is itself shaped by the balance between growth and mortality. Fitting a selectivity curve against a fixed spectrum, or a mortality against a fixed selectivity, would both be wrong. The objective function is written in C++ and differentiated automatically by TMB, which is what makes a joint fit over four parameters per species per gear practical.
+The reason selectivity, diffusion and mortality have to be fitted *together* is that the model's predicted catch distribution is the product of the selectivity curve and the species' size spectrum, and the size spectrum is itself shaped by the balance between growth, diffusion and mortality. Fitting a selectivity curve against a fixed spectrum, or a mortality against a fixed selectivity, would both be wrong. The objective function is written in C++ and differentiated automatically by TMB, which is what makes a joint fit over four parameters per species per gear practical.
 
 After the fit, the biomass is rescaled to the observation and the reproduction level is reset to zero.
 
@@ -623,7 +623,7 @@ The observed curves are noisy because they are raw 1 cm bins; what matters is wh
 With all eighteen panels shown it helps to know which to look at hardest. Scoring each by the excess multinomial negative log likelihood per fish — the fitted misfit above the best any model could do on those raw bins, so that 0 is a perfect fit and the number is comparable across species — gives:
 
 |   | worst | middling | best |
-|----|----|----|----|
+|------------------|------------------|------------------|------------------|
 | **commercial** | Herring 0.191, Cod 0.134 | Hake 0.116, Megrim 0.108, Plaice 0.100 | Whiting 0.012, Haddock 0.016, Sole 0.033 |
 | **survey** | **Blue whiting 0.954**, Plaice 0.410 | Hake 0.130, Haddock 0.123, Cod 0.090 | Sole 0.022, Whiting 0.031, Megrim 0.049 |
 
@@ -763,8 +763,6 @@ data.frame(species = sp$species,
 
 **The production numbers in stage 4 are tuning knobs, not observations.** The values 0.8, 0.1 and 0.8 for Herring, Cod and Hake were chosen so that the diet matrix could be imposed without demanding negative external mortality. They do real work in the model — they set the total mortality of three species — and they deserve to be replaced by something better founded.
 
-**Herring needs `erepro > 1` somewhere in its yield scan.** Computing herring's yield curve out to $1.5\,F_{MSY}$ — which is 100 times its fitted $F$ — produces a warning that the required reproductive efficiency exceeds 1, i.e. the model is being asked for more recruits than the spawning stock can physically produce. The peak location reported for herring is therefore partly outside the range in which the model is coherent.
-
 **The** $F_{MSY}$ targets are a long way from the fitted fishing mortalities:
 
 | Species      | $F$ fitted | $F_{MSY}$ | ratio |
@@ -783,19 +781,6 @@ For Herring and Blue whiting the criterion asks where the yield peak sits at som
 **Cannibalism is reallocated, not explained away.** Stage 7 moves five sixths of cod's cannibalism into anonymous external mortality because it is what keeps cod's yield peak above $F_{MSY}$. The Ecopath diet matrix does report cod cannibalism, so this is a decision to trust the $F_{MSY}$ estimate over that diet entry, taken because mizer offers no way to keep a predator's diet while softening its effect on the prey — no foraging arena, no refuge for juveniles. A model with a saturating cannibalism functional response would not need the fudge.
 
 **The tuned** $\lambda$ and $f_0$ are conditional on the reproduction levels, and vice versa. Whiting's feeding level and cod's cannibalism multiplier were each bisected against the yield-peak criterion holding the *other* species' reproduction levels fixed, and the stage 8 sweep then moves those. The two should really be iterated to convergence together. In the recorded run the second sweep left whiting's side value at +0.08 rather than the +0.01 it had after the first, so this is not merely theoretical.
-
-**The** $\lambda = 0$ end of the cannibalism curve is not reproducible. Measured on two builds of the model that differ by under 2% in biomass, the side value at $\lambda = 0$ came out as −0.045 and −0.384. Below about $\lambda = 0.125$ the curve steepens sharply and small model differences swing it. The tuned value $\lambda = 0.1875$ sits in a well-behaved stretch and is reproducible, but no weight should be put on the endpoint.
-
-**This document must be built against a current install of mizerEcopath.** With an older installed version, `setFeedingLevels()` in stage 3 leaves `h = Inf` and `ks = 0` — the new values are not recorded in the given species parameters and are reverted the next time a species parameter changes — so stage 3 silently does nothing. The model still builds and most plots still look plausible, but the fish have no physiology and Cod ends up with a growth curve that `plotGrowthCurves()` cannot even integrate. If that happens, reinstall the package before rendering.
-
-**There are several saved model files and only one of them is this model.** The one to use is `inst/params_allometric_final_Richard_and_Jess.rds`, which is the object built by this document. Two older files are still in `inst/` and neither matches it:
-
-- `inst/params_Richard_and_Jess.rds` has `R_max = Inf` for eight of the nine species, so it is really the stage-6 model, before any density dependence in reproduction.
-- `inst/params_05_Richard_and_Jess.rds` (the suffix records the resource level) does carry finite `R_max`, but its reproduction levels are from a different pass of the stage-8 sweep than the ones recorded in @sec-repro: Herring 0.202 against 0.379, Hake 0.257 against 0.142, Blue whiting 0.010 against 0.079, and smaller differences for Haddock and Plaice. Since @sec-repro notes that the two sweeps did not agree, this is most likely the first sweep rather than the second.
-
-The document nevertheless reconstructs the model from `psr` and the recorded reproduction levels rather than loading any file, so that what is shown below is always what the code above produces.
-
-Note also that the `.rds` files are *not* excluded by `.gitignore` — the repository has no `*.rds` pattern — so these objects are committed and are available to anyone cloning it. That is convenient but it means a 290 kB binary is versioned every time a model is re-saved.
 
 **The old interaction matrix was not used.** An alternative to deriving interactions from the diet matrix would be to reuse the interaction matrix from the earlier Celtic Sea model:
 
