@@ -81,7 +81,7 @@ sp |>
 
 Three columns matter more here than they do in the allometric build.
 
-`k_vb` and `t0` are used directly rather than only through `age_mat`. `t0` is negative for Whiting ($-1.01$) and Blue whiting ($-2.48$), meaning the von Bertalanffy fish already has a positive size at age 0. Mizer starts every fish at `w_min`, so it cannot follow such a curve below maturity; `newVonBertalanffyParams()` instead speeds up juvenile growth by just enough to reach `w_mat` at the age the von Bertalanffy curve predicts, and reports that it has done so. Above maturity the growth is untouched.
+`k_vb` and `t0` are used directly rather than only through `age_mat`. `t0` is negative for Whiting ($-1.01$) and Blue whiting ($-2.48$), meaning the von Bertalanffy fish already has a positive size at age 0. Mizer starts every fish at `w_min`, so it cannot follow such a curve below maturity; `newVonBertalanffyParams()` instead speeds up juvenile growth by just enough to reach `w_mat` at the age the von Bertalanffy curve predicts, and reports that it has done so. Above maturity the growth is untouched. The subsidy is switched off abruptly at `w_mat`, which leaves growth continuous but consumption and respiration with a step; the consequences show up in @fig-diet and are recorded in @sec-caveats.
 
 `biomass_cutoff` is the weight of a 20 cm fish: Richard's biomass estimates come from survey catches that do not see fish much below 20 cm, so `biomass_observed` is treated as the biomass above that cutoff.
 
@@ -209,7 +209,7 @@ nll |> arrange(gear, species) |>
 That number is worth putting in context, because it is the one place where this build can be compared with the allometric one on equal terms. Rebuilding stages 1 and 2 four ways gives:
 
 | Starting model | Survey selectivity | Commercial selectivity | Mean excess NLL per fish |
-|------------------|------------------|------------------|-------------------:|
+|------------------|------------------|------------------|------------------:|
 | Allometric | sigmoid | sigmoid | 0.1926 |
 | von Bertalanffy | sigmoid | sigmoid | 0.1671 |
 | von Bertalanffy | dome (all nine) | sigmoid | 0.0595 |
@@ -550,7 +550,7 @@ for (s in names(Ft)) {
 ```
 
 | Species | $F_\text{target}$ | $F_\text{peak}$ | $F_\text{peak}/F_\text{target}$ |
-|-----------------------|----------------:|----------------:|----------------:|
+|---------------------|----------------:|----------------:|----------------:|
 | Herring | 0.2600 | 0.2729 | 1.05 |
 | **Cod** | 0.2900 | 0.3792 | **1.31** |
 | Megrim | 0.2700 | 0.2779 | 1.03 |
@@ -687,7 +687,7 @@ The red curve is the model's predicted catch size distribution, the blue the obs
 #| fig-height: 3.6
 #| message: false
 #| warning: false
-for (s in c("Cod", "Megrim", "Blue whiting")) {
+for (s in species_params(params)$species) {
     for (g in c("commercial", "survey")) {
         print(plotYieldVsSize(params, species = s, gear = g,
                               catch = catch, x_var = "Length"))
@@ -695,7 +695,22 @@ for (s in c("Cod", "Megrim", "Blue whiting")) {
 }
 ```
 
-Cod is shown because it is the worst fit and the species discussed in @sec-cod; Megrim and Blue whiting because they are two of the three whose survey gear is domed, and the improvement is visible.
+The observed curves are noisy because they are raw 1 cm bins; what matters is whether the model reproduces the position and width of the distribution, not the bin-to-bin wiggles. Note how the survey and commercial distributions for the same species differ — the survey sees the smaller fish — and that a *single* underlying size spectrum has to explain both through two different selectivity curves. That is what makes fitting both gears simultaneously informative about the spectrum rather than just about the gears.
+
+Ranking the panels by the excess negative log likelihood per fish of @sec-dome makes it easier to know where to look:
+
+| worst | | | best |
+|---|---|---|---|
+| **commercial** | Herring 0.260, Cod 0.136 | Hake 0.094, Megrim 0.093 | Whiting 0.007, Haddock 0.015, Sole 0.029 |
+| **survey** | Hake 0.203, Herring 0.138 | Haddock 0.102, Cod 0.099, Blue whiting 0.096 | Megrim 0.004, Sole 0.008, Plaice 0.059 |
+
+Three things are worth picking out.
+
+**Herring is the worst fit in the model, on both gears.** Its observed commercial distribution is a narrow spike at 26 cm on a species whose asymptotic length is only about 30 cm, and the model spreads it out: a rising sigmoid on a smooth spectrum cannot produce a peak that sharp. The survey distribution shows the same thing at 13 cm and hints at a second mode near 25 cm, which a single-cohort-structure model has no way to represent. Herring is also the species whose $F_{MSY}$ target is the most extreme extrapolation (@sec-caveats), so it is the weakest link in the model on two independent counts.
+
+**Cod fits badly for a different reason** — small numbers. Its observed distribution is visibly the noisiest in the set because it rests on about 1900 fish against a quarter of a million for Blue whiting, so its 0.136 is largely irreducible scatter rather than model error. That thin data is what makes the selectivity trade-off of @sec-cod possible at all.
+
+**The three domed survey gears are now the *best* survey fits, not the worst.** Megrim (0.004) and Sole (0.008) sit at the top of the table, and Plaice has come down to 0.059 from 0.310 with a plain sigmoid. Comparing a domed panel with a non-domed one of similar sample size — Megrim's survey against Hake's — shows what the dome is doing and what it costs: Megrim's modelled curve now tracks the observed hump almost exactly, while Hake's model curve runs above the data on both flanks because a monotone selectivity has to compromise. Whether that is a fit or a licence is discussed in @sec-caveats.
 
 ### Growth {#sec-growthcheck}
 
@@ -734,6 +749,18 @@ plotlyFMort(params, size_axis = "l", llim = c(18, NA))
 plotDiet(params)
 ```
 
+The dominant impression is correct and important: **this is a model in which the fish mostly do not eat each other.** Green (resource) and grey (external) fill almost every panel, because the `other` column of the Ecopath diet matrix is large — most of what these nine species eat is not one of the nine. Named prey is visible only for Megrim and Hake (both taking Blue whiting as they grow past about 100 g), Whiting (Herring, plus a little cannibalism), and a sliver for Haddock. Cod's panel is bare of prey because @sec-cod reallocated its predation away; the honest reading of that panel is that Cod's row of the diet matrix is no longer represented.
+
+The size structure of the diet is worth noting because it is *not* something the data specified. The diet matrix supplies a single size-averaged number per predator–prey pair; the shift from resource to fish as a predator grows comes out of the predation kernel and the abundances. So the transitions in these panels are a prediction, not an input.
+
+Two features are artefacts rather than biology, and both trace to the same place.
+
+**The abrupt flip in the Blue whiting and Whiting panels is the negative-`t0` juvenile subsidy switching off.** For these two species `newVonBertalanffyParams()` speeds up juvenile growth to reach `w_mat` at the age their negative `t0` implies, and it supplies the extra intake as *external* encounter below `w_mat` only. At `w_mat` that subsidy stops, so the encounter rate falls off a cliff — for Blue whiting from 1880 to 349 (a factor of 5.4) between adjacent bins at 77 g, and for Whiting by a factor of 1.6 at 165 g. Below `w_mat` fully 82% of Blue whiting's food is that inert subsidy; above it, essentially none, which is why the panel switches from mostly grey to almost pure green.
+
+Somatic growth is *not* discontinuous there — the function arranges for the matching step in the metabolic loss to cancel it, and the modelled growth changes by only 0.2% for Blue whiting and 2.8% for Whiting across the boundary, which is why @fig-growth looks clean. But consumption, respiration and hence the diet composition all step. Anything read off these two panels near `w_mat` is a property of how the juvenile speed-up is implemented, not of the fish.
+
+**The apparent overshoot above a proportion of 1 in the Blue whiting panel is a stacking artefact** at that same boundary: the set of prey categories present changes from one bin to the next, and `geom_area` interpolates across the change. The underlying proportions sum to exactly 1 at every size for every species, and none is negative.
+
 ### Death
 
 ```{r}
@@ -741,6 +768,37 @@ plotDiet(params)
 #| fig-cap: "Sources of mortality for all species as a function of size."
 plotlyDeath(params)
 ```
+
+This is the most diagnostic figure in the document, because it shows how little of the model's mortality the modelled food web actually accounts for. Averaged over each species' biomass, the shares are:
+
+```{r}
+#| label: tbl-death-shares
+m2 <- getPredMort(params); m0 <- ext_mort(params); fm <- getFMort(params)
+tot <- m2 + m0 + fm
+N <- initialN(params)
+wt <- N * matrix(dw(params) * w(params), nrow = nrow(N), ncol = ncol(N),
+                 byrow = TRUE)
+wmean <- function(x) rowSums(x * wt) / rowSums(wt)
+data.frame(species = species_params(params)$species,
+           external = round(wmean(m0 / tot), 2),
+           predation = round(wmean(m2 / tot), 2),
+           fishing = round(wmean(fm / tot), 2),
+           `peak predation share` = round(apply(m2 / tot, 1, max), 2),
+           `at w (g)` = signif(w(params)[apply(m2 / tot, 1, which.max)], 2),
+           check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "Mortality by source, weighted by biomass, and the size at which predation matters most.")
+```
+
+**External mortality is the majority everywhere except for Cod.** It runs from 72% (Hake) to 93% (Herring) of the biomass-weighted total, and at larval sizes it is essentially 100% for every species. That is not a modelling choice so much as the arithmetic of the diet matrix: predation mortality can only come from the nine modelled predators, and @fig-diet has just shown how little of anyone's diet they are.
+
+This matters far beyond bookkeeping, and it is the single fact that explains most of stages 7 and 8. External mortality is a **fixed rate**: it cannot rise or fall when a species is fished. So the compensatory mechanisms that would normally hold a yield curve up — juvenile predation release, food released to survivors — are acting on a fifth to a quarter of the mortality budget, and the reproduction level has to do almost all the work. It is also why Cod could be driven to within 26% of its target by decoupling it from the food web entirely (@sec-cod) and no further: once its 19% predation share was reallocated, Cod was effectively a single-species model already.
+
+**Predation is a hump over juveniles, not a background.** For every species the coloured band peaks between about 1 and 20 g and then collapses — mizer's predation kernel means a predator eats prey a hundred to a thousand times lighter than itself, so the sizes exposed to the modelled predators are the small ones. The peak reaches 56% for Blue whiting and 51% for Hake at around 5–7 g, which is substantial, but it is confined to a size range that contributes almost nothing to biomass or yield. The biomass-weighted column and the peak column differ by an order of magnitude for exactly this reason, and the biomass-weighted one is the one that governs how the species responds to fishing.
+
+**Fishing tells the same story as the caveat about extrapolation.** Red reaches 99% of Cod's mortality at large sizes and 51–75% for Megrim, Haddock, Whiting, Hake, Plaice and Sole, but only 3% for Herring and 9% for Blue whiting. Those two are, in this model, essentially unfished — and they are precisely the two whose $F_{MSY}$ targets sit 27 and 57 times above their fitted $F$. The figure makes visible how far outside its calibrated state the model is being asked to speak for them.
+
+**Two panels are conspicuously empty of predation.** Haddock and Plaice have no modelled predators at all, so their mortality is external plus fishing by construction, and neither has any food-web compensation whatever. That both nonetheless landed within 6% of their $F_{MSY}$ is a reminder that the reproduction level alone is usually enough; it was only Herring, Cod and Whiting that needed more.
 
 ### Reproductive efficiency
 
@@ -759,6 +817,29 @@ ggplot(df, aes(x = Species, y = value)) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
 
+The quantity plotted is $\texttt{erepro} \times \mathrm{RDD}/\mathrm{RDI}$, and since mizer's Beverton–Holt gives $\mathrm{RDD}/\mathrm{RDI} = 1 - r_l$ exactly, each bar is
+
+$$\text{realised efficiency} = \texttt{erepro}\,(1 - r_l).$$
+
+That makes the figure a compact summary of both things stage 8 chose. `erepro` is whatever value makes the fitted spectrum self-replacing given the fitted mortality — it is a residual of the calibration, not an observation — and $1 - r_l$ is the density-dependent survival on top of it.
+
+```{r}
+#| label: tbl-repro-efficiency
+data.frame(species = sp$species,
+           erepro = signif(sp$erepro, 3),
+           `1 - r_l` = round(getRDD(params) / getRDI(params), 3),
+           realised = signif(repro_efficiency, 3),
+           check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "The two factors behind each bar.")
+```
+
+**The red line is never approached.** The largest bar is Herring's at 0.039, a factor of 26 below 1; the smallest is Cod's at $2.6\times10^{-5}$, a factor of 39,000 below. So nowhere is the model demanding more larval biomass than the spawning stock can physically produce, and — unlike the allometric build, where Herring's yield scan does — no yield curve in @sec-peaks trips that limit either. The check the red line exists to perform is passed with room to spare.
+
+**The four-and-a-half orders of magnitude of spread is the interesting part**, and it is largely a fisheries-realistic pattern rather than a defect. Cod at $2.6\times10^{-5}$ is a large, long-lived, heavily fished species investing an enormous amount of energy in reproduction for very few survivors, which is exactly what egg-to-recruit survival looks like for a cod stock. Herring at the other end is small, short-lived and mostly unfished in this model, so much less of its investment is wasted.
+
+**Two contributions should not be confused, though.** Megrim and Haddock have among the *highest* `erepro` (0.099 and 0.054) but land in the middle of the realised ranking, because stage 8 gave them reproduction levels of 0.91 and 0.85 and so discounted them by a factor of 10 and 7. Conversely Cod and Whiting sit at the reproduction floor, so their bars are essentially their raw `erepro`. Reading the figure as a statement about reproductive biology therefore over-reads it: for four of the nine species most of the bar height is the reproduction level that the yield-peak criterion demanded, and @sec-caveats records how weakly that criterion pins it down.
+
 ## Caveats and open questions {#sec-caveats}
 
 **Cod's yield peak is 31% above its** $F_{MSY}$, and @sec-cod argues that this is forced by the data rather than by the tuning: Richard's Cod yield and biomass imply a current $F$ three times the ICES $F_{MSY}$, and a model in equilibrium there cannot also have its maximum at $F_{MSY}$. The alternative model with Cod's $l_{50}$ moved to 52 cm brings all nine species within 9% but is rejected by Cod's own catch-at-length by about 100 log-likelihood units.
@@ -768,6 +849,8 @@ ggplot(df, aes(x = Species, y = value)) +
 **Three species' production is a tuning knob, not an observation.** Hake's `production_observed` is multiplied by 1.5 in stage 4 to let the diet matrix be imposed, and Cod's cannibalism entry is cut to 20% for the same purpose. The production *anchor* itself (stage 2) is a regularisation, not data: it keeps `z_ext` near the default, and for Cod the size distributions turned out to have essentially no opinion about `z_ext` at all, so the anchor is doing all the work there.
 
 **Two species sit at the reproduction floor.** Cod and Whiting end at $r_l = 0.005$, i.e. recruitment almost exactly proportional to spawning stock. This is where the criterion pushed them, not where any recruitment data puts them.
+
+**Consumption and respiration are discontinuous at `w_mat` for the two species with negative `t0`.** `newVonBertalanffyParams()` reaches the von Bertalanffy age at maturity for Whiting and Blue whiting by adding a juvenile speed-up below `w_mat`, supplying its $w^n$ term as external encounter and its $w$ term as metabolic loss. The two terms are equal at `w_mat`, so *somatic growth* is continuous there and @fig-growth is unaffected — but each term individually steps to zero, so the encounter rate falls by a factor of 5.4 for Blue whiting at 77 g and 1.6 for Whiting at 165 g, with matching steps in respiration. Everything derived from consumption rather than from growth therefore has a kink at `w_mat` for these two species: the diet composition (visibly, in @fig-diet), $Q/B$ integrated over the juvenile range, and the size-resolved respiration. A speed-up profile that tapered to zero smoothly instead of being truncated would avoid this, at the cost of the closed-form inversion for its amplitude that the current implementation relies on. Since the two species concerned are the ones whose $F_{MSY}$ targets are the furthest extrapolations, this is worth knowing but is not the main thing wrong with them.
 
 **Reproductive efficiency stays well inside its physical limit, but the tuning bracket did not.** The largest `erepro` in the final model is Megrim's 0.099, and @fig-repro-efficiency shows the realised efficiency is smaller still, so no species comes close to the value of 1 at which the model would be demanding more larval biomass than the spawning stock can produce. Nor does any of the yield scans of @sec-peaks trigger such a demand — a point of difference from the allometric build, where Herring's scan does.
 
