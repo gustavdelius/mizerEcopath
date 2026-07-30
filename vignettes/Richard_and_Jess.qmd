@@ -573,7 +573,7 @@ params <- setBevertonHolt(psr, reproduction_level = c(
     `Blue whiting` = 0.079, Plaice  = 0.357, Sole   = 0.823))
 ```
 
-The final model is the model `psr` built above — which now includes the cannibalism reallocation of @sec-cannibalism — plus the reproduction levels from @sec-repro. We reapply them here rather than loading `inst/params_05_Richard_and_Jess.rds` because that file is excluded by `.gitignore` (the repository ignores `*.rds`), so collaborators cloning the repository do not have it. See @sec-caveats.
+The final model is the model `psr` built above — which now includes the cannibalism reallocation of @sec-cannibalism — plus the reproduction levels from @sec-repro. It is saved in `inst/params_05_Richard_and_Jess.rds`.
 
 ```{r}
 #| label: check-repro
@@ -610,7 +610,7 @@ This is the quantity the whole procedure is built around, so it is the fit worth
 #| fig-height: 3.6
 #| message: false
 #| warning: false
-for (s in c("Cod", "Haddock", "Megrim")) {
+for (s in species_params(params)$species) {
     for (g in c("commercial", "survey")) {
         print(plotYieldVsSize(params, species = s, gear = g,
                               catch = catch, x_var = "Length"))
@@ -620,12 +620,29 @@ for (s in c("Cod", "Haddock", "Megrim")) {
 
 The observed curves are noisy because they are raw 1 cm bins; what matters is whether the model reproduces the position and width of the distribution, not the bin-to-bin wiggles. Note how the survey and commercial distributions for the same species differ — the survey sees the smaller fish — and that a single underlying size spectrum has to explain both through two different selectivity curves. That is what makes fitting both gears simultaneously informative about the spectrum rather than just about the gears.
 
+With all eighteen panels shown it helps to know which to look at hardest. Scoring each by the excess multinomial negative log likelihood per fish — the fitted misfit above the best any model could do on those raw bins, so that 0 is a perfect fit and the number is comparable across species — gives:
+
+|  | worst | middling | best |
+|---|---|---|---|
+| **commercial** | Herring 0.191, Cod 0.134 | Hake 0.116, Megrim 0.108, Plaice 0.100 | Whiting 0.012, Haddock 0.016, Sole 0.033 |
+| **survey** | **Blue whiting 0.954**, Plaice 0.410 | Hake 0.130, Haddock 0.123, Cod 0.090 | Sole 0.022, Whiting 0.031, Megrim 0.049 |
+
+Three panels are worth dwelling on.
+
+**Blue whiting's survey panel is by far the worst fit in the model**, at 0.954 — an order of magnitude worse than the median and on the species with the largest sample in the data set, so it is not noise. The observed distribution is a sharp hump at about 17 cm that has largely died away by 25 cm, and the model produces a curve that keeps rising through the observed mode and then decays far too slowly. The reason is structural: the survey gear has a `sigmoid_length` selectivity, which increases monotonically with size, so the only way for the *modelled* catch to fall away above 17 cm is for the abundance itself to fall away that steeply. It cannot, and the fit compromises by putting the rise in the wrong place. Plaice (0.410) is the same story more mildly, and Megrim's residual 0.049 is a weaker version again.
+
+That is worth naming because it is not a failure of the growth model: the companion von Bertalanffy vignette shows the same three species misbehaving in the same way, and fixes them by giving those three *survey* gears a dome-shaped `double_sigmoid_length` selectivity, which drops Blue whiting's survey misfit from 0.954 to 0.096 and the mean over all species and gears from 0.196 to 0.060. Since the survey gear has catchability $10^{-12}$ and `yield_weight = 0`, that is a change to the observation model alone and would work here unchanged. The cost is that the survey then constrains those species' mortality less tightly, because a fall-off that the spectrum was being forced to explain is handed to the selectivity instead.
+
+**Herring is the worst commercial fit** (0.191). Its observed commercial distribution is a narrow spike at 26 cm on a species whose asymptotic length is only about 30 cm, and a rising sigmoid on a smooth spectrum cannot make a peak that sharp. Herring is also the species whose $F_{MSY}$ target is the most extreme extrapolation (@sec-caveats), so it is the weakest link on two independent counts.
+
+**Cod fits badly for a quite different reason** — small numbers. Its observed distribution is visibly the noisiest in the set because it rests on about 1900 fish against a quarter of a million for Blue whiting, so most of its 0.134 is irreducible scatter rather than model error.
+
 ### Size spectra
 
 ```{r}
 #| label: fig-spectra
-#| fig-cap: "Biomass density in log size, by species. The resource is not shown."
-plotlySpectra(params, power = 2, resource = FALSE)
+#| fig-cap: "Biomass density in log size, by species."
+plotlySpectra(params, power = 2, ylim = c(1e-7, NA))
 ```
 
 Plotting with `power = 2` shows biomass density per log size interval, so a flat line means equal biomass in every size octave. This is the quantity in which the Sheldon spectrum is roughly flat, and it is the most informative way to look for species that are implausibly abundant at some size.
@@ -635,7 +652,7 @@ Plotting with `power = 2` shows biomass density per log size interval, so a flat
 ```{r}
 #| label: fig-fmort
 #| fig-cap: "Fishing mortality as a function of size."
-plotlyFMort(params)
+plotlyFMort(params, size_axis = "l", llim = c(18, NA))
 ```
 
 The shapes here are the fitted selectivity curves of the commercial gear multiplied by the fitted catchabilities; the survey gear contributes nothing visible because its catchability is $10^{-12}$.
@@ -655,11 +672,92 @@ Growth was never fitted directly: it emerged from the encounter rates, which wer
 
 ```{r}
 #| label: fig-diet
-#| fig-cap: "Diet composition of Megrim as a function of predator size."
-plotDiet(params, species = "Megrim")
+#| fig-cap: "Diet composition of all species as a function of predator size."
+plotDiet(params)
 ```
 
-The diet composition changes with predator size even though the diet matrix that was matched is a single size-averaged number per predator–prey pair: the size structure of the diet comes out of the predation kernel and the abundances, not out of the data.
+The diet composition changes with predator size even though the diet matrix that was matched is a single size-averaged number per predator–prey pair: the size structure of the diet comes out of the predation kernel and the abundances, not out of the data. So the transitions in these panels are a prediction rather than an input, and they are the part of the diet the Ecopath data does not pin down.
+
+The dominant impression is also correct and worth stating plainly: **this is a model in which the fish mostly do not eat each other.** Green (resource) and grey (external) fill almost every panel, because the `other` column of the diet matrix is large — most of what these nine species eat is not one of the nine. Named prey appears only in the largest sizes of a few predators: Blue whiting for Megrim, Hake and Cod, Herring for Whiting, and small contributions of Hake and Plaice to Cod. Cod is the most connected predator, with 17.8% of its consumption coming from modelled species, and Whiting next at 10.1%.
+
+Every panel is smooth, which is worth noting only because the companion von Bertalanffy vignette's is not: there, the two species with a negative `t0` receive a juvenile growth subsidy that is switched off abruptly at `w_mat`, and their diet composition steps discontinuously as a result. `newAllometricParams()` gives every species a single power-law encounter rate over its whole size range, so nothing of that kind happens here.
+
+### Death
+
+```{r}
+#| label: fig-death
+#| fig-cap: "Sources of mortality for all species as a function of size."
+plotlyDeath(params)
+```
+
+This is the most diagnostic figure in the document, because it shows how much of the model's mortality the modelled food web actually accounts for, and where. Averaged over each species' biomass:
+
+```{r}
+#| label: tbl-death-shares
+m2 <- getPredMort(params); m0 <- ext_mort(params); fm <- getFMort(params)
+tot <- m2 + m0 + fm
+N <- initialN(params)
+wt <- N * matrix(dw(params) * w(params), nrow = nrow(N), ncol = ncol(N),
+                 byrow = TRUE)
+wmean <- function(x) rowSums(x * wt) / rowSums(wt)
+data.frame(species = species_params(params)$species,
+           external = round(wmean(m0 / tot), 2),
+           predation = round(wmean(m2 / tot), 2),
+           fishing = round(wmean(fm / tot), 2),
+           `peak predation share` = round(apply(m2 / tot, 1, max), 2),
+           `at w (g)` = signif(w(params)[apply(m2 / tot, 1, which.max)], 2),
+           check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "Mortality by source, weighted by biomass, and the size at which predation matters most.")
+```
+
+**External mortality is the largest single source for every species.** It runs from 34% (Plaice) to 96% (Blue whiting) of the biomass-weighted total, and at larval sizes it is essentially 100% for all nine. That is not so much a modelling choice as the arithmetic of the diet matrix: predation mortality can only come from the nine modelled predators, and @fig-diet has just shown how small a part of anyone's diet they are.
+
+This matters well beyond bookkeeping, and it is what makes stages 7 and 8 hard. External mortality is a **fixed rate** — it cannot fall when a species is fished down. So the compensatory mechanisms that hold a yield curve up, chiefly the release of juveniles from predation, are acting on the minority of the mortality budget, and the reproduction level has to do most of the work. It is also the general form of the argument made for cod in @sec-cannibalism.
+
+**Predation is a hump over juveniles, not a background.** For every species the coloured band peaks between about 7 and 70 g and then collapses, because mizer's predation kernel means a predator eats prey one or two orders of magnitude lighter than itself, so the sizes exposed to the modelled predators are the small ones. The peaks are dramatic — 96% of Herring's mortality at 7 g is predation, and 95% of Hake's at 9 g — but they are confined to a size range that carries almost no biomass and no yield. That is why the biomass-weighted column and the peak column differ by up to a factor of thirty, and it is the biomass-weighted one that governs how a species responds to fishing.
+
+**Two entries in the figure carry a lot of the model's behaviour.** Half of Plaice's mortality at 65 g is predation by Cod, which is the largest single interaction in the model and makes Plaice the second most predation-limited species overall (12%). And the blue band across the top of Cod's own panel is the cannibalism of @sec-cannibalism, still supplying up to 12% of Cod's mortality after being weakened to $\lambda = 0.1875$ — a reminder that what was reallocated was five sixths of a term that was doing real work.
+
+**Fishing repeats the extrapolation caveat in visual form.** Red reaches 82% of Cod's mortality at large sizes and 55–86% for Megrim, Haddock, Whiting, Hake, Plaice and Sole, but peaks at only 3% for Herring and 4% for Blue whiting. Those two are essentially unfished in this model, and they are precisely the two whose $F_{MSY}$ targets sit 70 and 27 times above their fitted $F$ (@sec-caveats). The figure shows how far outside its calibrated state the model is being asked to speak for them.
+
+### Reproductive efficiency
+
+```{r}
+#| label: fig-repro-efficiency
+#| fig-cap: "Proportion of investment into reproduction that is converted into larval biomass."
+sp <- species_params(params)
+repro_efficiency <- sp$erepro * getRDD(params) / getRDI(params)
+df <- data.frame(Species = factor(sp$species, levels = sp$species),
+                 value = repro_efficiency)
+ggplot(df, aes(x = Species, y = value)) +
+    geom_col() + geom_hline(yintercept = 1, color = "red") +
+    scale_y_log10(name = "Reproductive efficiency") +
+    theme(text = element_text(size = 12)) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+The quantity plotted is $\texttt{erepro} \times \mathrm{RDD}/\mathrm{RDI}$, and since mizer's Beverton–Holt gives $\mathrm{RDD}/\mathrm{RDI} = 1 - r_l$ exactly, each bar is
+
+$$\text{realised efficiency} = \texttt{erepro}\,(1 - r_l).$$
+
+That makes the figure a compact summary of the two things the calibration chose for reproduction. `erepro` is whatever value makes the fitted spectrum self-replacing given the fitted mortality — a residual of stages 1 and 2, not an observation — and $1 - r_l$ is the density-dependent survival that @sec-repro laid on top of it.
+
+```{r}
+#| label: tbl-repro-efficiency
+data.frame(species = sp$species,
+           erepro = signif(sp$erepro, 3),
+           `1 - r_l` = round(getRDD(params) / getRDI(params), 3),
+           realised = signif(repro_efficiency, 3),
+           check.names = FALSE) |>
+    kable(row.names = FALSE, caption = "The two factors behind each bar.")
+```
+
+**The red line is not approached.** The tallest bar is Herring's at 0.018, a factor of 55 below 1, and the shortest is Cod's at $9.7\times10^{-5}$. So nowhere in the steady state is the model demanding more larval biomass than the spawning stock can physically produce, which is the check the red line exists to perform.
+
+**The spread is about two and a half orders of magnitude, and most of it is fisheries-realistic.** Cod at $10^{-4}$ is a large, long-lived, heavily fished species putting an enormous amount of energy into reproduction for very few survivors, which is what egg-to-recruit survival looks like for a cod stock. Herring at the other end is small, short-lived and effectively unfished here, so much less of its investment is wasted.
+
+**The bars should not be read as reproductive biology alone, though.** Megrim and Haddock have the two highest raw `erepro` values (0.040 and 0.020) but sit in the middle of the realised ranking, because @sec-repro gave them reproduction levels of 0.901 and 0.823 and so discounted them tenfold and sixfold. Cod and Whiting, at the reproduction floor, have bars that are essentially their raw `erepro`. For the four species with a high reproduction level, most of the bar height is the density dependence that the yield-peak criterion demanded rather than anything about their eggs — and @sec-caveats records how weakly that criterion pins it down.
 
 ## Caveats and open questions {#sec-caveats}
 
