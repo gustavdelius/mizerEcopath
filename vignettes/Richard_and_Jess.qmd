@@ -573,7 +573,7 @@ params <- setBevertonHolt(psr, reproduction_level = c(
     `Blue whiting` = 0.079, Plaice  = 0.357, Sole   = 0.823))
 ```
 
-The final model is the model `psr` built above — which now includes the cannibalism reallocation of @sec-cannibalism — plus the reproduction levels from @sec-repro. It is saved in `inst/params_05_Richard_and_Jess.rds`.
+The final model is the model `psr` built above — which now includes the cannibalism reallocation of @sec-cannibalism — plus the reproduction levels from @sec-repro. Exactly this object, rebuilt by running the stages above, is saved as `inst/params_allometric_final_Richard_and_Jess.rds`, so every figure and table below can be reproduced without re-running the build. Its companion for the von Bertalanffy model of `vignettes/Richard_and_Jess_vB.qmd` is `inst/params_vB_final_Richard_and_Jess.rds`. See @sec-caveats for the older files that this one supersedes.
 
 ```{r}
 #| label: check-repro
@@ -622,8 +622,8 @@ The observed curves are noisy because they are raw 1 cm bins; what matters is wh
 
 With all eighteen panels shown it helps to know which to look at hardest. Scoring each by the excess multinomial negative log likelihood per fish — the fitted misfit above the best any model could do on those raw bins, so that 0 is a perfect fit and the number is comparable across species — gives:
 
-|  | worst | middling | best |
-|---|---|---|---|
+|   | worst | middling | best |
+|----|----|----|----|
 | **commercial** | Herring 0.191, Cod 0.134 | Hake 0.116, Megrim 0.108, Plaice 0.100 | Whiting 0.012, Haddock 0.016, Sole 0.033 |
 | **survey** | **Blue whiting 0.954**, Plaice 0.410 | Hake 0.130, Haddock 0.123, Cod 0.090 | Sole 0.022, Whiting 0.031, Megrim 0.049 |
 
@@ -788,7 +788,14 @@ For Herring and Blue whiting the criterion asks where the yield peak sits at som
 
 **This document must be built against a current install of mizerEcopath.** With an older installed version, `setFeedingLevels()` in stage 3 leaves `h = Inf` and `ks = 0` — the new values are not recorded in the given species parameters and are reverted the next time a species parameter changes — so stage 3 silently does nothing. The model still builds and most plots still look plausible, but the fish have no physiology and Cod ends up with a growth curve that `plotGrowthCurves()` cannot even integrate. If that happens, reinstall the package before rendering.
 
-**The saved model file is not in the repository.** The script now writes `inst/params_05_Richard_and_Jess.rds` (the suffix records the resource level), and that file does carry finite `R_max` and the swept reproduction levels — the older `inst/params_Richard_and_Jess.rds`, which had `R_max = Inf` for eight of nine species and so was really the stage-6 model, has been superseded. Both are matched by `*.rds` in `.gitignore` and so are absent for anyone cloning the repository. This document therefore reconstructs the final model from `psr` and the recorded reproduction levels rather than loading either file.
+**There are several saved model files and only one of them is this model.** The one to use is `inst/params_allometric_final_Richard_and_Jess.rds`, which is the object built by this document. Two older files are still in `inst/` and neither matches it:
+
+- `inst/params_Richard_and_Jess.rds` has `R_max = Inf` for eight of the nine species, so it is really the stage-6 model, before any density dependence in reproduction.
+- `inst/params_05_Richard_and_Jess.rds` (the suffix records the resource level) does carry finite `R_max`, but its reproduction levels are from a different pass of the stage-8 sweep than the ones recorded in @sec-repro: Herring 0.202 against 0.379, Hake 0.257 against 0.142, Blue whiting 0.010 against 0.079, and smaller differences for Haddock and Plaice. Since @sec-repro notes that the two sweeps did not agree, this is most likely the first sweep rather than the second.
+
+The document nevertheless reconstructs the model from `psr` and the recorded reproduction levels rather than loading any file, so that what is shown below is always what the code above produces.
+
+Note also that the `.rds` files are *not* excluded by `.gitignore` — the repository has no `*.rds` pattern — so these objects are committed and are available to anyone cloning it. That is convenient but it means a 290 kB binary is versioned every time a model is re-saved.
 
 **The old interaction matrix was not used.** An alternative to deriving interactions from the diet matrix would be to reuse the interaction matrix from the earlier Celtic Sea model:
 
