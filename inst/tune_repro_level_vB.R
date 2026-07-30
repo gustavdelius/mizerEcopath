@@ -48,6 +48,26 @@ set_rl <- function(params, s, rl) {
     setBevertonHolt(params, reproduction_level = setNames(rl, s))
 }
 
+# The largest reproduction level worth bracketing at. Above some level the
+# reproductive efficiency `erepro` that mizer needs in order to sustain the
+# calibrated recruitment exceeds 1, i.e. the model is being asked for more larval
+# biomass than the spawning stock can physically produce, and a peak located
+# there is meaningless. The crossing point is species-specific (0.96 for Herring,
+# 0.99 for Megrim, up to 0.99997 for Cod) and always below the nominal upper
+# bracket of 0.9995, so without this cap a species reported "at upper bound"
+# would be returning a reproduction level from an incoherent region. No
+# projection is involved, so this is cheap.
+cap_rl <- function(params, s, rl_hi, rl_lo) {
+    er <- function(rl) {
+        q <- suppressWarnings(set_rl(params, s, rl))
+        species_params(q)$erepro[species_params(q)$species == s]
+    }
+    if (er(rl_hi) <= 1) return(rl_hi)
+    u <- stats::uniroot(function(u) log(er(1 - exp(-u))),
+                        c(-log(1 - rl_lo), -log(1 - rl_hi)))$root
+    1 - exp(-0.95 * u)
+}
+
 # Bisect the reproduction level on log(F_peak / F_target). More density
 # dependence buffers reproduction against fishing and so moves the peak up, so
 # the objective is increasing in the reproduction level. We bisect in
@@ -55,6 +75,7 @@ set_rl <- function(params, s, rl) {
 tune_peak <- function(params, s, F_t, rl_lo = 0.005, rl_hi = 0.9995,
                       steps = 5, tol = 0.10) {
     u2rl <- function(u) 1 - exp(-u)
+    rl_hi <- cap_rl(params, s, rl_hi, rl_lo)
     u_lo <- -log(1 - rl_lo); u_hi <- -log(1 - rl_hi)
     r_lo <- gpeak(set_rl(params, s, rl_lo), s, F_t)
     if (r_lo[["ratio"]] >= 1) {
