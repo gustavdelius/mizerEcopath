@@ -5,7 +5,7 @@ format:
   html:
     toc: true
     toc-depth: 3
-    number-sections: true
+    number-sections: false
     code-fold: true
     code-tools: true
     code-summary: "Show code"
@@ -36,7 +36,7 @@ pkg_file <- function(name) {
 
 ## What this document is
 
-This document builds a nine-species mizer model of the Celtic Sea from data assembled by Richard and Jess, and then shows what the resulting model looks like. It is meant to explain the *method* to collaborators: what each step does, why it is needed, and where the judgement calls are.
+This document builds a nine-species mizer model of the Celtic Sea from data assembled by Richard and Jess, and then shows what the resulting model looks like. It is meant to explain the *method* to Richard and Jess: what each step does, why it is needed, and where the judgement calls are.
 
 The model is built in a sequence of stages. Each stage adds one piece of biological structure, and each stage is arranged so that it does not destroy what the previous stages achieved. That is the central idea, and it is worth stating up front:
 
