@@ -67,8 +67,11 @@ matchConsumption <- function(params, species = NULL) {
         warning("Exponent `p` changed for ",
                 paste(sp$species[wrong_select], collapse = ", "), ".")
     }
-    sp_before <- params@species_params
-    params@species_params$p[sp_select] <- sp$n[sp_select]
+    sp_new <- params@species_params
+    sp_new$p[sp_select] <- sp$n[sp_select]
+    # `recalculate = FALSE` records the change without recalculating the rates,
+    # which this function sets itself below.
+    species_params(params, recalculate = FALSE) <- sp_new
 
     # Calculate R = alpha * Q - P for each selected species
     total_production <- getTotalProduction(params)
@@ -108,10 +111,9 @@ matchConsumption <- function(params, species = NULL) {
     # Update ks in species_params. It has to be recorded as a given species
     # parameter, otherwise the next species parameter change recalculates it
     # from the critical feeding level and undoes the match.
-    params@species_params$ks[sp_select] <- ks
-    params@given_species_params <-
-        record_given_species_params(params@given_species_params,
-                                    params@species_params, sp_before)
+    sp_new <- params@species_params
+    sp_new$ks[sp_select] <- ks
+    species_params(params, recalculate = FALSE) <- sp_new
 
     # Scale metab by ks
     # Multiply each species' w^n vector by its ks

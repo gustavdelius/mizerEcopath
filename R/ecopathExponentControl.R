@@ -28,9 +28,13 @@ ecopathExponentControl <- function(input, output, session, params, params_old,
                 Qn <- getConsumption(p)[sp]
                 ext_encounter(p)[sp, ] <- ext_encounter(p)[sp, ] * (Q / Qn)
 
-                # change species parameters
-                p@species_params[[sp, "n"]] <- input$n
-                p@species_params[[sp, "q"]] <- p@species_params[[sp, "q"]] + delta_n
+                # change species parameters. `recalculate = FALSE` records the
+                # new values, so that a later recalculation does not undo them,
+                # without recalculating the rates set explicitly above.
+                sp_new <- p@species_params
+                sp_new[[sp, "n"]] <- input$n
+                sp_new[[sp, "q"]] <- sp_new[[sp, "q"]] + delta_n
+                species_params(p, recalculate = FALSE) <- sp_new
 
                 updateSliderInput(session, "n",
                                   min = signif(input$n - 0.02, 3),
@@ -45,8 +49,11 @@ ecopathExponentControl <- function(input, output, session, params, params_old,
                 Rn <- getRespiration(p)[sp]
                 metab(p)[sp, ] <- metab(p)[sp, ] * (R / Rn)
 
-                # change species parameters
-                p@species_params[[sp, "p"]] <- input$p
+                # change species parameters. `recalculate = FALSE` records the
+                # new value without recalculating the metabolic rate set above.
+                sp_new <- p@species_params
+                sp_new[[sp, "p"]] <- input$p
+                species_params(p, recalculate = FALSE) <- sp_new
 
                 updateSliderInput(session, "p",
                                   min = signif(input$p - 0.02, 3),
@@ -61,8 +68,12 @@ ecopathExponentControl <- function(input, output, session, params, params_old,
                 Mn <- getM0B(p)[sp]
                 ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (M / Mn)
 
-                # change species parameters
-                p@species_params[[sp, "d"]] <- input$d
+                # change species parameters. `recalculate = FALSE` records the
+                # new value without recalculating the external mortality rate
+                # set above.
+                sp_new <- p@species_params
+                sp_new[[sp, "d"]] <- input$d
+                species_params(p, recalculate = FALSE) <- sp_new
 
                 updateSliderInput(session, "d",
                                   min = signif(input$d - 0.02, 3),

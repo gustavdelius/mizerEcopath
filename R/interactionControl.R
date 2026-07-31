@@ -24,8 +24,12 @@ interactionControl <- function(input, output, session, params,
             flags$sp_old_inter <- sp
             return()
         }
-        p@species_params[sp, "interaction_resource"] <-
-            input$interaction_resource
+        # `recalculate = FALSE` records the new value, so that a later
+        # recalculation does not reset it to its default, without recalculating
+        # any rates.
+        sp_new <- p@species_params
+        sp_new[sp, "interaction_resource"] <- input$interaction_resource
+        species_params(p, recalculate = FALSE) <- sp_new
         updateSliderInput(session, "interaction_resource",
                           max = 2 * (input$interaction_resource + 0.5))
         

@@ -161,19 +161,14 @@ setFeedingLevels <- function(params, f, f_c) {
     sp$ks <- E_r_0 * f_c / (f - f_c)
     sp$h <- E_r_0 / (alpha * (f - f_c))
 
-    # Update the params object
-    sp_before <- params@species_params
-    params@species_params <- sp
-
-    # Record the new `h` and `ks` among the given species parameters as well.
-    # Without this they live only in `params@species_params` while the given
-    # values still hold the `h = Inf`, `ks = 0` of the allometric model this
-    # function was called on. Any later change to a species parameter
-    # recalculates `species_params` from `given_species_params` and would
-    # silently undo this function.
-    params@given_species_params <-
-        record_given_species_params(params@given_species_params,
-                                    params@species_params, sp_before)
+    # Update the params object. `recalculate = FALSE` records the new `h` and
+    # `ks` among the given species parameters without recalculating any rates.
+    # Without the recording they would live only in `params@species_params`
+    # while the given values still hold the `h = Inf`, `ks = 0` of the
+    # allometric model this function was called on. Any later change to a
+    # species parameter recalculates `species_params` from
+    # `given_species_params` and would silently undo this function.
+    species_params(params, recalculate = FALSE) <- sp
 
     # Comment out so that internal calculations will be triggered in the next step
     comment(params@intake_max) <- NULL

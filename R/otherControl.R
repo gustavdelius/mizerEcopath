@@ -43,9 +43,15 @@ otherControl <- function(input, output, session, params, params_old,
             ext_mort(p)[sp, ] <- ext_mort(p)[sp, ] * (input$z_ext / z_ext)
         }
 
-        p@species_params[sp, "alpha"] <- input$alpha
-        p@species_params[sp, "ks"]    <- input$ks
-        p@species_params[sp, "k"]     <- input$k
+        # `recalculate = FALSE` records the new values, so that a later
+        # recalculation does not undo them, without recalculating the rates,
+        # which `setMetabolicRate()` takes care of below.
+        sp_new <- p@species_params
+        sp_new[sp, "alpha"] <- input$alpha
+        sp_new[sp, "ks"]    <- input$ks
+        sp_new[sp, "k"]     <- input$k
+        species_params(p, recalculate = FALSE) <- sp_new
+
         p <- setMetabolicRate(p)
         tuneParams_update_species(sp, p, params, params_old)
     })
@@ -57,10 +63,12 @@ otherControl <- function(input, output, session, params, params_old,
             sp <- input$sp
 
             # change ks so that metabolic rate at maturity stays the same
-            p@species_params[[sp, "ks"]] <- p@species_params[[sp, "ks"]] *
-                p@species_params[[sp, "w_mat"]] ^
-                (p@species_params[[sp, "p"]] - input$p)
-            p@species_params[[sp, "p"]] <- input$p
+            sp_new <- p@species_params
+            sp_new[[sp, "ks"]] <- sp_new[[sp, "ks"]] *
+                sp_new[[sp, "w_mat"]] ^
+                (sp_new[[sp, "p"]] - input$p)
+            sp_new[[sp, "p"]] <- input$p
+            species_params(p, recalculate = FALSE) <- sp_new
             ks <- p@species_params[[sp, "ks"]]
             updateSliderInput(session, "ks",
                               value = ks, # this will trigger the other observer

@@ -34,10 +34,18 @@ ecopathReproductionControl <- function(input, output, session, params, params_ol
             w_mat_25 <- sps$a * (l_mat_25 ^ sps$b)
             w_mat <- sps$a * (input$l_mat ^ sps$b)
             w_repro_max <- sps$a * (input$l_repro_max ^ sps$b)
-            p@species_params[sp, "w_mat25"]   <- w_mat_25
-            p@species_params[sp, "w_mat"]   <- w_mat
-            p@species_params[sp, "w_repro_max"] <- w_repro_max
-            p@species_params[sp, "m"]     <- input$m
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating the
+            # rates, which `setReproduction()` takes care of below.
+            sp_new <- p@species_params
+            sp_new[sp, "w_mat25"]     <- w_mat_25
+            sp_new[sp, "w_mat"]       <- w_mat
+            sp_new[sp, "w_repro_max"] <- w_repro_max
+            sp_new[sp, "m"]           <- input$m
+            # The sliders are lengths, which are converted to weights here.
+            # Mizer brings the model's own length columns, if it has any, into
+            # line with the new weights itself.
+            species_params(p, recalculate = FALSE) <- sp_new
 
             p <- setReproduction(p)
             tuneParams_update_species(sp, p, params, params_old)

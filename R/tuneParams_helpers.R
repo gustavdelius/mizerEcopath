@@ -381,3 +381,4 @@ control_title_tag <- function(control) {
     }
     title
 }
+

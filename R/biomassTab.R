@@ -66,10 +66,12 @@ biomassTab <- function(input, output, session,
         p <- isolate(params())
         biomass_observed <- req(input$biomass_observed)
         if (biomass_observed == 0) biomass_observed <- NA
-        p@species_params[isolate(input$sp), "biomass_observed"] <-
-            biomass_observed
-        p@species_params[isolate(input$sp), "biomass_cutoff"] <-
-            req(input$biomass_cutoff)
+        # `recalculate = FALSE` records the observations, so that a later
+        # recalculation does not undo them, without recalculating any rates.
+        sp_new <- p@species_params
+        sp_new[isolate(input$sp), "biomass_observed"] <- biomass_observed
+        sp_new[isolate(input$sp), "biomass_cutoff"] <- req(input$biomass_cutoff)
+        species_params(p, recalculate = FALSE) <- sp_new
         tuneParams_update_params(p, params)
     })
 

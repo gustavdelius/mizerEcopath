@@ -41,6 +41,16 @@ test_that("setResourceInteraction works", {
 
     # Test external encounter rate decreased
     expect_true(all(params_new@ext_encounter <= initial_ext_encounter))
+
+    # The new interaction_resource must be recorded among the given species
+    # parameters, otherwise the next species parameter change would recalculate
+    # it back to its default and silently undo this function.
+    new_interaction <- params_new@species_params$interaction_resource
+    expect_equal(given_species_params(params_new)$interaction_resource,
+                 new_interaction, ignore_attr = TRUE)
+    species_params(params_new)$w_mat <- species_params(params_new)$w_mat
+    expect_equal(species_params(params_new)$interaction_resource,
+                 new_interaction, ignore_attr = TRUE)
 })
 
 test_that("getResourceEncounterRate calculates encounter rates correctly", {

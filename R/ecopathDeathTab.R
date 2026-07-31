@@ -74,7 +74,11 @@ ecopathDeathTab <- function(input, output, session, params, logs,
         p <- params()
         sp <- req(input$sp)
         if (!sp %in% rownames(p@species_params)) return()
-        p@species_params[sp, "production_observed"] <- input$production_observed
+        # `recalculate = FALSE` records the observation, so that a later
+        # recalculation does not undo it, without recalculating any rates.
+        sp_new <- p@species_params
+        sp_new[sp, "production_observed"] <- input$production_observed
+        species_params(p, recalculate = FALSE) <- sp_new
         tuneParams_update_params(p, params)
     }, ignoreInit = TRUE)
 
@@ -83,10 +87,14 @@ ecopathDeathTab <- function(input, output, session, params, logs,
         p <- params()
         sp <- req(input$sp)
         if (!sp %in% rownames(p@species_params)) return()
-        if (!"production_weight" %in% names(p@species_params)) {
-            p@species_params$production_weight <- 1
+        # `recalculate = FALSE` records the new weight, so that a later
+        # recalculation does not undo it, without recalculating any rates.
+        sp_new <- p@species_params
+        if (!"production_weight" %in% names(sp_new)) {
+            sp_new$production_weight <- 1
         }
-        p@species_params[sp, "production_weight"] <- input$production_weight
+        sp_new[sp, "production_weight"] <- input$production_weight
+        species_params(p, recalculate = FALSE) <- sp_new
         tuneParams_update_params(p, params)
     }, ignoreInit = TRUE)
 

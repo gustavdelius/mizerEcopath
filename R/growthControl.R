@@ -23,11 +23,16 @@ growthControl <- function(input, output, session, params, params_old, flags,
         updateSliderInput(session, "gamma",
                           min = signif(input$gamma / 2, 3),
                           max = signif(input$gamma * 1.5, 3))
-        p@species_params[sp, "gamma"] <- input$gamma
-        p <- setSearchVolume(p)
-
+        # `recalculate = FALSE` records the new values, so that a later
+        # recalculation does not undo them, without recalculating the rates,
+        # which are set explicitly below.
+        sp_new <- p@species_params
+        sp_new[sp, "gamma"] <- input$gamma
         # adjust h
-        p@species_params[sp, "h"] <- p@species_params[sp, "h"] * factor
+        sp_new[sp, "h"] <- sp_new[sp, "h"] * factor
+        species_params(p, recalculate = FALSE) <- sp_new
+
+        p <- setSearchVolume(p)
         p <- setMaxIntakeRate(p)
 
         tuneParams_update_species(sp, p, params, params_old)

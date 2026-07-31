@@ -63,10 +63,12 @@ numberTab <- function(input, output, session,
         p <- isolate(params())
         number_observed <- req(input$number_observed)
         if (number_observed == 0) number_observed <- NA
-        p@species_params[isolate(input$sp), "number_observed"] <-
-            number_observed
-        p@species_params[isolate(input$sp), "number_cutoff"] <-
-            req(input$number_cutoff)
+        # `recalculate = FALSE` records the observations, so that a later
+        # recalculation does not undo them, without recalculating any rates.
+        sp_new <- p@species_params
+        sp_new[isolate(input$sp), "number_observed"] <- number_observed
+        sp_new[isolate(input$sp), "number_cutoff"] <- req(input$number_cutoff)
+        species_params(p, recalculate = FALSE) <- sp_new
         tuneParams_update_params(p, params)
     })
 

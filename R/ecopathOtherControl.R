@@ -37,7 +37,13 @@ ecopathOtherControl <- function(input, output, session, params, params_old,
             }
         }
 
-        p@species_params[sp, "z_ext"] <- input$z_ext
+        # `recalculate = FALSE` records the new value, so that a later
+        # recalculation does not undo it, without recalculating the external
+        # mortality rate, which is set explicitly above.
+        sp_new <- p@species_params
+        sp_new[sp, "z_ext"] <- input$z_ext
+        species_params(p, recalculate = FALSE) <- sp_new
+
         p <- setMetabolicRate(p, reset = TRUE)
         tuneParams_update_species(sp, p, params, params_old)
     })

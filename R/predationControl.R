@@ -36,8 +36,14 @@ predationControl <- function(input, output, session, params, params_old,
                               max = signif(input$sigma * 1.5, 2))
 
             e_old <- getEncounter(p)[sp, p@w_min_idx[[sp]]]
-            p@species_params[sp, "beta"]  <- input$beta
-            p@species_params[sp, "sigma"] <- input$sigma
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating the
+            # rates, which `setPredKernel()` takes care of below.
+            sp_new <- p@species_params
+            sp_new[sp, "beta"]  <- input$beta
+            sp_new[sp, "sigma"] <- input$sigma
+            species_params(p, recalculate = FALSE) <- sp_new
+
             p <- setPredKernel(p)
             tuneParams_update_params(p, params)
 
@@ -71,9 +77,15 @@ predationControl <- function(input, output, session, params, params_old,
             updateSliderInput(session, "q",
                               min = signif(input$q - 0.1, 2),
                               max = signif(input$q + 0.1, 2))
-            p@species_params[sp, "gamma"] <- input$gamma
-            p@species_params[sp, "h"]     <- input$h
-            p@species_params[sp, "q"]     <- input$q
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating the
+            # rates, which the two setters below take care of.
+            sp_new <- p@species_params
+            sp_new[sp, "gamma"] <- input$gamma
+            sp_new[sp, "h"]     <- input$h
+            sp_new[sp, "q"]     <- input$q
+            species_params(p, recalculate = FALSE) <- sp_new
+
             p <- setSearchVolume(p)
             p <- setMaxIntakeRate(p)
             tuneParams_update_species(sp, p, params, params_old)
@@ -90,11 +102,16 @@ predationControl <- function(input, output, session, params, params_old,
                 flags$sp_old_n <- sp
                 return()
             }
-            # change h so that max intake rate at maturity stays the same
-            p@species_params[[sp, "h"]] <- p@species_params[[sp, "h"]] *
-                p@species_params[[sp, "w_mat"]] ^
-                (p@species_params[[sp, "n"]] - input$n)
-            p@species_params[[sp, "n"]] <- input$n
+            # change h so that max intake rate at maturity stays the same.
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating the
+            # rates, which `setMaxIntakeRate()` takes care of below.
+            sp_new <- p@species_params
+            sp_new[[sp, "h"]] <- sp_new[[sp, "h"]] *
+                sp_new[[sp, "w_mat"]] ^
+                (sp_new[[sp, "n"]] - input$n)
+            sp_new[[sp, "n"]] <- input$n
+            species_params(p, recalculate = FALSE) <- sp_new
             h <- p@species_params[[sp, "h"]]
             updateSliderInput(session, "h",
                               value = h,

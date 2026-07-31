@@ -75,10 +75,15 @@ growthTab <- function(input, output, session, params, logs,
         list(input$k_vb, input$t0, input$a, input$b),
         {
             p <- isolate(params())
-            p@species_params[isolate(input$sp), "k_vb"] <- input$k_vb
-            p@species_params[isolate(input$sp), "t0"] <- input$t0
-            p@species_params[isolate(input$sp), "a"] <- input$a
-            p@species_params[isolate(input$sp), "b"] <- input$b
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating any
+            # rates.
+            sp_new <- p@species_params
+            sp_new[isolate(input$sp), "k_vb"] <- input$k_vb
+            sp_new[isolate(input$sp), "t0"] <- input$t0
+            sp_new[isolate(input$sp), "a"] <- input$a
+            sp_new[isolate(input$sp), "b"] <- input$b
+            species_params(p, recalculate = FALSE) <- sp_new
             tuneParams_update_params(p, params)
         },
         ignoreInit = TRUE)

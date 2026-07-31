@@ -31,10 +31,17 @@ reproductionControl <- function(input, output, session, params, params_old,
                               min = signif(input$w_max / 2, 2),
                               max = signif(input$w_max * 1.5, 2))
 
-            p@species_params[sp, "w_mat25"]   <- input$w_mat * input$wfrac
-            p@species_params[sp, "w_mat"]   <- input$w_mat
-            p@species_params[sp, "w_max"]   <- input$w_max
-            p@species_params[sp, "m"]     <- input$m
+            # `recalculate = FALSE` records the new values, so that a later
+            # recalculation does not undo them, without recalculating the
+            # rates, which `setReproduction()` takes care of below.
+            sp_new <- p@species_params
+            sp_new[sp, "w_mat25"] <- input$w_mat * input$wfrac
+            sp_new[sp, "w_mat"]   <- input$w_mat
+            sp_new[sp, "w_max"]   <- input$w_max
+            sp_new[sp, "m"]       <- input$m
+            # On a model that specifies these sizes by length, mizer brings the
+            # lengths into line with the new weights itself.
+            species_params(p, recalculate = FALSE) <- sp_new
 
             p <- setReproduction(p)
             tuneParams_update_species(sp, p, params, params_old)

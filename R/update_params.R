@@ -106,15 +106,14 @@ update_params <- function(params, species = 1, pars, data) {
         params@ext_diffusion[sp_select, ] <- sps$D_ext * params@w^(sps$n + 1)
     }
 
-    sp_before <- params@species_params
-    params@species_params[sp_select, ] <- sps
-    # Protect the parameters we have just optimised against being recalculated
-    # away the next time a species parameter is changed. The rate arrays they
-    # determine have already been updated above. Parameters that the optimiser
-    # held fixed (via `map`) are unchanged and so are left calculated.
-    params@given_species_params <-
-        record_given_species_params(params@given_species_params,
-                                    params@species_params, sp_before)
+    # `recalculate = FALSE` protects the parameters we have just optimised
+    # against being recalculated away the next time a species parameter is
+    # changed, while leaving the rate arrays alone: they have already been
+    # updated above. Parameters that the optimiser held fixed (via `map`) are
+    # unchanged and so are left calculated.
+    sp_new <- params@species_params
+    sp_new[sp_select, ] <- sps
+    species_params(params, recalculate = FALSE) <- sp_new
     params <- setReproduction(params)
 
     # Calculate the new steady state

@@ -40,11 +40,16 @@ ecopathDiffusionControl <- function(input, output, session, params, params_old,
                           min = signif(input$D_ext / 2, 2),
                           max = signif((input$D_ext + 0.1) * 1.5, 2))
 
-        p@species_params[[sp, "spawning_mu"]] <- input$spawning_mu
-        p@species_params[[sp, "spawning_kappa"]] <- input$spawning_kappa
-        p@species_params[[sp, "annuli_min_age"]] <- input$annuli_min_age
-        p@species_params[[sp, "annuli_date"]] <- input$annuli_date
-        p@species_params[[sp, "D_ext"]] <- input$D_ext
+        # `recalculate = FALSE` records the new values, so that a later
+        # recalculation does not undo them, without recalculating the external
+        # diffusion rate, which is set explicitly below.
+        sp_new <- p@species_params
+        sp_new[[sp, "spawning_mu"]] <- input$spawning_mu
+        sp_new[[sp, "spawning_kappa"]] <- input$spawning_kappa
+        sp_new[[sp, "annuli_min_age"]] <- input$annuli_min_age
+        sp_new[[sp, "annuli_date"]] <- input$annuli_date
+        sp_new[[sp, "D_ext"]] <- input$D_ext
+        species_params(p, recalculate = FALSE) <- sp_new
         # Update the external-diffusion power law d(w) = D_ext * w^(n+1).
         n <- p@species_params[[sp, "n"]]
         p@ext_diffusion[sp, ] <- input$D_ext * p@w^(n + 1)
