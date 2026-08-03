@@ -1,3 +1,32 @@
+#' Biomass on the restricted grid used by the TMB objective function
+#'
+#' Evaluates \eqn{\int N(w) w\,dw} above the biomass cutoff with exactly the
+#' quadrature that `objective_function.cpp` uses, so that the biomass the C++
+#' code scales the spectrum to is the biomass the R code measured. The size
+#' window given by the cutoff is part of the weight, so that when bin averaging
+#' is in use the bin straddling the cutoff contributes only partially, as in
+#' [mizer::getBiomass()].
+#'
+#' @param N Number density on the restricted grid.
+#' @param w Weights of the restricted grid.
+#' @param dw Bin widths of the restricted grid.
+#' @param biomass_cutoff_idx The C++ index of the first bin to include, i.e. the
+#'   number of bins below the cutoff.
+#' @param bin_average Whether to trapezoidally bin-average the weight.
+#' @return The biomass as a single number.
+#' @keywords internal
+#' @concept helper
+tmb_biomass <- function(N, w, dw, biomass_cutoff_idx, bin_average) {
+    K <- w
+    if (biomass_cutoff_idx > 0) {
+        K[seq_len(biomass_cutoff_idx)] <- 0
+    }
+    if (isTRUE(bin_average)) {
+        K <- mizer:::bin_average_weight(K)
+    }
+    sum(N * K * dw)
+}
+
 #' Prepare a TMB Objective Function for Optimising Model Parameters
 #'
 #' This function returns a list with the data to be passed to the TMB objective
@@ -37,6 +66,7 @@ prepare_data <- function(params, species = 1, catch) {
     gp_select <- gp$species == species
     gps <- gp[gp_select, ]
     second_order <- params@second_order_w[["flux"]] != "upwind"
+    bin_average <- isTRUE(params@second_order_w[["bin_average"]])
 
     # Validate catch data frame and extract data for the selected species
     if (nrow(catch) == 0) {
@@ -196,7 +226,7 @@ prepare_data <- function(params, species = 1, catch) {
         sps$biomass_observed > 0) {
         biomass <- sps$biomass_observed
     } else {
-        biomass <- sum((N * w * dw)[(biomass_cutoff_idx + 1):length(w)])
+        biomass <- tmb_biomass(N, w, dw, biomass_cutoff_idx, bin_average)
     }
     growth <- getEGrowth(params)[sp_select, w_select]
     if (use_counts) {
@@ -320,6 +350,7 @@ prepare_data <- function(params, species = 1, catch) {
         n = n,
         w_repro_max = w_repro_max,
         second_order = as.integer(second_order),
+        bin_average = as.integer(bin_average),
         chi = chi,
         defaults_edition = mizer::defaults_edition(),
         b_lw = sps$b

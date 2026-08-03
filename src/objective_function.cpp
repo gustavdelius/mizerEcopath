@@ -1,5 +1,24 @@
 #include <TMB.hpp>
 
+// Trapezoidal bin-average of the weight K of a summary integral
+// \int N(w) K(w) dw, discretised as \sum_j N_j Kbar_j dw_j. This is the C++
+// counterpart of mizer's internal `bin_average_weight()`, which the package's
+// `get...()` functions use, so that the quantities the objective function
+// penalises are the ones those functions report. The top bin has no right-hand
+// neighbour and is left unaveraged, as in mizer.
+template<class Type>
+vector<Type> bin_average_weight(vector<Type> K)
+{
+    int n = K.size();
+    if (n < 2) return K;
+    vector<Type> Kbar(n);
+    for (int i = 0; i < n - 1; ++i) {
+        Kbar(i) = Type(0.5) * (K(i) + K(i + 1));
+    }
+    Kbar(n - 1) = K(n - 1);
+    return Kbar;
+}
+
 template<class Type>
 vector<Type> calculate_F_mort(Type sel_func, Type logit_l50, Type log_ratio_left, Type log_l50_right_offset, Type log_ratio_right,
                               Type log_catchability, vector<Type> L, Type min_len, Type max_len,
@@ -256,6 +275,13 @@ Type objective_function<Type>::operator() ()
     DATA_SCALAR(n);
     DATA_SCALAR(w_repro_max);
     DATA_INTEGER(second_order);
+    // Whether the summary integrals (biomass, yield, production) trapezoidally
+    // bin-average their weight, as mizer's own summary functions and the
+    // package's `get...()` functions do when
+    // `second_order_w(params)[["bin_average"]]` is TRUE. This is a separate
+    // switch from `second_order`, which selects the flux scheme of the steady
+    // state solver.
+    DATA_INTEGER(bin_average);
     DATA_VECTOR(chi);
     DATA_INTEGER(defaults_edition);
     DATA_SCALAR(b_lw);
@@ -320,9 +346,21 @@ Type objective_function<Type>::operator() ()
         N = calculate_N(mort, growth, dw, d_diff);
     }
 
+    // Composite weight of the biomass integral: the size window given by
+    // `biomass_cutoff_idx` times w. The window is part of the weight so that,
+    // when bin-averaging, the bin straddling the cutoff contributes only
+    // partially, which is what mizer::getBiomass() does.
+    vector<Type> w_biomass(n_bins);
+    for (int i = 0; i < n_bins; ++i) {
+        w_biomass(i) = (i >= biomass_cutoff_idx) ? w(i) : Type(0.0);
+    }
+    if (bin_average == 1) {
+        w_biomass = bin_average_weight(w_biomass);
+    }
+
     Type unscaled_biomass = 0;
-    for (int i = biomass_cutoff_idx; i < n_bins; ++i) {
-        unscaled_biomass += N(i) * w(i) * dw(i);
+    for (int i = 0; i < n_bins; ++i) {
+        unscaled_biomass += N(i) * w_biomass(i) * dw(i);
     }
 
     N *= (biomass / unscaled_biomass);
@@ -359,17 +397,15 @@ Type objective_function<Type>::operator() ()
             catch_per_bin_mat.col(g) = catch_per_bin_g;
             dens_per_bin_mat.col(g) = dens_per_bin_g;
             
+            // Composite weight of the yield integral: F_mort_g * w, as in
+            // mizer::getYield().
+            vector<Type> w_yield = F_mort_g * w;
+            if (bin_average == 1) {
+                w_yield = bin_average_weight(w_yield);
+            }
             Type model_yield_val = Type(0.0);
-            if (second_order == 1) {
-                for (int i = 0; i < n_bins - 1; ++i) {
-                    Type w_eff = Type(0.5) * (F_mort_g(i) * w(i) + F_mort_g(i+1) * w(i+1));
-                    model_yield_val += N(i) * w_eff * dw(i);
-                }
-                model_yield_val += N(n_bins - 1) * F_mort_g(n_bins - 1) * w(n_bins - 1) * dw(n_bins - 1);
-            } else {
-                for (int i = 0; i < n_bins; ++i) {
-                    model_yield_val += N(i) * F_mort_g(i) * w(i) * dw(i);
-                }
+            for (int i = 0; i < n_bins; ++i) {
+                model_yield_val += N(i) * w_yield(i) * dw(i);
             }
             model_yield(g) = model_yield_val;
 
@@ -435,7 +471,13 @@ Type objective_function<Type>::operator() ()
     Type production_nll = Type(0.0);
     if (production_weight > 0) {
         // **Calculate production**
-        vector<Type> production_per_bin = N * growth * dw;
+        // The weight of the integral is the growth rate, as in
+        // getSomaticProduction().
+        vector<Type> w_production = growth;
+        if (bin_average == 1) {
+            w_production = bin_average_weight(w_production);
+        }
+        vector<Type> production_per_bin = N * w_production * dw;
         Type model_production = production_per_bin.sum();
         REPORT(model_production);
         // The species-specific `production_weight` weights this penalty for
@@ -465,8 +507,8 @@ Type objective_function<Type>::operator() ()
 
     // Check final biomass again
     Type total_biomass = 0;
-    for (int i = biomass_cutoff_idx; i < N.size(); ++i) {
-        total_biomass += N(i) * w(i) * dw(i);
+    for (int i = 0; i < n_bins; ++i) {
+        total_biomass += N(i) * w_biomass(i) * dw(i);
     }
     REPORT(total_biomass);
 

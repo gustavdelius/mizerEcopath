@@ -40,10 +40,9 @@ of eggs that survives density dependence and equals
 
 The function evaluates the right-hand side of the above equation, because
 that is the form mizer itself uses when it projects reproduction. The two
-sides agree exactly only while \code{second_order_w[["bin_average"]]} is
-\code{FALSE}; when bin averaging is switched on, \code{\link[mizer:getRDI]{mizer::getRDI()}} bin-averages
-the reproduction integral while \code{\link[=getGonadicProduction]{getGonadicProduction()}} does not, so the
-two can differ by a few percent.
+sides agree exactly, whatever \code{\link[mizer:second_order_w]{mizer::second_order_w()}} is set to, because
+\code{\link[=getGonadicProduction]{getGonadicProduction()}} discretises the reproduction integral with the same
+quadrature that \code{\link[mizer:getRDI]{mizer::getRDI()}} uses.
 
 A value above 1 is energetically impossible: the model would be producing
 more offspring biomass than the adults invested. Use

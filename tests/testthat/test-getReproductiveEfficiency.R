@@ -14,12 +14,19 @@ test_that("getReproductiveEfficiency works for MizerParams", {
 
 test_that("getReproductiveEfficiency is the offspring biomass per investment", {
     # The efficiency is the offspring biomass production expressed as a
-    # fraction of the energy the females invest into reproduction. This
-    # identity only holds exactly without bin averaging.
+    # fraction of the energy the females invest into reproduction. The identity
+    # holds whichever quadrature the model uses, because getGonadicProduction()
+    # discretises the reproduction integral the same way getRDI() does.
     expect_false(isTRUE(params@second_order_w[["bin_average"]]))
     expect_equal(unname(getReproductiveEfficiency(params)),
                  unname(getOffspringProduction(params) /
                             (getGonadicProduction(params) / 2)))
+
+    p <- params
+    second_order_w(p) <- TRUE
+    expect_equal(unname(getReproductiveEfficiency(p)),
+                 unname(getOffspringProduction(p) /
+                            (getGonadicProduction(p) / 2)))
 })
 
 test_that("getReproductiveEfficiency returns NA for species not reproducing", {

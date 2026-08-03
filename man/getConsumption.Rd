@@ -33,6 +33,20 @@ is the feeding level of an individual of species \eqn{i} and weight \eqn{w}
 (calculated with \code{\link{getFeedingLevel}}) and \eqn{N_i(w)} is the
 number density of species \eqn{i} at weight \eqn{w}.
 }
+\section{Discretisation}{
+
+The integral is evaluated on mizer's finite-volume size grid as
+\eqn{\sum_j N_{ij}\bar K_{ij}\Delta w_j}, where \eqn{K_i(w)} is everything in
+the integrand except the number density \eqn{N_i(w)}, including any
+size-window mask coming from the \code{min_w}/\code{max_w} arguments. By default
+\eqn{\bar K_{ij}} is the value of \eqn{K_i} at the left edge of the bin,
+which is what mizer's own summary functions use. If the model has bin
+averaging switched on with \code{\link[mizer:second_order_w]{mizer::second_order_w()}}, then \eqn{\bar K_{ij}}
+is instead the trapezoidal average of \eqn{K_i} over the bin, making the
+result second order in the bin width and consistent with the quadratures
+mizer uses in that case.
+}
+
 \examples{
 getConsumption(NS_params)
 }

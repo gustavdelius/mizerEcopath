@@ -1,3 +1,38 @@
+#' Bin-average a summary-integral weight
+#'
+#' The Ecopath quantities are all integrals of the form
+#' \eqn{\int N_i(w) K_i(w)\,dw}, which are discretised on mizer's finite-volume
+#' size grid as \eqn{\sum_j N_{ij}\bar K_{ij}\Delta w_j}. To be second order in
+#' the bin width, the left-edge point value \eqn{K_i(w_j)} has to be replaced by
+#' the trapezoidal bin average \eqn{(K_i(w_j) + K_i(w_{j+1}))/2}. This helper
+#' does that when the model has bin averaging switched on with
+#' [mizer::second_order_w()] and returns the weight unchanged otherwise, so that
+#' models on mizer's default first-order path keep their previous left-edge
+#' Riemann sums unchanged.
+#'
+#' Any size-window mask should be multiplied into `K` before calling this, so
+#' that it is bin-averaged together with the rest of the weight and the bin that
+#' straddles the edge of the window contributes only partially. That is what
+#' [mizer::getBiomass()] does.
+#'
+#' This is a thin wrapper around mizer's own internal helper, so that the
+#' quadrature used here is by construction the one mizer uses for its own
+#' summary integrals.
+#'
+#' @param K A numeric vector of weights indexed over the size grid, or a numeric
+#'   array whose last dimension runs over the size grid.
+#' @param params A MizerParams object.
+#' @return `K`, trapezoidally bin-averaged along the size dimension if the model
+#'   has bin averaging switched on, otherwise unchanged.
+#' @keywords internal
+#' @concept helper
+binAverageWeight <- function(K, params) {
+    if (isTRUE(params@second_order_w[["bin_average"]])) {
+        return(mizer:::bin_average_weight(K))
+    }
+    K
+}
+
 #' Get somatic production for each species
 #'
 #' For each species, returns the rate at which somatic biomass is produced by all
@@ -9,6 +44,18 @@
 #' and weight \eqn{w} (calculated with \code{\link{getEGrowth}})
 #' and \eqn{N_i(w)} is the number density of species \eqn{i} at weight \eqn{w}.
 #'
+#' @section Discretisation:
+#' The integral is evaluated on mizer's finite-volume size grid as
+#' \eqn{\sum_j N_{ij}\bar K_{ij}\Delta w_j}, where \eqn{K_i(w)} is everything in
+#' the integrand except the number density \eqn{N_i(w)}, including any
+#' size-window mask coming from the `min_w`/`max_w` arguments. By default
+#' \eqn{\bar K_{ij}} is the value of \eqn{K_i} at the left edge of the bin,
+#' which is what mizer's own summary functions use. If the model has bin
+#' averaging switched on with [mizer::second_order_w()], then \eqn{\bar K_{ij}}
+#' is instead the trapezoidal average of \eqn{K_i} over the bin, making the
+#' result second order in the bin width and consistent with the quadratures
+#' mizer uses in that case.
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of somatic production for each species
@@ -18,9 +65,9 @@
 #' getSomaticProduction(NS_params)
 getSomaticProduction <- function(params, ...) {
     N <- initialN(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    Ps <- as.vector(((getEGrowth(params) * N) * sel) %*% dw)
+    K <- binAverageWeight(getEGrowth(params) * sel, params)
+    Ps <- as.vector((N * K) %*% dw(params))
     names(Ps) <- params@species_params$species
     return(Ps)
 }
@@ -29,6 +76,8 @@ getSomaticProduction <- function(params, ...) {
 #'
 #' For each species, returns the rate at which gonad biomass is produced by all
 #' individuals of that species.
+#'
+#' @inheritSection getSomaticProduction Discretisation
 #'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
@@ -39,9 +88,9 @@ getSomaticProduction <- function(params, ...) {
 #' getGonadicProduction(NS_params)
 getGonadicProduction <- function(params, ...) {
     N <- initialN(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    Pg <- as.vector(((getERepro(params) * N) * sel) %*% dw)
+    K <- binAverageWeight(getERepro(params) * sel, params)
+    Pg <- as.vector((N * K) %*% dw(params))
     names(Pg) <- params@species_params$species
     return(Pg)
 }
@@ -58,6 +107,8 @@ getGonadicProduction <- function(params, ...) {
 #' Used by [matchConsumption()] to calculate how much assimilated energy is left
 #' over after production, in order to estimate the required metabolic loss.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of gonadic production for each species
@@ -67,9 +118,9 @@ getGonadicProduction <- function(params, ...) {
 #' getTotalProduction(NS_params)
 getTotalProduction <- function(params, ...) {
     N <- initialN(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    Pg <- as.vector(((getEReproAndGrowth(params) * N) * sel) %*% dw)
+    K <- binAverageWeight(getEReproAndGrowth(params) * sel, params)
+    Pg <- as.vector((N * K) %*% dw(params))
     names(Pg) <- params@species_params$species
     return(Pg)
 }
@@ -114,6 +165,8 @@ getProduction <- function(params, ...) {
 #' (calculated with \code{\link{getFeedingLevel}}) and \eqn{N_i(w)} is the
 #' number density of species \eqn{i} at weight \eqn{w}.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritParams getDietMatrix
 #' @return A named vector of consumption rate for each species
@@ -123,10 +176,11 @@ getProduction <- function(params, ...) {
 #' getConsumption(NS_params)
 getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
     N <- initialN(params)
-    q <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)) * N,
-               2, dw(params), "*")
     sel <- params@w >= min_w_pred & params@w <= max_w_pred
-    Q <- rowSums(q[, sel, drop = FALSE])
+    K <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)),
+               2, sel, "*")
+    K <- binAverageWeight(K, params)
+    Q <- drop((N * K) %*% dw(params))
     return(Q)
 }
 
@@ -144,6 +198,8 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 #'
 #' Used internally by [matchConsumption()] to help scale metabolic loss to match observed consumption.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of respiration for each species
@@ -153,9 +209,9 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 #' getMetabolicRespiration(NS_params)
 getMetabolicRespiration <- function(params, ...) {
     N <- initialN(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    R <- as.vector(((getMetabolicRate(params) * N) * sel) %*% dw)
+    K <- binAverageWeight(getMetabolicRate(params) * sel, params)
+    R <- as.vector((N * K) %*% dw(params))
     names(R) <- params@species_params$species
     return(R)
 }
@@ -238,6 +294,8 @@ getUnassimilated <- function(params) {
 #' and weight \eqn{w} (calculated with \code{\link{getMort}}) and \eqn{N_i(w)} is the
 #' number density of species \eqn{i} at weight \eqn{w}.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to mortality for each species
@@ -247,10 +305,10 @@ getUnassimilated <- function(params) {
 #' getZB(NS_params)
 getZB <- function(params, ...) {
     N <- initialN(params)
-    w <- w(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    ZB <- as.vector(((getMort(params) * N) * sel) %*% (w * dw))
+    K <- binAverageWeight(sweep(getMort(params) * sel, 2, w(params), "*"),
+                          params)
+    ZB <- as.vector((N * K) %*% dw(params))
     names(ZB) <- params@species_params$species
     return(ZB)
 }
@@ -266,6 +324,8 @@ getZB <- function(params, ...) {
 #' of species \eqn{i} and weight \eqn{w} (obtained with \code{\link{getExtMort}})
 #' and \eqn{N_i(w)} is the number density of species i at weight w.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to external mortality for
@@ -276,10 +336,10 @@ getZB <- function(params, ...) {
 #' getM0B(NS_params)
 getM0B <- function(params, ...) {
     N <- initialN(params)
-    w <- w(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    M0B <- as.vector(((getExtMort(params) * N) * sel) %*% (w * dw))
+    K <- binAverageWeight(sweep(getExtMort(params) * sel, 2, w(params), "*"),
+                          params)
+    M0B <- as.vector((N * K) %*% dw(params))
     names(M0B) <- params@species_params$species
     return(M0B)
 }
@@ -295,6 +355,8 @@ getM0B <- function(params, ...) {
 #' of species \eqn{i} and weight \eqn{w} (obtained with \code{\link{getPredMort}})
 #' and \eqn{N_i(w)} is the number density of species i at weight w.
 #'
+#' @inheritSection getSomaticProduction Discretisation
+#'
 #' @param params A MizerParams object
 #' @inheritDotParams mizer::get_size_range_array -params
 #' @return A named vector of biomass loss rate due to predation mortality for
@@ -305,10 +367,10 @@ getM0B <- function(params, ...) {
 #' getM2B(NS_params)
 getM2B <- function(params, ...) {
     N <- initialN(params)
-    w <- w(params)
-    dw <- dw(params)
     sel <- get_size_range_array(params, ...)
-    M2B <- as.vector(((getPredMort(params) * N) * sel) %*% (w * dw))
+    K <- binAverageWeight(sweep(getPredMort(params) * sel, 2, w(params), "*"),
+                          params)
+    M2B <- as.vector((N * K) %*% dw(params))
     names(M2B) <- params@species_params$species
     return(M2B)
 }
@@ -377,10 +439,9 @@ getOffspringProduction <- function(params) {
 #'
 #' The function evaluates the right-hand side of the above equation, because
 #' that is the form mizer itself uses when it projects reproduction. The two
-#' sides agree exactly only while `second_order_w[["bin_average"]]` is
-#' `FALSE`; when bin averaging is switched on, [mizer::getRDI()] bin-averages
-#' the reproduction integral while [getGonadicProduction()] does not, so the
-#' two can differ by a few percent.
+#' sides agree exactly, whatever [mizer::second_order_w()] is set to, because
+#' [getGonadicProduction()] discretises the reproduction integral with the same
+#' quadrature that [mizer::getRDI()] uses.
 #'
 #' A value above 1 is energetically impossible: the model would be producing
 #' more offspring biomass than the adults invested. Use

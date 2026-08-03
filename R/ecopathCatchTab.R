@@ -133,8 +133,7 @@ ecopathCatchTab <- function(input, output, session, params, logs,
         spgear <- paste(sp, gear, sep = ", ")
         gp <- p@gear_params
         if (!spgear %in% rownames(gp)) return("")
-        model_yield <- sum(p@initial_n[sp, ] * p@w * p@dw *
-                               getFMortGear(p)[gear, sp, ])
+        model_yield <- getYieldGear(p)[gear, sp]
         parts <- paste0("Model yield: ", signif(model_yield, 4), " g/year")
         yield_obs <- if ("yield_observed" %in% names(gp)) {
             gp[spgear, "yield_observed"]

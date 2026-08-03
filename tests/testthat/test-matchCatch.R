@@ -543,6 +543,14 @@ test_that("matchCatch recovers the true parameters when second_order_w is TRUE",
     gp0 <- gear_params(sg); gi0 <- which(gp0$species == species)
     gp0$yield_observed[gi0] <- getYield(sg)[s]
     gear_params(sg) <- gp0
+    # As with the yield, the observed biomass has to be this model's own
+    # biomass, otherwise matchCatch() rescales the spectrum away from the truth
+    # and the catchability has to absorb the difference. Under bin averaging the
+    # biomass of this model is 7% above the celtic value carried over by
+    # make_celtic_single_gear(), which is more than the tolerances below allow.
+    spp0 <- species_params(sg)
+    spp0$biomass_observed[s] <- getBiomass(sg, use_cutoff = TRUE)[s]
+    species_params(sg) <- spp0
     catch <- model_catch_data(sg, species)
 
     gp_true   <- gear_params(sg)[gear_params(sg)$species == species, ]

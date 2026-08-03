@@ -126,7 +126,10 @@ update_params <- function(params, species = 1, pars, data) {
         params <- matchBiomasses(params, species = species)
     } else {
         w_select <- params@w >= data$w[1] & params@w <= data$w[length(data$w)]
-        cur_bm <- sum((params@initial_n[sp_select, w_select] * params@w[w_select] * params@dw[w_select])[(data$biomass_cutoff_idx + 1):length(data$w)])
+        cur_bm <- tmb_biomass(params@initial_n[sp_select, w_select],
+                              params@w[w_select], params@dw[w_select],
+                              data$biomass_cutoff_idx,
+                              isTRUE(params@second_order_w[["bin_average"]]))
         params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * (data$biomass / cur_bm)
     }
 

@@ -42,8 +42,7 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
         gp <- p@gear_params[gp_idx, ]
         if ("yield_observed" %in% names(gp) && !is.na(gp$yield_observed) &&
             gp$yield_observed > 0) {
-            total <- sum(p@initial_n[sp_idx, ] * p@w * p@dw *
-                             getFMortGear(p)[gear, sp, ])
+            total <- getYieldGear(p)[gear, sp]
             catchability <-
                 gp$catchability *
                 p@species_params$yield_observed[sp_idx] / total
@@ -106,8 +105,7 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
         sp <- input$sp
         gear <- input$gear
         spgear <- paste(sp, gear, sep = ", ")
-        total <- sum(p@initial_n[sp, ] * p@w * p@dw *
-                         getFMortGear(p)[gear, sp, ])
+        total <- getYieldGear(p)[gear, sp]
         paste("Model yield for ", spgear, " [g/year]: ", total)
     })
     
