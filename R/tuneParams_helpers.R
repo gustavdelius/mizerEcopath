@@ -119,10 +119,12 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
 #' @param session The Shiny session object
 #' @param input The Shiny input object
 #' @param return_sim Whether to return the simulation object
+#' @param method The numerical method that [mizer::steady()] should pass on to
+#'   [mizer::project()]. See [mizer::project()] for the available methods.
 #' @keywords internal
 #' @export
 tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
-                                  return_sim = FALSE) {
+                                  return_sim = FALSE, method = "euler") {
 
     tryCatch({
         # Create a Progress object
@@ -155,10 +157,10 @@ tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
             # evolution of biomass over time during the run to steady
             # to diagnose eventual problems.
             return(mizer::steady(p, t_max = 100, tol = 1e-2,
-                          return_sim = TRUE,
+                          return_sim = TRUE, method = method,
                           progress_bar = progress))
         }
-        p <- mizer::steady(p, t_max = 100, tol = 1e-2,
+        p <- mizer::steady(p, t_max = 100, tol = 1e-2, method = method,
                            progress_bar = progress)
 
         # Update the reactive params objects

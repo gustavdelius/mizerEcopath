@@ -33,6 +33,10 @@
 #'   matched to observations each time the "steady" button is pressed. Possible
 #'   entries are `"growth"` (using [matchGrowth()]), `"biomass"` (using
 #'   [matchBiomasses()]) and `"yield"` (using [matchYields()]).
+#' @param method The numerical method used whenever the gadget projects the
+#'   model, i.e., when running to steady state after the "steady" button is
+#'   pressed and on the "Sim" tab. It is passed via [mizer::steady()] to
+#'   [mizer::project()]. See [mizer::project()] for the available methods.
 #'
 #' @seealso [tuningGadget()] for the underlying engine and how to add your own
 #'   controls and tabs; the article `vignette("extending_the_tuning_gadget")`.
@@ -57,9 +61,12 @@ tuneParams <- function(params,
                                 "Rates",
                                 "Sim"),
                        match = c("none"),
+                       method = c("euler", "predictor_corrector", "tr_bdf2"),
                        preserve = c("erepro", "reproduction_level", "R_max"),
                        return_app = FALSE,
                        ...) {
+
+    method <- match.arg(method)
 
     tuningGadget(
         params = params,
@@ -70,9 +77,13 @@ tuneParams <- function(params,
         action_label = HTML("<u>s</u>teady"),
         action_tooltip = "Find steady state. Keyboard shortcut: s",
         action_key = 83,
-        action_handler = tuneParams_steady_handler,
+        action_handler = function(...) {
+            tuneParams_steady_handler(..., method = method)
+        },
         prepare_params_hook = tuneParams_prepare_hook,
         finalise_params_hook = tuneParams_finalise_hook,
+        # The Sim tab also projects the model, so it needs the method too
+        tab_extra_args = list(method = method),
         preserve = preserve,
         return_app = return_app,
         ...
@@ -110,10 +121,12 @@ tuneParams_finalise_hook <- function(p) {
 
 #' @noRd
 tuneParams_steady_handler <- function(p, input, session, params, params_old,
-                                      logs, flags, trigger_update, ...) {
+                                      logs, flags, trigger_update,
+                                      method = "euler", ...) {
     tuneParams_run_steady(p, params = params,
                           params_old = params_old,
-                          logs = logs, session = session, input = input)
+                          logs = logs, session = session, input = input,
+                          method = method)
 }
 
 

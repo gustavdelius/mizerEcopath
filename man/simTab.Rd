@@ -7,7 +7,7 @@
 \usage{
 simTabUI(...)
 
-simTab(input, output, session, params, params_old, logs, ...)
+simTab(input, output, session, params, params_old, logs, method = "euler", ...)
 }
 \arguments{
 \item{...}{Unused}
@@ -21,6 +21,9 @@ simTab(input, output, session, params, params_old, logs, ...)
 \item{params}{Reactive value holding updated MizerParams object}
 
 \item{logs}{Environment holding the log of steady states.}
+
+\item{method}{The numerical method used for the projection to steady state,
+passed on to \code{\link[mizer:project]{mizer::project()}}. Supplied by \code{\link[=tuneParams]{tuneParams()}}.}
 }
 \description{
 This tab shows the results of running the model to steady state. It

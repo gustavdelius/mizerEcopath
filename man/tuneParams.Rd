@@ -11,6 +11,7 @@ tuneParams(
   tabs = c("Spectra", "Abundance", "Growth", "Repro", "Catch", "Diet", "Death",
     "Resource", "Rates", "Sim"),
   match = c("none"),
+  method = c("euler", "predictor_corrector", "tr_bdf2"),
   preserve = c("erepro", "reproduction_level", "R_max"),
   return_app = FALSE,
   ...
@@ -30,6 +31,11 @@ in the main section.}
 matched to observations each time the "steady" button is pressed. Possible
 entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{matchGrowth()}}), \code{"biomass"} (using
 \code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using \code{\link[mizer:matchYields]{matchYields()}}).}
+
+\item{method}{The numerical method used whenever the gadget projects the
+model, i.e., when running to steady state after the "steady" button is
+pressed and on the "Sim" tab. It is passed via \code{\link[mizer:steady]{mizer::steady()}} to
+\code{\link[mizer:project]{mizer::project()}}. See \code{\link[mizer:project]{mizer::project()}} for the available methods.}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive

@@ -12,15 +12,18 @@ simTabUI <- function(...) {
 #' identify if the system reaches a stable equilibrium.
 #'
 #' @inheritParams spectraTab
+#' @param method The numerical method used for the projection to steady state,
+#'   passed on to [mizer::project()]. Supplied by [tuneParams()].
 #' @family gadget tabs
 #' @export
-simTab <- function(input, output, session, params, params_old, logs, ...) {
-    
+simTab <- function(input, output, session, params, params_old, logs,
+                   method = "euler", ...) {
+
     ## Plot run to steady ####
     output$plot_sim <- renderPlotly({
         sim <- tuneParams_run_steady(params(), return_sim = TRUE,
                                      params = params, params_old = params_old,
-                                     logs = logs,
+                                     logs = logs, method = method,
                                      session = session, input = input)
         plotlyBiomass(sim)
     })

@@ -11,7 +11,8 @@ tuneParams_run_steady(
   logs,
   session,
   input,
-  return_sim = FALSE
+  return_sim = FALSE,
+  method = "euler"
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ tuneParams_run_steady(
 \item{input}{The Shiny input object}
 
 \item{return_sim}{Whether to return the simulation object}
+
+\item{method}{The numerical method that \code{\link[mizer:steady]{mizer::steady()}} should pass on to
+\code{\link[mizer:project]{mizer::project()}}. See \code{\link[mizer:project]{mizer::project()}} for the available methods.}
 }
 \description{
 This function is called when the user clicks the "Steady" button in
