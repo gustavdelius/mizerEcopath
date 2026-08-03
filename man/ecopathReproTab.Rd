@@ -26,10 +26,11 @@ ecopathReproTabUI(...)
 This tab displays parameters related to species maturity and
 reproductive success. It includes:
 \itemize{
-\item \strong{Reproductive success plot}: Compares the realized recruitment
-(RDD) with the potential recruitment (RDI) for each species.
-A value of 1 (red line) indicates that recruitment is
-primarily density-independent.
+\item \strong{Reproductive efficiency plot}: Shows which fraction of the energy
+that the species invests into reproduction ends up as egg biomass,
+both before and after density dependence. Values above the red line
+at 1 are energetically impossible. See
+\code{\link[=plotReproductiveEfficiency]{plotReproductiveEfficiency()}}.
 \item \strong{Maturity ogive plot}: Shows the proportion of energy allocated
 to reproduction (psi) vs size for the selected species.
 }

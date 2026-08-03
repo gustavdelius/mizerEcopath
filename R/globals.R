@@ -42,7 +42,9 @@ utils::globalVariables(c(
     "bin_start",
     "bin_end",
     "value",
-    "Size"
+    "Size",
+    "erepro",
+    "efficiency"
 ))
 
 

@@ -2,10 +2,11 @@
 #'
 #' This tab displays parameters related to species maturity and
 #' reproductive success. It includes:
-#' *   **Reproductive success plot**: Compares the realized recruitment
-#'     (RDD) with the potential recruitment (RDI) for each species.
-#'     A value of 1 (red line) indicates that recruitment is
-#'     primarily density-independent.
+#' *   **Reproductive efficiency plot**: Shows which fraction of the energy
+#'     that the species invests into reproduction ends up as egg biomass,
+#'     both before and after density dependence. Values above the red line
+#'     at 1 are energetically impossible. See
+#'     [plotReproductiveEfficiency()].
 #' *   **Maturity ogive plot**: Shows the proportion of energy allocated
 #'     to reproduction (psi) vs size for the selected species.
 #'
@@ -15,19 +16,7 @@
 ecopathReproTab <- function(input, output, session, params, logs, ...) {
     # erepro plot ----
     output$plot_erepro <- renderPlotly({
-        p <- params()
-        foreground <- !is.na(p@A)
-        rdi <- getRDI(p)[foreground]
-        rdd <- getRDD(p)[foreground]
-        repro_success <- p@species_params$erepro[foreground] * rdd / rdi
-        df <- data.frame(Species = factor(p@species_params$species[foreground],
-                                          levels = p@species_params$species[foreground]),
-                         value = repro_success)
-        ggplot(df, aes(x = Species, y = value)) +
-            geom_col() + geom_hline(yintercept = 1, color = "red") +
-            scale_y_log10(name = "Reproductive success") +
-            theme(text = element_text(size = 12)) +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+        plotReproductiveEfficiency(params())
     })
 
     # Plot psi ----

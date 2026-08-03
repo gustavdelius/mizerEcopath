@@ -352,3 +352,78 @@ getOffspringProduction <- function(params) {
     offspring_biomass <- getRDD(params) * sp$w_min
     return(offspring_biomass)
 }
+
+#' Get the efficiency of reproduction
+#'
+#' For each species, returns the fraction of the energy invested into
+#' reproduction that arrives in the size spectrum as offspring biomass. For a
+#' `MizerParams` object this is calculated from the initial state, for a
+#' `MizerSim` object it is returned for every saved time.
+#'
+#' Mature individuals invest energy into reproduction at the total rate
+#' \eqn{E_{R.i}} (grams per year), obtained with [getGonadicProduction()].
+#' Mizer assumes that half of that investment is made by females, so
+#' \eqn{E_{R.i} / 2} is what is available for making eggs. Offspring biomass is
+#' produced at the rate \eqn{R_{dd.i} w_{0.i}}, obtained with
+#' [getOffspringProduction()]. The reproductive efficiency is the ratio of the
+#' two:
+#' \deqn{\frac{R_{dd.i}\, w_{0.i}}{E_{R.i} / 2} =
+#'       \epsilon_i \, \frac{R_{dd.i}}{R_{di.i}},}
+#' where \eqn{\epsilon_i} is the `erepro` species parameter and
+#' \eqn{R_{di.i}} is the density-independent rate of egg production, see
+#' [mizer::getRDI()]. The second factor \eqn{R_{dd.i}/R_{di.i}} is the fraction
+#' of eggs that survives density dependence and equals
+#' `1 - reproduction_level`, see [mizer::setBevertonHolt()].
+#'
+#' The function evaluates the right-hand side of the above equation, because
+#' that is the form mizer itself uses when it projects reproduction. The two
+#' sides agree exactly only while `second_order_w[["bin_average"]]` is
+#' `FALSE`; when bin averaging is switched on, [mizer::getRDI()] bin-averages
+#' the reproduction integral while [getGonadicProduction()] does not, so the
+#' two can differ by a few percent.
+#'
+#' A value above 1 is energetically impossible: the model would be producing
+#' more offspring biomass than the adults invested. Use
+#' [plotReproductiveEfficiency()] to see how far each species is from that
+#' limit and how much of the loss is due to density dependence. Species that
+#' do not reproduce at all (\eqn{R_{di.i} = 0}) get `NA`.
+#'
+#' @param object A MizerParams or MizerSim object
+#' @return If called with a MizerParams object, a named vector with the
+#'   reproductive efficiency of each species in the model. If called with a
+#'   MizerSim object, an `ArrayTimeBySpecies` object (time x species) with the
+#'   reproductive efficiency at each saved time. The values are dimensionless
+#'   fractions.
+#' @export
+#' @family rate functions
+#' @seealso [plotReproductiveEfficiency()], [getOffspringProduction()],
+#'   [getGonadicProduction()]
+#' @examples
+#' getReproductiveEfficiency(celtic_params)
+getReproductiveEfficiency <- function(object) {
+    UseMethod("getReproductiveEfficiency")
+}
+
+#' @export
+getReproductiveEfficiency.MizerParams <- function(object) {
+    params <- validParams(object)
+    rdi <- getRDI(params)
+    rdd <- getRDD(params)
+    efficiency <- params@species_params$erepro * ifelse(rdi > 0, rdd / rdi,
+                                                        NA_real_)
+    names(efficiency) <- params@species_params$species
+    efficiency
+}
+
+#' @export
+getReproductiveEfficiency.MizerSim <- function(object) {
+    sim <- object
+    params <- sim@params
+    rdi <- getRDI(sim)
+    rdd <- getRDD(sim)
+    efficiency <- matrix(ifelse(rdi > 0, rdd / rdi, NA_real_),
+                         nrow = nrow(rdi), dimnames = dimnames(rdi))
+    efficiency <- sweep(efficiency, 2, params@species_params$erepro, "*")
+    ArrayTimeBySpecies(efficiency, value_name = "Reproductive efficiency",
+                       params = params)
+}

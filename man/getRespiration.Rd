@@ -57,6 +57,7 @@ Other rate functions:
 \code{\link[=getMetabolicRespiration]{getMetabolicRespiration()}},
 \code{\link[=getOffspringProduction]{getOffspringProduction()}},
 \code{\link[=getProduction]{getProduction()}},
+\code{\link[=getReproductiveEfficiency]{getReproductiveEfficiency()}},
 \code{\link[=getReproductiveLoss]{getReproductiveLoss()}},
 \code{\link[=getSomaticProduction]{getSomaticProduction()}},
 \code{\link[=getTotalProduction]{getTotalProduction()}},
