@@ -65,9 +65,12 @@ setResourceInteraction <- function(params, resource_dynamics = NULL,
     old_interaction_resource <- species_params(params)$interaction_resource
     old_encounter <- getEncounter(params)
 
-    # Calculate the encounter rate achieved with interaction_resource = 1
-    params@species_params$interaction_resource <- 1
-    encounter <- getResourceEncounterRate(params)
+    # Calculate the encounter rate achieved with interaction_resource = 1.
+    # We do this on a copy so that `params` keeps the old value and the change
+    # we make below is detected and recorded correctly.
+    p1 <- params
+    p1@species_params$interaction_resource <- 1
+    encounter <- getResourceEncounterRate(p1)
 
     # Increasing `interaction_resource` by `r` adds `r * encounter` to the
     # resource encounter rate at each size, and that has to be taken out of
@@ -92,9 +95,13 @@ setResourceInteraction <- function(params, resource_dynamics = NULL,
     # If a species does not encounter the resource at any size:
     ratio[ratio == Inf] <- 0
 
-    # Increase the resource interaction
-    params@species_params$interaction_resource <-
-        old_interaction_resource + ratio
+    # Increase the resource interaction. `recalculate = FALSE` records the new
+    # value, so that a later recalculation does not reset it to its default,
+    # without recalculating any rates. We set the rate that depends on it, the
+    # external encounter rate, ourselves below.
+    sp_new <- params@species_params
+    sp_new$interaction_resource <- old_interaction_resource + ratio
+    species_params(params, recalculate = FALSE) <- sp_new
     new_resource_encounter <- getResourceEncounterRate(params)
 
     # Subtract the absorbed encounter rate from the external encounter rate
