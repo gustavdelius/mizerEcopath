@@ -30,7 +30,7 @@ the prey available to it. It includes:
 is eating by prey category.
 \item \strong{Prey availability plot}: Shows the feeding kernel, number
 density, and biomass density of the available prey for a
-given predator size.
+given predator size, see \code{\link[=plotPreyAvailability]{plotPreyAvailability()}}.
 \item \strong{Predator size slider}: Allows the user to select the predator
 size for which prey availability is shown.
 }

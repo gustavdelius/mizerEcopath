@@ -6,7 +6,7 @@
 #'     is eating by prey category.
 #' *   **Prey availability plot**: Shows the feeding kernel, number
 #'     density, and biomass density of the available prey for a
-#'     given predator size.
+#'     given predator size, see [plotPreyAvailability()].
 #' *   **Predator size slider**: Allows the user to select the predator
 #'     size for which prey availability is shown.
 #'
@@ -23,41 +23,8 @@ dietTab <- function(input, output, session, params, logs, ...) {
     
     # Plot prey ----
     output$plot_prey <- renderPlotly({
-        p <- params()
-        sp <- which.max(p@species_params$species == input$sp)
-        x <- log(p@w_full)
-        dx <- x[2] - x[1]
-        wp <- 10^req(input$pred_size)
-        wp_idx <- sum(p@w <= wp)
-        # Calculate total community abundance
-        # Todo: take interaction matrix into account
-        fish_idx <- (length(p@w_full) - length(p@w) + 1):length(p@w_full)
-        total_n <- p@initial_n_pp
-        total_n[fish_idx] <- total_n[fish_idx] +
-            p@interaction[sp, ] %*% p@initial_n
-        phix <- getPredKernel(p)[sp, wp_idx, ]
-        n <- total_n * phix
-        n_logw <- n * p@w_full
-        b_logw <- n_logw * p@w_full
-        # convert to proportions
-        phix <- phix / sum(phix * dx)
-        n <- n / sum(n * dx)
-        n_logw <- n_logw / sum(n_logw * dx)
-        b_logw <- b_logw / sum(b_logw * dx)
-        df <- tibble::tibble(w = p@w_full,
-                             `Feeding kernel` = phix,
-                             `Number density` = n,
-                             `Number density in log w` = n_logw,
-                             `Biomass density in log w` = b_logw) %>%
-            tidyr::gather(Type, value, `Feeding kernel`, 
-                          `Number density`, `Number density in log w`, 
-                          `Biomass density in log w`) %>%
-            mutate(Type = factor(Type))
-        ggplot(df) +
-            geom_line(aes(w, value, color = Type)) +
-            labs(x = "Weight [g]", y = "Density") +
-            annotate("point", x = wp, y = 0, size = 4, colour = "blue") +
-            scale_x_log10()
+        plotlyPreyAvailability(params(), species = req(input$sp),
+                               pred_size = 10^req(input$pred_size))
     })
     
     # Prey size slider ----

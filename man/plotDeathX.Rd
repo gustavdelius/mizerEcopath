@@ -59,5 +59,8 @@ str(fr)
 }
 \seealso{
 \link[mizer:plotting_functions]{plotting_functions}
+
+Other plotting functions:
+\code{\link[=plotPreyAvailability]{plotPreyAvailability()}}
 }
 \concept{plotting functions}

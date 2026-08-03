@@ -28,8 +28,9 @@ rates for the selected species. It includes:
 \itemize{
 \item \strong{Energy budget plot}: Visualizes how much energy is allocated
 to growth vs reproduction, compared with metabolic costs.
-\item \strong{Mortality rates plot}: Shows the total mortality rate and
-the contributions from predation, fishing, and background mortality.
+\item \strong{Mortality rates plot}: Shows the death rate, split into the
+contributions from each predator species, from fishing and from
+external mortality, see \code{\link[mizerExperimental:plotDeath]{mizerExperimental::plotDeath()}}.
 }
 }
 \seealso{
