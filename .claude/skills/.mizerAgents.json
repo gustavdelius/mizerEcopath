@@ -3,6 +3,7 @@
   "files": {
     "analyse-and-plot/quick-reference.md": "5fd8b32b8a4eea2b6f5311233fba34a0",
     "analyse-and-plot/SKILL.md": "d8a762ad89a8ab6c2319557cb0fa3092",
+    "analyse-stability/SKILL.md": "adc54ecf167e8d565e2d8c27aaa01e7f",
     "build-multispecies-model/quick-reference.md": "eb49c308d956bb540a95a7f7bd9b8312",
     "build-multispecies-model/SKILL.md": "1dd1cea070e0a653238f35208d0cbf8f",
     "calibrate-model/quick-reference.md": "0cde9f8cd14f2e682621bb27637c5035",
@@ -13,6 +14,7 @@
     "run-simulation/quick-reference.md": "76198e2f10b1add85151fad872db61d5",
     "run-simulation/SKILL.md": "ac0b33109dcbe7379ac84464e1bd5587",
     "set-up-fishing/quick-reference.md": "ef48ac5f928eb99f513aa0e8b63a8cbe",
-    "set-up-fishing/SKILL.md": "fbadd260347696021a93d8d4b153147b"
+    "set-up-fishing/SKILL.md": "fbadd260347696021a93d8d4b153147b",
+    "upgrade-mizer-code/SKILL.md": "9f9b433c6623ac482e6d7bac94254be6"
   }
 }
