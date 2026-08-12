@@ -39,7 +39,7 @@ A tagList with sliders for the exponents
 This control adjusts reproduction parameters using length-based inputs:
 \itemize{
 \item \strong{l_mat}: Length at 50\% maturity.
-\item \strong{l_mat25/l_mat}: Ratio between length at 25\% and 50\% maturity.
+\item \strong{l_mat-l_mat25}: Difference between length at 50\% and 25\% maturity.
 \item \strong{l_repro_max}: Maximum length for reproduction.
 \item \strong{m}: Allometric exponent for reproductive effort.
 }

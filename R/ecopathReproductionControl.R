@@ -2,7 +2,7 @@
 #'
 #' This control adjusts reproduction parameters using length-based inputs:
 #' *   **l_mat**: Length at 50% maturity.
-#' *   **l_mat25/l_mat**: Ratio between length at 25% and 50% maturity.
+#' *   **l_mat-l_mat25**: Difference between length at 50% and 25% maturity.
 #' *   **l_repro_max**: Maximum length for reproduction.
 #' *   **m**: Allometric exponent for reproductive effort.
 #'
@@ -12,7 +12,7 @@
 ecopathReproductionControl <- function(input, output, session, params, params_old,
                                 flags, ...) {
     observeEvent(
-        list(input$l_mat, input$lfrac,
+        list(input$l_mat, input$l_mat_diff,
              input$m, input$l_repro_max),
         {
             p <- params()
@@ -29,8 +29,10 @@ ecopathReproductionControl <- function(input, output, session, params, params_ol
             updateSliderInput(session, "l_repro_max",
                               min = signif(input$l_repro_max / 2, 2),
                               max = signif(input$l_repro_max * 1.5, 2))
+            updateSliderInput(session, "l_mat_diff",
+                              max = signif(input$l_mat_diff * 2, 2))
 
-            l_mat_25 <- input$l_mat * input$lfrac
+            l_mat_25 <- input$l_mat - input$l_mat_diff
             w_mat_25 <- sps$a * (l_mat_25 ^ sps$b)
             w_mat <- sps$a * (input$l_mat ^ sps$b)
             w_repro_max <- sps$a * (input$l_repro_max ^ sps$b)
@@ -66,10 +68,11 @@ ecopathReproductionControlUI <- function(params, input) {
         sliderInput("l_mat", "l_mat", value = l_mat,
                     min = signif(l_mat / 2, 2),
                     max = signif(l_mat * 1.5, 2)),
-        sliderInput("lfrac", "l_mat25/l_mat", value = l_mat25/l_mat,
-                    min = 0.01,
-                    max = 1,
-                    step = 0.01),
+        sliderInput("l_mat_diff", "l_mat-l_mat25",
+                    value = l_mat - l_mat25,
+                    min = 0.1,
+                    max = signif(min((l_mat - l_mat25) * 2, l_mat - 1), 2),
+                    step = 0.1),
         sliderInput("l_repro_max", "l_repro_max",
                     value = l_repro_max,
                     min = signif(l_repro_max / 2, 1),
