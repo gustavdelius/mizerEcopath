@@ -50,9 +50,15 @@ ecopathDiffusionControl <- function(input, output, session, params, params_old,
         sp_new[[sp, "annuli_date"]] <- input$annuli_date
         sp_new[[sp, "D_ext"]] <- input$D_ext
         species_params(p, recalculate = FALSE) <- sp_new
-        # Update the external-diffusion power law d(w) = D_ext * w^(n+1).
-        n <- p@species_params[[sp, "n"]]
-        p@ext_diffusion[sp, ] <- input$D_ext * p@w^(n + 1)
+        # Update the external-diffusion power law d(w) = D_ext * w^(n+1). We let
+        # mizer build it from the new `D_ext` rather than writing the power law
+        # by hand, so that it is bin-averaged exactly as `setExtDiffusion()`
+        # does when `second_order_w(p)[["bin_average"]]` is TRUE. Only the row
+        # of the selected species is taken across, leaving any other species
+        # whose diffusion was set by hand untouched.
+        ed <- ext_diffusion(p)
+        ed[sp, ] <- ext_diffusion(setExtDiffusion(p, reset = TRUE))[sp, ]
+        ext_diffusion(p) <- ed
         tuneParams_update_species(sp, p, params, params_old)
     })
 }

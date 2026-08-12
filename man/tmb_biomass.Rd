@@ -4,7 +4,7 @@
 \alias{tmb_biomass}
 \title{Biomass on the restricted grid used by the TMB objective function}
 \usage{
-tmb_biomass(N, w, dw, biomass_cutoff_idx, bin_average)
+tmb_biomass(N, w, dw, biomass_cutoff_idx, params)
 }
 \arguments{
 \item{N}{Number density on the restricted grid.}
@@ -16,7 +16,8 @@ tmb_biomass(N, w, dw, biomass_cutoff_idx, bin_average)
 \item{biomass_cutoff_idx}{The C++ index of the first bin to include, i.e. the
 number of bins below the cutoff.}
 
-\item{bin_average}{Whether to trapezoidally bin-average the weight.}
+\item{params}{A MizerParams object. Only its \code{second_order_w} setting is
+used, to decide whether the weight is trapezoidally bin-averaged.}
 }
 \value{
 The biomass as a single number.

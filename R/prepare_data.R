@@ -12,18 +12,17 @@
 #' @param dw Bin widths of the restricted grid.
 #' @param biomass_cutoff_idx The C++ index of the first bin to include, i.e. the
 #'   number of bins below the cutoff.
-#' @param bin_average Whether to trapezoidally bin-average the weight.
+#' @param params A MizerParams object. Only its `second_order_w` setting is
+#'   used, to decide whether the weight is trapezoidally bin-averaged.
 #' @return The biomass as a single number.
 #' @keywords internal
 #' @concept helper
-tmb_biomass <- function(N, w, dw, biomass_cutoff_idx, bin_average) {
+tmb_biomass <- function(N, w, dw, biomass_cutoff_idx, params) {
     K <- w
     if (biomass_cutoff_idx > 0) {
         K[seq_len(biomass_cutoff_idx)] <- 0
     }
-    if (isTRUE(bin_average)) {
-        K <- mizer:::bin_average_weight(K)
-    }
+    K <- bin_average_weight(K, params)
     sum(N * K * dw)
 }
 
@@ -226,7 +225,7 @@ prepare_data <- function(params, species = 1, catch) {
         sps$biomass_observed > 0) {
         biomass <- sps$biomass_observed
     } else {
-        biomass <- tmb_biomass(N, w, dw, biomass_cutoff_idx, bin_average)
+        biomass <- tmb_biomass(N, w, dw, biomass_cutoff_idx, params)
     }
     growth <- getEGrowth(params)[sp_select, w_select]
     if (use_counts) {
