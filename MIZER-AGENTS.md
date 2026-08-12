@@ -152,12 +152,12 @@ See https://sizespectrum.org/mizer/articles/extending-mizer.html
 Step-by-step guides for common mizer tasks are installed under `.claude/skills/<name>/SKILL.md`. Claude Code loads them automatically; other agents should **read the matching file before starting** such a task rather than working from memory. Triggers:
 
 - **`analyse-and-plot`**: Analyse and visualise the results of a mizer simulation or the state of a MizerParams object. Use whenever the user wants to extract, summarise, or plot size spectra, biomass, yield, SSB, abundance, feeding level, mortality, diet, trophic level, community indicators, growth curves, or the plankton resource — including comparing two simulations or animating spectra through time. Prefer the built-in mizer functions described here over writing custom extraction or ggplot code.
-- **`build-multispecies-model`**: Build a calibrated multi-species mizer model from a species-parameter data frame. Use whenever the user wants to create a MizerParams object with newMultispeciesParams(), set up an interaction matrix or fishing gears, bring the model to steady state with steady(), or calibrate/match it to observed biomasses, yields, or growth (calibrateBiomass, matchBiomasses, matchGrowth, calibrateYield, setBevertonHolt). Follow this ordered workflow rather than guessing at parameters or writing the dynamics by hand.
-- **`calibrate-model`**: Bring a mizer model to steady state and calibrate it to observed data. Use whenever the user wants to find the steady state (steady, projectToSteady, steadySingleSpecies), match modelled biomass, yield, or growth to observations (calibrateBiomass, matchBiomasses, calibrateYield, matchGrowth), set the level of density-dependent reproduction (setBevertonHolt), or diagnose why a model will not settle or reproduce observed values.
+- **`build-multispecies-model`**: Build a multi-species mizer model from a species-parameter data frame. Use whenever the user wants to create a MizerParams object with newMultispeciesParams() (or newTraitParams, newCommunityParams, newSingleSpeciesParams), set up an interaction matrix or fishing gears, choose the size grid, or save and reload a finished model. Follow this ordered workflow rather than guessing at parameters or writing the dynamics by hand. Once the object exists, bringing it to steady state and calibrating it to data is covered by the calibrate-model skill.
+- **`calibrate-model`**: Bring a mizer model to steady state and calibrate it to observed data. Use whenever the user wants to find the steady state (steady, projectToSteady, steadySingleSpecies, steadyNewton), match modelled biomass, yield, or growth to observations (calibrateBiomass, matchBiomasses, calibrateYield, matchGrowth), set the level of density-dependent reproduction (setBevertonHolt), or diagnose why a model will not settle or reproduce observed values.
 - **`change-parameters`**: Change parameters of an existing mizer model correctly. Use whenever the user wants to modify species parameters, size-dependent rates, fishing, the resource, or interactions — and especially when unsure which accessor to use: given_species_params() vs species_params(), changing a species parameter vs setting a rate array directly (setSearchVolume, setPredKernel, setParams…), or gear_params() vs the resource setters. Follow these rules to avoid changes that silently fail to propagate or get overwritten.
 - **`extend-mizer`**: Extend or customise mizer's dynamics — add external food/mortality, replace a built-in rate calculation, or add a new ecosystem component. Use whenever the user wants a custom encounter/growth/mortality/reproduction formulation (setRateFunction), a background food or predation source (setExtEncounter, setExtMort), a new dynamical pool like detritus or carrion (setComponent), or asks how to make mizer do something its standard setters do not cover.
 - **`run-simulation`**: Project a mizer model forward in time and set up fishing-effort scenarios. Use whenever the user wants to run a simulation with project(), specify constant or time-varying fishing effort, choose a projection method or time step, run to a new steady state after a change, continue an existing MizerSim, or set up scenario comparisons. For extracting and plotting the results, see the analyse-and-plot skill.
-- **`set-up-fishing`**: Set up or change fishing in a mizer model — gears, selectivity curves, catchability, and effort. Use whenever the user wants to define fishing gears, choose or configure a selectivity function (knife_edge, sigmoid_length, double_sigmoid_length, sigmoid_weight), set which gear catches which species, change catchability, or set the baseline fishing effort with setFishing() and the gear_params data frame.
+- **`set-up-fishing`**: Set up or change fishing in a mizer model — gears, selectivity curves, catchability, and effort. Use whenever the user wants to define fishing gears, choose or configure a selectivity function (knife_edge, sigmoid_length, double_sigmoid_length, sigmoid_weight), set which gear catches which species, change catchability, or set the fishing effort with setFishing() and the gear_params data frame.
 
 A skill's directory may also hold a `NOTES.md` recording what earlier work in this project found. Read it whenever you read the `SKILL.md`, and treat it as taking precedence. Write new project-specific findings there, creating the file if needed.
 
@@ -179,8 +179,10 @@ R session the user is working in. Use it:
   lists the objects in their global environment; do not rebuild a
   `MizerParams` or re-run a simulation that is already sitting there.
 - **Read what they are looking at.** `btw_tool_ide_read_current_editor`
-  returns the document open in RStudio, which is usually the thing a vague
-  request refers to.
+  returns the document open in the editor, which is usually the thing a
+  vague request refers to. It works only when the user is in RStudio or
+  Positron; in any other editor it errors, which tells you nothing about
+  the rest of the session. Ask them which file they mean instead.
 - **Run mizer code in their session, not in a scratch script.**
   `btw_tool_run_r` evaluates in their global environment, so results
   persist and the user can carry on with them. Plots come back to you as
@@ -198,8 +200,9 @@ R session the user is working in. Use it:
   Read the `extend-mizer` skill before changing how a mizer rate is
   calculated.
 
-If these tools are missing, the user has not run `btw::btw_mcp_session()` in
-their RStudio console; ask them to, rather than working around it.
+If these tools are missing, the user has not connected their session; ask
+them to run `mizerAgents::connect_mizer_agent()` in their R console, rather
+than working around it.
 
 
 ## Finding the right mizer function

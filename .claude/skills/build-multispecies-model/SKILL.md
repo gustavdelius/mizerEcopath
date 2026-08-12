@@ -1,50 +1,65 @@
 ---
 name: build-multispecies-model
 description: >-
-  Build a calibrated multi-species mizer model from a species-parameter data
-  frame. Use whenever the user wants to create a MizerParams object with
-  newMultispeciesParams(), set up an interaction matrix or fishing gears, bring
-  the model to steady state with steady(), or calibrate/match it to observed
-  biomasses, yields, or growth (calibrateBiomass, matchBiomasses, matchGrowth,
-  calibrateYield, setBevertonHolt). Follow this ordered workflow rather than
-  guessing at parameters or writing the dynamics by hand.
+  Build a multi-species mizer model from a species-parameter data frame. Use
+  whenever the user wants to create a MizerParams object with
+  newMultispeciesParams() (or newTraitParams, newCommunityParams,
+  newSingleSpeciesParams), set up an interaction matrix or fishing gears, choose
+  the size grid, or save and reload a finished model. Follow this ordered
+  workflow rather than guessing at parameters or writing the dynamics by hand.
+  Once the object exists, bringing it to steady state and calibrating it to data
+  is covered by the calibrate-model skill.
 ---
 
-# Building a calibrated multi-species mizer model
+# Building a multi-species mizer model
 
-Build a model in this order. Each `set...`/`match...`/`calibrate...`/`steady`
-function **returns a new `MizerParams` object** — always reassign
-(`params <- f(params, ...)`); never modify slots in place. Change species
-parameters through `given_species_params(params) <- ...`, which triggers the
-recalculation of dependent quantities.
+Each `new…`/`set…` function **returns a new
+`MizerParams` object** — always reassign (`params <- f(params, ...)`); never
+modify slots in place.
+
+## Choosing a constructor
+
+| Function | Model type |
+|---|---|
+| `newSingleSpeciesParams()` | one species in a fixed background |
+| `newCommunityParams()` | single size spectrum, no species identity |
+| `newTraitParams()` | several species differing only in asymptotic size |
+| `newMultispeciesParams()` | fully general multi-species model |
+
+Most work uses `newMultispeciesParams()`, driven by a species parameter data
+frame. The rest of this material covers that route.
 
 ## Step 1 — Assemble the species parameters
 
-`species_params` is a data frame with **one row per species**. Only two things
+`species_params` is a data frame with **one row per species**. Only two columns
 are truly required:
 
-- **`species`** — the species name.
-- **`w_inf`** — the von Bertalanffy asymptotic weight (g). This is the required
-  maximum-size parameter; mizer derives `w_max` (the computational grid boundary,
-  default `1.5 * w_inf`), `w_repro_max`, and a default `w_mat` from it.
+| Column | Meaning |
+|---|---|
+| `species` | the species name |
+| `w_inf` | von Bertalanffy asymptotic weight (g) — the required maximum-size parameter |
 
-Everything else has a sensible default or is calculated. Commonly supplied:
+Mizer derives defaults for `w_max` (the computational grid boundary, default `1.5 * w_inf`),
+`w_repro_max` and `w_mat` from `w_inf`. Everything else has a
+sensible default or is calculated. Commonly supplied:
 
 | Column | Meaning |
-|--------|---------|
+|---|---|
 | `w_mat` | Maturity weight (g) |
 | `beta` | Preferred predator/prey mass ratio (default ~100) |
 | `sigma` | Width of the lognormal predation kernel (default ~1.3) |
 | `k_vb` | von Bertalanffy K — used to derive `h` (and then `gamma`) if `h`/`gamma` absent |
 | `h`, `gamma` | Max intake coefficient and search-volume coefficient (alternative to `k_vb`) |
 | `alpha` | Assimilation efficiency (default 0.6) |
-| `R_max` | Beverton–Holt maximum recruitment (density dependence) |
-| `biomass_observed` | Observed biomass, for calibration (Step 4) |
-| `yield_observed` | Observed yield, for calibration (Step 4) |
+| `biomass_observed` | Observed biomass, for calibration |
 
 Units: weights in **grams**, lengths in **cm**, time in **years**. A CSV read
-with `read.csv()` is a fine source; the package ships an example at
-`system.file("extdata", "NS_species_params.csv", package = "mizer")`.
+with `read.csv()` is a fine source; the package ships an example:
+
+```r
+species_params <- read.csv(
+    system.file("extdata", "NS_species_params.csv", package = "mizer"))
+```
 
 ## Step 2 — Create the MizerParams object
 
@@ -52,104 +67,70 @@ with `read.csv()` is a fine source; the package ships an example at
 params <- newMultispeciesParams(species_params)
 ```
 
-Optional arguments to `newMultispeciesParams()`:
+Useful optional arguments to `newMultispeciesParams()`:
 
-- **`interaction`** — a species × species matrix of dimensionless overlaps in
-  `[0, 1]` (1 = full interaction, the default for every pair). Scales encounter
-  and predation mortality.
-- **`gear_params`** — a data frame defining fishing gears (columns `gear`,
-  `species`, `sel_func`, `catchability`, selectivity params like
-  `knife_edge_size`). Omit it and mizer builds a default knife-edge gear that
-  catches every species. Change gears later with `gear_params(params) <- ...` or
-  `setFishing()`.
-- **`no_w`, `min_w`, `max_w`** — size-grid resolution and range (default
-  `no_w = 100`).
+| Argument | Effect |
+|---|---|
+| `interaction` | species × species matrix of dimensionless overlaps in `[0, 1]` (1 = full interaction, the default for every pair); scales encounter and predation mortality |
+| `gear_params` | fishing gear definitions — columns `gear`, `species`, `sel_func`, `catchability` and the selectivity parameters. Omit it and mizer builds a default knife-edge gear catching every species |
+| `no_w`, `min_w`, `max_w` | size-grid resolution and range (`no_w = 100` by default) |
+| `second_order_w` | use the second-order size-advection scheme; see the section "Numerical scheme: watch for numerical diffusion" in the `run-simulation` skill |
 
-Inspect the result with `summary(params)`, `species_params(params)`,
-`getInteraction(params)`, and `gear_params(params)`.
+Change gears later with `gear_params(params) <- ...` or `setFishing()` — see the
+`set-up-fishing` skill.
 
-## Step 3 — Find the steady state
-
-`newMultispeciesParams()` gives only a rough initial spectrum. Bring the model
-to a steady state, which also sets the initial values used by later steps and by
-`project()`:
+## Step 3 — Inspect what you built
 
 ```r
-params <- steady(params)
+summary(params)
+species_params(params)     # given + calculated, one row per species
+getInteraction(params)     # the interaction matrix
+gear_params(params)        # the fishing gears
+resource_params(params)    # the resource scalars
 ```
 
-`steady()` runs the dynamics to convergence **with births held fixed** (which
-makes it settle reliably), then re-tunes the reproduction parameters to that
-steady state — use its `preserve` argument to pick whether `reproduction_level`
-(default), `R_max`, or `erepro` is held fixed. For a steady state that is
-dynamically unstable, the experimental `steadyNewton()` solves the steady-state
-equation directly.
-
-## Step 4 — Calibrate to observations
-
-Do this only if you have observed biomasses and/or yields (supplied as the
-`biomass_observed` / `yield_observed` columns, optionally with
-`biomass_cutoff` / `yield_cutoff` size thresholds). Typical order:
-
-```r
-params <- calibrateBiomass(params)   # scale kappa so total modelled ≈ total observed biomass
-params <- matchBiomasses(params)     # adjust each species' abundance to its observed biomass
-params <- matchGrowth(params)        # rescale h, gamma, ks, k so growth hits w_mat/w_inf on time
-params <- steady(params)             # re-converge after the adjustments
-```
-
-For yield instead of biomass, use `calibrateYield()` (this needs
-`yield_observed`). After any `match...`, re-run `steady()` and check
-with `plotBiomassObservedVsModel(params)` / `plotYieldObservedVsModel(params)`.
-
-## Step 5 — Tune density-dependent reproduction
-
-Set how strongly reproduction is density-limited. `reproduction_level` is the
-fraction of the maximum recruitment realised at steady state (0 = no density
-dependence, closer to 1 = strong):
-
-```r
-params <- setBevertonHolt(params, reproduction_level = 0.25)
-```
-
-You can instead pass `R_max`, `erepro`, or a per-species named vector.
-
-## Step 6 — Verify before projecting
-
-```r
-plotSpectra(params)                     # sensible, overlapping size spectra?
-plotGrowthCurves(params, species = "Cod")
-plotBiomassObservedVsModel(params)      # points near the 1:1 line?
-```
-
-When the model looks right, project it forward and analyse the results — see the
-`run-simulation` and `analyse-and-plot` skills:
-
-```r
-sim <- project(params, t_max = 20, effort = 1)
-```
+At this point `newMultispeciesParams()` has given you only a **rough** initial
+spectrum. The model is not yet at steady state and is not yet calibrated: that
+is the `calibrate-model` skill, which picks up from here.
 
 ## Saving and loading a model
 
-A calibrated model is worth persisting so you don't rebuild it every session.
-Use mizer's own save/restore functions rather than bare `saveRDS()` — they store
-the model in a version-stable form:
+A finished model is worth persisting so you don't rebuild it every session. Use
+mizer's own save/restore functions rather than bare `saveRDS()` — they store the
+model in a version-stable form:
 
 ```r
-saveParams(params, "cod_model.rds")   # write a MizerParams to disk
+saveParams(params, "cod_model.rds")    # write a MizerParams to disk
 params <- readParams("cod_model.rds")  # read it back
 ```
 
-`saveSim()` / `readSim()` do the same for a `MizerSim` object.
+`saveSim()` and `readSim()` do the same for a `MizerSim` object.
+
+Before saving, record who made the model and what it is for with
+`setMetadata()`. This matters most when you share the model with others, because
+the metadata travels with the object:
+
+```r
+params <- setMetadata(params,
+    title = "Celtic Sea model",
+    description = "A multi-species model of the Celtic Sea fish community.",
+    authors = list(list(name = "Your Name", email = "you@example.com")),
+    url = "https://example.com/celtic-sea-model")
+getMetadata(params)     # read the metadata back
+```
+
+All fields are optional and you can add fields of your own. mizer also fills in
+`mizer_version`, `extensions`, `time_created` and `time_modified` automatically.
 
 ## Common pitfalls
 
 - Forgetting to reassign the return value (`steady(params)` without `params <-`)
   silently discards the work.
-- Skipping `steady()` after a `match...`/`calibrate...` step leaves the model
-  off its steady state.
-- Editing `species_params(params) <-` instead of `given_species_params(params) <-`
-  when you want dependent quantities (e.g. `h` from `k_vb`) recalculated.
+- Skipping `steady()` after a `match…`/`calibrate…` step leaves the model off
+  its steady state.
+- Editing a species parameter on a bare data frame instead of through
+  `species_params(params) <-` means no dependent quantity is recalculated. See
+  the `change-parameters` skill.
 
 ---
 

@@ -13,7 +13,7 @@ description: >-
 
 `project()` advances a `MizerParams` object through time and returns a
 `MizerSim`. The params object must already be set up and (usually) at steady
-state — see the `build-multispecies-model` and `calibrate-model` skills.
+state — see the `build-multispecies-model` skill and the `calibrate-model` skill.
 
 ```r
 sim <- project(params, t_max = 20, effort = 1)
@@ -35,8 +35,8 @@ sim <- project(params, t_max = 20, effort = 1)
 
 ## Specifying fishing effort
 
-`effort` can be given four ways (if omitted, the model's stored
-`initial_effort` is used):
+`effort` can be given four ways. If omitted, the model's stored
+`initial_effort` is used.
 
 ```r
 project(params, effort = 1)                          # 1. scalar: same for all gears, constant
@@ -61,13 +61,17 @@ Each effort value applies from its time until the next time in the array. With
 an array, the simulation starts at the smallest time; use `t_max` to extend
 beyond the last row.
 
+To change *which* gears exist, or their selectivity and catchability, before
+running, see the `set-up-fishing` skill.
+
 ## Common patterns
 
-**Run to a new steady state after a change** — to get the equilibrium a change
-implies (rather than a fixed number of years), use `steady()` / `projectToSteady()`
-from the `calibrate-model` skill instead of a long `project()`.
+**Run to a new steady state after a change.** To get the equilibrium a change
+implies, rather than a fixed number of years, use `steady()` or
+`projectToSteady()` from the `calibrate-model` skill instead of a long
+`project()`.
 
-**Continue a simulation** — pass a `MizerSim` back to `project()`; it resumes
+**Continue a simulation.** Pass a `MizerSim` back to `project()`; it resumes
 from the final state:
 
 ```r
@@ -75,8 +79,7 @@ sim2 <- project(sim, t_max = 10, effort = 2)
 ```
 
 **Carry a simulation's state into a fresh `MizerParams`** — to start a new run
-(often under different settings) or to analyse a particular time step, extract a
-`MizerParams` whose initial spectra and effort are taken from the simulation:
+under different settings, or to analyse a particular time step:
 
 ```r
 params_end <- finalParams(sim)      # state at the last time step
@@ -89,9 +92,8 @@ sim_next   <- project(params_end, t_max = 20, effort = 0.5)
 initial steps of `getParams()`. Prefer these over the **deprecated**
 `setInitialValues(params, sim)`.
 
-**Scenario comparison** — project the same params under different efforts, then
-compare with the plotting tools (`plotBiomass`, `plotYield`, `plotSpectra2`,
-`plotCDF2`; see the `analyse-and-plot` skill):
+**Scenario comparison.** Project the same params under different efforts, then
+compare with the plotting tools (see the `analyse-and-plot` skill):
 
 ```r
 sim_low  <- project(params, t_max = 30, effort = 0.5)
@@ -101,18 +103,18 @@ plotSpectra2(sim_low, sim_high, "F = 0.5", "F = 1.5")
 
 ## Numerical scheme: watch for numerical diffusion
 
-For steady states and slow biomass/yield trends the defaults are fine. But the
-default flux scheme (first-order **upwind**) carries substantial *numerical
+For steady states and slow biomass or yield trends the defaults are fine. But
+the default flux scheme (first-order **upwind**) carries substantial *numerical
 diffusion*: it smears out cohorts and travelling waves and can **silently damp a
 real oscillation or limit cycle down to a flat line** — with no error to warn
-you. This is a correctness issue, not just accuracy, so for **any study of
-dynamics** (oscillations, cohort/wave structure, generation cycles, real
+you. This is a correctness issue, not just an accuracy one, so for **any study
+of dynamics** (oscillations, cohort or wave structure, generation cycles, real
 growth-diffusion effects) switch to the second-order scheme:
 
 - **Space:** build the model with `second_order_w = TRUE` (the van Leer,
-  flux-limited scheme) — set it in `newMultispeciesParams(..., second_order_w =
-  TRUE)`, or on an existing model with `second_order_w(params) <- TRUE`. Because
-  it changes the discrete steady state it lives in the params object, not in a
+  flux-limited scheme) — set it in `newMultispeciesParams(..., second_order_w = TRUE)`,
+  or on an existing model with `second_order_w(params) <- TRUE`. Because it
+  changes the discrete steady state it lives in the params object, not in a
   `project()` argument.
 - **Time:** project with `method = "tr_bdf2"` (L-stable, second order in time).
 
@@ -121,15 +123,39 @@ params <- newMultispeciesParams(sp, second_order_w = TRUE)
 sim    <- project(params, t_max = 200, method = "tr_bdf2")
 ```
 
-Symptom that you needed this: an oscillation that is present with `second_order_w
-= TRUE` but disappears (settles to a flat steady state) under the default upwind
-scheme is being killed by numerical diffusion, not by real dynamics.
+Symptom that you needed this: an oscillation that is present with
+`second_order_w = TRUE` but disappears (settles to a flat steady state) under the
+default upwind scheme is being killed by numerical diffusion, not by real
+dynamics.
+
+**Expect the numbers to move, and don't read that as a bug.** A bare
+`second_order_w = TRUE` sets two things: the flux scheme above *and*
+`bin_average`, which switches every integral over the size grid from a left-edge
+Riemann sum to a proper bin average. Unnormalised quantities — biomass, yield,
+`getDiet(proportion = FALSE)` — therefore shift by roughly `(1 + beta) / 2`,
+about 10% for a typical grid, where `beta` is the ratio between neighbouring
+grid points. That is the more accurate integral, not a regression. Proportions
+and ratios are largely unaffected because the factor cancels. Set the two
+independently if you want the better flux scheme without moving your summary
+numbers:
+
+```r
+second_order_w(params) <- c(flux = "van_leer")   # leaves bin_average alone
+second_order_w(params)                           # inspect: flux and bin_average
+```
+
+The scheme lives in the `MizerParams`, so a `MizerSim` carries it: comparing a
+run made under one setting with a run made under the other compares two
+discretisations as well as two scenarios. Recalibrate after switching it on.
 
 **Isolating a feedback loop.** To switch off the resource → growth feedback (the
-"phantom jam") while keeping everything else — e.g. to separate an internal
-instability from a boundary/reproduction one — freeze the resource with
-`params <- setResource(params, resource_dynamics = "resource_constant")` before
-projecting.
+"phantom jam") while keeping everything else — for example to separate an
+internal instability from a boundary or reproduction one — freeze the resource
+before projecting:
+
+```r
+params <- setResource(params, resource_dynamics = "resource_constant")
+```
 
 ## Tips
 
@@ -137,10 +163,8 @@ projecting.
   a stiff model may also do better with `method = "tr_bdf2"`.
 - `t_save` controls output resolution, not accuracy — the model always steps at
   `dt` internally.
-- The `MizerSim` stores the `MizerParams` it used (`sim@params`), so a sim is
-  self-contained for later analysis.
-- To change *which* gears exist or their selectivity/catchability before running,
-  see the `set-up-fishing` skill.
+- The `MizerSim` stores the `MizerParams` it used, so a sim is self-contained
+  for later analysis.
 
 ---
 
