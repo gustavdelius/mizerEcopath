@@ -2,21 +2,26 @@
 name: analyse-stability
 description: >-
   Analyse the dynamic stability of a mizer steady state and characterise limit
-  cycles (experimental). Use whenever the
-  user wants to know whether a steady state is stable or unstable, find the
-  spectral radius or the period of an emergent oscillation, detect a Hopf
-  bifurcation, build or plot a limit cycle, or draw a bifurcation diagram over
-  fishing effort — via getStability(), steadyNewton(stability = TRUE),
-  getLimitCycleSim(), and plotBifurcation().
+  cycles (experimental). Use whenever the user asks whether a steady state is
+  stable or unstable, wants the spectral radius or leading eigenvalue, the period
+  of an emergent oscillation, a Hopf bifurcation, a limit cycle to build or plot,
+  or a bifurcation diagram over fishing effort — via getStability(),
+  steadyNewton(stability = TRUE), getLimitCycleSim() and plotBifurcation(). This
+  skill and calibrate-model share steadyNewton() and getSteadyResidual(): use
+  calibrate-model to find a steady state, this skill to ask whether the state you
+  found is stable. Assumes the standard semichemostat resource dynamics.
 ---
 
 # Analysing dynamic stability
 
 Tools for asking whether a mizer steady state is dynamically **stable** — and,
 when it is not, characterising the **limit cycle** that replaces it. These are
-**experimental**: their interface may still change. All treat the resource as a
-quasi-static fast variable by default (valid for the standard semichemostat
-resource dynamics).
+**experimental**: their interface may still change. All assume the standard
+semichemostat resource dynamics. `steadyNewton()` solves for the resource
+alongside the fish, so the resource density and the feeding levels it implies
+are self-consistent even where consumers are satiated; `getStability()` instead
+treats the resource as a quasi-static fast variable, and
+`include_resource = TRUE` turns that approximation off.
 
 Distinct from calibration: the `calibrate-model` skill gets you *onto* a fixed
 point; what follows analyses the *dynamics around* it. The natural entry point
@@ -46,6 +51,13 @@ stab                                     # stable/unstable, spectral radius, cyc
   approximation makes little difference.
 - `effort` / `reproduction` set the fishing effort and reproduction handling used
   when forming the map.
+
+**Both `getStability()` and `getLimitCycleSim()` linearise at the state stored in
+the object**, so a model that is not on a fixed point gets eigenvalues for the
+neighbourhood of a point it is not sitting at. Both now warn when handed one;
+the fix is to run `steadyNewton()` (or `steady()`) first, not to ignore the
+warning. `plot(getSteadyResidual(params))` shows how far off it is — see the
+`calibrate-model` skill.
 
 `steady()` and `projectToSteady()` attach a related `"convergence"` attribute
 recording whether the run settled on a **steady state, a limit cycle, or

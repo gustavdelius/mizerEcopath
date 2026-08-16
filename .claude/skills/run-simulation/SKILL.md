@@ -2,18 +2,21 @@
 name: run-simulation
 description: >-
   Project a mizer model forward in time and set up fishing-effort scenarios. Use
-  whenever the user wants to run a simulation with project(), specify constant or
-  time-varying fishing effort, choose a projection method or time step, run to a
-  new steady state after a change, continue an existing MizerSim, or set up
-  scenario comparisons. For extracting and plotting the results, see the
-  analyse-and-plot skill.
+  whenever the user wants to run a simulation with project(), choose the time
+  stepping (t_max, dt, t_save, t_start), give constant, time-varying or per-gear
+  fishing effort, continue an existing MizerSim (append = TRUE), carry a
+  simulation's end state into a new run (setInitialValues, finalParams), run to a
+  new steady state after a change, or set up scenario comparisons — including
+  what to do about numerical diffusion and the second_order_w scheme when growth
+  looks smeared. For extracting and plotting the results see the analyse-and-plot
+  skill; for reaching steady state first see the calibrate-model skill.
 ---
 
 # Running a mizer simulation
 
 `project()` advances a `MizerParams` object through time and returns a
 `MizerSim`. The params object must already be set up and (usually) at steady
-state — see the `build-multispecies-model` skill and the `calibrate-model` skill.
+state — see the `build-model` skill and the `calibrate-model` skill.
 
 ```r
 sim <- project(params, t_max = 20, effort = 1)
@@ -146,7 +149,10 @@ second_order_w(params)                           # inspect: flux and bin_average
 
 The scheme lives in the `MizerParams`, so a `MizerSim` carries it: comparing a
 run made under one setting with a run made under the other compares two
-discretisations as well as two scenarios. Recalibrate after switching it on.
+discretisations as well as two scenarios. Recalibrate after switching it on —
+`steady()` handles the `van_leer` flux from mizer 3.3 onwards. On earlier
+versions it fell into a limit cycle there and never converged, so a model built
+with `second_order_w = TRUE` had to be settled under the default flux first.
 
 **Isolating a feedback loop.** To switch off the resource → growth feedback (the
 "phantom jam") while keeping everything else — for example to separate an
@@ -161,6 +167,11 @@ params <- setResource(params, resource_dynamics = "resource_constant")
 
 - If a run blows up or oscillates unphysically, first reduce `dt` (e.g. `0.01`);
   a stiff model may also do better with `method = "tr_bdf2"`.
+- With growth diffusion switched on (`D_ext > 0`), diffusion spreads individuals
+  past the asymptotic size and they pile up against the upper edge of the grid.
+  Set `w_max` well above the sizes you actually analyse, so that abundance at the
+  boundary stays negligible; the default `1.5 * w_inf` is usually enough, but
+  raise it if `D_ext` is large.
 - `t_save` controls output resolution, not accuracy — the model always steps at
   `dt` internally.
 - The `MizerSim` stores the `MizerParams` it used, so a sim is self-contained

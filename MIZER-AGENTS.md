@@ -5,166 +5,55 @@ fish communities. It tracks the full size distribution of each species and
 the plankton resource, computing growth, predation, and mortality from
 individual-level physiology.
 
+This card is a routing table, not a reference. It says where the answer lives —
+in a task skill, or in the installed mizer's help pages — and deliberately does
+not restate the answer, because a summary you can act on without opening the
+skill is a summary you will act on while it is out of date.
+
 ## Do not write mizer code from memory
 
-Mizer's API has moved on, and most mizer code in your training data predates
-the version installed here — recollection that feels solid is often a version
-or two stale. Before calling any function you have not looked up in this
-session, read its help page from the installed mizer and check the real
-signature. This failure is quiet: outdated calls often still run and return
-plausible numbers.
+Mizer's API has evolved, and most mizer code in your training data predates
+the version installed here. Recollection that feels solid is often a version
+or two stale, and outdated calls frequently run and return plausible numbers
+while doing the wrong thing.
 
-Nothing in this repository is a substitute for that. The bundled API index
-(path at the end of this file) tells you which functions exist, not how to call
-them, and this card is a summary rather than a reference. Argument lists come
-from the installed package or they come from a guess.
+Before calling any function you have not looked up in this session, verify its
+signature in the installed mizer's documentation using the lookup tools below.
+The bundled API index names available functions and the task skills describe
+workflows, but neither provides argument lists.
 
-Memory is most often stale on:
+The one correction worth making before reading anything else: **`w_inf`**,
+**`w_repro_max`** and **`w_max`** are three distinct parameters, not three names
+for the maximum size. The `build-model` skill has the difference.
 
-- **maximum size** — `w_inf`, `w_repro_max` and `w_max` are three distinct
-  parameters (see below), not one
-- **setting species parameters** — use `species_params(params) <- value`, which
-  records the change and recalculates dependent quantities
-- **reproduction** — `setBevertonHolt()` takes `erepro`, `R_max` *or*
-  `reproduction_level`; check which the task calls for
-
-If the installed mizer disagrees with this file, the installed mizer wins.
-Check with `?name` and say so rather than quietly working around it.
-
-## Core workflow
-
-```r
-library(mizer)
-
-# 1. Create model parameters from a species data frame
-params <- newMultispeciesParams(species_params, interaction)
-
-# 2. Find the steady state (sets initial values)
-params <- steady(params)
-
-# 3. Calibrate to observed biomasses / yields
-params <- calibrateBiomass(params)  # adjusts kappa
-params <- matchBiomasses(params)    # adjusts R_max per species
-params <- matchGrowth(params)       # adjusts h per species
-
-# 4. Tune density-dependent reproduction
-params <- setBevertonHolt(params, reproduction_level = 0.25)
-
-# 5. Project forward in time
-sim <- project(params, t_max = 20, effort = 1)
-
-# 6. Analyse results
-plot(sim)
-getBiomass(sim)
-getYield(sim)
-plotSpectra(sim)
-```
+If the installed mizer disagrees with this card or any skill, the installed
+package wins. Report any discrepancy to the user rather than quietly working
+around it.
 
 ## Key objects
 
-**`MizerParams`** — holds all model parameters. Never modify slots directly.
-All setter functions return a new copy: `params <- setFishing(params, ...)`.
-
-**`MizerSim`** — simulation output from `project()`. Arrays: `N(sim)` (time ×
-species × size), `NResource(sim)`.
-
-## Species parameters
-
-The `species_params` data frame must have `species` (name) and the
-von Bertalanffy asymptotic weight `w_inf`. Everything else has defaults.
-Change species parameters with `species_params(params) <- value`, which records
-the change and triggers recalculation of dependent quantities. See the
-`change-parameters` skill.
-
-| Column | Meaning |
-|--------|---------|
-| `w_inf` | Von Bertalanffy asymptotic weight (g); accepted maximum-size input, sets `w_repro_max` |
-| `w_max` | Computational upper size-grid boundary (g) — purely numerical; defaults to `1.5 * w_inf` |
-| `w_repro_max` | Weight beyond which no growth/reproduction |
-| `w_mat` | Maturity weight (g) |
-| `beta` | Preferred predator/prey mass ratio (default ~100) |
-| `sigma` | S.d. of lognormal predation kernel (default ~1.3) |
-| `h` | Max intake rate coefficient |
-| `alpha` | Assimilation efficiency (default 0.6) |
-| `erepro` | Reproductive efficiency |
-| `R_max` | Beverton-Holt max recruitment |
-| `biomass_observed` | Observed biomass for `calibrateBiomass()` |
-
-## Units
-
-Weights in grams, lengths in cm, time in years.
-
-## Numerical scheme for dynamics
-
-The default `project()` flux scheme (first-order upwind) carries substantial
-*numerical* diffusion that silently smears cohorts and travelling waves and can
-completely damp real oscillations / limit cycles — a correctness issue, not just
-accuracy. For any study of dynamics (oscillations, cohort waves, diffusion),
-build the model with `second_order_w = TRUE` (van Leer flux) and project with
-`method = "tr_bdf2"` (second order in time). See the `run-simulation` skill.
-
-## Gotchas
-
-- `w_max` defaults to `1.5 * w_inf`. Passing `max_w = w_inf` to
-  `newMultispeciesParams()` then errors — set a `w_max` column equal to `w_inf`
-  as well.
-- The steady-state feeding level is set by the `f0` species parameter (from which
-  the default `gamma` is derived), **not** by `h`; `h = Inf` makes `gamma`
-  non-finite. See the `change-parameters` skill.
-- With growth diffusion on (`D_ext > 0`), set `w_max` well above the sizes you
-  analyse so abundance at the boundary stays negligible; the default
-  `1.5 * w_inf` is usually enough, raise it if `D_ext` is large.
-
-## Plotting
-
-The return values of most `get...()` functions also have `plot()` methods,
-so you can visualise any quantity directly.
-Always prefer this over writing custom plotting code.
-
-```r
-plot(getSSB(sim))           # ArrayTimeBySpecies  → time series per species
-plot(getTrophicLevel(params)) # ArraySpeciesBySize → curve per species
-```
-
-In addition, Mizer provides many custom plotting functions. 
-
-```r
-plot(sim)              # overview of simulation
-plotSpectra(sim)       # size spectra
-plotBiomass(sim)       # biomass over time
-plotYield(sim)         # yield over time
-plotGrowthCurves(sim)  # growth curves
-plotFMort(sim)         # fishing mortality
-```
-
-Grep for "plot" in the bundled API index (path at the end of this file) to
-discover the full list of available plots before writing any custom code, then
-read the help page of the one you pick for its arguments.
-
-## Extending mizer
-
-To replace a rate function: `params <- setRateFunction(params, "Encounter", myFun)`.
-To add a new ecosystem component: `params <- setComponent(params, "detritus", ...)`.
-See https://sizespectrum.org/mizer/articles/extending-mizer.html
+**`MizerParams`** holds all model parameters; **`MizerSim`** is what `project()`
+returns. Never modify slots directly. Every `new…`/`set…`/`match…`/`calibrate…`
+function returns a *new* object, so always reassign — `params <- setFishing(params, ...)`.
 
 ## Task skills (read on demand)
 
-Step-by-step guides for common mizer tasks are installed under `.claude/skills/<name>/SKILL.md`. Claude Code loads them automatically; other agents should **read the matching file before starting** such a task rather than working from memory. Triggers:
+Step-by-step guides for common mizer tasks are installed under `.claude/skills/<name>/SKILL.md`. Claude Code loads them automatically; other agents should **read the matching file before starting** such a task rather than working from memory. They are the reference this card is not: workflows, argument tables and the failure modes of each step. Triggers:
 
-- **`analyse-and-plot`**: Analyse and visualise the results of a mizer simulation or the state of a MizerParams object. Use whenever the user wants to extract, summarise, or plot size spectra, biomass, yield, SSB, abundance, feeding level, mortality, diet, trophic level, community indicators, growth curves, or the plankton resource — including comparing two simulations or animating spectra through time. Prefer the built-in mizer functions described here over writing custom extraction or ggplot code.
-- **`analyse-stability`**: Analyse the dynamic stability of a mizer steady state and characterise limit cycles (experimental). Use whenever the user wants to know whether a steady state is stable or unstable, find the spectral radius or the period of an emergent oscillation, detect a Hopf bifurcation, build or plot a limit cycle, or draw a bifurcation diagram over fishing effort — via getStability(), steadyNewton(stability = TRUE), getLimitCycleSim(), and plotBifurcation().
-- **`build-multispecies-model`**: Build a multi-species mizer model from a species-parameter data frame. Use whenever the user wants to create a MizerParams object with newMultispeciesParams() (or newTraitParams, newCommunityParams, newSingleSpeciesParams), set up an interaction matrix or fishing gears, choose the size grid, or save and reload a finished model. Follow this ordered workflow rather than guessing at parameters or writing the dynamics by hand. Once the object exists, bringing it to steady state and calibrating it to data is covered by the calibrate-model skill.
-- **`calibrate-model`**: Bring a mizer model to steady state and calibrate it to observed data. Use whenever the user wants to find the steady state (steady, projectToSteady, steadySingleSpecies, steadyNewton), match modelled biomass, yield, or growth to observations (calibrateBiomass, matchBiomasses, calibrateYield, matchGrowth), set the level of density-dependent reproduction (setBevertonHolt), or diagnose why a model will not settle or reproduce observed values.
-- **`change-parameters`**: Change parameters of an existing mizer model correctly. Use whenever the user wants to modify species parameters, size-dependent rates, fishing, the resource, or interactions — and especially when unsure which accessor to use: given_species_params() vs species_params(), changing a species parameter vs setting a rate array directly (setSearchVolume, setPredKernel, setParams…), or gear_params() vs the resource setters. Follow these rules to avoid changes that silently fail to propagate or get overwritten.
-- **`extend-mizer`**: Extend or customise mizer's dynamics — add external food/mortality, replace a built-in rate calculation, or add a new ecosystem component. Use whenever the user wants a custom encounter/growth/mortality/reproduction formulation (setRateFunction), a background food or predation source (setExtEncounter, setExtMort), a new dynamical pool like detritus or carrion (setComponent), or asks how to make mizer do something its standard setters do not cover.
-- **`run-simulation`**: Project a mizer model forward in time and set up fishing-effort scenarios. Use whenever the user wants to run a simulation with project(), specify constant or time-varying fishing effort, choose a projection method or time step, run to a new steady state after a change, continue an existing MizerSim, or set up scenario comparisons. For extracting and plotting the results, see the analyse-and-plot skill.
-- **`set-up-fishing`**: Set up or change fishing in a mizer model — gears, selectivity curves, catchability, and effort. Use whenever the user wants to define fishing gears, choose or configure a selectivity function (knife_edge, sigmoid_length, double_sigmoid_length, sigmoid_weight), set which gear catches which species, change catchability, or set the fishing effort with setFishing() and the gear_params data frame.
-- **`upgrade-mizer-code`**: Diagnose and fix user code or models that broke, changed results, or started warning after a mizer upgrade. Use whenever a script that "used to work" now errors, a deprecation warning appears, plots or numbers differ from a previous run, an argument is suddenly "unused" (sim=, time_range=), an identical() comparison against a saved rate array fails, or the user asks how to move code from mizer 2.5/3.0/3.1 to a later version. Lists every documented change in behaviour, release by release, with the fix.
+- **`analyse-and-plot`**: Analyse and visualise the results of a mizer simulation or the state of a MizerParams object. Use whenever the user wants to extract, summarise or plot size spectra, biomass, numbers, yield, SSB, feeding level, mortality, diet, trophic level, community indicators, growth curves or the resource — including comparing two models and animating spectra through time. Also covers choosing what a density plot shows (biomass, per_log_size, size_axis), the ArraySpeciesBySize/ArrayTimeBySpecies wrappers the getters return, and writing a custom indicator with sizeIntegral(). Prefer these functions over hand-written array wrangling or custom ggplot code. If a plotting argument that used to work now errors (power=), see the upgrade-mizer-code skill.
+- **`analyse-stability`**: Analyse the dynamic stability of a mizer steady state and characterise limit cycles (experimental). Use whenever the user asks whether a steady state is stable or unstable, wants the spectral radius or leading eigenvalue, the period of an emergent oscillation, a Hopf bifurcation, a limit cycle to build or plot, or a bifurcation diagram over fishing effort — via getStability(), steadyNewton(stability = TRUE), getLimitCycleSim() and plotBifurcation(). This skill and calibrate-model share steadyNewton() and getSteadyResidual(): use calibrate-model to find a steady state, this skill to ask whether the state you found is stable. Assumes the standard semichemostat resource dynamics.
+- **`build-model`**: Build a new mizer model from a species-parameter data frame. Use whenever the user wants to create a MizerParams object with newMultispeciesParams() (or newTraitParams, newCommunityParams, newSingleSpeciesParams), decide which species-parameter columns to supply and which to leave to mizer's allometric defaults, set up an interaction matrix, choose the size grid (no_w, min_w, max_w, min_w_pp), or save and reload a finished model. Follow this ordered workflow rather than guessing at parameters or writing the dynamics by hand. To change a model that already exists see the change-parameters skill; fishing is covered by the set-up-fishing skill and steady state and calibration by the calibrate-model skill.
+- **`calibrate-model`**: Bring a mizer model to steady state and calibrate it to observed data. Use whenever the user wants to find the steady state (steady, projectToSteady, steadySingleSpecies, steadyNewton), match modelled biomass, numbers, yield or growth to observations (calibrateBiomass, matchBiomasses, calibrateNumber, matchNumbers, matchGrowth), supply those observations (the biomass_observed/biomass_cutoff or number_observed species-parameter columns, the yield_observed gear-parameter column), set the level of density-dependent reproduction (reproduction_level<-), check convergence (getSteadyResidual), or diagnose a model that collapses, explodes or will not settle. To ask whether the steady state you found is dynamically stable, see the analyse-stability skill.
+- **`change-parameters`**: Change parameters of an existing mizer model correctly, so that the change propagates downwards and is not silently overwritten. Use whenever the user wants to modify species parameters, size-dependent rates, the resource or the interaction matrix — and especially when unsure which level to work at: given_species_params() vs species_params(), or changing a species parameter vs setting a rate array directly (setSearchVolume, setPredKernel, setParams…). Covers which values get recalculated and which stay put, the freeze trap when a rate array is set by hand, length-vs-weight precedence (l_mat vs w_mat), resource balancing (balance =), and warnings that a change could not take effect. Fishing gears are covered by the set-up-fishing skill, custom rate functions by the extend-mizer skill.
+- **`extend-mizer`**: Extend or customise mizer's dynamics — add external food or mortality, replace a built-in rate calculation, or add a new ecosystem component. Use whenever the user wants a custom encounter/growth/mortality/reproduction formulation (setRateFunction() wrapping or replacing mizerEncounter, mizerPredRate, mizerMort, mizerEReproAndGrowth), a background food, diffusion or predation source needing no new state variable (setExtEncounter, setExtMort, setExtDiffusion), a new dynamical pool such as detritus or carrion (setComponent), or asks how to make mizer do something its standard setters do not cover — including how a custom rate must respect the second_order_w quadrature scheme. Pick the lightest mechanism that works: to change an existing rate's parameters see the change-parameters skill.
+- **`run-simulation`**: Project a mizer model forward in time and set up fishing-effort scenarios. Use whenever the user wants to run a simulation with project(), choose the time stepping (t_max, dt, t_save, t_start), give constant, time-varying or per-gear fishing effort, continue an existing MizerSim (append = TRUE), carry a simulation's end state into a new run (setInitialValues, finalParams), run to a new steady state after a change, or set up scenario comparisons — including what to do about numerical diffusion and the second_order_w scheme when growth looks smeared. For extracting and plotting the results see the analyse-and-plot skill; for reaching steady state first see the calibrate-model skill.
+- **`set-up-fishing`**: Set up or change fishing in a mizer model — gears, selectivity curves, catchability and effort. Use whenever the user wants to define fishing gears in the gear_params data frame (sel_func, catchability, yield_observed), choose and parameterise a selectivity function (knife_edge with knife_edge_size, knife_edge_length, sigmoid_length and double_sigmoid_length with l50/l25/l50_right/l25_right, sigmoid_weight), set which gear catches which species, apply the result with setFishing(), or set the fishing effort (initial_effort<-). Note that catchability sets the units in which effort is measured. Matching modelled yields to observed ones is covered by the calibrate-model skill.
+- **`understand-size-spectrum-dynamics`**: Understand how mizer models behave: which quantities you impose and which the model produces for itself, the food and predation feedback loops that couple species, what sets the slope of the steady-state spectrum and the timescale of its dynamics, and the two distinct kinds of density dependence. Use whenever reasoning about why a species collapses, explodes, or oscillates, why growth or mortality is not what you asked for, why changing one species moved another, why a model is insensitive to fishing, or what the Sheldon spectrum, feeding level, reproduction level (R_max) and trophic cascades mean in a mizer model.
+- **`upgrade-mizer-code`**: Diagnose and fix user code or models that broke, changed results, or started warning after a mizer upgrade — every documented change from 2.5.4 through 3.3, release by release, with the fix. Use whenever a script that "used to work" now errors, a deprecation warning appears, plots or numbers differ from a previous run, an argument is suddenly unused or rejected (power=, sim=, time_range=, setParams() rejecting an argument it does not use), a function has gone (matchYields, calibrateYield), a parameter change warns that it cannot take effect, an identical() comparison against a saved rate array fails, or `$` on a parameter table stopped matching partially. Starts from a symptom index, so search it by the message the user actually saw.
 
 A skill's directory may also hold a `NOTES.md` recording what earlier work in this project found. Read it whenever you read the `SKILL.md`, and treat it as taking precedence. Write new project-specific findings there, creating the file if needed.
 
 Do not edit `SKILL.md` or this card: both are installed by `mizerAgents::setup_mizer_agent()`. Project notes that belong to no single skill go in `AGENTS.md` / `CLAUDE.md`, outside the `<!-- mizerAgents: ... -->` markers. A lesson that is true of mizer in general rather than of this project belongs upstream, where every project gets it: tell the user, and offer to report it at <https://github.com/sizespectrum/mizerAgents/issues>.
-
 
 ## The user's live R session
 
@@ -190,22 +79,18 @@ R session the user is working in. Use it:
   persist and the user can carry on with them. Plots come back to you as
   images: after calibrating or projecting, plot the result and *look at it*
   before reporting success.
-- **That session holds their work.** Assigning over an existing object
-  destroys it, and there is no undo. Assign to a new name, or say what you
-  are about to overwrite first. Long projections block their console, so
-  keep `t_max` modest unless asked otherwise.
-- **This project is an R package**, most likely a mizer extension. Use the
-  package tools (`btw_tool_pkg_load_all`, `btw_tool_pkg_document`,
-  `btw_tool_pkg_test`, `btw_tool_pkg_check`, `btw_tool_pkg_coverage`) rather
-  than shelling out to `R CMD` or `devtools`: they run in the user's session,
-  so after `load_all` the new code is live and you can exercise it directly.
-  Read the `extend-mizer` skill before changing how a mizer rate is
-  calculated.
+- **That session holds their work.** You are in *their* global
+  environment: assigning over an existing object destroys it, and `load()`
+  and `rm()` reach everything they have open. There is no undo and nothing
+  warns you. Assign to a new name, or say what you are about to overwrite
+  first, and do exploratory work in a throwaway environment or a separate
+  `Rscript` -- keep the session itself for the steps whose result the user
+  wants to keep. Say so whenever you do change a global. Long projections
+  block their console, so keep `t_max` modest unless asked otherwise.
 
 If these tools are missing, the user has not connected their session; ask
 them to run `mizerAgents::connect_mizer_agent()` in their R console, rather
 than working around it.
-
 
 ## Finding the right mizer function
 
@@ -224,4 +109,3 @@ Never supply arguments from memory for a function you have not looked up
 in this session. Rendered documentation for the current release is at
 <https://sizespectrum.org/mizer/reference/>, but the installed version is
 what your code will run against, so prefer the local help page.
-

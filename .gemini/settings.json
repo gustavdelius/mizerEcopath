@@ -4,7 +4,7 @@
       "command": "Rscript",
       "args": [
         "-e",
-        "btw::btw_mcp_server(btw::btw_tools('docs', 'env', 'sessioninfo', 'ide', 'run', 'pkg'))"
+        "local({ if (.Platform$OS.type == 'unix' && !nzchar(Sys.getenv('MCPTOOLS_SOCKET_DIR')) && !nzchar(Sys.getenv('XDG_RUNTIME_DIR'))) { uid <- file.info(path.expand('~'))$uid; runtime <- file.path('/run/user', uid); if (!is.na(uid) && dir.exists(runtime)) Sys.setenv(MCPTOOLS_SOCKET_DIR = file.path(runtime, 'mcptools')) }; btw::btw_mcp_server(btw::btw_tools('docs', 'env', 'sessioninfo', 'ide', 'run')) })"
       ],
       "env": {
         "BTW_RUN_R_ENABLED": "true"

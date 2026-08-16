@@ -1,12 +1,17 @@
 ---
 name: extend-mizer
 description: >-
-  Extend or customise mizer's dynamics — add external food/mortality, replace a
-  built-in rate calculation, or add a new ecosystem component. Use whenever the
+  Extend or customise mizer's dynamics — add external food or mortality, replace
+  a built-in rate calculation, or add a new ecosystem component. Use whenever the
   user wants a custom encounter/growth/mortality/reproduction formulation
-  (setRateFunction), a background food or predation source (setExtEncounter,
-  setExtMort), a new dynamical pool like detritus or carrion (setComponent), or
-  asks how to make mizer do something its standard setters do not cover.
+  (setRateFunction() wrapping or replacing mizerEncounter, mizerPredRate,
+  mizerMort, mizerEReproAndGrowth), a background food, diffusion or predation
+  source needing no new state variable (setExtEncounter, setExtMort,
+  setExtDiffusion), a new dynamical pool such as detritus or carrion
+  (setComponent), or asks how to make mizer do something its standard setters do
+  not cover — including how a custom rate must respect the second_order_w
+  quadrature scheme. Pick the lightest mechanism that works: to change an
+  existing rate's parameters see the change-parameters skill.
 ---
 
 # Extending mizer
@@ -115,7 +120,7 @@ switched the second-order scheme on. Three rules:
   carry the right quadrature for whichever scheme the model is on. Re-deriving a
   rate from the species parameters is how this goes wrong.
 - **To go inside the encounter convolution, use `encounter_kernel()`, not
-  `getPredKernel()`.** `getPredKernel()` returns the kernel point-sampled on the
+  `pred_kernel()`.** `pred_kernel()` returns the kernel point-sampled on the
   grid — right for plotting, and the form in which you *supply* a custom kernel,
   but not the bin-integrated coefficients the convolution consumes. Pair
   `encounter_kernel()` with the plain point prey weight
@@ -126,10 +131,13 @@ switched the second-order scheme on. Three rules:
   `setResource()` do, and do the integral once at setup so projection cost is
   unchanged.
 
-For a weight in a summary-style integral, `bin_average_weight(K, params)` does
-the gating for you — see "Writing your own indicator" in
-the `analyse-and-plot` skill for the full recipe. Test any new integral with the
-flag **on** as well as off; a test on the default path alone proves nothing.
+For a summary-style integral $\int N_i(w) K_i(w) dw$, do not write the sum at
+all: `sizeIntegral(params, weighting = K, min_w = ..., max_w = ...)` does the
+integral under whichever scheme the model is on and wraps the result — see
+"Writing your own indicator" in the `analyse-and-plot` skill. If you need the
+gating on its own, for a weight you are not integrating, that is
+`bin_average_weight(K, params)`. Test any new integral with the flag **on** as
+well as off; a test on the default path alone proves nothing.
 
 ## Adding a component
 
