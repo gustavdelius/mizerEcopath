@@ -3,13 +3,14 @@
   "files": {
     "analyse-and-plot/SKILL.md": "173b968cf4ac79e9b397faca6a34a398",
     "analyse-stability/SKILL.md": "b8dda4658d9ffca62c190e1bd5a5a811",
-    "build-model/SKILL.md": "c2c7165b41e58ddbe50e5c2d12abe3f7",
+    "build-model/SKILL.md": "46dff4d662caef9eeeaf21c26c2341a0",
     "calibrate-model/SKILL.md": "218c228c2a8723e652ba30e3f93bb994",
-    "change-parameters/SKILL.md": "1d1597a0c9da5ce220cfe858a5bd8aa8",
-    "extend-mizer/SKILL.md": "81c2ba0cfe0b6b64d9e4d8f0b7d30938",
+    "change-parameters/SKILL.md": "89124ea6b8935498d0d1c5338a85dece",
+    "extend-mizer/SKILL.md": "40b121d9c0cd189255e38caf7c875c97",
     "run-simulation/SKILL.md": "7330872f6d6e02460378f2464499c439",
     "set-up-fishing/SKILL.md": "77f3e686351064c1ac9f8e7a031bb150",
-    "understand-size-spectrum-dynamics/SKILL.md": "3aab109526737a7dddf214b0eeba1e2d",
-    "upgrade-mizer-code/SKILL.md": "ad173e3ea88a7e07dbdeabefcf117bcd"
+    "understand-size-spectrum-dynamics/SKILL.md": "7ca03314f402b6c6ace9ae65c8d24527",
+    "upgrade-mizer-code/SKILL.md": "d4beab1b41bd33009c9ec237358c526a",
+    "use-extension-packages/SKILL.md": "3f077868f95adce50736d0cb70dac36f"
   }
 }
