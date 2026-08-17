@@ -1,0 +1,735 @@
+---
+title: "A Celtic Sea model from in-sea size distributions"
+author: "Gustav Delius"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-fold: true
+    code-tools: true
+    code-summary: "Show code"
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+library(dplyr)
+library(ggplot2)
+library(mizer)
+library(mizerExperimental)
+library(mizerEcopath)
+library(knitr)
+
+# The data file lives in `inst/`, which is at a different place depending on
+# whether this document is rendered from the package root, from `vignettes/`,
+# or from an installed copy of the package.
+pkg_file <- function(name) {
+    for (p in c(name, file.path("inst", name), file.path("..", "inst", name))) {
+        if (file.exists(p)) return(p)
+    }
+    system.file(name, package = "mizerEcopath")
+}
+```
+
+## What this document is
+
+This document builds a nine-species [mizer](https://sizespectrum.org/mizer/) model of the Celtic Sea from data assembled by Richard and Jess, and then shows what the resulting model looks like. It is self-contained: it does not assume you have read about any earlier model, and it explains each mizer concept where it is first needed.
+
+Mizer is a size-spectrum model. Rather than tracking a species as a single biomass pool, it tracks the full distribution of its individuals over body size, and derives growth, predation and mortality from what individuals of each size eat and are eaten by. That makes size distributions the natural currency of the model, which is why the data below is mostly size distributions and why the calibration is mostly a matter of matching them.
+
+### What is different about this model {#sec-whats-different}
+
+There is a companion document, `vignettes/Richard_and_Jess.qmd`, that builds a model from an earlier version of the same data. You do not need it, but one difference between the two is worth stating at the outset because it shapes everything that follows.
+
+In that earlier version, the "survey" size distributions were **survey catches**. The survey gear had an unknown selectivity that had to be estimated alongside everything else, exactly as for the commercial gear.
+
+Here the survey distributions are instead the estimated **number of fish in the sea**: Nicola Walker's survey selectivities have already been divided out of the data. So there is nothing left to estimate about that gear. All that remains is to state the size range over which the data is valid, which we take to be every fish above 20 cm and none below. That is an assumption about the data, not a parameter, so the model must be told to hold it fixed rather than fit it. @sec-knife-edge is about how.
+
+The change is not cosmetic. It removes two free parameters per species from the fit and replaces them with an assumption, and it means the survey panels of @sec-fit are a direct comparison between the modelled and observed size spectra rather than between two catches.
+
+### The shape of the build
+
+The model is built in a sequence of stages. Each stage adds one piece of biological structure, and each is arranged so that it does not destroy what the previous stages achieved. That is the central idea, and it is worth stating up front:
+
+1.  **Single-species scaffolding.** Start from a model in which every species grows and dies according to pure power laws and nothing interacts with anything. Such a model can be solved essentially by hand, so we can put it exactly where we want it.
+2.  **Fit to size data.** Adjust gear selectivity, catchability, growth diffusion and external mortality so that the steady state reproduces the observed size distributions, the observed yield and the observed biomass — holding the survey selectivity fixed at the knife edge.
+3.  **Add physiology.** Introduce a finite maximum intake rate and a metabolic cost, *without* changing the energy available for growth and reproduction, so the fit from stage 2 survives.
+4.  **Give three species more mortality**, because otherwise the diet matrix in the next stage cannot be imposed.
+5.  **Add species interactions.** Replace part of the anonymous "external" food and mortality by explicit predation, chosen to reproduce an observed diet matrix — again arranged to preserve the steady state.
+6.  **Add the resource.** Let a dynamic plankton resource absorb as much as possible of the remaining external food.
+7.  **Weaken cod's cannibalism**, because it is what keeps cod's yield curve peaking far above the fishing mortality we want to target.
+8.  **Add density dependence.** Choose the reproduction level of each species so that the model's yield-versus-fishing-mortality curve peaks near the species' $F_{MSY}$.
+
+A theme runs through stages 3, 6, 7 and 8 that is worth naming, because it is what makes the later stages possible at all. Each of them changes only how the model *responds* to being perturbed, while leaving the steady state — and hence every quantity the earlier stages fitted — exactly where it was. The feeding level, the resource level, the strength of cannibalism and the reproduction level are all knobs of this kind. They are invisible to the biomass, the size distributions and the Ecopath ratios, and they are the only things left to choose once those have been matched.
+
+Stages 1 to 7 are run live below and take about a minute. Stage 8 takes roughly half an hour, so its code is shown but not executed; the recorded results are reproduced instead.
+
+## The data
+
+```{r}
+#| label: load-data
+load(pkg_file("data_Richard_and_Jess_new.rda"))
+```
+
+The data was assembled by `inst/data_from_Richard.R`, which divides Nicola Walker's survey selectivities out of Richard's survey data to obtain the in-sea size distributions. That script writes `inst/data_Richard.rda`; the file loaded above is byte-identical to it but under an older name. It contains three objects.
+
+### Species parameters `sp`
+
+Nine species: `r paste(sp$species, collapse = ", ")`.
+
+The life-history parameters (length–weight coefficients `a`, `b`, maturity size and age, the von Bertalanffy asymptotic weight `w_inf` and growth rate `k_vb`) come from James's compilation. The predation-kernel parameters come from Jess's Celtic Sea model: a `power_law` kernel, which is a smoothly truncated power law specified by four exponents rather than by the more usual lognormal `beta`/`sigma`. The observed biomasses are Richard's, in t/km².
+
+```{r}
+#| label: sp-table
+sp |>
+    select(species, a, b, w_mat, age_mat, w_inf, k_vb,
+           biomass_observed, l_max, biomass_cutoff) |>
+    kable(digits = 3,
+          caption = "Life-history and observation parameters.")
+```
+
+Two entries deserve comment.
+
+`biomass_cutoff` is the weight of a 20 cm fish. Richard's biomass estimates come from survey data that does not see fish below 20 cm, so `biomass_observed` is treated as the biomass *above* that cutoff rather than the biomass of the whole population. Without this the model would be asked to match an observed biomass against a modelled biomass that includes a large number of small fish that were never counted. Note that this is the same 20 cm that @sec-knife-edge is about, and for the same reason.
+
+`D_ext = 1` switches on growth diffusion. Individuals of the same species and age do not all grow at exactly the same rate, and modelling that spread as a diffusion in size broadens the modelled size distribution, which matters when we are about to fit to observed size distributions.
+
+### Gear parameters `gp`
+
+Every species gets **two** gears. This is a device for feeding two different kinds of size information into the same fit:
+
+- a `survey` gear with catchability $10^{-12}$, i.e. effectively zero, and `yield_weight = 0`;
+- a `commercial` gear carrying the observed yield, with `yield_weight = 1`.
+
+The survey gear exists only to give the in-sea size distribution a selectivity curve of its own. Because its catchability is negligible it removes no fish and contributes no yield, and its `yield_observed` is set to a token $10^{-10}$ so that it is not mistaken for missing data. The commercial gear is the one that actually fishes and the one whose yield is matched.
+
+### Size distributions `catch`
+
+```{r}
+#| label: catch-table
+catch |> filter(species == "Cod", length %in% c(20, 40, 60)) |>
+    select(species, gear, length, dl, catch) |>
+    arrange(gear, length) |>
+    kable(digits = 2, caption = "A few rows of the size-distribution data.")
+```
+
+Numbers of fish in 1 cm length bins, for each species and gear. Both come from Richard's data, and they are two different quantities derived from it:
+
+- the **commercial** distribution is $F_\text{mean} \times$ density, so that it is consistent with the yields we are matching;
+- the **survey** distribution is `SnfishQ`, the number of fish in the sea after allowing for the catchability of the survey gears — the in-sea spectrum of @sec-whats-different.
+
+Both start at 20 cm, which is where the survey data stops being informative.
+
+The commercial distribution is rescaled so that it contains the same total number of fish as the survey distribution. Only the *shape* of a size distribution enters the likelihood, so this rescaling changes nothing about the fit; it just stops one gear from dominating simply by having larger numbers.
+
+The data covers sixteen species; the seven that are not among the nine in `sp` are simply ignored.
+
+### Diet matrix
+
+The diet matrix `reduced_dm` is a package dataset, derived from Ecopath diet compositions with `reduceEcopathDiet()`. Rows are predators, columns are prey, entries are the proportion of each predator's diet, and an `other` column collects everything that is not one of the modelled species.
+
+```{r}
+#| label: dm-table
+round(reduced_dm[c("Cod", "Hake", "Megrim"),
+                 c("Blue whiting", "Haddock", "Herring", "Whiting", "other")],
+      3) |>
+    kable(caption = "Part of the diet matrix: proportion of each predator's diet.")
+```
+
+Note how large the `other` column is. Most of what these fish eat is not one of the nine modelled species, and that is the part the model has to represent as external food or, later, as the plankton resource. This single fact turns out to govern a great deal of the model's behaviour, and we return to it in @sec-death.
+
+## Stage 1: the allometric starting model
+
+```{r}
+#| label: allometric
+#| code-fold: show
+#| message: false
+#| warning: false
+p <- newAllometricParams(sp)
+gear_params(p) <- gp
+initial_effort(p) <- 1
+
+p <- steadySingleSpecies(p) |>
+    setBevertonHolt()
+p <- matchBiomasses(p)
+```
+
+`newAllometricParams()` builds a model in which
+
+- the encounter rate is a pure power law $E_i(w) = E_i w^n$ with $n = 0.7$,
+- the natural mortality rate is a pure power law $\mu_i(w) = \mu_i w^{n-1}$,
+- maximum intake is infinite ($h = \infty$) and metabolic respiration is switched off ($k_s = 0$), so the feeding level is zero,
+- species do not interact, either with each other or with the resource: all food is "external",
+- the reproduction level is zero, i.e. reproduction is fully density-independent.
+
+The two power-law coefficients are pinned down by two requirements: the encounter coefficient $E_i$ is chosen so that the species reaches `w_mat` at age `age_mat`, and the mortality coefficient $\mu_i$ is then chosen so that the juvenile biomass spectrum has slope $-0.2$.
+
+This is a deliberately impoverished model, and that is the point. Because nothing interacts, each species can be solved independently and put exactly where we want it, which gives the later stages a well-defined starting point.
+
+## Stage 2: matching the size distributions
+
+### The survey gear as a knife edge {#sec-knife-edge}
+
+The survey distribution is the number of fish in the sea, so the "gear" that produces it catches every fish above 20 cm and none below. Mizer has no knife-edge-at-a-length selectivity function, but `sigmoid_length` becomes one as its two parameters converge:
+
+$$S(l) = \frac{1}{1 + \exp\left(\log 3 \cdot \dfrac{l_{50} - l}{l_{50} - l_{25}}\right)}.$$
+
+So we set $l_{50} = 20$ and $l_{25} = 19.9$.
+
+```{r}
+#| label: knife-edge
+#| code-fold: show
+l_cut <- 20
+gp <- gp |>
+    mutate(l50 = if_else(gear == "survey", l_cut, l50),
+           l25 = if_else(gear == "survey", l_cut - 0.1, l25),
+           fix_selectivity = gear == "survey")
+gear_params(p) <- gp
+```
+
+The transition width $l_{50} - l_{25} = 0.1$ cm is chosen with some care, and 0.1 rather than something smaller for a numerical reason. The exponent above scales like $1/(l_{50}-l_{25})$, and the fit evaluates the selectivity right down to the smallest sizes on the model's grid, so a width of 0.01 cm overflows to `Inf` inside the objective function. At 0.1 cm the selectivity is 0.4% at 19.5 cm and 99.6% at 20.5 cm, which is a knife edge as far as 1 cm data bins are concerned.
+
+```{r}
+#| label: fig-knife
+#| fig-cap: "The survey gear's selectivity. On the scale of the 1 cm data bins this is a step at 20 cm."
+#| fig-height: 2.6
+#| fig-width: 5
+l <- seq(18, 22, length.out = 400)
+ggplot(data.frame(l = l,
+                  S = 1 / (1 + exp(log(3) * (20 - l) / 0.1)))) +
+    aes(l, S) + geom_line(linewidth = 1) +
+    geom_vline(xintercept = 20, linetype = "dashed", colour = "grey40") +
+    labs(x = "Length [cm]", y = "Selectivity")
+```
+
+The `fix_selectivity = TRUE` column is the important part. It tells `matchCatch()` that this gear's selectivity is known rather than estimated, so the fit leaves $l_{50}$ and $l_{25}$ exactly where we put them while still using the survey size distribution to inform everything else. Without it the optimiser would quietly turn our assumption back into two free parameters and fit them to the data — which is precisely the earlier model's situation that we are trying to get away from.
+
+### Anchoring the mortality
+
+```{r}
+#| label: production-anchor
+#| code-fold: show
+species_params(p)$production_observed <- getSomaticProduction(p)
+```
+
+This one line is worth dwelling on. The fit in the next step is free to change the external mortality coefficient `z_ext`, and with only size distributions and a yield to constrain it, it can wander a long way from anything sensible.
+
+In steady state, mortality and production are two sides of the same coin: what a cohort produces in new tissue is exactly what mortality removes. So we can constrain mortality indirectly by telling the optimiser to keep production close to the value the default model already has. We are not claiming to have *observed* the production — we are using `production_observed` as a regularisation term that says "stay near the default mortality unless the size data give you a good reason not to".
+
+### The fit
+
+```{r}
+#| label: matchCatch
+#| code-fold: show
+#| message: false
+#| warning: false
+pm <- matchCatch(p, catch = catch)
+```
+
+`matchCatch()` adjusts, per species, the selectivity parameters of the commercial gear, its catchability, the growth-diffusion coefficient `D_ext` and the external mortality coefficient `z_ext`, by minimising
+
+- the negative log likelihood of the observed size distributions given the distributions the model predicts, plus
+- the squared difference in log yield (commercial gear only, because the survey gear has `yield_weight = 0`), plus
+- the squared difference in log production, i.e. the anchor above.
+
+The reason selectivity, diffusion and mortality have to be fitted *together* is that the model's predicted catch distribution is the product of the selectivity curve and the species' size spectrum, and the size spectrum is itself shaped by the balance between growth, diffusion and mortality. Fitting a selectivity curve against a fixed spectrum, or a mortality against a fixed selectivity, would both be wrong. The objective function is written in C++ and differentiated automatically by TMB, which is what makes a joint fit practical.
+
+The survey gear contributes to the first term only. Its catchability is fixed too — `matchCatch()` fixes the catchability of any gear whose yield it is not matching, because a size distribution constrains the shape of a catch but not its level — so for the survey gear nothing at all is estimated, and its distribution acts purely as information about the size spectrum. That is the whole point of @sec-knife-edge.
+
+It is worth checking that in the finished fit rather than taking it on trust:
+
+```{r}
+#| label: check-fixed
+#| code-fold: show
+gpf <- as.data.frame(gear_params(pm))
+sv <- gpf$gear == "survey"
+c(l50 = max(abs(gpf$l50[sv] - l_cut)),
+  l25 = max(abs(gpf$l25[sv] - (l_cut - 0.1))))
+```
+
+The deviation is around $10^{-14}$ rather than exactly zero, and the reason is worth knowing if you ever write such a check yourself. `matchCatch()` does not optimise $l_{50}$ directly; it optimises a logit-transformed version of it, and reconstructs $l_{50}$ from that on the way out. A parameter held fixed still makes that round trip, so it comes back to within floating-point round-off rather than bit-identically. Test these with `all.equal()`, not `identical()`.
+
+After the fit, the biomass is rescaled to the observation and the reproduction level is reset to zero.
+
+## Stage 3: giving the fish a physiology {#sec-feeding-level}
+
+So far the fish have infinite maximum intake and no metabolic cost, which is convenient but not believable. `setFeedingLevels()` introduces a feeding level $f$ (the fraction of its maximum rate at which a fish eats) and a critical feeding level $f_c$ (below which it cannot grow at all) by solving for the encounter rate $E$, maximum intake $h$ and metabolic loss $k_s$ that produce them:
+
+$$E=E_r\frac{f}{\alpha(f-f_c)(1-f)},\qquad
+  h = \frac{E_r}{\alpha(f-f_c)},\qquad
+  k_s = E_r\frac{f_c}{f-f_c}.$$
+
+The point of solving it this way is that the energy available for growth and reproduction, $E_r$, is held fixed. The fish now have a realistic physiology, but they grow exactly as they did before, so the size-distribution fit from stage 2 is not disturbed.
+
+```{r}
+#| label: feeding-levels
+#| code-fold: show
+#| message: false
+#| warning: false
+# Note that setFeedingLevels() assigns `f` and `f_c` *positionally*: the names
+# below are for our benefit only, and the vector must be in the same order as
+# species_params(pm). It is, because both come from `sp`.
+f <- setNames(rep(0.6, nrow(sp)), sp$species)
+f[["Whiting"]]      <- 0.9
+f[["Blue whiting"]] <- 0.9
+f[["Herring"]]      <- 0.9
+
+pm <- setFeedingLevels(pm, f = f, f_c = f / 3)
+```
+
+### Why the level of $f$ is free, and what it buys
+
+Substituting $h$ back into the consumption rate $f\,h\,w^n$ gives
+
+$$\text{consumption} = \frac{E_r}{\alpha\left(1 - f_c/f\right)},
+  \qquad k_s = E_r\,\frac{f_c/f}{1 - f_c/f},$$
+
+both of which depend on $f$ and $f_c$ **only through their ratio**. So the Ecopath quantities this stage could damage — the consumption $Q/B$ and the respiration — are fixed by $f_c/f$ alone, while the overall *level* of $f$ is free. Keeping $f_c = f/3$ throughout, as the code above does, means the raised feeding levels change neither the steady state nor any Ecopath ratio.
+
+What the level of $f$ does change is how strongly growth responds to a change in food supply. Since $\mathrm{d}f/\mathrm{d}\log E = f(1-f)$,
+
+$$\frac{\mathrm{d}\log E_r}{\mathrm{d}\log E}
+  = \frac{f(1-f)}{f-f_c}
+  = \frac{1-f}{1-f_c/f},$$
+
+which at fixed $f_c/f$ is **linear in** $1-f$. With $f_c = f/3$ this is $1.5\,(1-f)$: at $f = 0.6$ the elasticity is 0.60, at $f = 0.9$ it is 0.15. A fish close to satiation barely grows faster when its competitors are fished away.
+
+That matters because this food-mediated response is one of the compensatory mechanisms that hold a species' yield peak *above* the fishing mortality we are trying to target in stage 8. Damping it brings the peak down. The same structure appears again in stage 6: the resource feedback is linear in $1 - \texttt{resource\_level}$. The two multiply along the food loop, and both are free in exactly the sense described in the introduction.
+
+### Which species need it {#sec-which-f}
+
+Three of the nine are raised, and the choice was made by measurement rather than inherited. The quantity to judge by is where each species' yield peak ends up relative to its target *in the finished model*, after the stage 8 sweep. Five configurations were built and compared:
+
+|              | $f=0.6$ all | W 0.9 | W 0.95 | W+BW 0.9 | **W+BW+Her 0.9** |
+|--------------|------------:|------:|-------:|---------:|-----------------:|
+| Whiting      |    **1.44** |  1.14 |   1.05 |     1.01 |         **1.01** |
+| Blue whiting |    **1.17** |  1.11 |   1.10 |     1.06 |         **1.01** |
+| Herring      |        1.06 |  1.10 |   1.14 |     1.13 |         **1.03** |
+| Megrim       |        1.08 |  1.06 |   1.06 |     0.99 |         **0.97** |
+| Haddock      |        1.07 |  1.05 |   1.05 |     1.00 |         **1.00** |
+| Hake         |        1.01 |  1.01 |   1.01 |     0.98 |         **1.01** |
+| Cod          |        1.04 |  1.05 |   1.05 |     1.05 |         **1.05** |
+| Plaice       |        1.09 |  1.09 |   1.09 |     1.09 |         **1.09** |
+| Sole         |        1.00 |  1.00 |   1.00 |     1.00 |         **1.00** |
+
+: Ratio of the modelled yield peak to the target fishing mortality, for five choices of feeding level. The last column is the configuration used.
+
+With $f = 0.6$ everywhere, Whiting's peak sits 44% above its $F_{MSY}$ and Blue whiting's 17% above; they are the two species that stage 8 cannot bring to target at any reproduction level. Raising both to 0.9 fixes both. Herring is then raised because raising the other two is what pushed it from 1.06 out to 1.13 — the species interact through each other's yield curves, so this is a joint choice and not three independent ones. Raising Whiting alone but further (0.95) is the wrong direction: it helps Whiting and leaves Blue whiting stuck.
+
+Two things about this are worth flagging for anyone re-deriving it.
+
+**The leverage is concentrated at low reproduction levels.** Across $f = 0.6$ to 0.95 the yield-peak diagnostic of @sec-repro swings by 0.20 at a reproduction level of 0.01 but by only 0.02 at 0.5, and there is *no* $f$ that brings Whiting's peak to its target at a reproduction level of 0.5. Judging a candidate $f$ at a mid-range reproduction level makes the knob look useless when it is not.
+
+**A species stuck at the reproduction floor is still moving.** Whiting sits at the floor in three of the five configurations above, and its peak ratio nonetheless ranges from 1.44 to 1.05 across them. Whether the reproduction bisection reports "converged" is therefore not the measure of whether $f$ is doing any good; the peak ratio is.
+
+Plaice at 1.09 and Cod at 1.05 are identical in all five columns, i.e. completely insensitive to this knob, so they are left at the default. Each raise spends a biological prior — that fish feed at around 0.6 of their maximum intake — to buy accuracy in the peak location, so it is only worth doing for species that are actually outliers.
+
+## Stage 4: three species that need more mortality {#sec-production}
+
+If we go straight on to imposing the diet matrix, three species object. `getDietFeasibility()` says which, and by how much, without modifying anything:
+
+```{r}
+#| label: diet-feasibility
+#| code-fold: show
+getDietFeasibility(pm, reduced_dm) |>
+    kable(digits = 3, row.names = FALSE,
+          caption = "Can the diet matrix be imposed?")
+```
+
+`mort_feasible = FALSE` means imposing the diet matrix would require **negative external mortality**. The reason is a simple accounting one. The diet matrix says how much of each species is eaten by the others. Imposing it converts part of the anonymous external mortality into explicit predation mortality. If the diet matrix implies more predation on a species than that species' total mortality in the current model, there is nothing left for external mortality to be, and it would have to go negative to balance the books.
+
+The fix is to give those species more total mortality, which — by the same steady-state identity used in stage 2 — we do by asking for more production. `raiseProductionForDiet()` walks each offending species up a ladder of multipliers, refitting with `matchCatch()` after each change and re-testing the whole set, until none is left infeasible:
+
+```{r}
+#| label: production-fix
+#| code-fold: show
+#| message: false
+#| warning: false
+pm <- raiseProductionForDiet(pm, reduced_dm, catch = catch)
+attr(pm, "production_factors")
+```
+
+The species are stepped together rather than one at a time because they interact: raising one species' mortality changes the predation pressure on the others, so a set of multipliers is only meaningful once it has been verified jointly.
+
+These multipliers are the least satisfying part of the procedure. They are chosen to make the diet matrix fit, not measured, and they do real work in the model — they set the total mortality of three species. Note also that they are derived *after* the feeding levels of stage 3, so they depend on them; they have to be re-derived rather than assumed if those change.
+
+The `enc_feasible = FALSE` entries are a different and milder matter, and are left alone; @sec-interactions explains why. Note that which species they are is not fixed either — raising the production of three species changes the encounter budget of all nine, so the set that is still flagged after this stage is not the set flagged before it.
+
+## Stage 5: species interactions from the diet matrix {#sec-interactions}
+
+```{r}
+#| label: matchDiet
+#| code-fold: show
+#| message: false
+#| warning: false
+pd <- matchDiet(pm, reduced_dm)
+ps <- steady(pd)
+```
+
+`matchDiet()` converts the diet proportions into absolute consumption rates using each predator's consumption rate, then solves for the interaction matrix $\theta_{ij}$ that reproduces them, and applies it. Crucially, as it turns on predation between species it turns down the external encounter and external mortality by exactly the corresponding amounts, so the total food each predator gets and the total mortality each prey suffers are unchanged. The steady state therefore survives; what changes is the *attribution* of food and mortality from anonymous external terms to named species.
+
+Warnings about negative external *encounter* rates remain for Megrim and Hake. For these the diet matrix says they get more food from the modelled species than the model gives them in total, and the shortfall is clipped at zero. This raises their total encounter rate slightly, but only for a very small number of large individuals, so the effect on the steady state is negligible — which is why we call `steady()` afterwards to settle it.
+
+## Stage 6: the plankton resource {#sec-resource}
+
+```{r}
+#| label: resource
+#| code-fold: show
+#| message: false
+#| warning: false
+psr <- addSemichemostatResource(ps, resource_level = 0.5, w_pp_cutoff = 1)
+```
+
+Up to here the resource has been inert. `addSemichemostatResource()` does four things.
+
+**It sets the resource to a power law** $\kappa w^{-\lambda}$ and chooses $\kappa$ so that this power law is *tangent* to the total fish abundance spectrum from above — the smallest resource abundance that still sits everywhere above the fish. That gives a resource on the right scale without having to know its absolute level.
+
+**It cuts the resource off at 1 g.** This is not just realism about what counts as plankton; it is also what makes the next step work. Cutting the resource off small means that a large predator gets a negligible fraction of its food from the resource, so its large individuals stop constraining how much resource interaction it is allowed to have.
+
+**It lets each species absorb as much of its remaining external encounter as it can** into genuine feeding on the resource, adjusting the resource carrying capacity so that the resource abundance and hence the steady state are unchanged. The limit is that resource encounter must not exceed external encounter at any size.
+
+**It sets the resource level and settles the model.** The resource level is the ratio of the resource abundance to its carrying capacity. Setting it does not move the resource: the carrying capacity and the replenishment rate are adjusted together so that the current abundance remains the steady state. What it sets is how hard the resource pushes back. From the semichemostat balance $N_R = c_R\,r/(r+\mu)$,
+
+$$\frac{\mathrm{d}\log N_R}{\mathrm{d}\log \mu}
+  = -\frac{\mu}{r+\mu} = -\left(1 - \texttt{resource\_level}\right),$$
+
+so the strength of the resource's response to a change in the predation on it is linear in $1 - \texttt{resource\_level}$ — the same form as the feeding-level elasticity in @sec-feeding-level. At 1 the resource is an inexhaustible fixed background; at 0 its abundance is inversely proportional to the pressure on it. At 0.5, a 10% drop in predation on the resource buys a 5% rise in its abundance.
+
+This is the second of the response-only knobs, and it is worth knowing which species it can actually reach. The resource is cut off at 1 g, so it feeds larvae and small juveniles of everything, but for a predator whose adult diet is mostly fish or external food it does almost no work. That is what forces the next stage.
+
+## Stage 7: cannibalism and the yield peak {#sec-cannibalism}
+
+Stage 8 chooses each species' reproduction level so that its yield curve peaks at its $F_{MSY}$. For cod that criterion cannot be met, and this stage explains why and fixes it.
+
+### Why the reproduction level runs out
+
+Push the reproduction level towards zero and recruitment becomes proportional to egg production. The steady state has been calibrated to sit exactly at replacement at the current fishing mortality, so with no other density dependence in the model, *no* positive steady state would exist at any higher $F$ and the yield curve would peak exactly at the current $F$. It follows that whenever the peak sits above the target with the reproduction level already at its floor, something other than reproduction is compensating — and the reproduction level cannot reach it.
+
+For cod, that something is cannibalism. Two facts locate it. First, the mortality on juvenile cod:
+
+```{r}
+#| label: cod-mortality
+m2 <- getPredMort(psr); m0 <- ext_mort(psr); fm <- getFMort(psr)
+idx <- vapply(c(0.01, 1, 10, 100, 1000),
+              function(x) which.min(abs(w(psr) - x)), integer(1))
+data.frame(
+    `w (g)`      = signif(w(psr)[idx], 2),
+    predation    = signif(m2["Cod", idx], 3),
+    external     = signif(m0["Cod", idx], 3),
+    fishing      = signif(fm["Cod", idx], 3),
+    `predation share` = signif(m2["Cod", idx] /
+        (m2["Cod", idx] + m0["Cod", idx] + fm["Cod", idx]), 2),
+    check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "Mortality on cod, by source and size (1/yr).")
+```
+
+Larval mortality is almost entirely external, and external mortality is a fixed rate that cannot respond to anything. But over the juvenile range predation supplies a substantial share. Second, who that predator is:
+
+```{r}
+#| label: cod-predators
+inter <- interaction_matrix(psr)
+data.frame(predator = rownames(inter),
+           `on cod` = signif(inter[, "Cod"], 3),
+           check.names = FALSE) |>
+    dplyr::filter(`on cod` > 0) |>
+    kable(row.names = FALSE, caption = "Non-zero entries of the cod column.")
+```
+
+Nothing else in the model eats cod. So every unit of predation mortality on juvenile cod comes from adult cod, and fishing the adults down releases the juveniles in direct proportion — a powerful compensatory mechanism, and one mizer applies without any foraging-arena refuge to damp it.
+
+### Reallocating cannibalism
+
+The remedy is to weaken the cod-on-cod entry of the interaction matrix and hand back what that removes: the lost predation mortality to external mortality, the lost food to external encounter. This is `makeInteracting()` run in reverse, and it leaves growth, mortality, the spectrum and the size distributions exactly where they were.
+
+```{r}
+#| label: set-cannib
+#| code-fold: show
+psr <- rescaleInteraction(psr, "Cod", factor = 0.1875)
+```
+
+The ordering inside `rescaleInteraction()` is not cosmetic, and is the easy thing to get wrong when doing this by hand. Predation mortality carries a factor $(1-f)$, so it depends on the feeding level and hence on the encounter rate; measuring the mortality shortfall before the encounter has been restored attributes a spurious external mortality to every species cod preys on. With the correct order the steady state is preserved to machine precision and the model does not move when projected.
+
+### What it costs
+
+Almost nothing, and the reason is an asymmetry worth stating plainly. Cannibalism accounts for a little over 1% of cod's diet by mass but supplies a quarter to a half of the mortality on juvenile cod, because the prey in question are tiny. So reallocating it barely registers in the diet matrix while transforming how cod responds to fishing.
+
+What is genuinely given up is that cannibalism, which the Ecopath diet matrix does report, is now carried as anonymous external mortality. Mizer ties a predator's diet and its prey's mortality to the same coefficient, so there is no way to keep one and drop the other. Whether that is a fair trade depends on whether one believes the Ecopath cannibalism entry more than the $F_{MSY}$ estimate.
+
+## Stage 8: reproduction levels {#sec-repro}
+
+The reproduction level controls how strongly reproduction is buffered against changes in spawning stock: 0 means recruitment is proportional to spawning stock, 1 means it is completely insensitive to it. It is not something we can read off the data, but it has a large effect on how the model responds to fishing — the more density dependence, the less a species suffers from being fished, and the higher $F_{MSY}$.
+
+The criterion used here is that the peak of each species' yield-versus-$F$ curve should sit at that species' $F_{MSY}$, taken from the `FMSY` column of `sp` — the ICES reference points that came with the data. Plaice has no `FMSY`, and for it we fall back to the fishing mortality the model says it currently experiences, i.e. the catchability that `matchCatch()` fitted.
+
+Targeting the assessment $F_{MSY}$ rather than the current $F$ is a real choice, and a stronger one than it looks: it makes the reproduction level carry whatever discrepancy exists between the single-species reference point and the multispecies model's own productivity. The alternative — assuming the fishery is currently *at* MSY and targeting the fitted $F$ — asks less of the data but asserts more about the fishery. @sec-caveats records how far apart the two are.
+
+`tuneReproductionLevel()` automates the search. It bisects each species' reproduction level in $u = -\log(1 - r_l)$, because the peak location is most sensitive to the reproduction level as it approaches 1, and sweeps through the community more than once because changing one species' level shifts the others' yield curves.
+
+```{r}
+#| label: repro-sweep
+#| eval: false
+#| code-fold: show
+params <- tuneReproductionLevel(psr, sweeps = 2)
+attr(params, "tuning")
+```
+
+This takes roughly half an hour, which is why it is not run here. The result:
+
+```{r}
+#| label: repro-recorded
+#| code-fold: show
+rl_recorded <- c(Herring        = 0.4995, Cod     = 0.2571, Megrim = 0.8674,
+                 Haddock        = 0.6861, Whiting = 0.1111, Hake   = 0.3565,
+                 `Blue whiting` = 0.4622, Plaice  = 0.6377, Sole   = 0.8233)
+params <- setBevertonHolt(psr, reproduction_level = rl_recorded)
+```
+
+**All nine species converge to an interior reproduction level.** That is worth pausing on, because it is the return on stages 3 and 7. With every species at the default feeding level, Whiting and Blue whiting could not be brought to target at *any* reproduction level and sat pinned at the floor of 0.01 with their peaks 44% and 17% too high (@sec-which-f). Raising their feeding levels, and Herring's, is what freed them.
+
+Where the peaks end up, measured with `getYieldPeaks()` on the finished model:
+
+| Species      | target $F$ | $F_\text{peak}$ | ratio |
+|--------------|-----------:|----------------:|------:|
+| Herring      |      0.260 |           0.268 |  1.03 |
+| Cod          |      0.290 |           0.305 |  1.05 |
+| Megrim       |      0.270 |           0.262 |  0.97 |
+| Haddock      |      0.353 |           0.354 |  1.00 |
+| Whiting      |      0.375 |           0.379 |  1.01 |
+| Hake         |      0.240 |           0.242 |  1.01 |
+| Blue whiting |      0.320 |           0.323 |  1.01 |
+| Plaice       |      0.153 |           0.167 |  1.09 |
+| Sole         |      0.270 |           0.271 |  1.00 |
+
+: Location of each species' yield peak in the final model. Plaice's target is its fitted $F$; all others are $F_{MSY}$.
+
+Every species is within 9% of its target and six are within 1%. Two remarks on how much that is worth:
+
+**The criterion pins the reproduction level much less tightly than these ratios suggest.** Yield curves are flat near their maximum, so a 5% error in the location of the peak costs a fraction of a percent in yield. Conversely, the bisection's own convergence test is a finite difference across $\pm 25\%$ of the target $F$, and on a flat curve that can read as converged while the peak is still several percent away. `getYieldPeaks()` exists to check the thing we actually care about rather than the thing the bisection tests.
+
+**Plaice's 1.09 is not something the reproduction level can fix.** It measured 1.09 in all five feeding-level configurations of @sec-which-f, and its reproduction level is interior, so neither knob reaches it.
+
+**Two sweeps is a truncated iteration, not a converged answer.** In the recorded run Herring moved from 0.42 to 0.50 and Hake from 0.36 to 0.26 between the two sweeps, so the values above should be read as a second iterate. The same caveat applies with more force to the interaction between this stage and stages 3 and 7, which @sec-caveats returns to.
+
+## The resulting model
+
+The final model is `psr` as built above, plus the reproduction levels just applied. Exactly this object, rebuilt by `inst/create_model_from_Richard_and_Jess_new.R`, is saved as `inst/params_final_Richard_and_Jess_new.rds`.
+
+```{r}
+#| label: check-repro
+data.frame(species = species_params(params)$species,
+           feeding_level = round(f, 2),
+           reproduction_level = round(getReproductionLevel(params), 3)) |>
+    kable(row.names = FALSE,
+          caption = "The two response-only knobs in the final model.")
+```
+
+### Biomass and yield
+
+```{r}
+#| label: fig-biomass
+#| fig-cap: "Modelled versus observed biomass."
+plotBiomassVsSpecies(params)
+```
+
+```{r}
+#| label: fig-yield
+#| fig-cap: "Modelled versus observed yield."
+plotYieldVsSpecies(params)
+```
+
+These are the two quantities the calibration targeted directly, so agreement here is a check that nothing went wrong rather than a test of the model.
+
+### The fit to the size distributions {#sec-fit}
+
+This is the quantity the whole procedure is built around, so it is the fit worth looking at hardest. The red curve is the model's predicted catch size distribution, the blue curve the observed one, and the grey curve the modelled abundance.
+
+For the **survey** panels the grey and red curves should coincide above 20 cm and the red should drop to zero below it. That is the visual statement of @sec-knife-edge: the gear is a knife edge, so its "catch" *is* the abundance, and the panel is therefore a direct comparison between the modelled and the observed in-sea size spectrum. For the **commercial** panels the gap between grey and red is the fitted selectivity.
+
+```{r}
+#| label: fig-catchdist
+#| fig-cap: "Observed and modelled size distributions, commercial gear (left) and survey gear (right)."
+#| layout-ncol: 2
+#| fig-width: 6
+#| fig-height: 3.6
+#| message: false
+#| warning: false
+for (s in species_params(params)$species) {
+    for (g in c("commercial", "survey")) {
+        print(plotYieldVsSize(params, species = s, gear = g,
+                              catch = catch, x_var = "Length"))
+    }
+}
+```
+
+Note that `plot_catch()` cannot be used for this: it works from `getFMort()`, which sums over gears, so with the survey gear's catchability at $10^{-12}$ it would silently show the commercial curve on both panels.
+
+The observed curves are noisy because they are raw 1 cm bins; what matters is whether the model reproduces the position and width of the distribution, not the bin-to-bin wiggles. Two structural limits are worth knowing before reading them.
+
+**The modelled spectrum is smooth where the data is not, and it can no longer hide.** Several species show an observed in-sea distribution with a sharp mode not far above 20 cm that then falls away steeply. A single power-law-derived spectrum broadened by growth diffusion cannot produce a peak that sharp, so the fit compromises.
+
+Blue whiting is the clearest case, and the one to look at hardest: its observed distribution peaks at 21 cm and has essentially died away by 32 cm, while the model peaks at 24 cm and carries a tail out to 47 cm. It also has by far the largest sample in the data, so this is a real disagreement and not scatter. Herring shows the same thing more mildly — an observed mode at 25–26 cm about 50% taller than the model's.
+
+This is the cost of the change described in @sec-whats-different, and it is worth being explicit about the trade. In the earlier, catch-based model the same three or four species misbehaved in the same direction, and the remedy available there was to give their *survey* gears a dome-shaped `double_sigmoid_length` selectivity: a fall-off that the spectrum was being forced to explain could be handed to the observation model instead. That remedy is not available here by construction. The survey selectivity is an assumption about what the data *is*, not a curve to be fitted, so a misfit between the modelled and observed spectrum has nowhere else to go and appears where it belongs — in the spectrum. The in-sea data therefore constrains the model considerably harder, and these panels are the honest picture of how well it does.
+
+**Sample sizes differ by two orders of magnitude.** Cod's distribution rests on about 4,000 fish against 3.7 million for Blue whiting, so a poor-looking Cod panel is mostly irreducible scatter while a poor-looking Blue whiting panel is not.
+
+### Size spectra
+
+```{r}
+#| label: fig-spectra
+#| fig-cap: "Biomass density in log size, by species."
+plotlySpectra(params, power = 2, ylim = c(1e-7, NA))
+```
+
+Plotting with `power = 2` shows biomass density per log size interval, so a flat line means equal biomass in every size octave. This is the quantity in which the Sheldon spectrum is roughly flat, and it is the most informative way to look for species that are implausibly abundant at some size.
+
+### Fishing mortality
+
+```{r}
+#| label: fig-fmort
+#| fig-cap: "Fishing mortality as a function of size."
+plotlyFMort(params, size_axis = "l", llim = c(18, NA))
+```
+
+These are the fitted selectivity curves of the commercial gear multiplied by the fitted catchabilities. The survey gear contributes nothing visible despite being a knife edge, because its catchability is $10^{-12}$ — it is an observation device, not a fishery.
+
+### Growth
+
+```{r}
+#| label: fig-growth
+#| fig-cap: "Modelled growth curves against the von Bertalanffy curves."
+#| fig-height: 7
+plotGrowthCurves(params, species_panel = TRUE)
+```
+
+Growth was never fitted directly: it emerged from the encounter rates, which were pinned by requiring each species to reach `w_mat` at `age_mat`, and then reshaped by the feeding level and the interactions. So the comparison with the von Bertalanffy curves is a genuine test.
+
+### Diet
+
+```{r}
+#| label: fig-diet
+#| fig-cap: "Diet composition of all species as a function of predator size."
+plotDiet(params)
+```
+
+The diet composition changes with predator size even though the diet matrix that was matched is a single size-averaged number per predator–prey pair: the size structure of the diet comes out of the predation kernel and the abundances, not out of the data. So the transitions in these panels are a prediction rather than an input.
+
+The dominant impression is also correct and worth stating plainly: **this is a model in which the fish mostly do not eat each other.** Green (resource) and grey (external) fill almost every panel, because the `other` column of the diet matrix is large.
+
+```{r}
+#| label: tbl-diet-share
+dm <- getDietMatrix(params)
+sps <- species_params(params)$species
+data.frame(species = sps,
+           `% of diet from modelled species` =
+               round(100 * rowSums(dm[, sps]) / rowSums(dm), 1),
+           check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "How connected each predator is to the rest of the model.")
+```
+
+Only Cod, Megrim, Hake and Whiting take a double-digit percentage of their food from modelled species; for Herring, Plaice and Sole it is essentially nothing. They are in the model as prey and as competitors for external food, not as predators of anything represented here.
+
+### Death {#sec-death}
+
+```{r}
+#| label: fig-death
+#| fig-cap: "Sources of mortality for all species as a function of size."
+plotlyDeath(params)
+```
+
+This is the most diagnostic figure in the document, because it shows how much of the model's mortality the modelled food web actually accounts for, and where. Averaged over each species' biomass:
+
+```{r}
+#| label: tbl-death-shares
+m2 <- getPredMort(params); m0 <- ext_mort(params); fm <- getFMort(params)
+tot <- m2 + m0 + fm
+N <- initialN(params)
+wt <- N * matrix(dw(params) * w(params), nrow = nrow(N), ncol = ncol(N),
+                 byrow = TRUE)
+wmean <- function(x) rowSums(x * wt) / rowSums(wt)
+data.frame(species = species_params(params)$species,
+           external = round(wmean(m0 / tot), 2),
+           predation = round(wmean(m2 / tot), 2),
+           fishing = round(wmean(fm / tot), 2),
+           `peak predation share` = round(apply(m2 / tot, 1, max), 2),
+           `at w (g)` = signif(w(params)[apply(m2 / tot, 1, which.max)], 2),
+           check.names = FALSE) |>
+    kable(row.names = FALSE,
+          caption = "Mortality by source, weighted by biomass, and the size at which predation matters most.")
+```
+
+**External mortality is the largest single source for most species**, and at larval sizes it is essentially 100% for all nine. That is not so much a modelling choice as the arithmetic of the diet matrix: predation mortality can only come from the nine modelled predators, and @fig-diet has just shown how small a part of anyone's diet they are.
+
+This matters well beyond bookkeeping, and it is what makes stages 7 and 8 hard. External mortality is a **fixed rate** — it cannot fall when a species is fished down. So the compensatory mechanisms that hold a yield curve up, chiefly the release of juveniles from predation, act on a minority of the mortality budget, and the reproduction level has to do most of the work. It is also the general form of the argument made for cod in @sec-cannibalism.
+
+**Predation is a hump over juveniles, not a background.** For every species the coloured band peaks at small sizes and then collapses, because mizer's predation kernel means a predator eats prey one or two orders of magnitude lighter than itself. The peaks can be dramatic, but they are confined to a size range that carries almost no biomass and no yield. That is why the biomass-weighted column and the peak column differ so much, and it is the biomass-weighted one that governs how a species responds to fishing.
+
+**The blue band across the top of Cod's panel is the cannibalism of @sec-cannibalism**, still doing real work after being weakened to $\lambda = 0.1875$ — a reminder that what was reallocated was five sixths of a term that mattered.
+
+### Reproductive efficiency
+
+```{r}
+#| label: fig-repro-efficiency
+#| fig-cap: "Proportion of investment into reproduction that is converted into larval biomass."
+spf <- species_params(params)
+repro_efficiency <- spf$erepro * getRDD(params) / getRDI(params)
+df <- data.frame(Species = factor(spf$species, levels = spf$species),
+                 value = repro_efficiency)
+ggplot(df, aes(x = Species, y = value)) +
+    geom_col() + geom_hline(yintercept = 1, color = "red") +
+    scale_y_log10(name = "Reproductive efficiency") +
+    theme(text = element_text(size = 12)) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+The quantity plotted is $\texttt{erepro} \times \mathrm{RDD}/\mathrm{RDI}$, and since mizer's Beverton–Holt gives $\mathrm{RDD}/\mathrm{RDI} = 1 - r_l$ exactly, each bar is
+
+$$\text{realised efficiency} = \texttt{erepro}\,(1 - r_l).$$
+
+That makes the figure a compact summary of the two things the calibration chose for reproduction. `erepro` is whatever value makes the fitted spectrum self-replacing given the fitted mortality — a residual of stages 1 and 2, not an observation — and $1 - r_l$ is the density-dependent survival that @sec-repro laid on top of it.
+
+```{r}
+#| label: tbl-repro-efficiency
+data.frame(species = spf$species,
+           erepro = signif(spf$erepro, 3),
+           `1 - r_l` = round(getRDD(params) / getRDI(params), 3),
+           realised = signif(repro_efficiency, 3),
+           check.names = FALSE) |>
+    kable(row.names = FALSE, caption = "The two factors behind each bar.")
+```
+
+**The red line is not approached**, which is the check it exists to perform: nowhere in the steady state is the model demanding more larval biomass than the spawning stock can physically produce.
+
+**The bars should not be read as reproductive biology alone.** Because every species now has an interior reproduction level, every bar is discounted by a factor $1-r_l$ that the yield-peak criterion chose — by a factor of about 7 for Megrim and 6 for Sole. For those species most of the bar height is density dependence demanded by the $F_{MSY}$ target rather than anything about their eggs.
+
+## Caveats and open questions {#sec-caveats}
+
+**The survey selectivity is an assumption, not a fit.** Everything about the in-sea size distributions rests on all fish above 20 cm being represented and none below. If the true survey selectivity rolls on gradually through 20 cm, or is dome-shaped, then the fixed knife edge pushes that shape into the fitted spectrum instead, where it is absorbed by mortality and growth diffusion. @sec-fit notes where this is visible. The cutoff is at least consistent with `biomass_cutoff`, so the biomass and the size distributions are being read on the same convention.
+
+**The production multipliers in stage 4 are tuning knobs, not observations.** They were chosen so that the diet matrix could be imposed without demanding negative external mortality, they set the total mortality of three species, and they deserve to be replaced by something better founded.
+
+**The** $F_{MSY}$ **targets are a long way from the fitted fishing mortalities:**
+
+| Species      | $F$ fitted | $F_{MSY}$ | ratio |
+|--------------|-----------:|----------:|------:|
+| Herring      |     0.0037 |     0.260 |  69.7 |
+| Blue whiting |     0.0121 |     0.320 |  26.5 |
+| Megrim       |     0.0750 |     0.270 |   3.6 |
+| Haddock      |     0.1630 |     0.353 |   2.2 |
+| Whiting      |     0.2010 |     0.375 |   1.9 |
+| Sole         |     0.1910 |     0.271 |   1.4 |
+| Hake         |     0.3170 |     0.240 |  0.76 |
+| Cod          |     0.5960 |     0.290 |  0.49 |
+
+For Herring and Blue whiting the criterion asks where the yield peak sits at some 25 to 70 times the fishing mortality the model was calibrated at. Nothing in the size distributions constrains the model that far from its fitted state, so their reproduction levels — and their raised feeding levels, which were chosen against the same criterion — rest on an extrapolation rather than on data. Both are among the three species raised in @sec-which-f, which is worth keeping in mind when reading that table.
+
+**Cannibalism is reallocated, not explained away.** Stage 7 moves five sixths of cod's cannibalism into anonymous external mortality because it is what keeps cod's yield peak above $F_{MSY}$. The Ecopath diet matrix does report cod cannibalism, so this is a decision to trust the $F_{MSY}$ estimate over that diet entry, taken because mizer offers no way to keep a predator's diet while softening its effect on the prey. A model with a saturating cannibalism functional response would not need the fudge.
+
+**The feeding levels, the cannibalism multiplier and the reproduction levels are all conditional on each other.** Each was chosen against the yield-peak criterion while holding the others fixed, and the stage 8 sweep then moves the reproduction levels. The whole set should really be iterated to convergence together. This is not merely theoretical: @sec-which-f shows the feeding-level choice being decided by interactions between species, and the two reproduction sweeps do not agree with each other. The five-configuration comparison is a coarse search over a joint problem, not a solution to it.
+
+**`tuneReproductionLevel()`'s convergence test is not the quantity of interest.** It bisects on a finite difference across $\pm 25\%$ of the target $F$; the peak location is what matters. On a flat yield curve the two can disagree by several percent, and reading the status rather than the peak ratio is what makes a knob look ineffective when it is not (@sec-which-f). Use `getYieldPeaks()`.
