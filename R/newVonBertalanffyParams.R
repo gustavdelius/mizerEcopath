@@ -101,15 +101,15 @@ newVonBertalanffyParams <- function(species_params, no_w = 200, max_w = NULL) {
                                w_pp_cutoff = max_w * (1 + 1e-9),
                                resource_dynamics = "resource_constant",
                                n = 0.7)
-    sp <- p@species_params
+    sp <- p@given_species_params
 
     # Switch off all interactions
     interaction_matrix(p)[] <- 0
     sp$interaction_resource <- 0
 
-    # Switch off satiation
+    # Switch off satiation. First need to set gamma to arbitrary value
+    sp$gamma <- 1
     sp$h <- Inf
-    intake_max(p)[] <- Inf
 
     # Set constant metabolic rate
     sp$k <- sp$b * sp$k_vb
@@ -203,7 +203,7 @@ newVonBertalanffyParams <- function(species_params, no_w = 200, max_w = NULL) {
 
     species_params(p) <- sp
     # Match Biomasses
-    p <- matchBiomasses(p)
+    p <- matchBiomasses(p, info_level = 0)
     # Set to steady state
     p <- steadySingleSpecies(p, keep = "biomass")
     p <- setBevertonHolt(p, reproduction_level = 0)
