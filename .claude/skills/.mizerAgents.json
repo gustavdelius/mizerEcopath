@@ -2,7 +2,7 @@
   "version": 1,
   "files": {
     "analyse-and-plot/SKILL.md": "173b968cf4ac79e9b397faca6a34a398",
-    "analyse-stability/SKILL.md": "b8dda4658d9ffca62c190e1bd5a5a811",
+    "analyse-stability/SKILL.md": "54abb50e187877375ced0c84abc80681",
     "build-model/SKILL.md": "46dff4d662caef9eeeaf21c26c2341a0",
     "calibrate-model/SKILL.md": "218c228c2a8723e652ba30e3f93bb994",
     "change-parameters/SKILL.md": "89124ea6b8935498d0d1c5338a85dece",
@@ -10,7 +10,7 @@
     "run-simulation/SKILL.md": "7330872f6d6e02460378f2464499c439",
     "set-up-fishing/SKILL.md": "77f3e686351064c1ac9f8e7a031bb150",
     "understand-size-spectrum-dynamics/SKILL.md": "7ca03314f402b6c6ace9ae65c8d24527",
-    "upgrade-mizer-code/SKILL.md": "d4beab1b41bd33009c9ec237358c526a",
+    "upgrade-mizer-code/SKILL.md": "646ecd97f15b0cadf49bc3bce94077a7",
     "use-extension-packages/SKILL.md": "3f077868f95adce50736d0cb70dac36f"
   }
 }
