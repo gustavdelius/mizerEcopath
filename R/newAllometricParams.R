@@ -78,7 +78,14 @@ newAllometricParams <- function(species_params, no_w = 200, max_w = NULL) {
                                w_pp_cutoff = max_w * (1 + 1e-9),
                                resource_dynamics = "resource_constant",
                                n = 0.7)
-    sp <- p@given_species_params
+    # Pin the search volume coefficient before switching off satiation below.
+    # By default mizer derives `gamma` from `h` and the feeding level `f0`, so
+    # `h = Inf` would give an infinite `gamma` and hence an infinite search
+    # volume, which mizer rejects. The search volume has nothing to do with
+    # satiation, so we record the value calculated from the default `h` as a
+    # given species parameter and it then survives the change of `h`.
+    given_species_params(p)$gamma <- p@species_params$gamma
+    sp <- p@species_params
 
     # Switch off all interactions
     interaction_matrix(p)[] <- 0

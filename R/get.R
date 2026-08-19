@@ -1,38 +1,3 @@
-#' Bin-average a summary-integral weight
-#'
-#' The Ecopath quantities are all integrals of the form
-#' \eqn{\int N_i(w) K_i(w)\,dw}, which are discretised on mizer's finite-volume
-#' size grid as \eqn{\sum_j N_{ij}\bar K_{ij}\Delta w_j}. To be second order in
-#' the bin width, the left-edge point value \eqn{K_i(w_j)} has to be replaced by
-#' the trapezoidal bin average \eqn{(K_i(w_j) + K_i(w_{j+1}))/2}. This helper
-#' does that when the model has bin averaging switched on with
-#' [mizer::second_order_w()] and returns the weight unchanged otherwise, so that
-#' models on mizer's default first-order path keep their previous left-edge
-#' Riemann sums unchanged.
-#'
-#' Any size-window mask should be multiplied into `K` before calling this, so
-#' that it is bin-averaged together with the rest of the weight and the bin that
-#' straddles the edge of the window contributes only partially. That is what
-#' [mizer::getBiomass()] does.
-#'
-#' This is a thin wrapper around mizer's own internal helper, so that the
-#' quadrature used here is by construction the one mizer uses for its own
-#' summary integrals.
-#'
-#' @param K A numeric vector of weights indexed over the size grid, or a numeric
-#'   array whose last dimension runs over the size grid.
-#' @param params A MizerParams object.
-#' @return `K`, trapezoidally bin-averaged along the size dimension if the model
-#'   has bin averaging switched on, otherwise unchanged.
-#' @keywords internal
-#' @concept helper
-binAverageWeight <- function(K, params) {
-    if (isTRUE(params@second_order_w[["bin_average"]])) {
-        return(mizer:::bin_average_weight(K))
-    }
-    K
-}
-
 #' Get somatic production for each species
 #'
 #' For each species, returns the rate at which somatic biomass is produced by all
@@ -66,7 +31,7 @@ binAverageWeight <- function(K, params) {
 getSomaticProduction <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(getEGrowth(params) * sel, params)
+    K <- bin_average_weight(getEGrowth(params) * sel, params)
     Ps <- as.vector((N * K) %*% dw(params))
     names(Ps) <- params@species_params$species
     return(Ps)
@@ -89,7 +54,7 @@ getSomaticProduction <- function(params, ...) {
 getGonadicProduction <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(getERepro(params) * sel, params)
+    K <- bin_average_weight(getERepro(params) * sel, params)
     Pg <- as.vector((N * K) %*% dw(params))
     names(Pg) <- params@species_params$species
     return(Pg)
@@ -119,7 +84,7 @@ getGonadicProduction <- function(params, ...) {
 getTotalProduction <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(getEReproAndGrowth(params) * sel, params)
+    K <- bin_average_weight(getEReproAndGrowth(params) * sel, params)
     Pg <- as.vector((N * K) %*% dw(params))
     names(Pg) <- params@species_params$species
     return(Pg)
@@ -179,7 +144,7 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
     sel <- params@w >= min_w_pred & params@w <= max_w_pred
     K <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)),
                2, sel, "*")
-    K <- binAverageWeight(K, params)
+    K <- bin_average_weight(K, params)
     Q <- drop((N * K) %*% dw(params))
     return(Q)
 }
@@ -210,7 +175,7 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 getMetabolicRespiration <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(getMetabolicRate(params) * sel, params)
+    K <- bin_average_weight(getMetabolicRate(params) * sel, params)
     R <- as.vector((N * K) %*% dw(params))
     names(R) <- params@species_params$species
     return(R)
@@ -306,7 +271,7 @@ getUnassimilated <- function(params) {
 getZB <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(sweep(getMort(params) * sel, 2, w(params), "*"),
+    K <- bin_average_weight(sweep(getMort(params) * sel, 2, w(params), "*"),
                           params)
     ZB <- as.vector((N * K) %*% dw(params))
     names(ZB) <- params@species_params$species
@@ -337,7 +302,7 @@ getZB <- function(params, ...) {
 getM0B <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(sweep(getExtMort(params) * sel, 2, w(params), "*"),
+    K <- bin_average_weight(sweep(getExtMort(params) * sel, 2, w(params), "*"),
                           params)
     M0B <- as.vector((N * K) %*% dw(params))
     names(M0B) <- params@species_params$species
@@ -368,7 +333,7 @@ getM0B <- function(params, ...) {
 getM2B <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- binAverageWeight(sweep(getPredMort(params) * sel, 2, w(params), "*"),
+    K <- bin_average_weight(sweep(getPredMort(params) * sel, 2, w(params), "*"),
                           params)
     M2B <- as.vector((N * K) %*% dw(params))
     names(M2B) <- params@species_params$species

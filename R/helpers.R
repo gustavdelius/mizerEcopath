@@ -224,18 +224,34 @@ addEcopathParams <- function(species_params, ecopath_params,
 #' @export
 makeNoninteracting <- function(params) {
 
-    # Put predation mortality into external mortality
-    params@mu_b[] <- params@mu_b + getPredMort(params)
+    # Put predation mortality into external mortality. Going through the
+    # replacement function rather than writing `params@mu_b` records the rate as
+    # having been set manually, so that a later recalculation does not reset it
+    # to the value implied by the `z0` species parameter.
+    ext_mort(params) <- ext_mort(params) + getPredMort(params)
 
     # Put predation encounter into external encounter
     # We make the assumption that all of the encounter rate is from
     # predation and ext_encounter. We need to do this because we do not have
     # a way to calculate the encounter specifically from predation. There is
     # no getPredEncounter() function.
-    params@ext_encounter[] <- getEncounter(params)
+    # As above, the replacement function protects the rate against being
+    # recalculated from `E_ext` (and hence reset to zero) later on.
+    ext_encounter(params) <- getEncounter(params)
 
     # Set the interaction matrix to zero
     interaction_matrix(params)[] <- 0
+    # Switch off the interaction with the resource. `interaction_resource` is a
+    # setter-owned species parameter, so it has to be recorded in
+    # `given_species_params`; otherwise the next recalculation resets it to its
+    # default of 1 and the resource encounter comes back on top of the external
+    # encounter rate we have just set. We write the record directly rather than
+    # through `given_species_params<-` because that setter always triggers a
+    # full `setParams()`, which would recalculate rates this function is
+    # supposed to leave alone. `species_params(recalculate = FALSE)<-` is no use
+    # either: it only records parameters whose value it sees change, and the
+    # value here may already be 0 without having been recorded.
+    params@given_species_params$interaction_resource <- 0
     params@species_params$interaction_resource <- 0
 
     return(params)

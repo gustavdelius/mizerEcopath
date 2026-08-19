@@ -9,6 +9,15 @@ test_that("matchDiet(params, diet_matrix = getDietMatrix(params)) leaves params 
     # rate; this is expected for this model and documented in ?matchDiet.
     result <- suppressWarnings(matchDiet(celtic_params, diet_matrix = dm))
     result@time_modified <- celtic_params@time_modified
+    # `makeNoninteracting()` records `interaction_resource` in
+    # `given_species_params` so that a later recalculation cannot reset it to
+    # its default of 1. `celtic_params` carries the value only in its calculated
+    # species parameters, so the round trip adds that record. It is the only
+    # thing it adds, and it holds the value the model already had.
+    expect_equal(result@given_species_params$interaction_resource,
+                 celtic_params@species_params$interaction_resource)
+    result@given_species_params$interaction_resource <-
+        celtic_params@given_species_params$interaction_resource
     expect_equal(result, celtic_params)
 
     # Same with North Sea model
@@ -136,6 +145,10 @@ test_that("matchDiet works with a single species", {
     dm <- getDietMatrix(params1)
     result <- matchDiet(params1, diet_matrix = dm)
     result@time_modified <- params1@time_modified
+    # See the note on the recorded `interaction_resource` in the round-trip test
+    # above.
+    result@given_species_params$interaction_resource <-
+        params1@given_species_params$interaction_resource
     expect_equal(result, params1)
 })
 

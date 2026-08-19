@@ -128,8 +128,7 @@ update_params <- function(params, species = 1, pars, data) {
         w_select <- params@w >= data$w[1] & params@w <= data$w[length(data$w)]
         cur_bm <- tmb_biomass(params@initial_n[sp_select, w_select],
                               params@w[w_select], params@dw[w_select],
-                              data$biomass_cutoff_idx,
-                              isTRUE(params@second_order_w[["bin_average"]]))
+                              data$biomass_cutoff_idx, params)
         params@initial_n[sp_select, ] <- params@initial_n[sp_select, ] * (data$biomass / cur_bm)
     }
 

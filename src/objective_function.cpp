@@ -22,7 +22,7 @@ vector<Type> bin_average_weight(vector<Type> K)
 template<class Type>
 vector<Type> calculate_F_mort(Type sel_func, Type logit_l50, Type log_ratio_left, Type log_l50_right_offset, Type log_ratio_right,
                               Type log_catchability, vector<Type> L, Type min_len, Type max_len,
-                              vector<Type> w, vector<Type> dw, Type b_lw, int second_order)
+                              vector<Type> w, vector<Type> dw, Type b_lw, int bin_average)
 {
     Type l50 = min_len + (max_len - min_len) * invlogit(logit_l50);
     Type l25 = l50 * (1 - invlogit(log_ratio_left));
@@ -49,7 +49,11 @@ vector<Type> calculate_F_mort(Type sel_func, Type logit_l50, Type log_ratio_left
         s2_right = s1_right / l50_right;
     }
 
-    if (second_order == 1) {
+    // mizer's `calc_selectivity()` gates this Q-point midpoint rule on
+    // `second_order_w(params)[["bin_average"]]`, not on the flux scheme, so
+    // that is the switch we have to follow here for the optimised selectivity
+    // to agree with the model's `selectivity` slot.
+    if (bin_average == 1) {
         // Bin-averaged selectivity
         int Q = 100;
         for (int i = 0; i < L.size(); i++) {
@@ -311,7 +315,7 @@ Type objective_function<Type>::operator() ()
         vector<Type> F_mort_g = calculate_F_mort(sel_func[g], logit_l50[g],
                                                  log_ratio_left[g], log_l50_right_offset[g],
                                                  log_ratio_right[g], log_catchability[g], l, min_len, max_len,
-                                                 w, dw, b_lw, second_order);
+                                                 w, dw, b_lw, bin_average);
         for (int i = 0; i < n_bins; ++i) {
             F_mort_mat(i, g) = F_mort_g(i);
             total_F_mort(i) += F_mort_g(i);
@@ -324,10 +328,12 @@ Type objective_function<Type>::operator() ()
 
     // External diffusion rate as a power law d(w) = D_ext * w^(n+1), matching
     // the model's `ext_diffusion` slot (getDiffusion()) when use_predation_diffusion
-    // is FALSE.
+    // is FALSE. mizer's `setExtDiffusion()` bin-averages that power law when
+    // `second_order_w(params)[["bin_average"]]` is TRUE, independently of the
+    // flux scheme, so we gate on `bin_average` here too.
     Type D_ext = exp(log_D_ext);
     vector<Type> d_diff(n_bins);
-    if (second_order == 1) {
+    if (bin_average == 1) {
         Type d_exp = n + Type(1.0);
         for (int i = 0; i < n_bins; ++i) {
             Type w_next = w(i) + dw(i);

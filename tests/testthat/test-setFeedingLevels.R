@@ -59,7 +59,8 @@ test_that("setFeedingLevels works", {
     params_rates <- getRates(params)
     params_changed_rates <- getRates(params_changed)
 
-    expect_equal(params_rates$e_growth, params_changed_rates$e_growth)
+    expect_equal(params_rates$e_growth, params_changed_rates$e_growth,
+                 ignore_attr = "comment")
     expect_equal(params_rates$mort, params_changed_rates$mort)
     expect_equal(params_rates$rdd, params_changed_rates$rdd)
 
