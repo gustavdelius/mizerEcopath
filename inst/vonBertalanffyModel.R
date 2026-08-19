@@ -1,20 +1,11 @@
-# Script to fit von Bertalanffy growth parameters and match catch data
+# Buil a model that uses Richard's biomasses, yields and catch size
+# distributions together with Jess's survey size distributions
 library(dplyr)
+library(ggplot2)
 library(mizer)
 library(mizerEcopath)
 
-Jess_sp <- celtic_params@species_params |>
-    select(species,
-           #biomass_cutoff, #biomass_observed,
-           pred_kernel_type, beta, sigma,
-           kernel_exp, kernel_l_l, kernel_u_l, kernel_l_r, kernel_u_r)
-James_sp <- readRDS("inst/James_sp.rds")
-sp <- James_sp |>
-    select(species, a, b, w_mat, age_mat, w_inf, k_vb, t0) |>
-    inner_join(Jess_sp, by = "species")
-
-rownames(sp) <- sp$species
-sp["Cod", "kernel_l_l"] <- 4.1
+# Data Richard ----
 
 load("inst/species_info_GD_length.Rdata")
 # n:            no. of rows in survey data in which the category occurs
@@ -31,88 +22,154 @@ load("inst/species_info_GD_length.Rdata")
 df <- species_info_GD_length |>
     rename(species = common.name,
            length = FishLength_cm) |>
-    mutate(species = ifelse(species == "Dover sole", "Sole", species)) |>
-    filter(species %in% sp$species)
+    mutate(species = ifelse(species == "Dover sole", "Sole", species))
 
 biomass_df <- df |>
     group_by(species) |>
-    summarise(biomass_observed = sum(Swdens.t.km2),
-              l_max = max(length) * 1.1)
+    summarise(biomass_observed = sum(Swdens.t.km2))
 yield_df <- df |>
     group_by(species) |>
     summarise(yield_observed = sum(SY.t.km2.yr))
-catch_df <- df |>
+survey_df <- df |>
+    group_by(species, length) |>
+    summarise(catch = sum(Snfish)) |>
+    mutate(dl = 1, gear = "survey")
+catch_Richard <- df |>
     group_by(species, length) |>
     summarise(catch = sum(Fmean.yr * SndensQ.km2)) |>
-    mutate(dl = 1, gear = "Total")
+    mutate(dl = 1, gear = "commercial")
 
-sp <- right_join(sp, biomass_df)
+# Size distributions Jess ----
+
+survey_Jess <- survey_length_distribution
+catch_Jess <- catch_distribution |>
+    group_by(species, length, dl) |>
+    summarise(catch = sum(catch)) |>
+    mutate(gear = "commercial")
+
+# compare_catch_densities(catch_Jess, survey_Jess, "Catch", "Survey")
+# compare_catch_densities(catch_Jess, catch_Richard, "Jess", "Richard")
+# compare_catch_densities(survey_Jess, catch_Richard, "Jess", "Richard")
+
+# Use survey from Jess (because it includes smaller than 20cm)
+# Use catch from Richard (because the yield was calculated from this)
+catch <- rbind(catch_Richard, survey_Jess)
+l_max <- catch |>
+    group_by(species) |>
+    summarise(l_max = max(length + dl) * 1.1)
+
+# Scale up commercial catches to have same number of fish as
+# the survey
+scale_factors <- catch |>
+    group_by(species, gear) |>
+    summarise(total = sum(catch), .groups = "drop") |>
+    tidyr::pivot_wider(names_from = gear, values_from = total) |>
+    mutate(factor = survey / commercial) |>
+    select(species, factor)
+catch <- catch |>
+    left_join(scale_factors, by = "species") |>
+    mutate(catch = if_else(gear == "commercial", catch * factor, catch)) |>
+    select(-factor)
+
+# Species params ----
+
+Jess_sp <- celtic_params@species_params |>
+    select(species,
+           pred_kernel_type, beta, sigma,
+           kernel_exp, kernel_l_l, kernel_u_l, kernel_l_r, kernel_u_r)
+James_sp <- readRDS("inst/James_sp.rds")
+sp <- James_sp |>
+    select(species, a, b, w_mat, age_mat, w_inf, k_vb, t0) |>
+    inner_join(Jess_sp, by = "species")
+
+rownames(sp) <- sp$species
+sp["Cod", "kernel_l_l"] <- 3.8
+
+sp <- sp |>
+    inner_join(biomass_df) |>
+    inner_join(l_max)
 sp$biomass_cutoff <- l2w(20, sp)
 
 sp$D_ext <- 1
 
 saveRDS(sp, "inst/sp.rds")
 
+# Gear params ----
+
 # Load pre-packaged species parameters for Celtic Sea model
 sp <- readRDS("inst/sp.rds")
 
-# Initialize von Bertalanffy params using mizerEcopath helper
+# Each species gets two gears: a survey gear and a commercial gear.
+gear_defs <- data.frame(gear = c("survey", "commercial"),
+                        sel_func = "sigmoid_length",
+                        l50 = c(20, 40),
+                        l25 = c(18, 38),
+                        catchability = c(1e-12, 0.2),
+                        yield_weight = c(0, 1))
+gp <- cross_join(data.frame(species = sp$species), gear_defs) |>
+    left_join(yield_df) |>
+    # The observed yield is from the commercial gear only; the survey gear
+    # takes a negligible yield.
+    mutate(yield_observed = if_else(gear == "survey", 1e-10, yield_observed))
+
+# Build MizerParams ----
+
 #p <- newVonBertalanffyParams(sp)
 p <- newAllometricParams(sp)
-
-plotSpectra(p, resource = FALSE, power = 2)
-p@species_params$z_ext
-p@species_params$D_ext
-
-# Attach gear parameters matching the selected species
-gp <- data.frame(species = sp$species,
-                 gear = "Total",
-                 sel_func = "sigmoid_length",
-                 l50 = 40,
-                 l25 = 38,
-                 catchability = 0.2) |>
-    right_join(yield_df)
-
 gear_params(p) <- gp
 initial_effort(p) <- 1
 
-# Bring single-species models to steady state and set Beverton-Holt stock-recruitment
 p <- steadySingleSpecies(p) |>
     setBevertonHolt()
 p <- matchBiomasses(p)
 
-# Fit selectivity/catchability to match observed Celtic Sea catches
-pm <- matchCatch(p, catch = catch_df, production_lambda = 0,
-                yield_lambda = 1)
+species_params(p)$production_observed <-
+    getSomaticProduction(p)
+species_params(p)["Hake", "production_observed"] <- 0.8
+species_params(p)["Herring", "production_observed"] <- 0.8
+species_params(p)["Cod", "production_observed"] <- 0.1
 
-plotSpectra(pm, resource = FALSE, power = 2)
-p@species_params$z_ext
-pm@species_params$z_ext
-p@species_params$D_ext
-pm@species_params$D_ext
+# Match ----
 
-p@given_species_params$z_ext
-pm@given_species_params$z_ext
-p@given_species_params$D_ext
-pm@given_species_params$D_ext
+pm <- matchCatch(p, catch = catch)
+
+pm <- setFeedingLevels(pm, f = 0.6, f_c = 0.2)
+pm <- steady(pm)
+
+# pt <- tuneEcopath(pm, catch = catch, diet = reduced_dm, match = "catch")
+
+# Interactions ----
+
+# # Attempt to use old interaction matrix
+# inter <- interaction_matrix(celtic_params)
+# species <- species_params(p)$species
+# inter <- inter[species, species]
+# pi <- makeInteracting(p, interaction = inter)
 
 pd <- matchDiet(pm, reduced_dm)
-plotDeath(pd, species = "Cod")
-plotDeath(pd, species = "Whiting", proportion = FALSE)
-plotDiet(pd, species = "Whiting")
-plotDeath(pd, species = "Hake", proportion = FALSE)
+ps <- steady(pd)
 
+psr <- alignResource(ps)
+resource_params(psr)$w_pp_cutoff <- 1
+initialNResource(psr)[w_full(psr) > 1] <- 0
+comment(psr@cc_pp) <- NULL
+psr <- setResourceInteraction(psr,
+    resource_dynamics = "resource_semichemostat",
+    tol = 1e-2)
+psr <- steady(psr)
+resource_level(psr) <- 0.1
+psr <- steady(psr, tol = 1e-12, t_max = 200)
+# psrs <- steadyNewton(psr, reproduction = "dynamic",
+#                      verbose = TRUE, stability = TRUE)
 
-# Plot resulting yield comparison
-plotYieldVsSpecies(p)
-plotBiomassVsSpecies(p)
-plotlySpectra(p, power = 2, resource = FALSE)
-plotlyFMort(p)
-p@species_params$z_ext
-p@species_params$D_ext
+# Plots
+# params <- psr
+# plotYieldVsSpecies(params)
+# plotBiomassVsSpecies(params)
+# plotlySpectra(params, power = 2, resource = FALSE)
+# plotlyFMort(params)
+# plotGrowthCurves(params, species_panel = TRUE)
+# plotDiet(params, species = "Megrim")
 
-plotSpectra(pd, power = 2)
-pd@species_params$D_ext
-plot(getMort(pd), log_y = TRUE)
-pd@gear_params$catchability
-plotGrowthCurves(p, species_panel = TRUE)
+# Save
+saveParams(psr, "inst/psr.rds")

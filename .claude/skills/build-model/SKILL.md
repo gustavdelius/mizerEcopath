@@ -1,17 +1,19 @@
 ---
-name: build-multispecies-model
+name: build-model
 description: >-
-  Build a multi-species mizer model from a species-parameter data frame. Use
+  Build a new mizer model from a species-parameter data frame. Use
   whenever the user wants to create a MizerParams object with
   newMultispeciesParams() (or newTraitParams, newCommunityParams,
-  newSingleSpeciesParams), set up an interaction matrix or fishing gears, choose
-  the size grid, or save and reload a finished model. Follow this ordered
-  workflow rather than guessing at parameters or writing the dynamics by hand.
-  Once the object exists, bringing it to steady state and calibrating it to data
-  is covered by the calibrate-model skill.
+  newSingleSpeciesParams), decide which species-parameter columns to supply and
+  which to leave to mizer's allometric defaults, set up an interaction matrix,
+  choose the size grid (no_w, min_w, max_w, min_w_pp), or save and reload a
+  finished model. Follow this ordered workflow rather than guessing at parameters
+  or writing the dynamics by hand. To change a model that already exists see the
+  change-parameters skill; fishing is covered by the set-up-fishing skill and
+  steady state and calibration by the calibrate-model skill.
 ---
 
-# Building a multi-species mizer model
+# Building a mizer model
 
 Each `new…`/`set…` function **returns a new
 `MizerParams` object** — always reassign (`params <- f(params, ...)`); never
@@ -37,19 +39,29 @@ are truly required:
 | Column | Meaning |
 |---|---|
 | `species` | the species name |
-| `w_inf` | von Bertalanffy asymptotic weight (g) — the required maximum-size parameter |
+| `w_inf` | von Bertalanffy asymptotic weight (g) — the maximum-size parameter |
 
 Mizer derives defaults for `w_max` (the computational grid boundary, default `1.5 * w_inf`),
 `w_repro_max` and `w_mat` from `w_inf`. Everything else has a
-sensible default or is calculated. Commonly supplied:
+sensible default or is calculated.
+
+`w_inf` is the parameter to supply, but it need not be the one you *have*: a
+table giving only `w_max`, or only lengths (`l_inf` or `l_max`, with the
+length–weight parameters `a` and `b`), is accepted, and mizer fills `w_inf` in
+from it and says so. Note that when `w_inf` is taken from `w_max` the two are
+equal, so the `1.5 *` headroom above the asymptotic size is not there.
+
+Commonly supplied:
 
 | Column | Meaning |
 |---|---|
+| `w_min` | Egg size (g, default 0.001) |
 | `w_mat` | Maturity weight (g) |
-| `beta` | Preferred predator/prey mass ratio (default ~100) |
-| `sigma` | Width of the lognormal predation kernel (default ~1.3) |
+| `beta` | Preferred predator/prey mass ratio (default 30) |
+| `sigma` | Width of the lognormal predation kernel (default 2) |
 | `k_vb` | von Bertalanffy K — used to derive `h` (and then `gamma`) if `h`/`gamma` absent |
 | `h`, `gamma` | Max intake coefficient and search-volume coefficient (alternative to `k_vb`) |
+| `a`, `b` | Length–weight conversion parameters ($w = a l^b$, defaults 0.006 and 3) |
 | `alpha` | Assimilation efficiency (default 0.6) |
 | `biomass_observed` | Observed biomass, for calibration |
 
@@ -72,8 +84,9 @@ Useful optional arguments to `newMultispeciesParams()`:
 | Argument | Effect |
 |---|---|
 | `interaction` | species × species matrix of dimensionless overlaps in `[0, 1]` (1 = full interaction, the default for every pair); scales encounter and predation mortality |
-| `gear_params` | fishing gear definitions — columns `gear`, `species`, `sel_func`, `catchability` and the selectivity parameters. Omit it and mizer builds a default knife-edge gear catching every species |
-| `no_w`, `min_w`, `max_w` | size-grid resolution and range (`no_w = 100` by default) |
+| `kappa`, `lambda`, `w_pp_cutoff` | resource spectrum coefficient, exponent, and cutoff size |
+| `no_w` | number of size bins on the logarithmic grid (default 100; the size range is determined automatically from the species parameters) |
+| `gear_params` | fishing gear definitions (usually omitted and configured later — see the `set-up-fishing` skill; defaults to a knife-edge gear catching every species) |
 | `second_order_w` | use the second-order size-advection scheme; see the section "Numerical scheme: watch for numerical diffusion" in the `run-simulation` skill |
 
 Change gears later with `gear_params(params) <- ...` or `setFishing()` — see the
@@ -84,7 +97,7 @@ Change gears later with `gear_params(params) <- ...` or `setFishing()` — see t
 ```r
 summary(params)
 species_params(params)     # given + calculated, one row per species
-getInteraction(params)     # the interaction matrix
+interaction_matrix(params) # the interaction matrix
 gear_params(params)        # the fishing gears
 resource_params(params)    # the resource scalars
 ```
@@ -104,7 +117,10 @@ saveParams(params, "cod_model.rds")    # write a MizerParams to disk
 params <- readParams("cod_model.rds")  # read it back
 ```
 
-`saveSim()` and `readSim()` do the same for a `MizerSim` object.
+`saveSim()` and `readSim()` do the same for a `MizerSim` object. If the model
+needs an extension package, these are the only safe way to persist it — a bare
+`readRDS()` silently strips the extension class. See the
+`use-extension-packages` skill.
 
 Before saving, record who made the model and what it is for with
 `setMetadata()`. This matters most when you share the model with others, because
@@ -121,16 +137,6 @@ getMetadata(params)     # read the metadata back
 
 All fields are optional and you can add fields of your own. mizer also fills in
 `mizer_version`, `extensions`, `time_created` and `time_modified` automatically.
-
-## Common pitfalls
-
-- Forgetting to reassign the return value (`steady(params)` without `params <-`)
-  silently discards the work.
-- Skipping `steady()` after a `match…`/`calibrate…` step leaves the model off
-  its steady state.
-- Editing a species parameter on a bare data frame instead of through
-  `species_params(params) <-` means no dependent quantity is recalculated. See
-  the `change-parameters` skill.
 
 ---
 

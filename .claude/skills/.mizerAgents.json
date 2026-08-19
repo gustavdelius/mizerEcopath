@@ -1,18 +1,16 @@
 {
   "version": 1,
   "files": {
-    "analyse-and-plot/quick-reference.md": "5fd8b32b8a4eea2b6f5311233fba34a0",
-    "analyse-and-plot/SKILL.md": "d8a762ad89a8ab6c2319557cb0fa3092",
-    "build-multispecies-model/quick-reference.md": "eb49c308d956bb540a95a7f7bd9b8312",
-    "build-multispecies-model/SKILL.md": "1dd1cea070e0a653238f35208d0cbf8f",
-    "calibrate-model/quick-reference.md": "0cde9f8cd14f2e682621bb27637c5035",
-    "calibrate-model/SKILL.md": "0c6a0086932a346805089d609d78725b",
-    "change-parameters/quick-reference.md": "eb38aadd8e6ea1e04c91478541ffeb2d",
-    "change-parameters/SKILL.md": "1bb9f638811f92becabf8effc1f9dbdb",
-    "extend-mizer/SKILL.md": "c2727299d72c53e42c1346fb774b0a57",
-    "run-simulation/quick-reference.md": "76198e2f10b1add85151fad872db61d5",
-    "run-simulation/SKILL.md": "ac0b33109dcbe7379ac84464e1bd5587",
-    "set-up-fishing/quick-reference.md": "ef48ac5f928eb99f513aa0e8b63a8cbe",
-    "set-up-fishing/SKILL.md": "fbadd260347696021a93d8d4b153147b"
+    "analyse-and-plot/SKILL.md": "173b968cf4ac79e9b397faca6a34a398",
+    "analyse-stability/SKILL.md": "54abb50e187877375ced0c84abc80681",
+    "build-model/SKILL.md": "46dff4d662caef9eeeaf21c26c2341a0",
+    "calibrate-model/SKILL.md": "218c228c2a8723e652ba30e3f93bb994",
+    "change-parameters/SKILL.md": "89124ea6b8935498d0d1c5338a85dece",
+    "extend-mizer/SKILL.md": "40b121d9c0cd189255e38caf7c875c97",
+    "run-simulation/SKILL.md": "7330872f6d6e02460378f2464499c439",
+    "set-up-fishing/SKILL.md": "77f3e686351064c1ac9f8e7a031bb150",
+    "understand-size-spectrum-dynamics/SKILL.md": "7ca03314f402b6c6ace9ae65c8d24527",
+    "upgrade-mizer-code/SKILL.md": "646ecd97f15b0cadf49bc3bce94077a7",
+    "use-extension-packages/SKILL.md": "3f077868f95adce50736d0cb70dac36f"
   }
 }

@@ -3,16 +3,21 @@ name: calibrate-model
 description: >-
   Bring a mizer model to steady state and calibrate it to observed data. Use
   whenever the user wants to find the steady state (steady, projectToSteady,
-  steadySingleSpecies, steadyNewton), match modelled biomass, yield, or growth to
-  observations (calibrateBiomass, matchBiomasses, calibrateYield, matchGrowth),
-  set the level of density-dependent reproduction (setBevertonHolt), or diagnose
-  why a model will not settle or reproduce observed values.
+  steadySingleSpecies, steadyNewton), match modelled biomass, numbers, yield or
+  growth to observations (calibrateBiomass, matchBiomasses, calibrateNumber,
+  matchNumbers, matchGrowth), supply those observations (the
+  biomass_observed/biomass_cutoff or number_observed species-parameter columns,
+  the yield_observed gear-parameter column), set the level of density-dependent
+  reproduction (reproduction_level<-), check convergence (getSteadyResidual), or
+  diagnose a model that collapses, explodes or will not settle. To ask whether
+  the steady state you found is dynamically stable, see the analyse-stability
+  skill.
 ---
 
-# Bringing a model to steady state and calibrating it
+# Reaching steady state and calibrating
 
 This covers the tune-to-data loop for an existing `MizerParams` object. To build
-the object from scratch first, see the `build-multispecies-model` skill.
+the object from scratch first, see the `build-model` skill.
 
 Every function here **returns a new `MizerParams`** — always reassign
 (`params <- f(params, ...)`). Change species parameters through
@@ -33,6 +38,7 @@ params <- steady(params)
 | `steadySingleSpecies(params)` | set each species to its single-species steady form, births held fixed, without changing the resource — a fast way to get a sensible starting spectrum before `steady()` |
 | `projectToSteady(params)` | the lower-level routine `steady()` builds on, but with **births responding dynamically**; exposes `t_max`, `tol`, `return_sim` if you need to watch convergence |
 | `steadyNewton(params)` | *(experimental)* solve the steady-state equation directly, converging even when the steady state is dynamically unstable |
+| `getSteadyResidual(params)` | *(experimental)* ask whether a model **is** at its steady state, and where it is not |
 
 During setup and calibration you almost always want `steady()` or
 `steadySingleSpecies()`, because holding births constant lets the dynamics settle
@@ -44,10 +50,11 @@ re-tuning.
 
 ## The calibration loop
 
-Do this only if you have observations. They live in the species-parameter
-columns `biomass_observed` and/or `yield_observed`, optionally with
-`biomass_cutoff` / `yield_cutoff` size thresholds below which observations are
-not counted. The usual order:
+Do this only if you have observations. Observed biomasses live in the
+species-parameter column `biomass_observed`, optionally with a
+`biomass_cutoff` size threshold below which observations are not counted.
+Observed yields live in the gear-parameter column `yield_observed`, which
+gives the annual yield of each gear-species pair. The usual order:
 
 ```r
 params <- steady(params)             # 1. settle onto the steady state
@@ -59,23 +66,61 @@ params <- matchGrowth(params)        # 4. rescale h, gamma, ks, k so each specie
 params <- steady(params)             # 5. re-converge after the changes
 ```
 
-Re-run `steady()` after **any** `match…`/`calibrate…` step — those functions move
-parameters off the current steady state.
+Re-run `steady()` after **any `match…` step** — those rescale each species
+separately, which is not a symmetry of the model, so whatever steady state it was
+on it is no longer on. They say so when they do it. The `calibrate…()` functions
+do **not** need it: they apply one overall scaling factor to the whole model,
+which is an exact symmetry and leaves the steady state untouched.
 
-| Function | Adjusts | To match |
-|---|---|---|
-| `calibrateBiomass()` | `kappa` (resource level) | total community biomass |
-| `matchBiomasses()` | per-species abundance | each `biomass_observed` |
-| `calibrateYield()` | overall abundance scale | total community yield |
-| `matchGrowth()` | `h`, `gamma`, `ks`, `k` | von Bertalanffy growth to `w_mat`/`w_inf` |
+You do not have to remember this. `getSteadyResidual()` answers it, and
+`summary(params)` shows the verdict:
+
+```r
+summary(params)                        # "biomass drift: 3.2e-05 /year (at steady state)"
+plot(getSteadyResidual(params))        # which species, and at which sizes
+```
+
+| Function | Adjusts | To match | Breaks steady state |
+|---|---|---|---|
+| `calibrateBiomass()` | `kappa` (resource level) | total community biomass | no |
+| `matchBiomasses()` | per-species abundance | each `biomass_observed` | yes |
+| `matchGrowth()` | `h`, `gamma`, `ks`, `k` | von Bertalanffy growth to `w_mat`/`w_inf` | yes |
 
 `matchGrowth()` and `matchBiomasses()` pull on different parameters; alternate
 them, re-running `steady()` between, until both are satisfied — usually a few
 passes.
 
-**Yield instead of biomass:** use `calibrateYield()`, which reads
-`yield_observed`. Yield calibration depends on the fishing setup, so make sure
-gears and effort are right first — see the `set-up-fishing` skill.
+**If your observations are numbers rather than weights**, use `calibrateNumber()`
+and `matchNumbers()` in place of the two biomass functions. They are the same
+functions with the factor of the weight taken out of the size integral, and they
+read `number_observed` and `number_cutoff` instead of `biomass_observed` and
+`biomass_cutoff`. Mixing the two — matching some species on biomass and others
+on numbers — works, because each function ignores the species for which its own
+observation column is `NA`.
+
+```r
+species_params(params)$number_observed <- c(Cod = 1e6, Herring = 4e8, ...)
+params <- calibrateNumber(params)
+params <- matchNumbers(params)
+params <- steady(params)
+```
+
+Whichever pair you use, a `<to>_cutoff` value is the **smallest size the
+observation counts**, in grams: a survey that misses fish under 10 g is
+`biomass_cutoff = 10`, and the model is then integrated over the same range
+rather than over the whole spectrum. Leave it out and the whole size range is
+counted, which is the usual reason a model looks like it over-predicts a
+species by a wide margin.
+
+**Yields** are not a calibration target in mizer itself: put the observed
+annual yield of each gear-species pair into the `yield_observed` column of
+`gear_params()` and compare it with the model using
+`plotYieldObservedVsModel()`, which sums the observations over the gears. Pass
+`gear = ` a subset of the gear names to compare only their catch against only
+their observations. Use
+`mizerExperimental::matchYield()` to adjust the catchability so that the yields
+match. Yields depend on the fishing setup, so make sure gears and effort are
+right first — see the `set-up-fishing` skill.
 
 ## Density-dependent reproduction
 
@@ -84,23 +129,29 @@ fraction of maximum recruitment realised at steady state (0 = density
 independent, closer to 1 = strongly limited):
 
 ```r
-params <- setBevertonHolt(params, reproduction_level = 0.25)
+reproduction_level(params) <- 0.25
 ```
 
-Alternatively pass `R_max`, `erepro`, or a per-species named vector. This does
-not change the steady state itself — it sets how the model responds to
-perturbations away from it. Read the current values back with
-`getReproductionLevel(params)`, useful to check what a model was tuned to before
+Alternatively use `setBevertonHolt()` to specify `R_max`, `erepro`, or a per-species
+named vector. This does not change the steady state itself — it sets how the
+model responds to perturbations away from it. Read the current values back with
+`reproduction_level(params)`, useful to check what a model was tuned to before
 changing it.
 
 ## Verifying the result
 
 ```r
+summary(params)                        # still at the steady state?
 plotSpectra(params)                    # sensible, overlapping spectra?
 plotGrowthCurves(params, species = "Cod")
 plotBiomassObservedVsModel(params)     # points near the 1:1 line?
 plotYieldObservedVsModel(params)
 ```
+
+`project(params, check_steady = TRUE)` makes the same check at the point where it
+matters, warning if the run is about to start from a state that is not a fixed
+point. It is off by default, because projecting a model away from its steady state
+is a normal thing to do.
 
 When the model looks right, project it forward with the `run-simulation` skill
 and analyse the results with the `analyse-and-plot` skill.
@@ -113,9 +164,19 @@ and analyse the results with the `analyse-and-plot` skill.
   re-run. Persistent instability is a case for `steadyNewton()`.
 - **A species collapses to near-zero.** Its mortality exceeds the growth it can
   fund. Check its predation-kernel parameters `beta` and `sigma`, its row of the
-  interaction matrix, and whether its fishing mortality is too high.
+  interaction matrix, and whether its fishing mortality is too high. See the
+  `understand-size-spectrum-dynamics` skill for the underlying physiological
+  and trophic mechanics.
 - **Biomass matches but growth is wrong (or vice versa).** Alternate
   `matchGrowth()` and `matchBiomasses()`, re-running `steady()` between them.
+- **`steady()` said it converged but the results still drift.** Its convergence
+  test is the relative change in egg production over `t_per`, which is a proxy.
+  Check `attr(params, "convergence")$residual`, or `summary(params)`, for how far
+  the state actually is from a fixed point, and reduce `steady()`'s `tol` if it is
+  too large. `steady()` warns when the two disagree.
+- **Results move even though nothing was changed.** The model was not at its
+  steady state to begin with. `plot(getSteadyResidual(params))` shows which
+  species and which sizes are moving.
 
 ## Interactive tuning
 

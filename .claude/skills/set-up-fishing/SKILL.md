@@ -2,11 +2,15 @@
 name: set-up-fishing
 description: >-
   Set up or change fishing in a mizer model — gears, selectivity curves,
-  catchability, and effort. Use whenever the user wants to define fishing gears,
-  choose or configure a selectivity function (knife_edge, sigmoid_length,
-  double_sigmoid_length, sigmoid_weight), set which gear catches which species,
-  change catchability, or set the fishing effort with setFishing() and the
-  gear_params data frame.
+  catchability and effort. Use whenever the user wants to define fishing gears in
+  the gear_params data frame (sel_func, catchability, yield_observed), choose and
+  parameterise a selectivity function (knife_edge with knife_edge_size,
+  knife_edge_length, sigmoid_length and double_sigmoid_length with
+  l50/l25/l50_right/l25_right, sigmoid_weight), set which gear catches which
+  species, apply the result with setFishing(), or set the fishing effort
+  (initial_effort<-). Note that catchability sets the units in which effort is
+  measured. Matching modelled yields to observed ones is covered by the
+  calibrate-model skill.
 ---
 
 # Setting up fishing
@@ -36,6 +40,13 @@ and `gear_params(params) <- ...`. Required columns:
 Plus **one column per parameter of the chosen `sel_func`**, named exactly like
 the function's argument (see below). Row names follow the pattern
 `"species, gear"`.
+
+There is one optional column, `yield_observed`, holding the observed annual
+yield of that gear–species pair in grams per year. It is not used by any rate
+calculation; `plotYieldObservedVsModel()` sums it over the gears to compare the
+observations with the model, and its `gear` argument restricts that comparison
+to the catch of selected gears, for example
+`plotYieldObservedVsModel(params, gear = "Otter")`.
 
 **Editing an existing gear table.** Pull it out, change what you need, and
 assign it back — the assignment triggers recalculation of the selectivity and
@@ -82,7 +93,8 @@ in `[0, 1]` at each size. Its other arguments must appear as columns in
 
 | `sel_func` | Parameter column(s) | Shape |
 |---|---|---|
-| `knife_edge` (default) | `knife_edge_size` | step from 0 to 1 (default size `w_mat`) |
+| `knife_edge` (default) | `knife_edge_size` | step from 0 to 1 at that **weight** (default `w_mat`) |
+| `knife_edge_length` | `knife_edge_length` | step from 0 to 1 at that **length** |
 | `sigmoid_length` | `l50`, `l25` | smooth; lengths (cm) at 50% and 25% selection |
 | `double_sigmoid_length` | `l50`, `l25`, `l50_right`, `l25_right` | dome-shaped (selects a length band) |
 | `sigmoid_weight` | `sigmoidal_weight`, `sigmoidal_sigma` | smooth transition in weight |
@@ -107,10 +119,10 @@ and — when a `sel_func` cannot express the shape you need — set them by hand
 
 | Function | Returns | Dimensions |
 |---|---|---|
-| `catchability(params)` / `getCatchability(params)` | $Q_{g,i}$ | gear × species |
-| `selectivity(params)` / `getSelectivity(params)` | $S_{g,i}(w)$ | gear × species × size |
+| `catchability(params)` | $Q_{g,i}$ | gear × species |
+| `selectivity(params)` | $S_{g,i}(w)$ | gear × species × size |
 
-The bare and `get`-prefixed names are equivalent; use whichever reads better.
+(`getCatchability()` and `getSelectivity()` are deprecated aliases of these.)
 Each has a matching setter that pushes an array straight into the model (this
 routes through `setFishing()`, so validation still runs):
 
@@ -119,7 +131,7 @@ catchability(params)                       # gear × species matrix of Q
 selectivity(params)["Otter", "Cod", ]      # the S curve for one gear–species pair
 
 # Assign a custom selectivity curve that no sel_func produces
-sel <- getSelectivity(params)
+sel <- selectivity(params)
 sel["Otter", "Cod", ] <- my_curve          # length = number of size bins, in [0, 1]
 selectivity(params) <- sel                 # triggers recalculation via setFishing()
 ```
@@ -197,8 +209,8 @@ gives two common conventions:
   to it.
 
 Either way, if you rescale catchability you must rescale effort inversely to
-keep the same $F$. This is why yield calibration with `calibrateYield()` depends
-on the fishing setup being fixed first.
+keep the same $F$. This is why comparing modelled to observed yields with
+`plotYieldObservedVsModel()` depends on the fishing setup being fixed first.
 
 ## Inspecting the fishing setup
 
@@ -211,6 +223,15 @@ plotFMort(params)          # realised fishing mortality at size
 getFMort(params)           # F by species × size
 getFMortGear(params)       # F by gear × species × size
 getYieldGear(sim)          # yield by gear (from a MizerSim)
+```
+
+`getFMort()` and `plotFMort()` **sum over gears**, so a gear with a tiny
+catchability — a survey gear you fit against but do not want to fish with — is
+invisible in them. Inspect that gear with `getFMortGear()`, slicing out its own
+mortality:
+
+```r
+getFMortGear(params)["Survey", , ]   # species × size, for one gear only
 ```
 
 ---

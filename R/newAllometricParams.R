@@ -92,8 +92,8 @@ newAllometricParams <- function(species_params, no_w = 200, max_w = NULL) {
     sp$interaction_resource <- 0
 
     # Switch off satiation
+    sp$gamma <- 1
     sp$h <- Inf
-    intake_max(p)[] <- Inf
 
     # Set power-law encounter rate (the coefficient will be adjusted below)
     sp$E_ext <- 1
@@ -111,7 +111,7 @@ newAllometricParams <- function(species_params, no_w = 200, max_w = NULL) {
 
     species_params(p) <- sp
     # Match Biomasses
-    p <- matchBiomasses(p)
+    p <- matchBiomasses(p, info_level = 0)
     # Set to steady state
     p <- steadySingleSpecies(p, keep = "biomass")
     p <- setBevertonHolt(p, reproduction_level = 0)

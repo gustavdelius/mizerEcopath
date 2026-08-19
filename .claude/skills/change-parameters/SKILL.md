@@ -1,13 +1,17 @@
 ---
 name: change-parameters
 description: >-
-  Change parameters of an existing mizer model correctly. Use whenever the user
-  wants to modify species parameters, size-dependent rates, fishing, the
-  resource, or interactions — and especially when unsure which accessor to use:
-  given_species_params() vs species_params(), changing a species parameter vs
-  setting a rate array directly (setSearchVolume, setPredKernel, setParams…), or
-  gear_params() vs the resource setters. Follow these rules to avoid changes
-  that silently fail to propagate or get overwritten.
+  Change parameters of an existing mizer model correctly, so that the change
+  propagates downwards and is not silently overwritten. Use whenever the user
+  wants to modify species parameters, size-dependent rates, the resource or the
+  interaction matrix — and especially when unsure which level to work at:
+  given_species_params() vs species_params(), or changing a species parameter vs
+  setting a rate array directly (setSearchVolume, setPredKernel, setParams…).
+  Covers which values get recalculated and which stay put, the freeze trap when a
+  rate array is set by hand, length-vs-weight precedence (l_mat vs w_mat),
+  resource balancing (balance =), and warnings that a change could not take
+  effect. Fishing gears are covered by the set-up-fishing skill, custom rate
+  functions by the extend-mizer skill.
 ---
 
 # Changing model parameters
@@ -19,9 +23,6 @@ one to reach for. The guiding principle:
 > mizer propagate the change downwards.** Drop to a lower level only when you
 > deliberately want to override mizer's calculation.
 
-Every setter returns a **new** `MizerParams` — always reassign
-(`params <- setResource(params, ...)`).
-
 ## The levels of a mizer model
 
 A mizer model is built in layers, and almost every change is a choice of which
@@ -29,7 +30,7 @@ layer to reach into:
 
 | Level | What it is | Change it with |
 |---|---|---|
-| **1. Size-independent parameters** | the high-level inputs: per-species scalars (`w_inf`, `beta`, `gamma`, `h`, `erepro`, …), fishing gears, resource scalars, and interactions | `species_params(params) <-`, `gear_params(params) <-`, `resource_params(params) <-`, `setInteraction()` |
+| **1. Size-independent parameters** | the high-level inputs: per-species scalars (`w_inf`, `beta`, `gamma`, `h`, `erepro`, …), fishing gears, resource scalars, and interactions | `species_params(params) <-`, `gear_params(params) <-`, `resource_params(params) <-`, `interaction_matrix()` |
 | **2. Size-dependent rates** | arrays over size that mizer **calculates** from those parameters (search volume, metabolic rate, predation kernel, resource capacity, selectivity, …) | the `set…()` functions |
 | **3. Rate functions** | the functions mizer calls to compute the rates during a simulation | `setRateFunction()`, `setComponent()` |
 
@@ -57,7 +58,7 @@ track of which values you **gave** and which it **calculated**.
 | `calculated_species_params(params)` | the parameters mizer derived or defaulted |
 | `species_params(params)` | everything (given, with calculated filling the gaps) |
 
-**Rule (mizer ≥ 3.2): change species parameters with `species_params(params) <-`.**
+**Rule: change species parameters with `species_params(params) <-`.**
 It detects what you changed, records it as *given* (so defaults can no longer
 overwrite it), and triggers recalculation of the derived scalars **and** the
 size-dependent rate arrays that depend on it.
@@ -66,15 +67,47 @@ size-dependent rate arrays that depend on it.
 species_params(params)$beta <- 150   # recorded as given; also rebuilds the predation kernel
 ```
 
-`given_species_params(params) <-` does the same recording and recalculation, and
-is preferable in **interactive** sessions because it additionally *warns* when
-you change a parameter whose effect is overridden by another parameter you have
-already given.
+`given_species_params(params) <-` makes the same changes and is preferable in
+**interactive** sessions, because it additionally *warns* whenever a change you
+asked for cannot take effect: the parameter is overridden by another one you
+have already given, or it feeds a rate array you set by hand, or it is a gear
+parameter that mizer reads from `gear_params()`. `species_params(params) <-`
+stays quiet about all three, which is what makes it the better one for scripts.
+
+**Turning the commentary up or down.** Mizer reports the choices it makes —
+defaults it filled in, inputs it adjusted, instructions it could not carry out —
+at a level set by `info_level`. Most `set…()` and `new…()` functions take it as
+an argument; for the ones that do not, including `species_params(params) <-` and
+the rate setters, set the option instead:
+
+```r
+options(mizer_info_level = 1)   # only what matters: warnings and adjustments
+options(mizer_info_level = 0)   # complete silence
+params <- setExtMort(params, info_level = 0)   # just this one call
+```
+
+The default is 3 — every default mizer filled in. Level 1 keeps the reports that
+tell you something went differently from how you asked, such as the "has not
+taken effect" warnings above. **Level 0 is silence, not "warnings only"**: it
+drops those too, so reach for 1 rather than 0 while you are still finding out
+what a model does.
+
+When you edit a whole table rather than a single column, read it back from the
+same accessor you assign to:
+
+```r
+gsp <- given_species_params(params)
+gsp$beta <- 150
+given_species_params(params) <- gsp
+```
+
+Handing the **full** `species_params()` table to `given_species_params(params) <-`
+records every calculated value in it as given, freezing parameters you never
+touched — on `NS_params` it turns 312 given entries into 396.
 
 > **Version note.** Older guidance said to avoid `species_params(params) <-`
 > because it bypassed the `given_species_params` protection and skipped
-> recalculation. That was fixed in mizer 3.2. On mizer **< 3.2**, still prefer
-> `given_species_params(params) <-` for edits.
+> recalculation. That is now fixed.
 
 Columns come back as named vectors:
 
@@ -100,6 +133,20 @@ the relevant setter automatically:
 | `beta`, `sigma`, `pred_kernel_type` | predation kernel | `setPredKernel()` |
 | `w_mat`, `w_mat25`, `w_repro_max`, `m` | reproduction allocation | `setReproduction()` |
 
+`pred_kernel_type` chooses the *shape* of the kernel, and each shape reads its
+own parameter columns. Changing it therefore also changes which columns matter:
+
+| `pred_kernel_type` | Parameter columns |
+|---|---|
+| `"lognormal"` (default) | `beta`, `sigma` |
+| `"truncated_lognormal"` | `beta`, `sigma` (cut off at `beta * exp(3 * sigma)`) |
+| `"box"` | `ppmr_min`, `ppmr_max` |
+| `"power_law"` | `kernel_exp`, `kernel_l_l`, `kernel_u_l`, `kernel_l_r`, `kernel_u_r` |
+| `"gaussian_mixture"` | `kernel_p`, `kernel_mean`, `kernel_sd` (multimodal preferences) |
+
+Any function `<name>_pred_kernel(ppmr, ...)` you define yourself can be named in
+`pred_kernel_type` too; its arguments become the required columns.
+
 Other species parameters are used **directly** and build no array (changing them
 just changes the model): `alpha` (assimilation), `w_min` (egg size), `erepro`
 and `R_max` (reproduction), `interaction_resource`, and the length–weight
@@ -109,49 +156,98 @@ parameters `a`, `b`.
 
 Mizer fills in what you did not supply, and the derivations are chained:
 `age_mat` → `h` → `gamma` and `ks`. Changing one parameter therefore rarely
-changes just that one thing. The three sections below cover the traps this
-creates; for the derivations themselves see
+changes just that one thing.
+
+The three sections below cover the traps this creates; for the mathematical
+derivations themselves see
 [Calculation of Default Parameter Values](default_parameters.html).
 
-### A parameter and its derived partner cancel out
+### Whether a value is given determines whether it is recalculated
+
+For derived parameters, `given_species_params()` distinguishes fixed input from
+a cached calculated value.
+
+**Giving a value switches off the recalculation from another parameter.**
+`given_species_params<-()` warns when you set a parameter that would usually
+be used to recalculate another parameter but this recalculation is
+suppressed because that other parameter has been given explicitly.
+
+| If you have given… | this is ignored |
+|---|---|---|
+| `gamma` | `f0` |
+| `ks` | `fc` |
+| `h` | `age_mat`, `k_vb` |
+| `age_mat` | `k_vb` |
+
+To let mizer re-calculate a parameter you previously supplied, clear it by setting
+it to `NA` in `given_species_params(params)`.
+
+Finally, `w_inf` is not a purely dynamic parameter. Changing it re-derives
+`w_mat`, `h`, `gamma` and `ks`, but the **size grid is fixed at construction**,
+so enlarging `w_inf` beyond the maximum grid size gives repeated warnings that
+"the maximum weight of a species is larger than the maximum weight of the model".
+To expand the size range, use `adjustSizeGrid(params, new_max_w = ...)` or
+rebuild the model.
+
+### Chained derivations and the cancellation trap
+
+When parameters are not given, mizer calculates them along a dependency chain:
+
+```
+Inputs: [age_mat / k_vb, w_mat, w_min, alpha, f0, fc]
+                         │
+                         ▼
+                      [  h  ] ─────────┬─────────┐
+                         │             │         │
+                         │             │ (with f0, kappa, lambda, kernel)
+                         │             │         │ (with fc, alpha, w_mat)
+                         ▼             ▼         ▼
+                  [ intake_max ]   [ gamma ]   [ ks ]
+```
 
 When `gamma` (the search-volume coefficient) is not supplied, mizer **derives it
 from the target feeding level `f0`** — roughly `gamma ∝ h · f0 / (1 - f0)` — so
-that the feeding level comes out at `f0`. A consequence often missed: raising
-`h` does **not** lower the feeding level, because the derived `gamma`
-compensates and the feeding level stays pinned at `f0`. To make growth more or
-less resource-dependent (a stronger or weaker density dependence, the
-"phantom-jam" feedback), change **`f0`**, not `h`: low `f0` makes juvenile
-growth strongly resource-limited, `f0` near 1 makes it nearly saturated and
-resource-insensitive.
+that the feeding level comes out at `f0`.
+
+A consequence often missed: raising `h` does **not** lower the feeding level,
+because the derived `gamma` compensates and the feeding level stays pinned at
+`f0`. To make growth more or less resource-dependent (a stronger or weaker
+density dependence, the "phantom-jam" feedback), change **`f0`**, not `h`: low
+`f0` makes juvenile growth strongly resource-limited, `f0` near 1 makes it nearly
+saturated and resource-insensitive.
 
 `ks` does the same thing one level down. When it is not supplied it is derived
 as `ks = fc · alpha · h · w_mat^(n - p)`, so raising `h` does **not** bring a
 species closer to starvation: the metabolic coefficient scales with it and the
 critical feeding level stays pinned at `fc`.
 
-| To change… | change | not |
-|---|---|---|
-| the feeding level, how resource-limited growth is | `f0` | `h` |
-| the critical feeding level, how close to starvation a species is | `fc` | `ks`, `h` |
-| growth speed, with both feeding levels held fixed | `h` | — |
+**Intent-first guide:**
+
+| Desired Goal | Change This | Do NOT Change | Why / What Happens |
+|---|---|---|---|
+| the feeding level (resource sensitivity of growth) | `f0` | `h` | Raising `h` auto-scales `gamma`, keeping feeding level at `f0`. |
+| the critical feeding level (starvation risk) | `fc` | `ks`, `h` | Raising `h` auto-scales `ks`, keeping critical level at `fc`. |
+| growth speed across all sizes, holding feeding level fixed | `h` | `f0` | `h` scales maximum intake while feeding levels stay fixed. |
+| bespoke search volume / metabolism | `gamma`, `ks` | `f0`, `fc` | Giving `gamma` or `ks` disconnects the automatic derivation. |
 
 Corollary: `h = Inf` (a deliberately "no-satiation" model) makes the derived
-`gamma` non-finite and throws `search_vol must not contain non-finite values` —
-supply `gamma` explicitly in that case.
+`gamma` and `ks` non-finite and throws an error asking you to supply `gamma` and
+`ks` explicitly.
 
-The chain also runs the other way, which is easy to forget. When `age_mat` is
-given (or `k_vb`, from which mizer estimates it), `h` is *derived* from it:
+**The reverse ripple effect from age at maturity.**
+The chain also runs the other way. When `age_mat` is given (or `k_vb`, from
+which mizer estimates it), `h` is *derived* from it:
 
 ```
 h = (w_mat^(1-n) - w_min^(1-n)) / (age_mat * (1-n) * alpha * (f0 - fc))
 ```
 
-So `f0` and `fc` are not local edits to the feeding level — they move `h`, and
-`h` carries the change on into `gamma` and `ks`. The same goes for `w_mat`,
-which is never just the maturity size: it feeds `h` through the formula above,
-`ks` through the `w_mat^(n - p)` factor, and `w_mat25`. And `beta`/`sigma` feed
-the `gamma` derivation, because that integrates the predation kernel.
+So `f0` and `fc` are not local edits to feeding levels — when `age_mat` is
+given they move `h`, and `h` carries the change on into `gamma` and `ks`. The
+same goes for `w_mat`, which is never just the maturity size: it feeds `h`
+through the formula above, `ks` through the `w_mat^(n - p)` factor, and
+`w_mat25`. And `beta`/`sigma` feed the `gamma` derivation because that
+integrates the predation kernel.
 
 If a user is puzzled that "changing `w_mat` changed my growth curve everywhere",
 this is why. To pin a parameter against the chain, give it explicitly — a given
@@ -172,67 +268,37 @@ forced to 1. So `f0` is the feeding level a species *would* have in that world.
   levels.
 - Setting `interaction_resource` to anything other than 1 leaves `gamma`
   untouched under edition 1, so the reduction falls straight through to the
-  realised feeding level and can starve a species outright.
-- The resource scalars that enter the calibration do **not** trigger a
-  re-derivation. Changing `kappa` or `lambda` with `resource_params(params) <-`
-  rebuilds the resource arrays but leaves `gamma` and `q` alone, so the
-  feeding level moves, and the condition `q = n + lambda - 2` that makes the
-  feeding level size-independent silently breaks. After changing `lambda`,
-  reset `q` and `gamma` so they are derived afresh:
+  realised feeding level and can starve a species outright. Under
+  `defaults_edition() >= 2`, `interaction_resource` is included in the
+  calibration.
+- The resource scalars that enter the calibration **do** trigger a
+  re-derivation. Since mizer 3.3, changing
+  `lambda` recalculates every `q` and `gamma` that mizer calculated, and
+  changing `kappa` recalculates every calculated `gamma`; the condition
+  `q = n + lambda - 2` that makes the feeding level size-independent is
+  maintained for you. A value you **gave** is protected, as everywhere else —
+  so on a model that supplies `gamma` in its species parameters (`NS_params`
+  does) nothing moves, and the realised feeding level shifts with the new
+  resource. To let mizer re-derive a given value, clear it first:
 
 ```r
-resource_params(params)$lambda <- 2.2
-given_species_params(params)$q <- NA       # let mizer re-derive q ...
-given_species_params(params)$gamma <- NA   # ... and gamma with it
+resource_params(params)$lambda <- 2.2       # calculated q and gamma follow
+given_species_params(params)$gamma <- NA    # hand a *given* gamma back to mizer
 ```
 
-### A default is only consulted while the column is missing
-
-Defaults fill in `NA`s. Once a column exists in `species_params()` — which,
-after the model is built, is true of every parameter — the machinery that would
-have calculated it is bypassed. Two practical consequences:
-
-**Arguments that only feed a default are dead after construction.**
-`setExtMort()` computes `z0 = z0pre * w_inf^z0exp`, but only for missing `z0`
-values. On a built model `z0` is always present, so `setExtMort(params, z0pre =
-2)` changes nothing at all — not even with `reset = TRUE`, which clears the rate
-array's comment and not the species parameter. Set the species parameter
-instead:
+Conversely, to hold calculated values against a resource change, record them as
+given before you make it:
 
 ```r
-sp <- species_params(params)
-z0exp <- resource_params(params)$n - 1   # the exponent setExtMort() would use
-sp$z0 <- 2 * sp$w_inf^z0exp
-species_params(params) <- sp
-# Setting `sp$z0 <- NA` instead hands it back to the default calculation.
+given_species_params(params)$q <- species_params(params)$q
+resource_params(params)$lambda <- 2.2       # q now stays put
 ```
-
-**Giving a value switches off the calculation that would have used another one.**
-Mizer warns about three of these, but only from `given_species_params<-()` —
-another reason to prefer it interactively:
-
-| If you have given… | this is ignored |
-|---|---|
-| `gamma` | `f0` |
-| `ks` | `fc` |
-| `h` | `age_mat`, `k_vb` |
-
-Two more are silent: `h` falls back to **30** when there is no growth
-information at all (no `age_mat`, no `k_vb`), and with `n != p` the derivation
-of `h` is only approximate — mizer says so at message level 1, which is easily
-missed.
-
-Finally, `w_inf` is not a purely dynamic parameter. Changing it re-derives
-`w_mat`, `h`, `gamma` and `ks`, but the **size grid is fixed at construction**,
-so enlarging `w_inf` gives repeated warnings that "the maximum weight of a
-species is larger than the maximum weight of the model". To change the size
-range, rebuild the model rather than edit the parameter.
 
 ## Level 1: fishing gear parameters
 
 Gears, selectivity, and catchability live in `gear_params(params)`, one row per
-gear–species pair (row names `"species, gear"`). Assigning to it **does**
-recompute the fishing arrays.
+gear–species pair (row names `"species, gear"`). Assigning to it recomputes the
+fishing arrays.
 
 ```r
 gp <- gear_params(params)
@@ -245,10 +311,10 @@ setting baseline effort. See the `set-up-fishing` skill.
 
 ## Level 1: resource parameters
 
-The resource works just like the species parameters.
-`resource_params(params)` returns a named list of scalars (`kappa`, `lambda`,
-`r_pp`, `n`, `w_pp_cutoff`) that set up the resource size-spectrum arrays, and —
-like `species_params<-` — assigning to it **rebuilds those arrays** by calling
+The resource works just like the species parameters. `resource_params(params)`
+returns a named list of scalars (`kappa`, `lambda`, `r_pp`, `n`, `w_pp_cutoff`).
+These parameters set up the resource size-spectrum arrays, and — like
+`species_params<-` — assigning to it **rebuilds those arrays** by calling
 `setResource()`:
 
 ```r
@@ -261,6 +327,12 @@ resource_params(params)$r_pp   <- 10       # rebuilds the replenishment rate (rr
 |---|---|
 | `kappa`, `lambda`, `w_pp_cutoff` | resource carrying capacity (`cc_pp`) |
 | `r_pp`, `n` | resource replenishment rate (`rr_pp`) |
+| `kappa`, `lambda` | *also* the calculated `gamma` (and, for `lambda`, `q`) and hence the search volume |
+
+That last row is easy to miss: the resource power law is the reference spectrum
+against which the search volume is calibrated, so a resource change reaches the
+species too. See ["`f0` and `fc` are calibration targets"](#f0-and-fc-are-calibration-targets-not-model-outputs)
+above.
 
 The size-resolved resource arrays themselves can also be set directly; that is a
 level-2 change and is covered under
@@ -268,14 +340,14 @@ level-2 change and is covered under
 
 ## Level 1: the interaction matrix
 
-The species × species interaction matrix is set with `setInteraction()` and read
-with `getInteraction()`. The resource interaction is the `interaction_resource`
-species-parameter column instead.
+The species × species interaction matrix is read with `interaction_matrix()` and
+set with `interaction_matrix<-` or `setInteraction()`. The resource interaction
+is the `interaction_resource` species-parameter column instead.
 
 ```r
-inter <- getInteraction(params)
+inter <- interaction_matrix(params)
 inter["Cod", "Herring"] <- 0.5
-params <- setInteraction(params, inter)
+interaction_matrix(params) <- inter        # or params <- setInteraction(params, inter)
 ```
 
 ## Level 2: setting a rate array directly — and the freeze trap
@@ -306,7 +378,15 @@ feeding species parameter has *no effect* on that rate:
 ```r
 search_vol(params) <- my_array                    # frozen
 given_species_params(params)$gamma <- 2 * gamma   # search volume UNCHANGED now
+#> Warning: Your change to the species parameter `gamma` has not taken effect
+#> because the search volume has been set manually ...
 ```
+
+Since mizer 3.3 that second line warns you that the change did not reach the
+model. The warning names the parameters that were ignored and the
+`set…(params, reset = TRUE)` call that hands the rate back to mizer. The
+species parameter table still records the new value, so the table and the model
+disagree until you do one or the other.
 
 To hand control back to mizer, call the rate's `set…()` function with
 **`reset = TRUE`**. These functions recompute the array from the current species
@@ -317,7 +397,12 @@ leaves the manual value in place and warns:
 params <- setSearchVolume(params, reset = TRUE)   # drop the override, recompute
 params <- setMetabolicRate(params)                # recompute, unless frozen
 params <- setParams(params)                       # rebuild ALL rate arrays at once
+params <- setParams(params, reset = TRUE)         # ...and thaw every frozen one
 ```
+
+Note that `setParams()` does not touch the resource: the resource rate,
+capacity, level and dynamics belong to `setResource()`, and passing one of its
+arguments to `setParams()` is an error.
 
 Unlike the direct setters, the `set…()` functions return a **new** object, so
 they must be reassigned. They also accept the array itself, as the argument
@@ -451,58 +536,26 @@ params <- setRateFunction(params, "Mort", "myMort")   # use myMort() for total m
 getRateFunction(params)                               # list the current rate functions
 ```
 
-The first argument names the rate to replace. The available names are the
-components mizer computes internally: `Encounter`, `FeedingLevel`, `PredRate`,
-`PredMort`, `FMort`, `Mort`, `EReproAndGrowth`, `ERepro`, `EGrowth`,
-`Diffusion`, `ResourceMort`, `RDI`, `RDD` — and `Rates` itself, if you need to
-replace the whole bundle. Each has a default `mizer…()` implementation (e.g.
-`mizerMort()`) that you can call, wrap, or ignore.
-
-Your function must accept the same arguments as the mizer function it replaces
-and **return an array of the same shape**. The signature always includes the
-current simulation time `t`:
-
-```r
-myRate <- function(params, n, n_pp, n_other, t, ...) { … }
-```
-
-### Time-dependent rates
-
-This is the key reason to reach for `setRateFunction()`: **species parameters
-and rate arrays are fixed for the whole simulation, but a rate *function*
-receives the current time `t` and can therefore change as the simulation runs.**
-That lets you express things the parameters cannot — seasonal forcing, a warming
-trend, a management measure that switches on in a given year, and so on.
-
-For example, to give total mortality an annual cycle (with `t` measured in
-years), wrap the default `mizerMort()` and scale its result:
+Reach for this when the change cannot be expressed as a number at all. The
+clearest case is **time dependence**: species parameters and rate arrays are
+fixed for the whole simulation, but a rate *function* receives the current time
+`t` and can therefore change as the run proceeds — seasonal forcing, a warming
+trend, a management measure that switches on in a given year.
 
 ```r
 seasonalMort <- function(params, t, ...) {
-    mizerMort(params, t = t, ...) * (1 + 0.3 * sin(2 * pi * t))
+    mizerMort(params, t = t, ...) * (1 + 0.3 * sin(2 * pi * t))   # t in years
 }
 params <- setRateFunction(params, "Mort", "seasonalMort")
 ```
 
-or to step fishing-independent mortality up permanently from year 30 onwards:
-
-```r
-regimeShift <- function(params, t, ...) {
-    factor <- if (t >= 30) 1.5 else 1
-    mizerMort(params, t = t, ...) * factor
-}
-params <- setRateFunction(params, "Mort", "regimeShift")
-```
-
-Two practical points:
-
-- **Extra parameters** your function needs go in `other_params(params)`, e.g.
-  `other_params(params)$warming_rate <- 0.02`.
-- Your functions must be defined in the **global environment or in a package** —
-  mizer cannot find a function defined inside another function.
-
-To add a whole new ecosystem component with `setComponent()`, see the
-`extend-mizer` skill.
+Two things to know before writing one: extra parameters your function needs go
+in `other_params(params)`, and the function must be defined in the **global
+environment or in a package**, because mizer stores its name rather than the
+function itself. For which rates can be replaced, the signature and return shape
+each one requires, and the rule that a rate must never jump as a function of
+abundance, see the `extend-mizer` skill — as for `setComponent()`, which adds a
+whole new ecosystem component.
 
 ## Which should I use?
 
@@ -516,7 +569,7 @@ To add a whole new ecosystem component with `setComponent()`, see the
 | a size-dependent rate, keeping it tied to the parameters | change the underlying species parameter |
 | a size-dependent rate to a bespoke array (freezing it) | the direct setter `metab(params) <- …`, or the matching `set…()` with the array argument |
 | a frozen rate back to its default form | `set…(params, reset = TRUE)` |
-| everything after several edits | `setParams(params)` |
+| everything after several edits | `setParams(params)` (not the resource — see `setResource()`) |
 | how a rate is *computed* (e.g. to make it time-dependent) | `setRateFunction(params, …)` |
 | the model's set of dynamical components | `setComponent()` (see the `extend-mizer` skill) |
 
