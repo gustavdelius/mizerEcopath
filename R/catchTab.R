@@ -8,7 +8,7 @@
 #'     density vs size, compared with observed binned catch data if
 #'     available.
 #' *   **Calibration and Matching**: Buttons to scale either the
-#'     entire model or individual species abundance to match observed yields.
+#'     entire model or catchability to match observed yields.
 #'
 #' @inheritParams biomassTab
 #' @param catch Data frame holding binned observed catch data.
@@ -126,37 +126,31 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
         p <- params()
         gear <- input$gear
         spgear <- paste(sp, gear, sep = ", ")
-        sp_idx <- which(p@species_params$species == sp)
-        
+
         # Temporarily set observed yield to the clicked yield, then
         # match that yield, then restore observed yield
         obs <- p@gear_params[spgear, "yield_observed"]
-        p@gear_params[spgear, "yield_observed"] <- 
+        p@gear_params[spgear, "yield_observed"] <-
             input$match_species_yield$y
-        p <- matchYields(p, species = sp)
+        p <- matchYield(p, species = sp, gears = gear)
         p@gear_params[spgear, "yield_observed"] <- obs
-        
+
         tuneParams_update_params(p, params)
         if (sp == input$sp) {
-            n0 <- p@initial_n[sp_idx, p@w_min_idx[[sp_idx]]]
-            updateSliderInput(session, "n0",
-                              value = n0,
-                              min = signif(n0 / 10, 3),
-                              max = signif(n0 * 10, 3))
+            updateSliderInput(session, "catchability",
+                              value = p@gear_params[spgear, "catchability"])
         } else {
             updateSelectInput(session, "sp", selected = sp)
         }
     })
     
-    # Match all yields ----
+    # Match all yields for the selected gear ----
     observeEvent(input$match_yields, {
-        p <- matchYields(params())
-        sp_idx <- which(p@species_params$species == input$sp)
-        n0 <- p@initial_n[sp_idx, p@w_min_idx[[sp_idx]]]
-        updateSliderInput(session, "n0",
-                          value = n0,
-                          min = signif(n0 / 10, 3),
-                          max = signif(n0 * 10, 3))
+        gear <- input$gear
+        p <- matchYield(params(), gears = gear)
+        spgear <- paste(input$sp, gear, sep = ", ")
+        updateSliderInput(session, "catchability",
+                          value = p@gear_params[spgear, "catchability"])
         tuneParams_update_params(p, params)
     })
 }
@@ -177,7 +171,9 @@ catchTabUI <- function(...) {
                content = "Rescales the entire model so that the total of all observed yields agrees with the total of the model yields for the same species."),
         popify(actionButton("match_yields", "Match"),
                title = "Match yields",
-               content = "Moves the entire size spectrum for each species up or down to give the observed yield. It does that by multiplying the egg density by the ratio of observed yield to model yield. After that adjustment you should run to steady state by hitting the Steady button, after which the yield will be a bit off again. You can repeat this process if you like to get ever closer to the observed yield."),
+               content = paste("Adjusts catchability for each species caught",
+                               "by the selected gear to give the observed",
+                               "yield while keeping egg density constant.")),
         plotlyOutput("plotCatchDist"),
         h1("Total yield and size distribution of catch"),
         h2("Total yield"),
