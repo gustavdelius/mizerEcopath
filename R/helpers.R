@@ -315,7 +315,7 @@ validEcopathParams <- function(ecopath_params, species_to_groups) {
     missing_groups <- setdiff(required_groups, ecopath_params$`Group name`)
     if (length(missing_groups) > 0) {
         stop("The following groups in species_to_groups are not included in ecopath_params: ",
-             missing_groups)
+             paste(missing_groups, collapse = ', '))
     }
 
     return(ecopath_params)
