@@ -13,7 +13,8 @@ recover information from log files left over from aborted previous runs.}
 \item{match}{A character vector. Determines which quantities should be
 matched to observations each time the "steady" button is pressed. Possible
 entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{matchGrowth()}}), \code{"biomass"} (using
-\code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using \code{\link[mizer:matchYields]{matchYields()}}).}
+\code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using
+\code{\link[mizerExperimental:matchYield]{mizerExperimental::matchYield()}}).}
 }
 \value{
 The tuned MizerParams object

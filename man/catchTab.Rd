@@ -46,7 +46,7 @@ observed yield for each species.
 density vs size, compared with observed binned catch data if
 available.
 \item \strong{Calibration and Matching}: Buttons to scale either the
-entire model or individual species abundance to match observed yields.
+entire model or catchability to match observed yields.
 }
 }
 \seealso{

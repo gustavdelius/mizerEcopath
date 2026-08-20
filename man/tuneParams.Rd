@@ -30,7 +30,8 @@ in the main section.}
 \item{match}{A character vector. Determines which quantities should be
 matched to observations each time the "steady" button is pressed. Possible
 entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{matchGrowth()}}), \code{"biomass"} (using
-\code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using \code{\link[mizer:matchYields]{matchYields()}}).}
+\code{\link[mizer:matchBiomasses]{matchBiomasses()}}) and \code{"yield"} (using
+\code{\link[mizerExperimental:matchYield]{mizerExperimental::matchYield()}}).}
 
 \item{method}{The numerical method used whenever the gadget projects the
 model, i.e., when running to steady state after the "steady" button is
