@@ -100,7 +100,7 @@ test_that("bindParams combines gears correctly", {
 
 test_that("bindParams combines pred_kernel correctly", {
     p <- newTraitParams(no_sp = 4)
-    p <- setPredKernel(p, pred_kernel = getPredKernel(p))
+    p <- setPredKernel(p, pred_kernel = pred_kernel(p))
     sp <- p@species_params$species
     p1 <- removeSpecies(p, sp[3:4])
     p2 <- removeSpecies(p, sp[1:2])

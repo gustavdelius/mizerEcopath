@@ -44,7 +44,16 @@ utils::globalVariables(c(
     "value",
     "Size",
     "erepro",
-    "efficiency"
+    "efficiency",
+    "wpredator",
+    "wprey",
+    "Nprey",
+    "lambda",
+    "weight_kernel",
+    "x",
+    "double_sigmoid",
+    "dx",
+    "pl",
+    "Density"
 ))
-
 

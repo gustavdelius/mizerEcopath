@@ -61,6 +61,7 @@ Other gadget tabs:
 \code{\link[=ecopathGrowthTab]{ecopathGrowthTab()}},
 \code{\link[=ecopathReproTab]{ecopathReproTab()}},
 \code{\link[=ecopathSpectraTab]{ecopathSpectraTab()}},
+\code{\link[=exampleTab]{exampleTab()}},
 \code{\link[=growthTab]{growthTab()}},
 \code{\link[=numberTab]{numberTab()}},
 \code{\link[=ratesTab]{ratesTab()}},

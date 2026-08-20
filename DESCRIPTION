@@ -13,7 +13,7 @@ BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
     mizer (>= 3.2.1.9000),
     mizerExperimental (>= 3.1.0.9000),
-    R (>= 3.5)
+    R (>= 4.1)
 Imports:
     assertthat,
     bslib,
@@ -32,6 +32,7 @@ Imports:
     TMB
 Suggests:
     pkgdown,
+    knitr,
     quarto,
     rfishbase,
     rmarkdown,

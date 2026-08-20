@@ -172,6 +172,6 @@ area_rect_long <- overlap_table %>%
 head(area_rect_long)
 
 # write.csv(overlap_table_combined,
-#           "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES Rectangle to Area.csv",
+#           "/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES_Rectangle_to_Area.csv",
 #           row.names = FALSE)
 ```

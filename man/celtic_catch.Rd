@@ -7,12 +7,10 @@
 \format{
 A data frame with columns:
 \describe{
-\item{species_code}{ICES species code}
 \item{length}{Length class (cm)}
 \item{gear}{Survey gear identifier}
 \item{catch}{Observed catch count}
 \item{Scientific_name}{Scientific name}
-\item{English_name}{Common English name}
 \item{species}{Species name matching MizerParams}
 \item{dl}{Width of the length bin (cm)}
 }

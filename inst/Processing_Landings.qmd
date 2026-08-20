@@ -635,9 +635,9 @@ FDI_EU <- FDI_EU %>%
     mutate(landings_proportion=total_landings/agg_landings)%>%
     select(-agg_landings)
 
-yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+yield <- read.csv(here("inst", "extdata", "Ecopath-Fishing_mortality_rates.csv"))
 
-ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+ecopath_params <- read.csv(here("inst", "extdata", "Ecopath-Basic_estimates.csv"))
 
 species_to_groups <- c(
     "Herring"="Herring",

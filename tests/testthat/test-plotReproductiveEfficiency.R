@@ -10,7 +10,7 @@ test_that("plotReproductiveEfficiency returns the correct data", {
     # The realised efficiency is the product of the two factors
     expect_equal(df$efficiency, df$erepro * df$dd_survival)
     # The survival of density dependence is 1 - reproduction_level
-    expect_equal(df$dd_survival, unname(1 - getReproductionLevel(params)))
+    expect_equal(df$dd_survival, unname(1 - reproduction_level(params)))
 })
 
 test_that("plotReproductiveEfficiency respects the species argument", {

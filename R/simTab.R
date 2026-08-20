@@ -12,6 +12,8 @@ simTabUI <- function(...) {
 #' identify if the system reaches a stable equilibrium.
 #'
 #' @inheritParams spectraTab
+#' @param params_old Reactive value holding the MizerParams object from before
+#'   the most recent update.
 #' @param method The numerical method used for the projection to steady state,
 #'   passed on to [mizer::project()]. Supplied by [tuneParams()].
 #' @family gadget tabs

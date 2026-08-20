@@ -20,6 +20,9 @@ simTab(input, output, session, params, params_old, logs, method = "euler", ...)
 
 \item{params}{Reactive value holding updated MizerParams object}
 
+\item{params_old}{Reactive value holding the MizerParams object from before
+the most recent update.}
+
 \item{logs}{Environment holding the log of steady states.}
 
 \item{method}{The numerical method used for the projection to steady state,
@@ -45,6 +48,7 @@ Other gadget tabs:
 \code{\link[=ecopathReproTab]{ecopathReproTab()}},
 \code{\link[=ecopathSpectraTab]{ecopathSpectraTab()}},
 \code{\link[=ecopathSurveyTab]{ecopathSurveyTab()}},
+\code{\link[=exampleTab]{exampleTab()}},
 \code{\link[=growthTab]{growthTab()}},
 \code{\link[=numberTab]{numberTab()}},
 \code{\link[=ratesTab]{ratesTab()}},

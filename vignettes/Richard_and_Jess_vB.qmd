@@ -651,7 +651,7 @@ The final model is the stage-7 model built above plus the reproduction levels fr
 #| warning: false
 sim <- project(params, t_max = 20, progress_bar = FALSE)
 data.frame(species = species_params(params)$species,
-           reproduction_level = round(getReproductionLevel(params), 4),
+           reproduction_level = round(reproduction_level(params), 4),
            `biomass drift over 20 yr` =
                signif(getBiomass(sim)[21, ] / getBiomass(sim)[1, ] - 1, 2),
            check.names = FALSE) |>

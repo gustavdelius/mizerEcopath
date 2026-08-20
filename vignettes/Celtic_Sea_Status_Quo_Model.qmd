@@ -52,7 +52,7 @@ life_history_fishbase$l_mat <- c(27.15, 42.36707, 23.473, 21.13458, 25.1,
 #    select(-l_mat.x, -l_mat.y, -age_mat.x, -age_mat.y)
 
 #Load in ecopath data
-ecopath_estimates <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+ecopath_estimates <- read.csv(here("inst", "extdata", "Ecopath-Basic_estimates.csv"))
 
 Gurnards <- ecopath_estimates[46, ]
 Boarfish <- ecopath_estimates[49, ]
@@ -198,7 +198,7 @@ params<-model_non_int
 sps<-species_params(model_non_int)
 initial_Eiw<-array(dim=length(sps$species))
 for(i in 1:length(sps$species)){
-    initial_Eiw[i]<-getExtEncounter(params)[i,1]/(w(params)[1]^sp[i,]$n)}
+    initial_Eiw[i]<-ext_encounter(params)[i,1]/(w(params)[1]^sp[i,]$n)}
 sps$Eiw<-initial_Eiw
 species_params(model_non_int)<-sps
 

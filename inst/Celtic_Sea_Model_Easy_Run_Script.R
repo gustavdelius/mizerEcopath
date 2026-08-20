@@ -9,10 +9,10 @@ library(here)
 
 ##Load in data
 #Load in ecopath parameters Consumption
-ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+ecopath_params <- read.csv(here("inst", "extdata", "Ecopath-Basic_estimates.csv"))
 
 #Ecopath yield data
-yield <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+yield <- read.csv(here("inst", "extdata", "Ecopath-Fishing_mortality_rates.csv"))
 colnames(yield)[2] <- "Group.name"
 yield$Total<-rowSums(yield[,3:29],na.rm=TRUE)
 yield <- left_join(ecopath_params, yield, by = c("Group.name" = "Group.name")) |>
@@ -225,7 +225,5 @@ model_non_int_1<-tuneEcopath(
     catch = cs_survey,
     age_at_length = age_at_length
 )
-
-
 
 

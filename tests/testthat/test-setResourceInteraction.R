@@ -88,7 +88,7 @@ test_that("getResourceEncounterRate calculates encounter rates correctly", {
 
     # The same has to hold when a custom predation kernel forces mizer, and
     # hence us, to sum over the kernel array instead of using the fft.
-    params3 <- setPredKernel(params2, pred_kernel = getPredKernel(params2))
+    params3 <- setPredKernel(params2, pred_kernel = pred_kernel(params2))
     expect_false(is.null(comment(params3@pred_kernel)))
     expect_equal(getEncounter(params3), getResourceEncounterRate(params3),
                  ignore_attr = TRUE)

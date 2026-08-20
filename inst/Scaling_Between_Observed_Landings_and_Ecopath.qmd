@@ -49,9 +49,9 @@ cs_catch_sp <- cs_catch %>%
 ## Extract Yield
 
 ```{r}
-fishing_mortality <- read.csv(here("inst","extdata","Ecopath-Fishing mortality rates.csv"))
+fishing_mortality <- read.csv(here("inst", "extdata", "Ecopath-Fishing_mortality_rates.csv"))
 
-ecopath_params <- read.csv(here("inst","extdata","Ecopath-Basic estimates.csv"))
+ecopath_params <- read.csv(here("inst", "extdata", "Ecopath-Basic_estimates.csv"))
 
 fishing_mortality$totalF <- rowSums(fishing_mortality[, -(1:2)], na.rm = TRUE)
 
