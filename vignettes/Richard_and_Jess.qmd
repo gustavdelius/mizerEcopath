@@ -578,7 +578,7 @@ The final model is the model `psr` built above — which now includes the cannib
 ```{r}
 #| label: check-repro
 data.frame(species = species_params(params)$species,
-           reproduction_level = round(getReproductionLevel(params), 3)) |>
+           reproduction_level = round(reproduction_level(params), 3)) |>
     kable(row.names = FALSE, caption = "Reproduction levels of the final model.")
 ```
 

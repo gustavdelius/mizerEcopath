@@ -36,8 +36,7 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
         p <- isolate(params())
         sp <- isolate(input$sp)
         gear <- isolate(input$gear)
-        sp_idx <- which.max(p@species_params$species == sp)
-        gp_idx <- which(p@gear_params$species == sp,
+        gp_idx <- which(p@gear_params$species == sp &
                         p@gear_params$gear == gear)
         gp <- p@gear_params[gp_idx, ]
         if ("yield_observed" %in% names(gp) && !is.na(gp$yield_observed) &&
@@ -45,7 +44,7 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
             total <- getYieldGear(p)[gear, sp]
             catchability <-
                 gp$catchability *
-                p@species_params$yield_observed[sp_idx] / total
+                gp$yield_observed / total
             updateSliderInput(session, "catchability",
                               value = catchability)
             # The above update of the slider will also trigger update of
@@ -111,8 +110,9 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
     
     # Calibrate all yields ----
     observeEvent(input$calibrate_yield, {
-        # Rescale so that the model matches the total observed yield
-        p <- calibrateYield(params())
+        # Rescale so that the model matches the total observed yield for the
+        # selected gear.
+        p <- calibrateCatchTabYield(params(), gear = input$gear)
         tuneParams_add_to_logs(logs, p, params)
         # Trigger an update of sliders
         trigger_update(runif(1))
@@ -126,7 +126,6 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
         p <- params()
         gear <- input$gear
         spgear <- paste(sp, gear, sep = ", ")
-
         # Temporarily set observed yield to the clicked yield, then
         # match that yield, then restore observed yield
         obs <- p@gear_params[spgear, "yield_observed"]
@@ -137,8 +136,8 @@ catchTab <- function(input, output, session, params, logs, trigger_update,
 
         tuneParams_update_params(p, params)
         if (sp == input$sp) {
-            updateSliderInput(session, "catchability",
-                              value = p@gear_params[spgear, "catchability"])
+        updateSliderInput(session, "catchability",
+                          value = p@gear_params[spgear, "catchability"])
         } else {
             updateSelectInput(session, "sp", selected = sp)
         }
@@ -168,7 +167,7 @@ catchTabUI <- function(...) {
         textOutput("yield_total"),
         popify(actionButton("calibrate_yield", "Calibrate"),
                title = "Calibrate model",
-               content = "Rescales the entire model so that the total of all observed yields agrees with the total of the model yields for the same species."),
+               content = "Rescales the entire model so that, for the selected gear, the total observed yield agrees with the total model yield over entries with observations."),
         popify(actionButton("match_yields", "Match"),
                title = "Match yields",
                content = paste("Adjusts catchability for each species caught",
@@ -178,7 +177,7 @@ catchTabUI <- function(...) {
         h1("Total yield and size distribution of catch"),
         h2("Total yield"),
         p("The upper plot compares the yearly yield for each species in the model to the observed yield, if available."),
-        p("The observed yield is taken from the 'yield_observed' column of the species parameter data frame. But if this is missing or needs to be changed you can do this with the input field below the upper plot. Note that this value is in grams/year."),
+        p("The observed yield is taken from the 'yield_observed' column of the gear parameter data frame. But if this is missing or needs to be changed you can do this with the input field below the upper plot. Note that this value is in grams/year."),
         h3("How to tune the yield"),
         p("To bring the yield of a species in the model in line with the observed value you can either change the abundance of large fish (for example by reducing their mortality from predation or the", a("background mortality", href = "#other"), "or you can change the", a("fishing parameters", href = "#fishing"), "."),
         h2("Size distribution of catch"),
@@ -186,4 +185,31 @@ catchTabUI <- function(...) {
         h3("How to tune size distribution"),
         p("To change the size distribution of catches you either need to change the size spectrum (for example by changing the mortality on large fish) or you need to adjust the ", a("fishing", href = "#fishing"), " selectivity curve by changing the 'L50' and 'L25' parameters.")
     )
+}
+
+#' Rescale a model to match the total observed yield for one gear
+#' @noRd
+calibrateCatchTabYield <- function(params, gear) {
+    gp <- params@gear_params
+    include <- gp$gear == gear & !is.na(gp$yield_observed) &
+        gp$yield_observed > 0
+    if (!any(include)) {
+        return(params)
+    }
+
+    model_yield <- getYieldGear(params)
+    model_observed <- mapply(
+        function(gear_name, species_name) {
+            model_yield[gear_name, species_name]
+        },
+        gp$gear[include], gp$species[include]
+    )
+    usable <- is.finite(model_observed) & model_observed > 0
+    if (!any(usable)) {
+        return(params)
+    }
+
+    factor <- sum(gp$yield_observed[include][usable]) /
+        sum(model_observed[usable])
+    scaleModel(params, factor = factor)
 }

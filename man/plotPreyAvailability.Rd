@@ -26,6 +26,9 @@ maturity weight \code{w_mat} of the species.}
 \item{return_data}{A boolean value that determines whether the data frame
 underlying the plot is returned instead of the plot itself. Defaults to
 FALSE. The data frame has the variables \code{w}, \code{value} and \code{Type}.}
+
+\item{...}{Additional arguments passed to \code{plotPreyAvailability()} by the
+plotly wrapper.}
 }
 \value{
 A ggplot2 object, or a data frame if \code{return_data = TRUE}. The

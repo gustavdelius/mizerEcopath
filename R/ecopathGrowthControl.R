@@ -22,7 +22,7 @@ ecopathGrowthControl <- function(input, output, session, params, params_old, fla
         }
 
         # Update ext_encounter matrix
-        ext_enc <- getExtEncounter(p)
+        ext_enc <- ext_encounter(p)
         sps <- species_params(p)
         w_bins <- w(p)
 

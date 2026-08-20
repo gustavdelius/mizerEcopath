@@ -21,7 +21,7 @@ calculated from the \code{w_inf} and \code{k_vb} species parameters.
 }
 \details{
 The von Bertalanffy growth rate in terms of length \eqn{l} is
-\deqn{dl/dt = k_{vb}(L_\inf - l(t)).}
+\deqn{dl/dt = k_{vb}(L_\infty - l(t)).}
 After converting this to weight \eqn{w = al^b} this becomes
 \deqn{dw/dt = Aw^n-Bw}
 where \eqn{n=1-1/b}, \eqn{A=b\, k_{vb}\, w_{\inf}^{1/b}} and

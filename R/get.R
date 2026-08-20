@@ -175,7 +175,7 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 getMetabolicRespiration <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(getMetabolicRate(params) * sel, params)
+    K <- bin_average_weight(metab(params) * sel, params)
     R <- as.vector((N * K) %*% dw(params))
     names(R) <- params@species_params$species
     return(R)
@@ -302,7 +302,7 @@ getZB <- function(params, ...) {
 getM0B <- function(params, ...) {
     N <- initialN(params)
     sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(sweep(getExtMort(params) * sel, 2, w(params), "*"),
+    K <- bin_average_weight(sweep(ext_mort(params) * sel, 2, w(params), "*"),
                           params)
     M0B <- as.vector((N * K) %*% dw(params))
     names(M0B) <- params@species_params$species
