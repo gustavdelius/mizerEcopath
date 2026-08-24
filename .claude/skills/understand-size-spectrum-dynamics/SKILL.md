@@ -66,16 +66,19 @@ different ways:
 | **Predation mortality** on species $i$ | all **predators** big enough to eat $i$ | nothing (deaths counted, not mass) | the abundance of $i$'s **predators** — top-down |
 
 Same kernel $\phi$, same search volume $\gamma$, same interaction matrix
-$\theta$; even the satiation factor is shared, since a satiated predator both
-stops gaining mass and stops killing. The only differences are which variable is
-integrated out — prey size or predator size — and whether you weight by the
-prey's mass or just count the death.
+$\theta$; the same handling limitation also appears on both sides through the
+factor $1-f$. As a predator becomes satiated, its successful prey-removal rate
+per unit available prey falls, while its realised intake approaches the maximum
+intake rate. The other differences are which
+variable is integrated out — prey size or predator size — and whether you
+weight by the prey's mass or just count the death.
 
-This is why **you cannot make a species grow faster without making its prey die
-faster**, and why the food and predation feedback loops below are not
-independent dials. It also means a single diagnosis often covers both symptoms:
-if growth is wrong, the mortality that same predation imposes is wrong too, and
-the fix is in the shared parameters, not in one or the other.
+Changes to the encounter pathway therefore usually affect both predator growth
+and prey mortality, so those are not independent dials. But growth also depends
+on assimilation, metabolism and reproductive allocation: changing one of those
+can alter growth without changing prey removal. A joint growth-and-mortality
+problem points first to the shared encounter parameters; an isolated growth
+problem need not.
 
 Further consequences worth internalising:
 
@@ -87,7 +90,7 @@ Further consequences worth internalising:
   changes its abundance, which changes the food available to its predators and
   the mortality on its prey. There are no isolated species.
 * **A steady state is a fixed point of that coupling**, not a property you can
-  set species by species. This is why `steady()` exists.
+  set species by species. This is why `tuneSteadyState()` exists.
 
 ## The size spectrum as state variable
 
@@ -239,11 +242,11 @@ to switch the food loop off deliberately when isolating a feedback (see the
   and the resource is drawn down, feeding levels fall, and growth slows — with
   nothing having been changed. This is normal, and it is why calibration comes
   before interpretation.
-* **`steady()` rebalances the resource at the end.** It holds the resource fixed
+* **`tuneSteadyState()` rebalances the resource at the end.** It holds the resource fixed
   while converging the fish, then recomputes the capacity from the (preserved)
   rate so that the converged state is a steady state of the resource too. The
   abundance you calibrated against is kept; the capacity moves above it. So
-  after `steady()` the resource level is an emergent, size-dependent quantity —
+  after `tuneSteadyState()` the resource level is an emergent, size-dependent quantity —
   lowest where the fish feed hardest, near 1 where consumption is negligible.
 
 ### The resource runs on its own clock
@@ -253,9 +256,9 @@ spread over far more orders of magnitude: with the default `r_pp` of 10, the
 smallest resource sizes replenish tens of thousands of times a year, while at
 the `w_pp_cutoff` of 10 g the rate is under 5 per year — comparable to fish
 rates, and precisely at the sizes fish eat most. So the resource is a fast,
-quasi-static variable at the bottom (which is what `getStability()` assumes by
-default; see the `analyse-stability` skill) and a genuinely dynamical one at the
-top. Raising `r_pp` makes the resource stiffer and the model less sensitive to
+quasi-static variable at the bottom and a genuinely dynamical one at the top —
+which is why `getStability()` always perturbs it alongside the fish rather than
+slaving it to them; see the `analyse-stability` skill. Raising `r_pp` makes the resource stiffer and the model less sensitive to
 competition for food; lowering it makes the resource a slow variable that can
 carry oscillations of its own.
 
@@ -273,19 +276,22 @@ Feeding level is the first thing to look at in almost every diagnosis, because
 it is dimensionless and has an absolute scale: you can tell at a glance whether
 a number is wrong. $f < 0.2$ anywhere in the juvenile range means the species is
 starving; $f > 0.9$ everywhere means the species is satiated and effectively
-decoupled from its prey — its growth will not respond to food very much, and
-neither will it exert much predation mortality (see below).
+decoupled from variation in its prey — its growth will not respond to food very
+much, and its predation pressure per unit prey is reduced by the $1-f$ factor
+(see below). Its total biomass intake can nevertheless remain near its maximum.
 
 **2 — Net available energy.** Assimilated intake ($\alpha$, default 0.6) minus
-standard metabolism, floored at zero. If it hits zero the fish has no surplus
-for growth or reproduction and simply stops.
+standard and activity metabolism, floored at zero. If it hits zero the fish has
+no surplus for growth or reproduction and simply stops.
 
-**3 — Allocation.** Below `w_mat` all net energy goes to somatic growth. Above
-it, a fraction $\psi_i(w)$ goes to reproduction and the rest to growth, with
-$\psi$ rising to 1 at `w_repro_max`, so growth halts there. This is what turns
-the species spectrum into a dome: growth decelerating towards `w_repro_max` piles
-individuals up (see the traffic-jam effect below) and then mortality removes
-them.
+**3 — Allocation.** Around maturity, an increasing fraction $\psi_i(w)$ goes to
+reproduction and the rest to growth; `w_mat` is the 50% point of the maturity
+ogive, not a hard threshold. Under defaults edition 1, $\psi$ is forced to 1
+above `w_repro_max`, so growth halts there. Under edition 2 it continues to
+follow the maturity ogive times the reproductive proportion and need not reach
+1. Increasing allocation still slows growth and helps turn the species spectrum
+into a dome: decelerating fish pile up (see the traffic-jam effect below) and
+mortality then removes them.
 
 ## What sets the slope
 
@@ -368,7 +374,7 @@ Practical consequences:
 * **Oscillation periods track generation time**, so a limit cycle in a large
   slow species has a long period and needs a correspondingly long `project()`
   run to even be visible.
-* **Equilibration is set by the slowest species.** A `steady()` run that looks
+* **Equilibration is set by the slowest species.** A `tuneSteadyState()` run that looks
   converged for small species may be nowhere near it for large ones.
 * **Small species and juvenile size classes respond first** to any perturbation;
   the large-fish response arrives a generation later. A transient that looks
@@ -452,13 +458,13 @@ Check emergent properties before changing structural parameters.
 | **Species collapses during `project()`** | Starving larvae, intense juvenile predation, or too little egg production | `plotFeedingLevel()`, `plotDiet()`, `getPredMort()` |
 | **Biomass oscillates in regular cycles** | Reproduction level near 0 (little recruitment damping — mizer's default), narrow kernel (`sigma` too small), or knife-edge fishing | [`reproduction_level()`](../reference/setBevertonHolt.html), [`getStability()`](../reference/getStability.html) (see the `analyse-stability` skill) |
 | **Growth slows before `w_mat`** | Food limitation at intermediate sizes; resource depleted or `w_pp_cutoff` too low | `plotGrowthCurves()`, `resource_level()`, `plotSpectra()` |
-| **Feeding levels drift down during `project()` although nothing was changed** | The resource was left at its capacity ($L = 1$, as freshly built) and is being eaten down towards its true fixed point | [`resource_level()`](../reference/setResource.html), `plot(initialNResource(params))`; run `steady()` first |
+| **Feeding levels drift down during `project()` although nothing was changed** | The resource was left at its capacity ($L = 1$, as freshly built) and is being eaten down towards its true fixed point | [`resource_level()`](../reference/setResource.html), `plot(initialNResource(params))`; run `tuneSteadyState()` first |
 | **Growth is not what `matchGrowth()` asked for** | Growth is emergent — the food to support it is not there | `plotFeedingLevel()`, then the `calibrate-model` skill |
 | **Tuning one species drops another** | Predation overlap or resource competition in shared juvenile size bins | `interaction_matrix()`, `plotDiet()` |
 | **Species insensitive to fishing** | Strong imposed density dependence ($r_i$ **high**, near 1 — only $1-r_i$ of any change in egg production gets through), or an effectively infinite resource | [`reproduction_level()`](../reference/setBevertonHolt.html), [`resource_level()`](../reference/setResource.html) |
 | **Species spectrum curves instead of running straight** | `lambda`, `q` and `n` no longer mutually consistent, so feeding level is size-dependent | [`plotFeedingLevel()`](../reference/plotFeedingLevel.html) — is it flat in size? |
 | **Community slope isn't `lambda`** | Expected only in the idealised scaling model; with few species the domes don't sum to a clean power law | [`getCommunitySlope()`](../reference/getCommunitySlope.html), [`plotSpectra()`](../reference/plotSpectra.html) — compare against species domes, not against `lambda` |
-| **Species won't stay at steady state** | Fixed point is dynamically unstable, not a numerical failure | `getSteadyResidual()`, `steadyNewton()` |
+| **Species won't stay at steady state** | Fixed point is dynamically unstable, not a numerical failure | `getSteadyResidual()`, `findSteadyState(solver = "newton")` |
 
 <!-- agent-only -->
 ### Diagnostic procedure
@@ -481,9 +487,9 @@ step 2 or 3.
    separate bug.
 4. **Then mortality.** `plotPredMort(params)` and `getMort(params)`. Split
    predation, fishing and external contributions before blaming any one of them.
-5. **Then reproduction.** `reproduction_level(params)`. Anything above ~0.85
-   makes oscillations likely; anything below ~0.2 makes the species inert to
-   fishing by assumption.
+5. **Then reproduction.** `reproduction_level(params)`. Anything below ~0.2
+   supplies little recruitment damping and can make oscillations more likely;
+   anything above ~0.85 makes the species inert to fishing by assumption.
 6. **Only then structural parameters** — `interaction_matrix()`, `beta`,
    `sigma`, resource settings.
 
@@ -526,8 +532,8 @@ The shared factors $\gamma$, $\phi$ and $\theta$ are what makes these two sides
 of one coin. The $(1 - f_j)$ factor is worth noting: **satiated predators kill
 less**, and a species whose predators are all near $f = 1$ experiences less
 mortality than their abundance alone suggests. It applies to the growth side
-too — realised intake is $f_i h_i w^n = (1 - f_i) E_i$ — so satiation throttles
-both integrals together.
+too — realised intake is $f_i h_i w^n = (1 - f_i) E_i$. As $f_i$ approaches 1,
+that intake approaches the maximum $h_i w^n$; it does not approach zero.
 
 **Feeding level** from encountered food $E_i$ and maximum intake $h_i w^n$:
 
@@ -536,7 +542,7 @@ $$f_i(w) = \frac{E_i(w)}{E_i(w) + h_i w^n}$$
 **Net energy** after assimilation ($\alpha$) and metabolism ($k_s w^p$, plus an
 activity term $k w$ that defaults to zero):
 
-$$E_{\text{net},i}(w) = \max\big(0,\; \alpha_i f_i(w) h_i w^n - k_{s,i} w^p\big)$$
+$$E_{\text{net},i}(w) = \max\big(0,\; \alpha_i f_i(w) h_i w^n - k_{s,i} w^p - k_i w\big)$$
 
 **Growth**, after the reproductive allocation $\psi_i(w)$:
 

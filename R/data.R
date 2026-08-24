@@ -41,12 +41,10 @@
 #'
 #' @format A data frame with columns:
 #' \describe{
-#'   \item{species_code}{ICES species code}
 #'   \item{length}{Length class (cm)}
 #'   \item{gear}{Survey gear identifier}
 #'   \item{catch}{Observed catch count}
 #'   \item{Scientific_name}{Scientific name}
-#'   \item{English_name}{Common English name}
 #'   \item{species}{Species name matching MizerParams}
 #'   \item{dl}{Width of the length bin (cm)}
 #' }
@@ -54,6 +52,18 @@
 #' @docType data
 #' @keywords datasets
 "celtic_catch"
+
+#' Reduced Celtic Sea diet matrix
+#'
+#' Diet proportions for 14 modelled predator species. Columns give the same 14
+#' modelled prey species plus an `other` category for prey outside the model.
+#'
+#' @format A numeric matrix with 14 predator rows and 15 prey columns. Row and
+#'   column names identify predator and prey species, respectively.
+#' @name reduced_dm
+#' @docType data
+#' @keywords datasets
+"reduced_dm"
 
 #' North Sea 3-species model: initial state
 #'

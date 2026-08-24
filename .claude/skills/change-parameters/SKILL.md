@@ -49,7 +49,7 @@ A size-structured model potentially has a huge number of parameters, because
 rates must be specified at every size. Mizer assumes sensible functional forms
 for the size dependence, so you only supply a small number of scalars. Mizer
 also sets or calculates defaults for those you do not supply — see
-[Calculation of Default Parameter Values](default_parameters.html) — and keeps
+[Calculation of Default Parameter Values](default_parameters.html#defaults-table) — and keeps
 track of which values you **gave** and which it **calculated**.
 
 | Accessor | Returns |
@@ -67,14 +67,32 @@ size-dependent rate arrays that depend on it.
 species_params(params)$beta <- 150   # recorded as given; also rebuilds the predation kernel
 ```
 
-`given_species_params(params) <-` makes the same changes and is preferable in
-**interactive** sessions, because it additionally *warns* whenever a change you
-asked for cannot take effect: the parameter is overridden by another one you
-have already given, or it feeds a rate array you set by hand, or it is a gear
-parameter that mizer reads from `gear_params()`. `species_params(params) <-`
-stays quiet about all three, which is what makes it the better one for scripts.
+`given_species_params(params) <-` has a different job: it declares exactly
+which values count as explicit input. Every non-`NA` entry assigned there is
+recorded as given, even if its number is already present in `species_params()`.
+This is how to protect a value that mizer calculated:
 
-**Turning the commentary up or down.** Mizer reports the choices it makes —
+```r
+given_species_params(params)$q <- species_params(params)$q
+```
+
+Setting an entry to `NA`, or removing its column, hands it back to mizer's
+calculation. Merely protecting the current value changes its provenance, not
+the current model, so mizer does not rebuild the rate arrays. A changed value
+rebuilds only the quantities that can depend on that parameter; observation,
+direct-runtime and unrelated custom columns do not trigger a full `setParams()`
+call. Unknown columns on an extension object remain conservative and do trigger
+recalculation, because an extension setter may use them.
+
+`given_species_params<-()` also *warns* whenever a change you asked for cannot
+take effect: the parameter is overridden by another one you have already
+given, it feeds a rate array you set by hand, or it is a gear parameter that
+mizer reads from `gear_params()`. `species_params<-()` stays quiet about all
+three.
+
+### Turning the commentary up or down
+
+Mizer reports the choices it makes —
 defaults it filled in, inputs it adjusted, instructions it could not carry out —
 at a level set by `info_level`. Most `set…()` and `new…()` functions take it as
 an argument; for the ones that do not, including `species_params(params) <-` and
@@ -102,8 +120,10 @@ given_species_params(params) <- gsp
 ```
 
 Handing the **full** `species_params()` table to `given_species_params(params) <-`
-records every calculated value in it as given, freezing parameters you never
-touched — on `NS_params` it turns 312 given entries into 396.
+deliberately records every non-`NA` value in it as given, freezing parameters
+you never touched — on `NS_params` it turns 312 given entries into 396. It does
+not recalculate the current model because all those values already agree with
+it, but future changes will no longer recalculate them.
 
 > **Version note.** Older guidance said to avoid `species_params(params) <-`
 > because it bypassed the `given_species_params` protection and skipped
@@ -115,6 +135,26 @@ Columns come back as named vectors:
 species_params(params)$w_mat        # named by species
 given_species_params(params)$gamma  # NA where you never set it
 ```
+
+### Length and weight columns: the changed value wins
+
+Size parameters can be supplied as weights (`w_inf`, `w_max`, `w_mat`,
+`w_mat25`, `w_repro_max`, `w_min`) or, when `a` and `b` are available, as the
+corresponding lengths (`l_inf`, `l_max`, `l_mat`, `l_mat25`, `l_repro_max`,
+`l_min`). Mizer keeps each pair consistent when the table is assigned back to
+the model.
+
+`species_params(params) <- value` compares `value` with the model's current
+table, so the side you changed wins: changing only `l_mat` recalculates `w_mat`,
+while changing only `w_mat` recalculates `l_mat`. If both disagree and both
+count as changed at the same time, the weight wins and mizer reports that it
+adjusted the length.
+
+Editing a species-parameter table on its own performs no validation or
+conversion; those happen only when the table is assigned back. A fresh plain
+data frame has no model history against which to identify the last change, so
+disagreeing length and weight values count as simultaneous input and the weight
+wins.
 
 For a fuller description of the individual parameters see the help page of
 `species_params()`.
@@ -160,7 +200,7 @@ changes just that one thing.
 
 The three sections below cover the traps this creates; for the mathematical
 derivations themselves see
-[Calculation of Default Parameter Values](default_parameters.html).
+[Calculation of Default Parameter Values](default_parameters.html#derivations).
 
 ### Whether a value is given determines whether it is recalculated
 
@@ -561,7 +601,9 @@ whole new ecosystem component.
 
 | I want to change… | Use |
 |---|---|
-| a per-species value (`beta`, `w_mat`, `h`, `erepro`, …) | `species_params(params) <- …` (mizer ≥ 3.2; `given_species_params(params) <-` interactively or on older mizer) |
+| a per-species value (`beta`, `w_mat`, `h`, `erepro`, …) | `species_params(params) <- …` |
+| protect a value mizer has calculated | copy it from `species_params(params)` into `given_species_params(params)` |
+| let mizer calculate a value again | set it to `NA` in `given_species_params(params)` |
 | fishing gears / selectivity / catchability | `gear_params(params) <- …` |
 | baseline effort or selectivity/catchability arrays | `setFishing(params, …)` |
 | the resource (`kappa`, `lambda`, `r_pp`, …) | `resource_params(params) <- …` |

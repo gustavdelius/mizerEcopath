@@ -37,9 +37,9 @@ getDietMatrix <- function(params, min_w_pred = 0, max_w_pred = Inf) {
     # predator size, so that bin averaging can make the bin straddling the edge
     # of the window count only partially.
     K <- sweep(getDiet(params, proportion = FALSE), 2, w_sel, "*")
-    # binAverageWeight() averages along the last dimension, so bring the
+    # bin_average_weight() averages along the last dimension, so bring the
     # predator size dimension to the back and then put it back in place.
-    K <- aperm(binAverageWeight(aperm(K, c(1, 3, 2)), params), c(1, 3, 2))
+    K <- aperm(bin_average_weight(aperm(K, c(1, 3, 2)), params), c(1, 3, 2))
     diet_matrix <- K |>
         sweep(c(1, 2), initialN(params), "*") |>
         sweep(2, dw(params), "*") |>

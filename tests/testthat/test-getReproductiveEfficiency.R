@@ -8,7 +8,7 @@ test_that("getReproductiveEfficiency works for MizerParams", {
     # It is the product of erepro and the survival of density dependence
     expect_equal(efficiency,
                  unname(params@species_params$erepro *
-                            (1 - getReproductionLevel(params))),
+                            (1 - reproduction_level(params))),
                  ignore_attr = "names")
 })
 

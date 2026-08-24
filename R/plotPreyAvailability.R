@@ -30,6 +30,8 @@
 #'
 #' @return A ggplot2 object, or a data frame if `return_data = TRUE`. The
 #'   `plotly` version returns a plotly object.
+#' @param ... Additional arguments passed to `plotPreyAvailability()` by the
+#'   plotly wrapper.
 #' @export
 #' @family plotting functions
 #' @seealso [mizer::plotting_functions], [mizer::plotDiet()]
@@ -61,7 +63,7 @@ plotPreyAvailability <- function(params, species = NULL, pred_size = NULL,
     total_n[fish_idx] <- total_n[fish_idx] +
         params@interaction[sp_idx, ] %*% params@initial_n
 
-    kernel <- getPredKernel(params)[sp_idx, w_idx, ]
+    kernel <- pred_kernel(params)[sp_idx, w_idx, ]
     n <- total_n * kernel
     n_logw <- n * params@w_full
     b_logw <- n_logw * params@w_full

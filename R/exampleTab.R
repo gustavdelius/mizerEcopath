@@ -16,6 +16,13 @@ exampleTabUI <- function(...) {
     )
 }
 
+#' Example tab for extending the tuning gadget
+#'
+#' A minimal server function demonstrating how to add a custom tab to
+#' [tuningGadget()]. It plots mortality for the selected species as either a
+#' proportion or a rate.
+#'
+#' @inheritParams catchTab
 #' @family gadget tabs
 #' @export
 exampleTab <- function(input, output, session, params, logs, ...) {

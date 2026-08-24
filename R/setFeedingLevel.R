@@ -19,7 +19,7 @@
 setFeedingLevel <- function(params, feeding_level) {
     sp <- params@species_params
     # Check that params describes a non-interacting model
-    if (!isTRUE(all.equal(getEncounter(params), getExtEncounter(params),
+    if (!isTRUE(all.equal(getEncounter(params), ext_encounter(params),
                           check.attributes = FALSE))) {
         stop("This function only works for models where all encounter is external encounter. Try calling `makeNoninteracting()` first.")
     }
@@ -51,7 +51,7 @@ setFeedingLevel <- function(params, feeding_level) {
     params@species_params$f0 <- feeding_level
 
     # Adjust maximum intake rate to achieve the desired feeding level
-    E_old <- getExtEncounter(params)
+    E_old <- ext_encounter(params)
     f_old <- getFeedingLevel(params)
     new_intake_max <- (1 - f_old) / feeding_level * E_old
     # Division by zero may have produced NaNs, replace them with Inf

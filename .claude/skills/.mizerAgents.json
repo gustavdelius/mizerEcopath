@@ -1,16 +1,21 @@
 {
   "version": 1,
   "files": {
-    "analyse-and-plot/SKILL.md": "173b968cf4ac79e9b397faca6a34a398",
-    "analyse-stability/SKILL.md": "54abb50e187877375ced0c84abc80681",
-    "build-model/SKILL.md": "46dff4d662caef9eeeaf21c26c2341a0",
-    "calibrate-model/SKILL.md": "218c228c2a8723e652ba30e3f93bb994",
-    "change-parameters/SKILL.md": "89124ea6b8935498d0d1c5338a85dece",
-    "extend-mizer/SKILL.md": "40b121d9c0cd189255e38caf7c875c97",
-    "run-simulation/SKILL.md": "7330872f6d6e02460378f2464499c439",
-    "set-up-fishing/SKILL.md": "77f3e686351064c1ac9f8e7a031bb150",
-    "understand-size-spectrum-dynamics/SKILL.md": "7ca03314f402b6c6ace9ae65c8d24527",
-    "upgrade-mizer-code/SKILL.md": "646ecd97f15b0cadf49bc3bce94077a7",
-    "use-extension-packages/SKILL.md": "3f077868f95adce50736d0cb70dac36f"
+    "analyse-and-plot/SKILL.md": "f6c47d00f09d3f19e3f4a0a626cb4f55",
+    "analyse-stability/SKILL.md": "37eb7697d6be2517af3265cc65263638",
+    "build-model/SKILL.md": "1007f03e43a6ba5e09293d5758531397",
+    "calibrate-model/SKILL.md": "a4c4dde8f3b0b30d5b2d837d692a974c",
+    "change-parameters/SKILL.md": "cd8fa7811b6ed07f27562b87a782732d",
+    "create-extension-package/SKILL.md": "8a1c24b10a6ecb19b91a7ada74229d34",
+    "extend-mizer/SKILL.md": "53fd6375675592a8ddd4c01577dd6972",
+    "run-simulation/SKILL.md": "885671c0283839da5fd34d2fa068ec17",
+    "set-up-fishing/SKILL.md": "d69d9b7b290991445e4198e727ea04d4",
+    "understand-size-spectrum-dynamics/SKILL.md": "c3c57a1e4161fb539cfc30c58e850c64",
+    "upgrade-mizer-code/references/mizer-3.0.md": "d72352246ceca6799265d77896476681",
+    "upgrade-mizer-code/references/mizer-3.1.md": "c5d06ea8b65a86af99dae5ed5a4a9880",
+    "upgrade-mizer-code/references/mizer-3.2.md": "87f6c0e9363d35fa13f955de3973ab19",
+    "upgrade-mizer-code/references/mizer-3.3.md": "7e27ab1df7c066447d7618595da351d0",
+    "upgrade-mizer-code/SKILL.md": "cd6612b546f2f702e37bdd5a28edb5d9",
+    "use-extension-packages/SKILL.md": "d9da09a9d7572bf93d8c145bd8981ce9"
   }
 }

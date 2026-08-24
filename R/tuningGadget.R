@@ -142,7 +142,7 @@ tuningGadget <- function(params,
         preserve <- match.arg(preserve)
         if (preserve == "reproduction_level") {
             p@species_params$tuneParams_old_repro_level <-
-                getReproductionLevel(p)
+                reproduction_level(p)
         }
         if (preserve == "R_max") {
             p@species_params$tuneParams_old_R_max <- p@species_params$R_max

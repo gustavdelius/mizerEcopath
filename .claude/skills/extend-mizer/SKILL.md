@@ -2,20 +2,14 @@
 name: extend-mizer
 description: >-
   Extend or customise mizer's dynamics — add external food or mortality, replace
-  a built-in rate calculation, or add a new ecosystem component. Use whenever the
-  user wants a custom encounter/growth/mortality/reproduction formulation
-  (setRateFunction() wrapping or replacing mizerEncounter, mizerPredRate,
-  mizerMort, mizerEReproAndGrowth), a background food, diffusion or predation
-  source needing no new state variable (ext_encounter, ext_diffusion, ext_mort),
-  a new dynamical pool such as detritus or carrion
-  (setComponent), S3 methods on an S4 subclass so plots and summaries account for
-  a custom model, or asks how to make mizer do something its standard setters do
-  not cover — including the signature and return shape each replaceable rate must
-  have, and how a custom rate must respect the second_order_w quadrature scheme.
-  Pick the lightest mechanism that works: to change an existing rate's parameters
-  see the change-parameters skill. To use an existing extension package rather
-  than write one — load order, saving and sharing a model that needs it — see the
-  use-extension-packages skill.
+  a built-in rate calculation, or add an ecosystem component. Use for
+  setExtEncounter(), setExtDiffusion() or setExtMort(); replacing
+  mizerEncounter(), mizerPredRate(), mizerMort(), mizerEReproAndGrowth() or
+  another rate with setRateFunction(); new dynamical pools with setComponent();
+  extension subclasses; or second_order_w-aware custom quadrature. Pick the
+  lightest mechanism that works. To change only an existing rate's parameters
+  use the change-parameters skill; to load, save or share a model using an
+  existing extension package use the use-extension-packages skill.
 ---
 
 # Extending mizer
@@ -46,8 +40,8 @@ are **species × size** arrays: `ext_encounter` (mass/year, added to
 `getEncounter()`) and `ext_mort` (1/year, added to mortality).
 
 ```r
-ext_mort(params) <- my_mort_array)       # e.g. outside predators
-ext_encounter(params) <- my_food_array)  # extra unmodelled food
+ext_mort(params) <- my_mort_array        # e.g. outside predators
+ext_encounter(params) <- my_food_array   # extra unmodelled food
 ```
 
 Build the array from the model's own grid rather than from literal dimensions,
@@ -119,7 +113,7 @@ discontinuously is fine; depending on `n`, `n_pp` or `n_other` discontinuously
 is not. Mizer's time steppers freeze the rates during each density update, so
 they cannot see a threshold being crossed within a step. A rule like
 `if (biomass < threshold) effort <- 0` gives a trajectory that keeps changing as
-`dt` is refined, makes `steadyNewton()` stall, and makes `getStability()` return
+`dt` is refined, makes `solver = "newton"` stall, and makes `getStability()` return
 a confident but meaningless answer — with no warning from mizer. Choosing
 `method = "tr_bdf2"` does not help. Give the switch a finite width instead:
 
@@ -146,14 +140,15 @@ mid-projection.
 | `FeedingLevel` | `function(params, n, n_pp, n_other, t, encounter, ...)` | numeric matrix, species × size |
 | `EReproAndGrowth` | `function(params, n, n_pp, n_other, t, encounter, feeding_level, ...)` | numeric matrix, species × size |
 | `ERepro` | `function(params, n, n_pp, n_other, t, e, ...)` | numeric matrix, species × size |
-| `EGrowth` | `function(params, n, n_pp, n_other, t, e, e_repro, ...)` | numeric matrix, species × size |
+| `EGrowth` | `function(params, n, n_pp, n_other, t, e_repro, e, ...)` | numeric matrix, species × size |
 | `PredRate` | `function(params, n, n_pp, n_other, t, feeding_level, ...)` | numeric matrix, species × **full** size grid |
 | `PredMort` | `function(params, n, n_pp, n_other, t, pred_rate, ...)` | numeric matrix, species × size |
 | `FMort` | `function(params, n, n_pp, n_other, t, effort, e_growth, pred_mort, ...)` | numeric matrix, species × size |
 | `Mort` | `function(params, n, n_pp, n_other, t, f_mort, pred_mort, ...)` | numeric matrix, species × size |
-| `RDI` | `function(params, n, n_pp, n_other, t, e_growth, mort, e_repro, ...)` | numeric vector, one value per species |
+| `RDI` | `function(params, n, n_pp, n_other, t, e_growth, mort, e_repro, diffusion, ...)` | numeric vector, one value per species |
 | `RDD` | `function(rdi, species_params, params, t, ...)` | numeric vector, one value per species |
 | `ResourceMort` | `function(params, n, n_pp, n_other, t, pred_rate, ...)` | numeric vector, one value per full size bin |
+| `Diffusion` | `function(params, n, n_pp, n_other, t, feeding_level, ...)` | numeric matrix, species × size |
 | `Rates` | `function(params, n, n_pp, n_other, t, effort, rates_fns, ...)` | named list with all standard rate components |
 
 Three rules that follow from the table:
@@ -268,13 +263,14 @@ user-facing methods as **S3** methods. So an extension defines a formal S4
 subclass of these objects and provides S3 methods for it —
 `getBiomass.MyMizerSim()`, `plotBiomass.MyMizerSim()`,
 `summary.MyMizerParams()` — which is what makes a summary or plot account for
-components the extension added.
+components the extension added. Every such method must call `NextMethod()`, so
+that several extensions loaded at once compose instead of overwriting each other.
 
-Every such method must call `NextMethod()`, so that several extensions loaded at
-once compose instead of overwriting each other. The class hierarchy that makes
-this work, and the order in which the methods run, are the subject of the
-`use-extension-packages` skill; writing the package that declares them is the
-[Creating extension packages](creating-extension-packages.html) article.
+This only really works inside a package, because the marker class is created by
+mizer when the package loads. Writing that package — the class, the `.onLoad`
+registration and the methods — is the subject of the
+`create-extension-package` skill, and the order the methods then run in is the
+subject of the `use-extension-packages` skill.
 
 ## Storing parameters
 
@@ -305,14 +301,16 @@ nothing checks that it is.
 - If a custom rate depends on the abundances through a threshold, read
   [Discontinuous rate functions](discontinuous_rates.html) before trusting any
   results.
-- Once an extension is useful in more than one project, make it a package: a
-  stable namespace mizer can resolve function names in, somewhere for tests and
-  documentation to live, and a version that gets recorded in `params@extensions`.
-  Follow the
-  [Creating extension packages](creating-extension-packages.html) article for
-  `.onLoad` registration and method dispatch via `NextMethod()`; for the other
-  side of it — loading, saving and sharing a model that needs an extension
-  package — see the `use-extension-packages` skill.
+- Once an extension is useful in more than one project, or you want to give it
+  to someone else, make it a package: a stable namespace mizer can resolve
+  function names in, somewhere for tests and documentation to live, and a version
+  that gets recorded in `params@extensions`. Everything that only matters once
+  you share — `.onLoad` registration, marker classes, dispatch via
+  `NextMethod()`, bundled data objects, reporting through `info_level`, and
+  upgrading objects saved by an earlier version — is in the
+  `create-extension-package` skill. For the other side of it, loading and saving
+  a model that needs an extension package, see the
+  `use-extension-packages` skill.
 - For a larger design, it is worth discussing the interface on the
   [mizer issue tracker](https://github.com/sizespectrum/mizer/issues) before
   committing to it.

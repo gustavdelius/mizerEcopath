@@ -68,7 +68,7 @@ comment(sp$w_mat) <- "Calculated from `l_mat` using weight-length parameters `a`
 ## Add Ecopath species parameters ----
 
 basic_estimates <-
-    read_csv("inst/extdata/North Sea-Basic estimates.csv")
+    read_csv("inst/extdata/North_Sea-Basic_estimates.csv")
 
 # Dictionary between species and ecopath groups
 species_to_groups <- list(
@@ -95,7 +95,7 @@ sp <- p@species_params
 no_sp <- nrow(sp) # Number of species
 
 ## Set up gear params ----
-ecopath_catch <- read_csv("inst/extdata/North Sea-Catch.csv")
+ecopath_catch <- read_csv("inst/extdata/North_Sea-Catch.csv")
 
 p <- addEcopathCatchTotal(p, ecopath_catch)
 
@@ -110,7 +110,7 @@ p <- matchConsumption(p)
 
 
 ## Aggregate ecopath diet matrix ----
-ecopath_diet <- read.csv("inst/extdata/North Sea-Diet composition.csv")
+ecopath_diet <- read.csv("inst/extdata/North_Sea-Diet_composition.csv")
 dm <- reduceEcopathDiet(sp, ecopath_diet)
 
 

@@ -33,7 +33,7 @@ test_that("the integrals use bin averaging when second_order_w asks for it", {
                  setNames(as.vector((N * ba(getEGrowth(p))) %*% dw(p)),
                           species_params(p)$species))
     expect_equal(getMetabolicRespiration(p),
-                 setNames(as.vector((N * ba(getMetabolicRate(p))) %*% dw(p)),
+                 setNames(as.vector((N * ba(metab(p))) %*% dw(p)),
                           species_params(p)$species))
     expect_equal(getConsumption(p),
                  drop((N * ba(getEncounter(p) * (1 - getFeedingLevel(p)))) %*%

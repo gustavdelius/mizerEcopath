@@ -20,7 +20,12 @@ ecopathSpectraTabUI(params, help = TRUE, ...)
 
 \item{logs}{Environment holding the log of steady states.}
 
+\item{trigger_update}{Reactive value used for triggering updates of species
+parameter controls.}
+
 \item{...}{Unused}
+
+\item{help}{Boolean. If \code{FALSE}, omit the explanatory text from the tab.}
 }
 \description{
 This tab displays the size spectra of the forground and background
@@ -46,6 +51,7 @@ Other gadget tabs:
 \code{\link[=ecopathGrowthTab]{ecopathGrowthTab()}},
 \code{\link[=ecopathReproTab]{ecopathReproTab()}},
 \code{\link[=ecopathSurveyTab]{ecopathSurveyTab()}},
+\code{\link[=exampleTab]{exampleTab()}},
 \code{\link[=growthTab]{growthTab()}},
 \code{\link[=numberTab]{numberTab()}},
 \code{\link[=ratesTab]{ratesTab()}},

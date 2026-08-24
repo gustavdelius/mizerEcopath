@@ -222,7 +222,7 @@ In this section some the the Area Codes generated in the data set loaded from DA
 Processing code of overlapping spatial areas is available in inst/extdata.
 
 ```{r}
-rect_to_area<-read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES Rectangle to Area.csv")
+rect_to_area<-read_csv("/Users/jessicawestworth/Desktop/Mizer Work/Projects/mizerEcopathedits/inst/extdata/ICES_Rectangle_to_Area.csv")
 colnames(rect_to_area)<-c("AreaCode","ICES_Area")
 
 data_working <- clean_data %>%

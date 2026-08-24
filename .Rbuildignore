@@ -7,6 +7,18 @@
 ^.lintr
 ^\.positai$
 ^\.claude$
+^\.agents$
+^\.codex$
+^\.cursor$
+^\.gemini$
+^\.mcp\.json$
+^\.vscode$
 ^vignettes/Celtic Sea Model\.qmd$
+^vignettes/build\.qmd$
+^vignettes/Celtic_Sea_Status_Quo_Model\.qmd$
+^vignettes/diffusion\.qmd$
+^vignettes/Richard_and_Jess\.qmd$
+^vignettes/Richard_and_Jess_vB\.qmd$
+^vignettes/todo\.qmd$
 ^CLAUDE.md
 ^\.posit/assistant$

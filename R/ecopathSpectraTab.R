@@ -8,6 +8,8 @@
 #'     background community to align with the foreground.
 #'
 #' @inheritParams ecopathDeathTab
+#' @param trigger_update Reactive value used for triggering updates of species
+#'   parameter controls.
 #' @family gadget tabs
 #' @export
 ecopathSpectraTab <- function(input, output, session,
@@ -47,6 +49,7 @@ ecopathSpectraTab <- function(input, output, session,
 }
 
 #' @rdname ecopathSpectraTab
+#' @param help Boolean. If `FALSE`, omit the explanatory text from the tab.
 ecopathSpectraTabUI <- function(params, help = TRUE, ...) {
     p <- isolate(params())
 
@@ -77,4 +80,3 @@ ecopathSpectraTabUI <- function(params, help = TRUE, ...) {
 }
 
 ecopathSpectraTabTitle <- "Spectra"
-
