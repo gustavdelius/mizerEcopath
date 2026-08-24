@@ -1,149 +1,160 @@
-# Create a model that uses Richard's biomasses, yields and catch size
-# distributions together with Jess's survey size distributions
+# Build a Celtic Sea model from Jess's data: Ecopath biomasses, production and
+# consumption together with her gear-resolved commercial catch size
+# distributions and her survey size distributions.
+#
+# The accompanying narrative is in vignettes/Jess.qmd.
+#
+# Stages 1-6 take a couple of minutes. Stage 8 takes about half an hour and its
+# result is recorded at the bottom of the file.
+
 library(dplyr)
 library(ggplot2)
 library(mizer)
+library(mizerExperimental)
 library(mizerEcopath)
+
+source("inst/calibration_helpers.R")   # set_rl(), cap_rl(), setFeedingLevelInteracting()
+source("inst/multigear_helpers.R")     # the multi-gear versions of the rest
 
 load("inst/data_Jess.rda")
 
-# Build MizerParams ----
+# Gear setup ----
+
+# Every gear, survey and commercial alike, is *allowed* a dome-shaped
+# selectivity; the fit decides which ones need one. The survey trawl
+# under-samples the largest fish, and in this data set the commercial fleets for
+# cod, mackerel, horse mackerel and sole do too. Forcing the selectivity to be
+# monotone makes the size spectrum itself carry the fall-off, which it can only
+# do by inventing mortality. Where a gear's data show no dome, the fit pushes
+# l50_right out to thousands of centimetres and the curve is a sigmoid again.
+gp$l50_right <- NA_real_
+gp$l25_right <- NA_real_
+gp$sel_func <- "double_sigmoid_length"
+l_max_gear <- sp$l_max[match(gp$species, sp$species)]
+gp$l50_right <- pmax(0.6 * l_max_gear, gp$l50 * 1.05)
+gp$l25_right <- pmax(0.9 * l_max_gear, gp$l50_right * 1.2)
+
+# Weighting of the size-distribution likelihood. Each gear contributes a
+# multinomial negative log likelihood *per fish*, so the number of fish behind a
+# distribution does not set its weight - the number of gears does. The survey is
+# a single gear while the commercial fishery is split over up to four, so
+# without this the commercial data would outvote the survey four to one for some
+# species and one to one for others. Giving the commercial gears of a species
+# 1/n each puts the two data sources on an equal footing for every species.
+n_com <- gp |> filter(gear != "survey") |> count(species, name = "n_com")
+gp <- gp |>
+    left_join(n_com, by = "species") |>
+    mutate(catch_dist_weight = if_else(gear == "survey", 1, 1 / n_com)) |>
+    select(-n_com)
+
+# Stage 1: single-species scaffolding ----
 
 p <- newVonBertalanffyParams(sp)
-# p <- newAllometricParams(sp)
 gear_params(p) <- gp
 initial_effort(p) <- 1
-
-p <- steadySingleSpecies(p) |>
-    setBevertonHolt()
+p <- steadySingleSpecies(p) |> setBevertonHolt()
 p <- matchBiomasses(p)
 
-# Match ----
+# Stage 2: size distributions, yields and production ----
 
-pm <- matchCatch(p, catch = catch)
+# `production_observed` comes with the data and is kept: it is what ties the
+# external mortality to something observed rather than to the model's own
+# default. `z_ext_lim = 20` lifts the default cap of 5, which monkfish needs.
+pm <- matchCatch(p, catch = catch, z_ext_lim = 20)
 
-# Feeding levels. Consumption and metabolic loss depend on f and f_c only
-# through their ratio, so keeping f_c = f/3 leaves Q/B and respiration (and the
-# whole steady state) unchanged whatever we do to the level of f. What the
-# level does change is how strongly growth responds to a change in food:
-# dlog(E_r)/dlog(E) = (1 - f) / (1 - f_c/f). Whiting is raised to 0.8406 to damp
-# that response, which is what brings its yield curve to peak at its FMSY; see
-# the "What the feeding level buys" section of vignettes/Richard_and_Jess.qmd.
-# NB setFeedingLevels() assigns f positionally - the names below are for our
-# benefit only and the order must match species_params(pm).
-f <- setNames(rep(0.6, nrow(sp)), sp$species)
-f[["Whiting"]] <- 0.8406
+# Blue whiting's production can only be reached with a juvenile spectrum
+# steeper than the default community slope allows, so its cap is relaxed.
+pm <- matchCatch(pm, catch = catch, species = "Blue whiting",
+                 z_ext_lim = 20, lambda = 2.5)
 
-pm <- setFeedingLevels(pm, f = f, f_c = f / 3)
+# Stage 3: satiation ----
 
-pd <- matchDiet(pm, reduced_dm)
-# Herring, Cod and Hake would require negative external mortality.
-# We increase the production of these species to increase
-# their mortality which was necessary so that after imposing
-# the diet matrix the predation mortality does not exceed
-# the external mortality.
+# Consumption, growth and the whole steady state are unchanged; what changes is
+# how strongly growth responds to a change in food.
+pm <- setFeedingLevel(pm, feeding_level = 0.6)
 
-# Do this by hand
-# pt <- tuneEcopath(pm, catch = catch, diet = reduced_dm, match = "catch")
-# In the gadget I go to the Death tab and for Herring set
-# `production_observed = 0.8` and hit the `match` button.
-# Then I go to Cod and set
-# `production_observed = 0.1` and hit the `match` button.
-# Then I go to Hake and set
-# `production_observed = 0.8` and hit the `match` button.
-# Then I hit the "Return" button.
+# Stage 4: making the diet matrix affordable ----
 
-# Do this automatically
-species_params(pm)["Herring", "production_observed"] <- 0.8
-pm <- matchCatch(pm, catch = catch, species = "Herring")
-species_params(pm)["Cod", "production_observed"] <- 0.1
-pm <- matchCatch(pm, catch = catch, species = "Cod")
-species_params(pm)["Hake", "production_observed"] <- 0.8
-pm <- matchCatch(pm, catch = catch, species = "Hake")
+# matchDiet() pays for explicit predation out of the external mortality, and the
+# diet matrix demands more predation on herring, blue whiting, mackerel and
+# especially horse mackerel than they carry at the sizes where the predation
+# falls. `production_observed` is data we have been asked to keep, so we cannot
+# buy them more mortality; instead we move the excess predation into the `other`
+# column, which leaves every predator's total consumption untouched and only
+# changes who it is attributed to.
+fit <- fit_diet_matrix(pm, reduced_dm, kappa = 0.9)
+dm <- fit$dm
+print(round(fit$lambda, 4))
 
-# Interactions ----
+# Stage 5: species interactions ----
 
-# # Attempt to use old interaction matrix
-# inter <- interaction_matrix(celtic_params)
-# species <- species_params(p)$species
-# inter <- inter[species, species]
-# pi <- makeInteracting(p, interaction = inter)
+pd <- matchDiet(pm, dm)
+ps <- steady(pd, tol = 1e-10)
 
-pd <- matchDiet(pm, reduced_dm)
-ps <- steady(pd)
+# Stage 6: the plankton resource ----
 
 psr <- alignResource(ps)
 resource_params(psr)$w_pp_cutoff <- 1
 initialNResource(psr)[w_full(psr) > 1] <- 0
 comment(psr@cc_pp) <- NULL
-psr <- setResourceInteraction(psr,
-    resource_dynamics = "resource_semichemostat",
-    tol = 1e-2)
-psr <- steady(psr)
+psr <- setResourceInteraction(psr, resource_dynamics = "resource_semichemostat",
+                              tol = 1e-2)
+psr <- steady(psr, tol = 1e-10)
 resource_level(psr) <- 0.5
 psr <- steady(psr, tol = 1e-12, t_max = 200)
-# psrs <- steadyNewton(psr, reproduction = "dynamic",
-#                      verbose = TRUE, stability = TRUE)
 
-# Cannibalism ----
+# Stage 7: response knobs ----
 
-# Nothing else in the model eats cod, so all of cod's predation mortality is
-# cannibalism, and it supplies 28-59% of the total mortality on 10-100 g cod.
-# Fishing the adults down releases the juveniles in proportion, which is a
-# strong enough compensation to hold cod's yield peak well above its FMSY no
-# matter how low the reproduction level goes. Weakening the cod-on-cod entry
-# and handing back what it removes - the lost mortality to ext_mort, the lost
-# food to ext_encounter - preserves the steady state exactly while removing
-# that compensation. Cannibalism is only 1.2% of cod's diet by mass, so the
-# diet matrix barely notices; the mortality it carried is what matters.
-set_cannib <- function(params, species, lambda) {
-    mort_old <- getPredMort(params)
-    enc_old  <- getEncounter(params)
-    inter <- interaction_matrix(params)
-    inter[species, species] <- inter[species, species] * lambda
-    interaction_matrix(params) <- inter
-    # Encounter first: predation mortality depends on the feeding level, which
-    # depends on the encounter rate. Restoring mortality first bakes a spurious
-    # ext_mort correction into every species this one preys on.
-    ext_encounter(params) <- ext_encounter(params) + (enc_old  - getEncounter(params))
-    ext_mort(params)      <- ext_mort(params)      + (mort_old - getPredMort(params))
-    params
-}
+# Herring eats almost nothing but the resource, and at f = 0.6 its growth
+# response to being fished down holds its yield peak 14% above its FMSY even at
+# the reproduction floor, so the reproduction level cannot reach it. Raising the
+# feeding level damps that response without moving the steady state: at f = 0.85
+# the peak at the floor is 0.78 of the target, which leaves the bisection room.
+psr <- setFeedingLevelInteracting(psr, c(Herring = 0.85))
 
-psr <- set_cannib(psr, "Cod", 0.1875)
+# Stage 8: reproduction levels ----
 
-# Reproduction ----
+# Targets: FMSY where the data give one, the model's own current Fbar
+# otherwise. Fbar is the biomass-weighted mean fishing mortality over mature
+# individuals, the multi-gear analogue of the fully-selected F.
+sps <- species_params(psr)$species
+fb <- vapply(sps, function(s) Fbar(psr, s), numeric(1))
+Ft <- setNames(species_params(psr)$FMSY, sps)
+Ft[is.na(Ft)] <- fb[is.na(Ft)]
+m_t <- Ft / fb
 
-# Tune all species. Changing the reproduction level of one species shifts the
-# yield curves of the others, so we sweep twice. The second sweep does not
-# simply reproduce the first here - hake moves from 0.36 to 0.14 - so treat two
-# passes as a truncated iteration rather than a converged answer.
-source("inst/tune_repro_level.R")
-params <- setBevertonHolt(psr, reproduction_level = 0.5)
-
-F_target <- setNames(species_params(params)$FMSY,
-                 species_params(params)$species)
-missing <- is.na(F_target)
-gear_sel <- gear_params(params)$gear == "commercial"
-F_cur <- gear_params(params)$catchability[gear_sel]
-F_target[missing] <- F_cur[missing]
-
-res <- list()
-# The loop variable is `s`, not `sp`: `sp` is the species data frame loaded at
-# the top and the feeding-level block above needs it to survive.
-for (sweep in 1:2) {
-    print(paste("Sweep ", sweep))
-    for (s in names(F_target)) {
-        r <- tune(params, s, F_target[[s]])
-        params <- set_rl(params, s, r$rl)
-        res[[s]] <- r
-        print(paste("Reproduction level for", s, ":", r$rl))
+if (FALSE) {   # about twenty minutes per sweep
+    params <- setBevertonHolt(psr, reproduction_level = 0.5)
+    for (sweep in 1:4) {
+        res <- parallel::mclapply(sps, function(s) {
+            r <- tune_rl(params, s, m_t[[s]], steps = 6, tol = 0.10)
+            r$species <- s
+            r
+        }, mc.cores = 6)
+        for (r in res) params <- set_rl(params, r$species, r$rl)
+        print(do.call(rbind, lapply(res, as.data.frame)))
     }
+    # Verify the peaks on a wider grid than the sweeps use: the sweeps' grid
+    # stops at 2.6 times the target and truncates three species' peaks.
+    do.call(rbind, parallel::mclapply(sps, function(s) {
+        y <- yield_vs_mult(params, s, mult_grid(m_t[[s]], 0.08, 6, 14))
+        p <- peak_mult(y, m_t[[s]])
+        data.frame(species = s, F_peak = p[["ratio"]] * Ft[[s]],
+                   F_target = Ft[[s]], ratio = p[["ratio"]], edge = p[["edge"]])
+    }, mc.cores = 6))
 }
-do.call(rbind, lapply(res, as.data.frame))
 
-# Check where the peaks end up
-t(vapply(names(F_target), function(sp) peak(params, sp, F_target[[sp]]), numeric(2)))
+# The recorded result of those sweeps. Eight of the twelve peaks land within
+# 11% of target. Haddock is pinned at the reproduction ceiling with its peak at
+# half its target; whiting is pinned at the floor with no maximum anywhere in
+# the scanned range; herring and megrim do not converge across sweeps - herring
+# because its stage-7 feeding level was chosen before the other species were
+# tuned, megrim because its yield curve is bimodal. See the "The sweeps do not
+# converge" section of vignettes/Jess.qmd.
+params <- setBevertonHolt(psr, reproduction_level = c(
+    Herring  = 0.005,  Cod            = 0.005,  Megrim = 0.3038,
+    Monkfish = 0.1016, Haddock        = 0.9995, Whiting = 0.005,
+    Hake     = 0.005,  `Blue whiting` = 0.3193, Plaice = 0.7882,
+    Mackerel = 0.2152, Sole           = 0.2917, `Horse mackerel` = 0.3031))
 
-# Save ----
-saveParams(params, "inst/params_final_Richard_and_Jess.rds")
+saveParams(params, "inst/params_final_Jess.rds")
