@@ -77,11 +77,14 @@ test_that("getDietMatrix bin-averages along the predator size dimension", {
 })
 
 test_that("getDietMatrix agrees with getConsumption", {
-    # Only on mizer's default first-order path. With bin averaging switched on,
-    # mizer's own getDiet() applies the prey-bin quadrature twice and comes out
-    # a factor (1 + beta) / 2 above getEncounter() * (1 - f), so this identity
-    # cannot hold there however we discretise the predator-size integral.
-    # See https://github.com/sizespectrum/mizer/issues/474.
+    # The first-order path agrees exactly. The bin-averaged path also uses the
+    # corrected prey quadrature from mizer >= 3.3; small differences remain at
+    # the upper edge of a species' occupied grid because getDiet() masks empty
+    # predator bins before the predator-size quadrature.
     expect_equal(rowSums(getDietMatrix(NS_params)), getConsumption(NS_params),
                  tolerance = 1e-3)
+
+    p <- NS_params
+    second_order_w(p) <- TRUE
+    expect_equal(rowSums(getDietMatrix(p)), getConsumption(p), tolerance = 0.03)
 })

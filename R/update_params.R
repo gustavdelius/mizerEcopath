@@ -42,8 +42,7 @@ update_params <- function(params, species = 1, pars, data) {
         D_ext_all <- vapply(seq_len(nrow(sp)), function(i) {
             diffusion_coefficient(params, seq_len(nrow(sp)) == i, sp$n[i])
         }, numeric(1))
-        params@species_params$D_ext <- D_ext_all
-        sp <- species_params(params)
+        sp$D_ext <- D_ext_all
         sps <- sp[sp_select, ]
     }
 
@@ -112,6 +111,10 @@ update_params <- function(params, species = 1, pars, data) {
     # updated above. Parameters that the optimiser held fixed (via `map`) are
     # unchanged and so are left calculated.
     sp_new <- params@species_params
+    missing_cols <- setdiff(names(sps), names(sp_new))
+    for (col in missing_cols) {
+        sp_new[[col]] <- sp[[col]]
+    }
     sp_new[sp_select, ] <- sps
     species_params(params, recalculate = FALSE) <- sp_new
     params <- setReproduction(params)

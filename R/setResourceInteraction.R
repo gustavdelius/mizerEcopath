@@ -69,7 +69,9 @@ setResourceInteraction <- function(params, resource_dynamics = NULL,
     # We do this on a copy so that `params` keeps the old value and the change
     # we make below is detected and recorded correctly.
     p1 <- params
-    p1@species_params$interaction_resource <- 1
+    sp1 <- species_params(p1)
+    sp1$interaction_resource <- 1
+    species_params(p1, recalculate = FALSE) <- sp1
     encounter <- getResourceEncounterRate(p1)
 
     # Increasing `interaction_resource` by `r` adds `r * encounter` to the

@@ -14,14 +14,14 @@ tuning_env <- new.env(parent = emptyenv())
 #' @keywords internal
 #' @export
 prepare_params <- function(p, hook = NULL) {
-    p@species_params$species <- as.character(p@species_params$species)
-    rownames(p@species_params) <- p@species_params$species
-    p <- set_species_param_default(p, "a", 0.01)
-    p <- set_species_param_default(p, "b", 3)
+    sp <- species_params(p)
+    sp$species <- as.character(sp$species)
+    rownames(sp) <- sp$species
+    species_params(p, recalculate = FALSE) <- sp
     p <- set_species_param_default(p, "k_vb", NA)
     p <- set_species_param_default(p, "t0", 0)
     p <- set_species_param_default(p, "w_mat25",
-                                   p@species_params$w_mat/(3^(1/10)))
+                                   species_params(p)$w_mat/(3^(1/10)))
 
     # Apply package-specific hook
     if (!is.null(hook)) {
@@ -50,15 +50,25 @@ finalise_params <- function(p) {
     if ("tuneParams_old_repro_level" %in% names(p@species_params)) {
         p <- setBevertonHolt(p, reproduction_level =
                                  p@species_params$tuneParams_old_repro_level)
-        p@species_params$tuneParams_old_repro_level <- NULL
     }
     if ("tuneParams_old_R_max" %in% names(p@species_params)) {
         p <- setBevertonHolt(p, R_max =  p@species_params$tuneParams_old_R_max)
-        p@species_params$tuneParams_old_R_max <- NULL
     }
     if ("tuneParams_old_erepro" %in% names(p@species_params)) {
         p <- setBevertonHolt(p, erepro =  p@species_params$tuneParams_old_erepro)
-        p@species_params$tuneParams_old_erepro <- NULL
+    }
+
+    # Remove the temporary columns through the species-parameter setter so
+    # that mizer also removes their entries from the authoritative given table.
+    sp <- species_params(p)
+    temporary <- intersect(
+        c("tuneParams_old_repro_level", "tuneParams_old_R_max",
+          "tuneParams_old_erepro"),
+        names(sp)
+    )
+    if (length(temporary) > 0) {
+        sp[temporary] <- NULL
+        species_params(p) <- sp
     }
     p
 }
@@ -119,8 +129,9 @@ tuneParams_update_species <- function(sp, p, params, params_old) {
 #' @param session The Shiny session object
 #' @param input The Shiny input object
 #' @param return_sim Whether to return the simulation object
-#' @param method The numerical method that [mizer::steady()] should pass on to
-#'   [mizer::project()]. See [mizer::project()] for the available methods.
+#' @param method The numerical method that [mizer::projectUntilSettled()] should
+#'   pass on to [mizer::project()]. See [mizer::project()] for the available
+#'   methods.
 #' @keywords internal
 #' @export
 tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
@@ -156,12 +167,15 @@ tuneParams_run_steady <- function(p, params, params_old, logs, session, input,
             # This is for the "Steady" tab where we want to show the
             # evolution of biomass over time during the run to steady
             # to diagnose eventual problems.
-            return(mizer::steady(p, t_max = 100, tol = 1e-2,
-                          return_sim = TRUE, method = method,
-                          progress_bar = progress))
+            return(mizer::projectUntilSettled(
+                p, t_max = 100, distance_tol = 1e-2, method = method,
+                progress_bar = progress
+            ))
         }
-        p <- mizer::steady(p, t_max = 100, tol = 1e-2, method = method,
-                           progress_bar = progress)
+        p <- mizer::tuneSteadyState(
+            p, t_max = 100, distance_tol = 1e-2, method = method,
+            progress_bar = progress
+        )
 
         # Update the reactive params objects
         params_old(p)
@@ -242,7 +256,7 @@ tuneParams_add_to_logs <- function(logs, p, params) {
     # Save params object to disk
     time = format(Sys.time(), "_%Y_%m_%d_at_%H_%M_%S")
     file = paste0(tempdir(), "/mizer_params", time, ".rds")
-    saveRDS(p, file = file)
+    saveParams(p, file = file)
     # Update logs
     if (logs$idx < length(logs$files)) {
         file.remove(logs$files[(logs$idx + 1):length(logs$files)])
@@ -383,4 +397,3 @@ control_title_tag <- function(control) {
     }
     title
 }
-

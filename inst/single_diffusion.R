@@ -5,8 +5,8 @@ library(ggplot2)
 library(bvpSolve)
 source("inst/newParams.R")
 params <- newParams(no_w = 500, sigma = 2, lambda = 2.2, ks = 0)
-params <- setPredKernel(params, pred_kernel = getPredKernel(params))
-#params <- setPredKernel(NS_params, pred_kernel = getPredKernel(NS_params))
+params <- setPredKernel(params, pred_kernel = pred_kernel(params))
+#params <- setPredKernel(NS_params, pred_kernel = pred_kernel(NS_params))
 
 dm <- getDiffusion(params)
 #gm <- getEGrowth(params)
@@ -236,4 +236,3 @@ plot(w, N_sol, type="l", col="blue", lwd=2,
 lines(w, Np_sol, col="red", lwd=2)
 legend("topright", legend=c("N(w)", "N'(w)"),
        col=c("blue","red"), lwd=2)
-

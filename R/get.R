@@ -29,12 +29,7 @@
 #' @examples
 #' getSomaticProduction(NS_params)
 getSomaticProduction <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(getEGrowth(params) * sel, params)
-    Ps <- as.vector((N * K) %*% dw(params))
-    names(Ps) <- params@species_params$species
-    return(Ps)
+    sizeIntegral(params, weighting = getEGrowth(params), ...)
 }
 
 #' Get gonadic production for each species
@@ -52,12 +47,7 @@ getSomaticProduction <- function(params, ...) {
 #' @examples
 #' getGonadicProduction(NS_params)
 getGonadicProduction <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(getERepro(params) * sel, params)
-    Pg <- as.vector((N * K) %*% dw(params))
-    names(Pg) <- params@species_params$species
-    return(Pg)
+    sizeIntegral(params, weighting = getERepro(params), ...)
 }
 
 
@@ -82,12 +72,7 @@ getGonadicProduction <- function(params, ...) {
 #' @examples
 #' getTotalProduction(NS_params)
 getTotalProduction <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(getEReproAndGrowth(params) * sel, params)
-    Pg <- as.vector((N * K) %*% dw(params))
-    names(Pg) <- params@species_params$species
-    return(Pg)
+    sizeIntegral(params, weighting = getEReproAndGrowth(params), ...)
 }
 
 #' Get production rate as defined by Ecopath
@@ -140,13 +125,12 @@ getProduction <- function(params, ...) {
 #' @examples
 #' getConsumption(NS_params)
 getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
-    N <- initialN(params)
-    sel <- params@w >= min_w_pred & params@w <= max_w_pred
-    K <- sweep(getEncounter(params) * (1 - getFeedingLevel(params)),
-               2, sel, "*")
-    K <- bin_average_weight(K, params)
-    Q <- drop((N * K) %*% dw(params))
-    return(Q)
+    sizeIntegral(
+        params,
+        weighting = getEncounter(params) * (1 - getFeedingLevel(params)),
+        min_w = min_w_pred,
+        max_w = max_w_pred
+    )
 }
 
 #' Get metabolic respiration for each species
@@ -173,12 +157,7 @@ getConsumption <- function(params, min_w_pred = 0, max_w_pred = Inf) {
 #' @examples
 #' getMetabolicRespiration(NS_params)
 getMetabolicRespiration <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(metab(params) * sel, params)
-    R <- as.vector((N * K) %*% dw(params))
-    names(R) <- params@species_params$species
-    return(R)
+    sizeIntegral(params, weighting = metab(params), ...)
 }
 
 #' Get rate of biomass loss due to reproduction
@@ -269,13 +248,8 @@ getUnassimilated <- function(params) {
 #' @examples
 #' getZB(NS_params)
 getZB <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(sweep(getMort(params) * sel, 2, w(params), "*"),
-                          params)
-    ZB <- as.vector((N * K) %*% dw(params))
-    names(ZB) <- params@species_params$species
-    return(ZB)
+    K <- sweep(getMort(params), 2, w(params), "*")
+    sizeIntegral(params, weighting = K, ...)
 }
 
 #' Get rate at which biomass is lost due to external mortality
@@ -300,13 +274,8 @@ getZB <- function(params, ...) {
 #' @examples
 #' getM0B(NS_params)
 getM0B <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(sweep(ext_mort(params) * sel, 2, w(params), "*"),
-                          params)
-    M0B <- as.vector((N * K) %*% dw(params))
-    names(M0B) <- params@species_params$species
-    return(M0B)
+    K <- sweep(ext_mort(params), 2, w(params), "*")
+    sizeIntegral(params, weighting = K, ...)
 }
 
 #' Get rate at which biomass is lost due to predation mortality
@@ -331,13 +300,8 @@ getM0B <- function(params, ...) {
 #' @examples
 #' getM2B(NS_params)
 getM2B <- function(params, ...) {
-    N <- initialN(params)
-    sel <- get_size_range_array(params, ...)
-    K <- bin_average_weight(sweep(getPredMort(params) * sel, 2, w(params), "*"),
-                          params)
-    M2B <- as.vector((N * K) %*% dw(params))
-    names(M2B) <- params@species_params$species
-    return(M2B)
+    K <- sweep(getPredMort(params), 2, w(params), "*")
+    sizeIntegral(params, weighting = K, ...)
 }
 
 #' Get Ecotrophic Efficiency for each species

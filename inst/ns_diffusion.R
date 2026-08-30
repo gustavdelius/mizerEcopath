@@ -1,7 +1,7 @@
 library(dplyr)
 library(mizerEcopath)
 
-params <- setPredKernel(NS_params, pred_kernel = getPredKernel(NS_params))
+params <- setPredKernel(NS_params, pred_kernel = pred_kernel(NS_params))
 dm <- getDiffusion(params)
 gm <- getEGrowth(params)
 mum <- getMort(params)
@@ -111,4 +111,3 @@ plot(w, N_sol, type="l", col="blue", lwd=2,
 lines(w, Np_sol, col="red", lwd=2)
 legend("topright", legend=c("N(w)", "N'(w)"),
        col=c("blue","red"), lwd=2)
-

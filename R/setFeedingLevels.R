@@ -34,7 +34,7 @@
 #'         a dynamically realized resource. If interactions exist, call
 #'         \code{makeNoninteracting()} first.
 #' }
-#' @param params A \linkS4class{MizerParams} object.
+#' @param params A `MizerParams` object.
 #' @param f The target feeding level \eqn{f} for each
 #'   species. Must be a vector with one value for each species or a single
 #'   value used for all. Defaults to species parameter `f0` if exists or else
@@ -43,7 +43,7 @@
 #'   growth/repro is zero. Defaults to species parameter `fc` if exists or else
 #'   to 0.2.
 #'
-#' @return A \linkS4class{MizerParams} object with updated \eqn{h, k_s},
+#' @return A `MizerParams` object with updated \eqn{h, k_s},
 #'   and \code{ext_encounter} rates. The new \eqn{h} and \eqn{k_s} are also
 #'   recorded in the given species parameters, so that they are not reverted to
 #'   \eqn{h = \infty} and \eqn{k_s = 0} the next time a species parameter is

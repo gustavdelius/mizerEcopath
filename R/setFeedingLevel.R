@@ -48,7 +48,8 @@ setFeedingLevel <- function(params, feeding_level) {
     # Don't use `given_species_params<-` because we do not want to trigger
     # a recalculation of anything
     params@given_species_params$f0 <- feeding_level
-    params@species_params$f0 <- feeding_level
+    sp$f0 <- feeding_level
+    species_params(params, recalculate = FALSE) <- sp
 
     # Adjust maximum intake rate to achieve the desired feeding level
     E_old <- ext_encounter(params)
@@ -61,6 +62,5 @@ setFeedingLevel <- function(params, feeding_level) {
     # Adjust the encounter rate so that consumption does not change
     ext_encounter(params) <- (1 - f_old) / (1 - feeding_level) * E_old
 
-    params@time_modified <- lubridate::now()
     return(params)
 }

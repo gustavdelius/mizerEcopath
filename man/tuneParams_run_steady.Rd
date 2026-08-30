@@ -30,8 +30,9 @@ tuneParams_run_steady(
 
 \item{return_sim}{Whether to return the simulation object}
 
-\item{method}{The numerical method that \code{\link[mizer:steady]{mizer::steady()}} should pass on to
-\code{\link[mizer:project]{mizer::project()}}. See \code{\link[mizer:project]{mizer::project()}} for the available methods.}
+\item{method}{The numerical method that \code{\link[mizer:projectUntilSettled]{mizer::projectUntilSettled()}} should
+pass on to \code{\link[mizer:project]{mizer::project()}}. See \code{\link[mizer:project]{mizer::project()}} for the available
+methods.}
 }
 \description{
 This function is called when the user clicks the "Steady" button in

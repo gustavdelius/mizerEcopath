@@ -23,7 +23,8 @@ knitr::opts_chunk$set(eval = FALSE)
 mizerEcopath ships two interactive tools for tuning a model by hand:
 
 - `tuneParams()` has a **"steady"** button. Each time you press it the model is
-  projected to its multi-species steady state with `mizer::steady()`. This tool
+  projected to its multi-species steady state with `mizer::tuneSteadyState()`.
+  This tool
   is meant for hand-tuning fully interacting, multi-species models.
 - `tuneEcopath()` has a **"match"** button. Each time you press it a set of
   optimisers is run to match the model to Ecopath data. This tool is meant for
@@ -39,7 +40,7 @@ they hand to that engine:
 | | `tuneParams()` | `tuneEcopath()` |
 |---|---|---|
 | action button | "steady" (shortcut `s`) | "match" (shortcut `m`) |
-| what the button does | `mizer::steady()` | `matchGrowth()`, `matchCatch()`, ... |
+| what the button does | `mizer::tuneSteadyState()` | `matchGrowth()`, `matchCatch()`, ... |
 | controls shown | `predation`, `fishing`, ... | `ecopathGrowth`, `ecopathFishing`, ... |
 | tabs shown | `Spectra`, `Growth`, `Death`, ... | `ecopathSpectra`, `ecopathGrowth`, ... |
 
@@ -428,14 +429,14 @@ the result. The steady handler is essentially
 ```{r}
 tuneParams_steady_handler <- function(p, input, session, params, params_old,
                                       logs, flags, trigger_update, ...) {
-    p <- mizer::steady(p)
+    p <- mizer::tuneSteadyState(p)
     params_old(p)
     tuneParams_add_to_logs(logs, p, params)
 }
 ```
 
 while the Ecopath match handler runs a sequence of `match*()` optimisers instead
-of `steady()`.
+of `tuneSteadyState()`.
 
 ### The `Match:` checkboxes
 

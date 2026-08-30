@@ -2,14 +2,14 @@
 #'
 #' @description `r lifecycle::badge("experimental")`
 #'
-#'   Takes several \linkS4class{MizerParams} objects and fuses them into a
-#'   single \linkS4class{MizerParams} object containing all species. The
+#'   Takes several `MizerParams` objects and fuses them into a single
+#'   `MizerParams` object containing all species. The
 #'   interaction matrix of the combined object is set to all zeros.
 #'
-#' @param ... Two or more \linkS4class{MizerParams} objects to combine.
-#'   Alternatively a single list of \linkS4class{MizerParams} objects.
+#' @param ... Two or more `MizerParams` objects to combine. Alternatively a
+#'   single list of `MizerParams` objects.
 #'
-#' @return A \linkS4class{MizerParams} object containing all species from all
+#' @return A `MizerParams` object containing all species from all
 #'   input params objects.
 #'
 #' @details All input params objects must have identical `w` and `w_full` slots
@@ -35,7 +35,7 @@ bindParams <- function(...) {
     if (length(params_list) < 2) {
         stop("bindParams() requires at least two MizerParams objects.")
     }
-    params_list <- params_list <- unname(lapply(params_list, validParams))
+    params_list <- unname(lapply(params_list, validParams))
 
     # Check identical w and w_full ----
     w_ref <- params_list[[1]]@w
@@ -97,7 +97,7 @@ bindParams <- function(...) {
 
     # Combine 2D [species x w] arrays ----
     stack_rows <- function(slot_name) {
-        arrays <- lapply(params_list, function(x) slot(x, slot_name))
+        arrays <- lapply(params_list, function(x) x[[slot_name]])
         result <- do.call(rbind, arrays)
         names(dimnames(result)) <- names(dimnames(arrays[[1]]))
         result
@@ -195,18 +195,17 @@ bindParams <- function(...) {
     }))
     p@linetype <- c(species_lt, p@linetype[intersect(special, names(p@linetype))])
 
-    # Preserve slot comments ----
-    for (sn in slotNames(p)) {
+    # Preserve comments on model elements ----
+    for (sn in names(p)) {
         all_comments <- unique(unlist(lapply(params_list,
-                                             function(x) comment(slot(x, sn)))))
+                                             function(x) comment(x[[sn]]))))
         if (length(all_comments) > 0) {
-            s <- slot(p, sn)
+            s <- p[[sn]]
             comment(s) <- all_comments
-            slot(p, sn) <- s
+            p[[sn]] <- s
         }
     }
 
     p@time_modified <- lubridate::now()
-    validObject(p)
-    return(p)
+    validParams(p)
 }

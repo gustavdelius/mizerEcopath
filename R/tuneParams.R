@@ -36,8 +36,9 @@
 #'   [mizerExperimental::matchYield()]).
 #' @param method The numerical method used whenever the gadget projects the
 #'   model, i.e., when running to steady state after the "steady" button is
-#'   pressed and on the "Sim" tab. It is passed via [mizer::steady()] to
-#'   [mizer::project()]. See [mizer::project()] for the available methods.
+#'   pressed and on the "Sim" tab. It is passed via
+#'   [mizer::projectUntilSettled()] to [mizer::project()]. See
+#'   [mizer::project()] for the available methods.
 #'
 #' @seealso [tuningGadget()] for the underlying engine and how to add your own
 #'   controls and tabs; the article `vignette("extending_the_tuning_gadget")`.

@@ -4,8 +4,7 @@
 #' Plot the sources of external, predation and fishing mortality
 #' per species and size
 
-#' @param object An object of class \linkS4class{MizerSim} or
-#'   \linkS4class{MizerParams}.
+#' @param object A `MizerSim` or `MizerParams` object.
 #' @param species The name of the predator species for which to plot the
 #'   mortality.
 #' @param proportion A boolean value that determines whether values should be

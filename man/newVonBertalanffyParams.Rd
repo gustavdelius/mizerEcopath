@@ -19,7 +19,7 @@ parameters such as \code{b}, \code{w_mat} and \code{w_max}.}
 A MizerParams object with the model at steady state
 }
 \description{
-Builds a single- or multi-species \link[mizer:MizerParams-class]{MizerParams}
+Builds a single- or multi-species \code{MizerParams}
 object in which each species grows along its von Bertalanffy curve while at
 steady state. The von Bertalanffy parameters are supplied in the \code{w_inf},
 \code{k_vb} and \code{t0} columns of \code{species_params}, together with the weight-length

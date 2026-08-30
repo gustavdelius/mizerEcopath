@@ -35,8 +35,9 @@ entries are \code{"growth"} (using \code{\link[mizer:matchGrowth]{matchGrowth()}
 
 \item{method}{The numerical method used whenever the gadget projects the
 model, i.e., when running to steady state after the "steady" button is
-pressed and on the "Sim" tab. It is passed via \code{\link[mizer:steady]{mizer::steady()}} to
-\code{\link[mizer:project]{mizer::project()}}. See \code{\link[mizer:project]{mizer::project()}} for the available methods.}
+pressed and on the "Sim" tab. It is passed via
+\code{\link[mizer:projectUntilSettled]{mizer::projectUntilSettled()}} to \code{\link[mizer:project]{mizer::project()}}. See
+\code{\link[mizer:project]{mizer::project()}} for the available methods.}
 
 \item{preserve}{Specifies whether the \code{reproduction_level} should be
 preserved or the maximum reproduction rate \code{R_max} or the reproductive

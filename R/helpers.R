@@ -252,7 +252,9 @@ makeNoninteracting <- function(params) {
     # either: it only records parameters whose value it sees change, and the
     # value here may already be 0 without having been recorded.
     params@given_species_params$interaction_resource <- 0
-    params@species_params$interaction_resource <- 0
+    sp <- species_params(params)
+    sp$interaction_resource <- 0
+    species_params(params, recalculate = FALSE) <- sp
 
     return(params)
 }

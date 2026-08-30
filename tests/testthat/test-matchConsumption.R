@@ -47,7 +47,7 @@ test_that("matchConsumption works with multiple species and adjusts correctly", 
     all_spp <- celtic_params@species_params$species
     result <- matchConsumption(celtic_params, species = all_spp) |>
         suppressWarnings()
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
     # Check that ks was updated
     expect_true(all(!is.na(result@species_params$ks)))
     # Check that metab and ext_encounter arrays were updated
