@@ -288,12 +288,12 @@ They are the least satisfying part of the procedure: they are chosen to make the
 #| message: false
 #| warning: false
 pd <- matchDiet(pm, reduced_dm)
-ps <- steady(pd)
+ps <- tuneSteadyState(pd)
 ```
 
 `matchDiet()` converts the diet proportions into absolute consumption rates using each predator's consumption rate, then solves for the interaction matrix $\theta_{ij}$ that reproduces them, and applies it. Crucially, as it turns on predation between species it turns down the external encounter and external mortality by exactly the corresponding amounts, so the total food each predator gets and the total mortality each prey suffers are unchanged. The steady state therefore survives; what changes is the *attribution* of food and mortality from anonymous external terms to named species.
 
-A few residual warnings about negative external *encounter* rates remain (Megrim, Hake): for these the diet matrix says they get more food from the modelled species than the model gives them in total, and the shortfall is clipped at zero. This leads to a higher total encounter rate but this only applies to a very small number of large individuals of these species, so the effect on the steady state is negligible. But this explains why we call `steady()` after `matchDiet()` to calculate the new steady state.
+A few residual warnings about negative external *encounter* rates remain (Megrim, Hake): for these the diet matrix says they get more food from the modelled species than the model gives them in total, and the shortfall is clipped at zero. This leads to a higher total encounter rate but this only applies to a very small number of large individuals of these species, so the effect on the steady state is negligible. But this explains why we call `tuneSteadyState()` after `matchDiet()` to calculate the new steady state.
 
 ## Stage 6: the plankton resource
 
@@ -309,9 +309,9 @@ comment(psr@cc_pp) <- NULL
 psr <- setResourceInteraction(psr,
                               resource_dynamics = "resource_semichemostat",
                               tol = 1e-2)
-psr <- steady(psr)
+psr <- tuneSteadyState(psr)
 resource_level(psr) <- 0.5
-psr <- steady(psr, tol = 1e-12, t_max = 200)
+psr <- tuneSteadyState(psr, distance_tol = 1e-12, t_max = 200)
 ```
 
 Up to here the resource has been inert. Now:

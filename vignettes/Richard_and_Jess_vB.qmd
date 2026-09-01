@@ -301,12 +301,12 @@ The honest summary is the same in both builds, though: Cod's cannibalism is 1.2%
 #| message: false
 #| warning: false
 pd <- matchDiet(pm, dm)
-ps <- steady(pd, tol = 1e-10)
+ps <- tuneSteadyState(pd, distance_tol = 1e-10)
 ```
 
 `matchDiet()` converts the diet proportions of `reduced_dm` into absolute consumption rates using each predator's consumption rate, solves for the interaction matrix $\theta_{ij}$ that reproduces them, and applies it — turning down external encounter and external mortality by exactly the corresponding amounts, so that the total food each predator gets and the total mortality each prey suffers are unchanged. The steady state survives; what changes is the *attribution* of food and mortality from anonymous external terms to named species.
 
-Residual warnings about negative external *encounter* (Megrim, Whiting, Hake) are clipped at zero: for these the diet matrix says they get more food from the modelled species than the model gives them in total. This affects only a small number of large individuals, but it is why `steady()` is called afterwards. Biomass moves by at most 1.3% and consumption by at most 1.8%.
+Residual warnings about negative external *encounter* (Megrim, Whiting, Hake) are clipped at zero: for these the diet matrix says they get more food from the modelled species than the model gives them in total. This affects only a small number of large individuals, but it is why `tuneSteadyState()` is called afterwards. Biomass moves by at most 1.3% and consumption by at most 1.8%.
 
 ## Stage 6: the plankton resource
 
@@ -322,9 +322,9 @@ comment(psr@cc_pp) <- NULL
 psr <- setResourceInteraction(psr,
                               resource_dynamics = "resource_semichemostat",
                               tol = 1e-2)
-psr <- steady(psr, tol = 1e-10)
+psr <- tuneSteadyState(psr, distance_tol = 1e-10)
 resource_level(psr) <- 0.5
-psr <- steady(psr, tol = 1e-12, t_max = 200)
+psr <- tuneSteadyState(psr, distance_tol = 1e-12, t_max = 200)
 ```
 
 `alignResource()` sets the resource to a power law $\kappa w^{-\lambda}$ with $\kappa$ chosen so that it is tangent to the total fish abundance spectrum from above — the smallest resource abundance that still sits everywhere above the fish. The resource is then cut off at 1 g, which is both realism about what counts as plankton and what makes the next step work: a large predator then gets a negligible fraction of its food from the resource, so its large individuals stop constraining how much resource interaction it is allowed to have.

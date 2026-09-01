@@ -77,7 +77,7 @@ pm <- matchCatch(pm, catch = catch, species = "Hake")
 # pi <- makeInteracting(p, interaction = inter)
 
 pd <- matchDiet(pm, reduced_dm)
-ps <- steady(pd)
+ps <- tuneSteadyState(pd)
 
 psr <- alignResource(ps)
 resource_params(psr)$w_pp_cutoff <- 1
@@ -86,9 +86,9 @@ comment(psr@cc_pp) <- NULL
 psr <- setResourceInteraction(psr,
     resource_dynamics = "resource_semichemostat",
     tol = 1e-2)
-psr <- steady(psr)
+psr <- tuneSteadyState(psr)
 resource_level(psr) <- 0.5
-psr <- steady(psr, tol = 1e-12, t_max = 200)
+psr <- tuneSteadyState(psr, distance_tol = 1e-12, t_max = 200)
 # psrs <- steadyNewton(psr, reproduction = "dynamic",
 #                      verbose = TRUE, stability = TRUE)
 

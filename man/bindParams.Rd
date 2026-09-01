@@ -7,18 +7,18 @@
 bindParams(...)
 }
 \arguments{
-\item{...}{Two or more \linkS4class{MizerParams} objects to combine.
-Alternatively a single list of \linkS4class{MizerParams} objects.}
+\item{...}{Two or more \code{MizerParams} objects to combine. Alternatively a
+single list of \code{MizerParams} objects.}
 }
 \value{
-A \linkS4class{MizerParams} object containing all species from all
+A \code{MizerParams} object containing all species from all
 input params objects.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Takes several \linkS4class{MizerParams} objects and fuses them into a
-single \linkS4class{MizerParams} object containing all species. The
+Takes several \code{MizerParams} objects and fuses them into a single
+\code{MizerParams} object containing all species. The
 interaction matrix of the combined object is set to all zeros.
 }
 \details{

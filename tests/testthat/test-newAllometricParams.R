@@ -13,7 +13,7 @@ sp_single <- data.frame(
 
 test_that("newAllometricParams returns a MizerParams object", {
     p <- newAllometricParams(sp_single)
-    expect_s4_class(p, "MizerParams")
+    expect_s3_class(p, "MizerParams")
 })
 
 test_that("newAllometricParams sets default exponents correctly", {
@@ -73,7 +73,7 @@ test_that("newAllometricParams produces allometric rates", {
 test_that("newAllometricParams works with multi-species input", {
     sp <- species_params(NS_params)
     p <- newAllometricParams(sp, no_w = 100)
-    expect_s4_class(p, "MizerParams")
+    expect_s3_class(p, "MizerParams")
     expect_equal(nrow(p@species_params), nrow(sp))
     expect_true(isAllometric(p))
 })

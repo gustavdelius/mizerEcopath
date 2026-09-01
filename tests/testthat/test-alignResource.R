@@ -13,7 +13,7 @@ p_allometric <- newAllometricParams(
 
 test_that("alignResource returns a MizerParams object", {
     p <- alignResource(p_allometric)
-    expect_s4_class(p, "MizerParams")
+    expect_s3_class(p, "MizerParams")
 })
 
 test_that("alignResource resource follows power law with correct lambda below cutoff", {

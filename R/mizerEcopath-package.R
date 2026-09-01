@@ -1,6 +1,6 @@
 #' @keywords internal
 #' @import mizer ggplot2 dplyr tidyr assertthat shiny rintrojs mizerExperimental
-#' @importFrom methods is validObject slot "slot<-" slotNames
+#' @importFrom methods is
 #' @importFrom utils hasName head tail
 #' @importFrom stats runif median nlminb plogis qlogis rmultinom setNames
 #' @importFrom graphics legend lines rect

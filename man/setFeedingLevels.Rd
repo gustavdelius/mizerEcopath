@@ -7,7 +7,7 @@
 setFeedingLevels(params, f, f_c)
 }
 \arguments{
-\item{params}{A \linkS4class{MizerParams} object.}
+\item{params}{A \code{MizerParams} object.}
 
 \item{f}{The target feeding level \eqn{f} for each
 species. Must be a vector with one value for each species or a single
@@ -19,7 +19,7 @@ growth/repro is zero. Defaults to species parameter \code{fc} if exists or else
 to 0.2.}
 }
 \value{
-A \linkS4class{MizerParams} object with updated \eqn{h, k_s},
+A \code{MizerParams} object with updated \eqn{h, k_s},
 and \code{ext_encounter} rates. The new \eqn{h} and \eqn{k_s} are also
 recorded in the given species parameters, so that they are not reverted to
 \eqn{h = \infty} and \eqn{k_s = 0} the next time a species parameter is

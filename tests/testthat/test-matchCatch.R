@@ -177,7 +177,7 @@ test_that("matchCatch fits only the catch's gears, leaving others untouched", {
 test_that("matchCatch runs without error with valid inputs for a single species", {
     result <- matchCatch(celtic_params, species = "Hake", catch = celtic_catch) |>
         suppressWarnings()
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
 })
 
 test_that("matchCatch recovers a model-generated catch size distribution", {
@@ -320,7 +320,7 @@ test_that("matchCatch can handle multiple species", {
     result <- matchCatch(celtic_params, species = multi_species, catch = celtic_catch) |>
         suppressWarnings()
 
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
     gp <- gear_params(result)
     expect_true(all(multi_species %in% gp$species))
 })
@@ -427,7 +427,7 @@ test_that("matchCatch works with multiple gears including double_sigmoid_length"
     tg <- make_two_gear_hake()
     result <- suppressWarnings(matchCatch(tg$params, species = "Hake",
                                           catch = tg$catch))
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
     gp <- gear_params(result)[gear_params(result)$species == "Hake", ]
     expect_equal(nrow(gp), 2)
 
@@ -446,7 +446,7 @@ test_that("matchCatch with m free produces a valid result", {
     result <- suppressWarnings(matchCatch(celtic_params, species = "Hake",
                                           catch = celtic_catch,
                                           map = list(m = NULL)))
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
     m_val <- species_params(result)[species_params(result)$species == "Hake", "m"]
     n_val <- species_params(celtic_params)[species_params(celtic_params)$species == "Hake", "n"]
     expect_gt(m_val, n_val)
@@ -487,7 +487,7 @@ test_that("matchCatch still runs when yield_observed is missing", {
 
     result <- suppressWarnings(matchCatch(params_no_yield, species = "Hake",
                                           catch = celtic_catch))
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
 })
 
 test_that("matchCatch still runs when production_observed is missing", {
@@ -498,14 +498,14 @@ test_that("matchCatch still runs when production_observed is missing", {
 
     result <- suppressWarnings(matchCatch(params_no_prod, species = "Hake",
                                           catch = celtic_catch))
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
 })
 
 test_that("matchCatch with empty catch matches only yield and production", {
     empty_catch <- celtic_catch[integer(0), ]
     result <- suppressWarnings(matchCatch(celtic_params, species = "Hake",
                                           catch = empty_catch))
-    expect_s4_class(result, "MizerParams")
+    expect_s3_class(result, "MizerParams")
     # Selectivity parameters (l50, l25) must be unchanged since there is no
     # size-distribution data to fit them against.
     gp_before <- gear_params(celtic_params)[gear_params(celtic_params)$species == "Hake",

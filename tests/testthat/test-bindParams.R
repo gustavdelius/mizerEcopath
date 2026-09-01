@@ -27,7 +27,7 @@ test_that("bindParams combines species correctly", {
                      names(dimnames(p1@ft_pred_kernel_e)))
     expect_identical(pc@w_min_idx[1:2], p1@w_min_idx)
     expect_identical(pc@A[1:2], p1@A)
-    validObject(pc)
+    expect_s3_class(validParams(pc), "MizerParams")
 })
 
 test_that("bindParams sets interaction matrix to 0", {

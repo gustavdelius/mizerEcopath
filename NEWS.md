@@ -1,5 +1,18 @@
 # mizerEcopath 0.3.2.9000
 
+* mizerEcopath now requires mizer 3.4.0 and mizerExperimental 3.3.0. All
+  S4-only model introspection and test expectations have been migrated to the
+  S3 `MizerParams` representation introduced by mizer 3.4.
+* The packaged `MizerParams` datasets have been upgraded to the S3
+  representation. The tuning gadget now saves and restores models with
+  `saveParams()` and `readParams()`, preserving mizer's validation, upgrade and
+  extension metadata handling.
+* Calls and documentation now use `tuneSteadyState()`,
+  `projectUntilSettled()` and the current stored-rate accessors instead of
+  their superseded aliases.
+* Size-integrated Ecopath quantities now use mizer's `sizeIntegral()` helper,
+  so future numerical-scheme changes are inherited from mizer rather than
+  duplicated locally.
 * The `get...()` functions are now consistent with `mizer::second_order_w()`.
   On a model with bin averaging switched on they trapezoidally bin-average the
   weight of their size integral, as mizer's own summary functions do, so that
@@ -15,8 +28,5 @@
   produced by the `mizer::matchBiomasses()` call that follows it.
 * The catch panels of `tuneEcopath()` now report the same yield as
   `mizer::getYield()` on a bin-averaged model.
-* Known limitation: on a bin-averaged model `rowSums(getDietMatrix())` does not
-  equal `getConsumption()`, because `mizer::getDiet()` applies the prey-bin
-  quadrature twice and comes out a factor `(1 + beta) / 2` too large, where
-  `beta` is the size-grid ratio. Reported upstream as
-  [sizespectrum/mizer#474](https://github.com/sizespectrum/mizer/issues/474).
+* mizer 3.3 fixed the double prey-bin quadrature in `mizer::getDiet()` that was
+  tracked in [sizespectrum/mizer#474](https://github.com/sizespectrum/mizer/issues/474).

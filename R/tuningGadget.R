@@ -131,24 +131,25 @@ tuningGadget <- function(params,
             stop("You need to specify a MizerParams object. ",
                  "There are no temporary parameter files to recover.")
         }
-        p <- readRDS(logs$files[logs$idx])
+        p <- readParams(logs$files[logs$idx])
     } else {
         p <- params # because I use `params` as a reactive value later
-        validObject(p)
+        p <- validParams(p)
 
         # Add the info that should be preserved to the species_params for later
         # recall. This is not needed when a params object is restored from the
         # logs because its already included there.
         preserve <- match.arg(preserve)
+        sp <- species_params(p)
         if (preserve == "reproduction_level") {
-            p@species_params$tuneParams_old_repro_level <-
-                reproduction_level(p)
+            sp$tuneParams_old_repro_level <- reproduction_level(p)
         }
         if (preserve == "R_max") {
-            p@species_params$tuneParams_old_R_max <- p@species_params$R_max
+            sp$tuneParams_old_R_max <- sp$R_max
         } else {
-            p@species_params$tuneParams_old_erepro <- p@species_params$erepro
+            sp$tuneParams_old_erepro <- sp$erepro
         }
+        species_params(p, recalculate = FALSE) <- sp
         p <- prepare_params(p, prepare_params_hook)
     }
 
@@ -547,7 +548,7 @@ tuningGadget <- function(params,
         ## Undo ####
         observeEvent(input$undo, {
             if (logs$idx < 1) stop("This should never happen")
-            p_new <- readRDS(logs$files[logs$idx])
+            p_new <- readParams(logs$files[logs$idx])
             p_old <- params()
             # if the params have not changed, go to the previous one,
             # if it exists
@@ -555,7 +556,7 @@ tuningGadget <- function(params,
                 logs$idx <- logs$idx - 1
                 shinyjs::enable("redo")
                 shinyjs::enable("redo_all")
-                p_new <- readRDS(logs$files[logs$idx])
+                p_new <- readParams(logs$files[logs$idx])
             } else {
                 shinyjs::disable("redo")
                 shinyjs::disable("redo_all")
@@ -576,7 +577,7 @@ tuningGadget <- function(params,
         observeEvent(input$redo, {
             if (logs$idx >= length(logs$files)) return()
             logs$idx <- logs$idx + 1
-            p <- readRDS(logs$files[logs$idx])
+            p <- readParams(logs$files[logs$idx])
             params(p)
             params_old(p)
             # Trigger an update of sliders
@@ -593,7 +594,7 @@ tuningGadget <- function(params,
         observeEvent(input$redo_all, {
             if (logs$idx >= length(logs$files)) return()
             logs$idx <- length(logs$files)
-            p <- readRDS(logs$files[logs$idx])
+            p <- readParams(logs$files[logs$idx])
             params(p)
             params_old(p)
             # Trigger an update of sliders
@@ -613,7 +614,7 @@ tuningGadget <- function(params,
             shinyjs::disable("undo")
             shinyjs::disable("undo_all")
             logs$idx <- 1
-            p <- readRDS(logs$files[logs$idx])
+            p <- readParams(logs$files[logs$idx])
             params(p)
             params_old(p)
             # Trigger an update of sliders
@@ -625,7 +626,7 @@ tuningGadget <- function(params,
         output$download_params <- downloadHandler(
             filename = "tuned_params.rds",
             content = function(file) {
-                saveRDS(local_finalise(params()), file = file)
+                saveParams(local_finalise(params()), file = file)
         })
 
         ## Return ####

@@ -157,7 +157,7 @@ pd <- matchDiet(pm, dm)
 # Residual warnings about negative external *encounter* (Megrim, Whiting, Hake)
 # are clipped at zero; they affect only a few large individuals, which is why we
 # recompute the steady state afterwards.
-ps <- steady(pd, tol = 1e-10)
+ps <- tuneSteadyState(pd, distance_tol = 1e-10)
 
 # Stage 6: the plankton resource ---------------------------------------------
 
@@ -168,9 +168,9 @@ comment(psr@cc_pp) <- NULL
 psr <- setResourceInteraction(psr,
                               resource_dynamics = "resource_semichemostat",
                               tol = 1e-2)
-psr <- steady(psr, tol = 1e-10)
+psr <- tuneSteadyState(psr, distance_tol = 1e-10)
 resource_level(psr) <- 0.5
-psr <- steady(psr, tol = 1e-12, t_max = 200)
+psr <- tuneSteadyState(psr, distance_tol = 1e-12, t_max = 200)
 
 # Stage 7: the response knobs -------------------------------------------------
 
@@ -198,7 +198,7 @@ psr <- setFeedingLevelInteracting(psr, f)
 psr <- set_link(psr, "Whiting", allsp, 0.65)
 psr <- set_link(psr, "Cod", allsp, 0.01)
 
-saveRDS(psr, "inst/params_vB_stage7_Richard_and_Jess.rds")
+saveParams(psr, "inst/params_vB_stage7_Richard_and_Jess.rds")
 
 # Stage 8: reproduction levels ----------------------------------------------
 
@@ -242,7 +242,7 @@ peaks <- t(vapply(names(Ft), function(s) {
 print(cbind(F_target = Ft, F_peak = peaks[, "ratio"] * Ft, peaks))
 
 # Save ----
-saveRDS(params, "inst/params_vB_final_Richard_and_Jess.rds")
+saveParams(params, "inst/params_vB_final_Richard_and_Jess.rds")
 
 # The alternative model of the "Cod" section of the vignette: moving Cod's
 # commercial l50 from the fitted 58.3 cm to 52 cm brings all nine species within

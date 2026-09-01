@@ -51,8 +51,8 @@ message("Recorded: ", toString(attr(repaired, "recorded")))
 attr(repaired, "recorded") <- NULL
 
 # The repair must not change the model, only the record of how it was specified.
-for (s in setdiff(slotNames(repaired), c("time_modified", "given_species_params"))) {
-    stopifnot(isTRUE(all.equal(slot(celtic_params, s), slot(repaired, s))))
+for (s in setdiff(names(repaired), c("time_modified", "given_species_params"))) {
+    stopifnot(isTRUE(all.equal(celtic_params[[s]], repaired[[s]])))
 }
 
 # And the model must now survive a recalculation untouched. The one thing a
@@ -63,8 +63,8 @@ for (s in setdiff(slotNames(repaired), c("time_modified", "given_species_params"
 # is where most of the change in consumption came from.)
 check <- repaired
 suppressMessages(species_params(check) <- species_params(check))
-for (s in setdiff(slotNames(repaired), c("time_modified", "species_params"))) {
-    stopifnot(isTRUE(all.equal(slot(repaired, s), slot(check, s))))
+for (s in setdiff(names(repaired), c("time_modified", "species_params"))) {
+    stopifnot(isTRUE(all.equal(repaired[[s]], check[[s]])))
 }
 stopifnot(setdiff(names(repaired@species_params),
                   names(check@species_params)) == c("beta", "sigma"))
