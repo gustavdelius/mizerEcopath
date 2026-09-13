@@ -13,6 +13,16 @@ build:
   lazy: false
 
 reference:
+- title: "Allometric starting model"
+  desc: >
+    An alternative to mizerFromEcopath::newVonBertalanffyParams(), in which
+    growth is allometric rather than following a prescribed von Bertalanffy
+    curve. The feeding level then has to be traded off against a critical
+    feeding level, which is what setFeedingLevels() does.
+  contents:
+  - newAllometricParams
+  - isAllometric
+  - setFeedingLevels
 - title: "Shiny gadget"
   desc: >
     Interactive interface for tuning mizer model parameters.
@@ -33,6 +43,7 @@ reference:
     Internal tools to support calibration and simulation.
   contents:
   - addCatch
+  - bindParams
   - has_concept("helper")
 - title: "Data sets"
   desc: >

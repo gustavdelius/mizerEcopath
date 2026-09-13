@@ -10,7 +10,8 @@ Description: An interactive Shiny gadget for tuning a mizer model built with
     mizerFromEcopath, together with a growth-diffusion and age-at-size module
     and an allometric alternative to the von Bertalanffy starting model.
 License: GPL-3
-URL: https://github.com/gustavdelius/mizerEcopath
+URL: https://github.com/gustavdelius/mizerEcopath,
+    https://gustavdelius.github.io/mizerEcopath/
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
     mizer (>= 3.4.0),
