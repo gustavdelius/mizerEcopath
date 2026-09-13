@@ -90,6 +90,30 @@ given, it feeds a rate array you set by hand, or it is a gear parameter that
 mizer reads from `gear_params()`. `species_params<-()` stays quiet about all
 three.
 
+### Removing a column
+
+A column that is missing from the table you assign is one you no longer supply,
+and both setters take it out of `given_species_params()`. What happens next
+depends on whether mizer can produce the parameter itself:
+
+```r
+species_params(params)$gamma <- NULL    # mizer calculates gamma again
+species_params(params)$my_col <- NULL   # mizer knows no `my_col`: it is gone
+```
+
+`given_species_params(params)$… <- NULL` does the same. So a parameter mizer
+knows comes straight back as a *calculated* value — removing its column is
+another way of saying `given_species_params(params)$gamma <- NA` — while a
+custom column leaves the model altogether. That second case is how an extension
+package withdraws a species parameter it added when the user switches the
+extension off; there is no need to write into the `params@species_params` slot.
+
+Because the whole table is compared, a table with only some of the model's
+columns withdraws all the others. `species_params<-()` validates what you give
+it, so a table without `species` and a maximum size is an error rather than a
+partial update — but edit the table you got from the accessor rather than
+building a new one from a handful of columns.
+
 ### Turning the commentary up or down
 
 Mizer reports the choices it makes —
@@ -229,6 +253,38 @@ so enlarging `w_inf` beyond the maximum grid size gives repeated warnings that
 To expand the size range, use `adjustSizeGrid(params, new_max_w = ...)` or
 rebuild the model.
 
+### Writing into the slot directly, and how to repair it
+
+Only what is in `given_species_params()` is protected. A value written straight
+into the slot,
+
+```r
+params@species_params$h[1] <- 20   # not recorded as given
+```
+
+is not, and the next recalculation replaces it with no message. Set species
+parameters with `species_params<-()` instead; where you have already adjusted
+the rate arrays yourself and do not want them rebuilt, record the change with
+`record_given_species_params()`.
+
+To repair a model that already holds such values, call
+
+```r
+params <- reconcileSpeciesParams(params)
+```
+
+It records the entries that a recalculation would change, and repeats until
+the species parameters reproduce themselves, so that the parameters mizer
+derives from the hand-set ones are caught as well. The result is a fixed point:
+no recalculation moves the species parameters again. The model itself is
+untouched; only the record of where the values came from changes.
+`readParams()` does this for every model it loads.
+
+The price is that a parameter mizer had calculated from a value you later
+changed by hand is frozen at the value the model is actually running on, and so
+stops responding to the parameters it was derived from. Clear its entry to `NA`
+in `given_species_params(params)` to hand it back to mizer's calculation.
+
 ### Chained derivations and the cancellation trap
 
 When parameters are not given, mizer calculates them along a dependency chain:
@@ -298,7 +354,10 @@ value is never recalculated.
 `gamma` is calibrated against an **idealised reference world**, not against your
 model: a pure power-law resource `kappa * w^-lambda`, with all fish abundances
 set to zero, and — under `defaults_edition() < 2` — with `interaction_resource`
-forced to 1. So `f0` is the feeding level a species *would* have in that world.
+forced to 1. External encounter and functions registered with
+`other_encounter()` — including a component's `encounter_fun` — are also left
+out. So `f0` is the feeding level a species *would* have on the power-law
+resource alone, before those realised-dynamics additions.
 
 - The **realised** feeding level in an assembled model differs, often a lot.
   In `NS_params` the feeding levels at `w_mat` run from 0.58 to 0.91 against a
@@ -603,7 +662,8 @@ whole new ecosystem component.
 |---|---|
 | a per-species value (`beta`, `w_mat`, `h`, `erepro`, …) | `species_params(params) <- …` |
 | protect a value mizer has calculated | copy it from `species_params(params)` into `given_species_params(params)` |
-| let mizer calculate a value again | set it to `NA` in `given_species_params(params)` |
+| let mizer calculate a value again | set it to `NA` in `given_species_params(params)`, or drop its column |
+| remove a custom species parameter column altogether | `species_params(params)$my_col <- NULL` |
 | fishing gears / selectivity / catchability | `gear_params(params) <- …` |
 | baseline effort or selectivity/catchability arrays | `setFishing(params, …)` |
 | the resource (`kappa`, `lambda`, `r_pp`, …) | `resource_params(params) <- …` |

@@ -12,19 +12,17 @@ skill is a summary you will act on while it is out of date.
 
 ## Do not write mizer code from memory
 
-Mizer's API has evolved, and most mizer code in your training data predates
-the version installed here. Recollection that feels solid is often a version
-or two stale, and outdated calls frequently run and return plausible numbers
-while doing the wrong thing.
+Mizer's API has evolved, and outdated calls often still run and return
+plausible results. Before calling a mizer function, inspect the version installed
+in this project rather than relying on memory or online documentation.
 
-Before calling any function you have not looked up in this session, verify its
-signature in the installed mizer's documentation using the lookup tools below.
-The bundled API index names available functions and the task skills describe
-workflows, but neither provides argument lists.
-
-The one correction worth making before reading anything else: **`w_inf`**,
-**`w_repro_max`** and **`w_max`** are three distinct parameters, not three names
-for the maximum size. The `build-model` skill has the difference.
+For the full help page, use
+`Rscript -e 'help("functionName", package = "mizer", help_type = "text")'`.
+Run it from the project directory without --vanilla, so project library
+settings such as renv apply.
+For a quick signature check, use `args(mizer::functionName)`. The
+mizer API index names functions and the task skills describe workflows, but
+neither provides argument lists.
 
 If the installed mizer disagrees with this card or any skill, the installed
 package wins. Report any discrepancy to the user rather than quietly working
@@ -65,12 +63,13 @@ Step-by-step guides for common mizer tasks are installed under `.claude/skills/<
 - **`build-model`**: Build a new mizer model from a species-parameter data frame. Use whenever the user wants to create a MizerParams object with newMultispeciesParams() (or newTraitParams, newCommunityParams, newSingleSpeciesParams), decide which species-parameter columns to supply and which to leave to mizer's allometric defaults, set up an interaction matrix, choose the size grid (no_w, min_w, max_w, min_w_pp), or save and reload a finished model. Follow this ordered workflow rather than guessing at parameters or writing the dynamics by hand. To change a model that already exists see the change-parameters skill; fishing is covered by the set-up-fishing skill and steady state and calibration by the calibrate-model skill.
 - **`calibrate-model`**: Bring a mizer model to steady state and calibrate it to observed data. Use whenever the user wants to find the steady state (tuneSteadyState, findSteadyState, steadySingleSpecies, and the superseded steady and projectToSteady), match modelled biomass, numbers, yield or growth to observations (calibrateBiomass, matchBiomasses, calibrateNumber, matchNumbers, matchGrowth), supply those observations (the biomass_observed/biomass_cutoff or number_observed species-parameter columns, the yield_observed gear-parameter column), set the level of density-dependent reproduction with the reproduction_level replacement accessor, check convergence (isSteady, getSteadyResidual), or diagnose a model that collapses, explodes or will not settle. To ask whether the steady state you found is dynamically stable, see the analyse-stability skill.
 - **`change-parameters`**: Change parameters of an existing mizer model correctly, so that the change propagates downwards and is not silently overwritten. Use whenever the user wants to modify species parameters, size-dependent rates, the resource or the interaction matrix — and especially when unsure which level to work at: given_species_params() vs species_params(), or changing a species parameter vs setting a rate array directly (setSearchVolume, setPredKernel, setParams…). Covers which values get recalculated and which stay put, the freeze trap when a rate array is set by hand, length-vs-weight precedence (l_mat vs w_mat), resource balancing (balance =), and warnings that a change could not take effect. Fishing gears are covered by the set-up-fishing skill, custom rate functions by the extend-mizer skill.
-- **`create-extension-package`**: Turn a working mizer extension into a shareable R package and maintain it. Use for packaging custom rates or components; registering an extension in .onLoad; choosing metadata-only or dispatching marker classes; chaining S3 methods with NextMethod(); recording versions with recordExtension(); coercing, bundling, testing and upgrading extension objects; or making user reports obey info_level. For implementing the underlying extension mechanisms use the extend-mizer skill; for using an existing package use the use-extension-packages skill.
+- **`create-extension-package`**: Turn a working mizer extension into a shareable R package and maintain it. Use for packaging custom rates or components; choosing metadata-only or dispatching extensions; chaining S3 methods with NextMethod(); recording versions with recordExtension(); coercing, bundling, testing and upgrading extension objects; or making user reports obey info_level. For implementing the underlying extension mechanisms use the extend-mizer skill; for using an existing package use the use-extension-packages skill.
 - **`extend-mizer`**: Extend or customise mizer's dynamics — add external food or mortality, replace a built-in rate calculation, or add an ecosystem component. Use for setExtEncounter(), setExtDiffusion() or setExtMort(); replacing mizerEncounter(), mizerPredRate(), mizerMort(), mizerEReproAndGrowth() or another rate with setRateFunction(); new dynamical pools with setComponent(); extension subclasses; or second_order_w-aware custom quadrature. Pick the lightest mechanism that works. To change only an existing rate's parameters use the change-parameters skill; to load, save or share a model using an existing extension package use the use-extension-packages skill.
 - **`run-simulation`**: Project a mizer model forward in time and set up fishing-effort scenarios. Use whenever the user wants to run a simulation with project(), choose the time stepping (t_max, dt, t_save, t_start), give constant, time-varying or per-gear fishing effort, continue an existing MizerSim (append = TRUE), carry a simulation's end state into a new run (setInitialValues, finalParams), run to a new steady state after a change, or set up scenario comparisons — including what to do about numerical diffusion and the second_order_w scheme when growth looks smeared. For extracting and plotting the results see the analyse-and-plot skill; for reaching steady state first see the calibrate-model skill.
 - **`set-up-fishing`**: Set up or change fishing in a mizer model — gears, selectivity curves, catchability and effort. Use whenever the user wants to define fishing gears in the gear_params data frame (sel_func, catchability, yield_observed), choose and parameterise a selectivity function (knife_edge with knife_edge_size, knife_edge_length, sigmoid_length and double_sigmoid_length with l50/l25/l50_right/l25_right, sigmoid_weight), set which gear catches which species, apply the result with setFishing(), or set the fishing effort with the initial_effort replacement accessor. Note that catchability sets the units in which effort is measured. Matching modelled yields to observed ones is covered by the calibrate-model skill.
 - **`understand-size-spectrum-dynamics`**: Understand how mizer models behave: which quantities you impose and which the model produces for itself, the food and predation feedback loops that couple species, what sets the slope of the steady-state spectrum and the timescale of its dynamics, and the two distinct kinds of density dependence. Use whenever reasoning about why a species collapses, explodes, or oscillates, why growth or mortality is not what you asked for, why changing one species moved another, why a model is insensitive to fishing, why feeding levels drift when the resource is eaten down, or what the Sheldon spectrum, feeding level, reproduction level (R_max), resource level and trophic cascades mean in a mizer model.
-- **`upgrade-mizer-code`**: Diagnose and fix user code or models that broke, changed results, or started warning after a mizer upgrade — every documented change from 2.5.4 through 3.3, release by release, with the fix. Use whenever a script that "used to work" now errors, a deprecation warning appears, plots or numbers differ from a previous run, an argument is suddenly unused or rejected (power=, sim=, time_range=, setParams() rejecting an argument it does not use), a function has gone (matchYields, calibrateYield), a parameter change warns that it cannot take effect, an identical() comparison against a saved rate array fails, or `$` on a parameter table stopped matching partially. Starts from a symptom index, so search it by the message the user actually saw.
+- **`upgrade-extension-package`**: Bring an existing mizer extension package up to date with a newer mizer. Use when a package written against an earlier mizer needs migrating to the S3 MizerParams and the simplified extension mechanism; when its methods have stopped dispatching, its S4 marker classes or registerExtension() calls have to go, or its tests fail on mizer's new reports; or when a workaround it carries is no longer needed. Only for a genuine extension — one that declares marker classes, registers methods on mizer's generics, installs a rate function or registers a component — and only in addition to the upgrade-mizer-code skill, which covers everything a package does as ordinary user code, including the version floor, docs and test suite of any package that merely calls mizer. For writing a new extension package use the create-extension-package skill.
+- **`upgrade-mizer-code`**: Diagnose and fix user code or models that broke, changed results, or started warning after a mizer upgrade — every documented change from 2.5.4 through 3.4, release by release, with the fix. Use whenever a script that "used to work" now errors, a deprecation warning appears, plots or numbers differ from a previous run, an argument is suddenly unused or rejected (power=, sim=, time_range=, setParams() rejecting an argument it does not use), a function has gone (matchYields, calibrateYield), a parameter change warns that it cannot take effect, an identical() comparison against a saved rate array fails, `$` on a parameter table stopped matching partially, or an S4 idiom such as slot(), isS4() or setMethod() stopped working on a model. Use it equally to bring a whole codebase up to date after a mizer release when nothing is visibly broken — a script, or a package with a DESCRIPTION and a test suite that passes and still needs fixes. Carries two indexes: a symptom index, searched by the message the user actually saw, and a code-pattern index, searched by what you grep for in the code.
 - **`use-extension-packages`**: Work with a mizer model that uses extension packages — mizerExperimental, mizerEcopath, mizerShelf, therMizer, mizerMR, mizerSeasonal and the rest. Use whenever a project loads such a package, whenever a MizerParams or MizerSim object has to be written to disk or read back (saveParams/readParams, saveSim/readSim), whenever a saved model has to be shared with or received from a collaborator, or whenever an extension's methods are not being called, a model fails to load for want of a package, or two extensions have to be combined and the library() order matters. Never write a params object with saveRDS(). To write an extension rather than use one, see the extend-mizer skill.
 
 A skill's directory may also hold a `NOTES.md` recording what earlier work in this project found. Read it whenever you read the `SKILL.md`, and treat it as taking precedence. Write new project-specific findings there, creating the file if needed.
@@ -83,11 +82,6 @@ This project is configured with an MCP server named `r-mizer` (provided by
 the [btw](https://posit-dev.github.io/btw/) package) that connects you to the
 R session the user is working in. Use it:
 
-- **Look up mizer functions before calling them.** The docs tools
-  (`btw_tool_docs_help_page`, `btw_tool_docs_available_vignettes`,
-  `btw_tool_docs_vignette`, `btw_tool_docs_package_news`) read the *installed*
-  mizer. That is the authority on argument names and defaults, above this
-  card, and far above your own recollection, which is very likely stale.
 - **Inspect what the user already has.** `btw_tool_env_describe_environment`
   lists the objects in their global environment; do not rebuild a
   `MizerParams` or re-run a simulation that is already sitting there.
@@ -116,18 +110,11 @@ than working around it.
 
 ## Finding the right mizer function
 
-Two steps, and they use different sources:
-
-1. **Which function do I need?** Grep the bundled API index: every
-   exported function with a one-line description, grouped by workflow
-   stage (creating a model, tuning the steady state, projecting,
-   plotting). Grep it for a keyword; do not read the whole file:
+Grep the mizer API index to find which function you need. It lists every
+   exported function with a one-line description, grouped by workflow stage
+   (creating a model, tuning the steady state, projecting, plotting). Grep
+   it for a keyword; do not read the whole file:
    /home/gustav/R/x86_64-pc-linux-gnu-library/4.6/mizer/llms.txt
-2. **How do I call it?** Read the help page for the *installed* mizer with
-   `btw_tool_docs_help_page`. The index above deliberately carries no
-   argument lists, and this card is not a reference either.
 
-Never supply arguments from memory for a function you have not looked up
-in this session. Rendered documentation for the current release is at
-<https://sizespectrum.org/mizer/reference/>, but the installed version is
-what your code will run against, so prefer the local help page.
+The index deliberately carries no argument lists. Once you have the name,
+inspect the installed mizer as described above.

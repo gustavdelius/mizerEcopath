@@ -61,7 +61,7 @@ Commonly supplied:
 | `sigma` | Width of the lognormal predation kernel (default 2) |
 | `k_vb` | von Bertalanffy K — used to derive `h` (and then `gamma`) if `h`/`gamma` absent |
 | `h`, `gamma` | Max intake coefficient and search-volume coefficient (alternative to `k_vb`) |
-| `a`, `b` | Length–weight conversion parameters ($w = a l^b$, defaults 0.006 and 3) |
+| `a`, `b` | Length–weight conversion parameters ($w = a l^b$, defaults 0.01 and 3) |
 | `alpha` | Assimilation efficiency (default 0.6) |
 | `biomass_observed` | Observed biomass, for calibration |
 
@@ -125,8 +125,9 @@ params <- readParams("cod_model.rds")  # read it back
 ```
 
 `saveSim()` and `readSim()` do the same for a `MizerSim` object. If the model
-needs an extension package, these are the only safe way to persist it — a bare
-`readRDS()` silently strips the extension class. See the
+needs an extension package, these helpers preserve its full S3 class while also
+checking and loading the packages it needs. Bare `saveRDS()`/`readRDS()` retain
+the class too, but skip those checks, upgrades and package loading. See the
 `use-extension-packages` skill.
 
 Before saving, record who made the model and what it is for with

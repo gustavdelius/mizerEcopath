@@ -1,11 +1,14 @@
 ## Upgrading from mizer 3.2 to 3.3
 
-Most of the changes in this release are corrections. Results move only for
-models that had opted in to second-order bin-averaging or to the `van_leer`
-flux, that set `min_w` below the default, that specify sizes as lengths, that
-or that change the resource power law after constructing the model. Two
-interfaces change: the spectrum plots, and the names of the steady-state
-finders.
+Most of the changes in this release are corrections, so for many models nothing
+moves at all. Results change for a model that had opted in to second-order
+bin-averaging or to the `van_leer` flux, that sets `min_w` below the default,
+that specifies sizes as lengths, that changes the resource power law after
+constructing the model, or that lets mizer fill in a `gamma` or `f0` while
+carrying a hand-set search volume. Three interfaces change: the spectrum plots,
+the names of the steady-state finders, and the `"convergence"` attribute they
+attach. Everything else is a new report, and
+`info_level = 0` silences the lot.
 
 ### `biomass` and `per_log_size` replace `power`
 
@@ -30,9 +33,9 @@ things change:
   call is honoured: `plotSpectra(sim, power = 1, biomass = FALSE)` used to plot
   the biomass density, and now plots the number density with respect to
   logarithmic size — the same numbers, but labelled correctly and, with
-  `size_axis = "l"`, converted to a length axis with the logarithmic Jacobian
-  rather than the density one. If you meant the biomass density, drop the
-  `biomass` argument. The same applies to `plotlySpectra()`, `plotlyCDF()`,
+  `size_axis = "l"`, converted to a length axis with the logarithmic Jacobian.
+  If you meant the biomass density, set `biomass = TRUE`.
+  The same applies to `plotlySpectra()`, `plotlyCDF()`,
   `plotlySpectra2()` and `plotlyCDF2()`, which passed `power` on internally and
   so ignored `biomass` even when you gave only `biomass`: those calls now plot
   what they were asked for.
@@ -74,7 +77,8 @@ consequences:
 - `plot(resource_level(params))` gets a linear y axis instead of a logarithmic
   one. Pass `log_y = TRUE` to get the old axis back; any explicit `log_y` or
   `log` you already pass is respected.
-- The range is only ever *widened* to include the data, never narrowed to the
+- The range is only ever *widened* to include the data, never narrowed to less
+  than the
   interval from 0 to 1. So `plotFeedingLevel(include_critical = TRUE)` now shows
   a critical feeding level above 1, which the old fixed window drew off the top
   of the plot. Nothing is ever hidden, and an explicit `ylim` still wins.
@@ -85,11 +89,11 @@ you do not pass it, the old string tests still run as a fallback, so existing
 code that named an array `"Number density"` or gave it units `"1/g"` keeps
 working, and arrays saved by earlier versions keep working when they are loaded.
 
-Extension packages that called the unexported plotting helpers directly should
-note that `plotComparisonDataFrame()` and the internal `animate_plotly()` take a
-single `density_wrt` argument in place of `spectrum_power` and
-`spectrum_per_log_size`, and that the internal `array_spectrum_power()` is gone.
-The `power`-based interface of `plotSpectra()` and friends is unchanged.
+If you called the unexported plotting helpers directly, note that
+`plotComparisonDataFrame()` and the internal `animate_plotly()` take a single
+`density_wrt` argument in place of `spectrum_power` and `spectrum_per_log_size`,
+and that the internal `array_spectrum_power()` is gone. The `power`-based
+interface of `plotSpectra()` and friends is unchanged.
 
 ### The total is summed on the axis it is plotted against
 
@@ -212,21 +216,9 @@ it that was interesting. `plotRelative()` on a time-by-species array is drawn on
 a linear axis, so it keeps them too, which is what lets it show the -2 of a
 species that has gone from present to absent.
 
-### Bin averages are drawn at the bin centres in time-by-size plots
-
-`plot()` on an `ArrayTimeBySpeciesBySize` took its time slice by hand rather
-than through the slice helper the other methods use, and lost the array's
-`representation` tag on the way. In a model with second-order bin-averaging
-switched on with `second_order_w()`, a bin-averaged quantity such as
-`getFMort(sim)` or `getFeedingLevel(sim)` was therefore drawn at the left bin
-edges instead of the geometric bin centres where it lives — one bin to the left
-of the right place. Only the drawn location moves; the values are unchanged, as
-is every plot on the default first-order scheme.
-
 ### Animations follow the array type and the size axis
 
-`animate()` now applies the axis handling the static plots have. Three changes,
-each of them a case the animations were missing:
+`animate()` now applies the axis handling the static plots have:
 
 - A resource animation with `size_axis = "l"` labels its y axis `1/cm`. It used
   to convert the values to a density per centimetre but keep the `1/g` of the
@@ -235,8 +227,34 @@ each of them a case the animations were missing:
   level through time — is drawn on a linear y axis showing the whole of the
   interval from 0 to 1, as a static plot of one is. Pass `log_y = TRUE` or an
   explicit `ylim` to override it.
-- `llim` and `tlim` are checked for length like the other limit arguments,
-  rather than being used as given.
+
+### `getProportionOfLargeFish()` on a `MizerParams` object was wrong
+
+The `MizerParams` method multiplied the species x size abundance array by the
+vector of weights, which R recycles down the columns of the array rather than
+along the size axis, so every species but the first was weighted by the wrong
+sizes. Only the `MizerParams` method was affected; the `MizerSim` method was
+always right, and the two now agree when applied to the same state (#494). Any
+Large Fish Index computed from a `MizerParams` object in a model with more than
+one species needs recomputing.
+
+### `yield_observed` belongs to the gear parameters
+
+`plotYieldObservedVsModel()` now takes the observed yield from the
+`yield_observed` column of `gear_params()`, where the yield is given for each
+gear-species pair and the plot adds it up over the gears:
+
+```r
+gear_params(params)["Cod, Otter", "yield_observed"] <- 3e11
+plotYieldObservedVsModel(params)
+```
+
+Nothing breaks if your model keeps `yield_observed` among the species
+parameters: a species that has no observation in the gear parameters takes its
+value from there. What changes is that a model following mizer's own advice —
+`given_species_params<-()` has been telling you to use `gear_params()<-` —
+now works, where before the plot stopped with "You have not provided values for
+the column 'yield_observed'".
 
 ### Length and weight parameters follow the one you gave last
 
@@ -314,23 +332,6 @@ again when their inputs change and appear in `calculated_species_params()`
 rather than `given_species_params()`. Set a value explicitly if it should remain
 fixed (#496).
 
-### One report, one switch
-
-Nearly everything mizer says while building or changing a model now goes
-through the same mechanism, including the reports in `steady()`,
-`projectToSteady()`, `validParams()`, `setInteraction()`,
-`setReproduction()`, `setResource()`, `newTraitParams()`,
-`newSingleSpeciesParams()` and `plotYieldObservedVsModel()`. Two consequences
-for existing code:
-
-- **`info_level = 0` now means silence.** Reports that were plain `message()`
-  calls ignored `info_level` altogether and appeared anyway; they no longer do.
-  If your code relied on seeing one of them, drop the `info_level = 0`.
-- **Reports are collected and given at the end of the call**, one message and
-  one warning rather than a stream. A test doing `expect_message()` on an
-  individual report inside a longer call may need adjusting, and the text now
-  arrives with any others in the same message.
-
 ### `$` on a parameter table no longer partially matches
 
 `$` on a `species_params` or `gear_params` table now matches column names
@@ -353,77 +354,6 @@ matched a single column, you also get a warning naming that column. So
 parameter is present, and any code that was relying on the abbreviation should
 spell the column out in full (#487).
 
-### Quadrature fixes under `second_order_w`
-
-Two diagnostics were applying the prey-bin quadrature twice when second-order
-bin-averaging was switched on with `second_order_w()`, and are now consistent
-with `getEncounter()`:
-
-- **`getDiet(proportion = FALSE)`** was uniformly too large by a factor
-  `(1 + beta) / 2`, where `beta` is the grid ratio — 9.7% for `NS_params`.
-  Summing the diet over prey now reproduces
-  `getEncounter() * (1 - getFeedingLevel())` under both schemes (#474).
-  `getDiet(proportion = TRUE)`, the default, was unaffected: the factor was
-  uniform and divided out.
-- **`getTrophicLevel()`** built its numerator and denominator from different
-  quadratures, so reported trophic levels were off by up to 0.06. A predator
-  whose prey all have trophic level 1 now comes out at exactly 2 under both
-  schemes (#474).
-
-Models on the default (first-order) scheme are unchanged. If you have published
-absolute diet values or trophic levels computed under `second_order_w`, they need
-recomputing.
-
-### `getProportionOfLargeFish()` on a `MizerParams` object was wrong
-
-The `MizerParams` method multiplied the species x size abundance array by the
-vector of weights, which R recycles down the columns of the array rather than
-along the size axis, so every species but the first was weighted by the wrong
-sizes. Only the `MizerParams` method was affected; the `MizerSim` method was
-always right, and the two now agree when applied to the same state (#494). Any
-Large Fish Index computed from a `MizerParams` object in a model with more than
-one species needs recomputing.
-
-### `getN()` respects the quadrature scheme at the ends of the size range
-
-`getN(params, min_w = ...)` now bin-averages the size-range window when
-second-order bin-averaging is switched on with `second_order_w()`, so the bin
-straddling `min_w` or `max_w` contributes only partially — as `getBiomass()`
-already did. Numbers over a restricted size range therefore change slightly
-under `second_order_w`; over the full size range, and on the default
-first-order scheme, nothing changes (#494).
-
-### The calibration and matching functions respect the quadrature scheme
-
-`calibrateBiomass()`, `calibrateNumber()`, `matchNumbers()`,
-`plotBiomassObservedVsModel()` and `plotYieldObservedVsModel()` each wrote out
-their own sum over the size grid rather than using mizer's size integral, so
-they stayed on the first-order quadrature and cut the size range at a bin
-boundary even in a model with second-order bin-averaging switched on with
-`second_order_w()`. In such a model the calibration functions left the
-abundances at values that disagreed with the `getBiomass()` or `getN()` you
-would check them against, and a species matched to its observed biomass was
-then plotted off the 1:1 line. All five now integrate the same way
-`getBiomass()`, `getN()` and `getYield()` do, so a matched species really does
-come out at its observation. On the default first-order scheme nothing changes
-(#504, #529).
-
-`plotYieldObservedVsModel()` is the one where the size of the error matters.
-Its model yields were 10-20% below `getYield()` for a model on the
-second-order scheme, and the total relative error in the plot caption is
-computed from them, so it told you the model under-predicted the yields when it
-did not. If you have read a yield calibration off that plot under
-`second_order_w()`, re-read it.
-
-`matchNumbers()` also gains the empty-selection guard that `matchBiomasses()`
-already had. Its own guard could never fire, so when it had nothing to match —
-no `number_observed` values, or none for the species you asked for — it left the
-abundances alone but still called `setBevertonHolt()`, updated `time_modified`
-and announced that it had moved the model off its steady state. It now returns
-the model unchanged, as `matchBiomasses()` always did. Code that relied on the
-incidental re-tuning of the reproduction parameters should call
-`setBevertonHolt()` itself.
-
 ### `w_min` survives a rebuild of the species parameters
 
 `w_min` is now part of `given_species_params`, so the `min_w` argument to
@@ -434,165 +364,131 @@ a spurious warning when it was larger (#460). Code that set a small `min_w` and
 worked around the reset — or that unknowingly ran on the reset grid — now gets
 the size grid it asked for, and results change accordingly.
 
-### The `match…()` functions announce that they broke the steady state
+### Defaults for `gamma` and `f0` ignore a hand-set search volume
 
-`matchBiomasses()`, `matchNumbers()` and `matchGrowth()` now
-report that they have moved the model off its steady state. This is a message,
-so `info_level = 0` or `options(mizer_info_level = 0)` silences it, as does the
-`info_level` argument, which `matchGrowth()` gains and which `matchBiomasses()`
-and `matchNumbers()` previously accepted but ignored.
+`get_gamma_default()` works out the search volume coefficient `gamma` that gives
+a species the target feeding level `f0`. It does that by giving the species a
+search volume coefficient of 1, putting a power-law resource spectrum in front
+of it and measuring the energy that becomes available. `get_f0_default()` is its
+inverse. A search volume you had set by hand used to leak into that measurement,
+and no longer does. This changes the species parameters of the models it
+affected, and the new values are the right ones.
 
-The `calibrate…()` functions and `scaleModel()` say nothing, because they do not
-break the steady state: they apply one overall scaling factor, which is an exact
-symmetry of the model. If your workflow re-ran `steady()` after every
-`calibrate…()` step, that step was never necessary.
-
-### `summary()` reports the steady state
-
-`summary()` of a `MizerParams` object has a new block:
-
-```
-Steady state:
-	biomass drift:	3.2e-05 /year	(at steady state)
-```
-
-Code that parses the output of `summary()` by line position needs updating. The
-same number is available directly as `getSteadyResidual()`.
-
-### The convergence attribute has a new shape
-
-The `"convergence"` attribute attached by `projectToSteady()` and `steady()`
-used to carry `type` and `settled`. It now carries three fields in their place,
-because those two were being read as one answer to three different questions:
-
-| Field | Answers | Values |
-|---|---|---|
-| `termination` | Why the run stopped | `"residual_tolerance"`, `"cycle_detected"`, `"time_limit"`, `"extinction"`, and from the Newton solver `"solver_converged"`, `"solver_failed"` |
-| `converged` | Whether the solver met its own criterion | `TRUE`/`FALSE` |
-| `attractor` | What the state reached *is* | `"fixed_point"`, `"limit_cycle"`, `NA` |
-
-`distance`, `years`, `period` and `amplitude` are unchanged, and there is a new
-`residual` (how far the state reached actually is from a fixed point) and
-`extinct` (a character vector naming any species that went extinct during the run,
-or `character(0)` if none).
-
-Code that tested `conv$type == "steady"` or `conv$settled` needs updating, and
-so does any `expect_named()` or `names()` check on the attribute. The
-translation:
+The measurement used to build its unit search volume by calling
+`setSearchVolume()`, which refuses to recalculate a `search_vol` array you have
+frozen — so mizer's own internal call was blocked along with yours, and the
+available energy was measured with *your* array. The resulting `gamma` was wrong
+by whatever factor separated your array from the unit-gamma one, which in a
+realistic model is many orders of magnitude. Both functions now build the search
+volume they need directly from the species parameters (#488).
 
 ```r
-# old
-if (conv$settled && conv$type == "below_tolerance") ...
-# new — the question is almost always about the state, not the run
-if (identical(conv$attractor, "fixed_point")) ...
+sv <- search_vol(params)
+search_vol(params) <- sv * 10          # freeze the search volume
+
+given_species_params(params)$gamma <- NA   # ask mizer to recalculate gamma
+
+species_params(params)$gamma
+#> Used to come back ~1e9 times too large; now the same value you would
+#> get without the frozen search volume.
 ```
 
-`attractor` is the only one of the three that may be read as a claim that the
-model is at a steady state: it is set from the measured biomass drift, so it is
-`"fixed_point"` only where that drift is within tolerance. `converged` says the
-numerics went well, which is a different thing and is why a limit cycle could
-previously be reported as a converged fixed point.
+The recalculated `gamma` still has no effect on the model while the search
+volume stays frozen — mizer warns about that separately, see *Species parameter
+setters distinguish edits from declarations* above. Call
+`setSearchVolume(params, reset = TRUE)` to put the search volume back under the
+control of the species parameters.
 
-When the distance function is satisfied but the drift is not negligible,
-`steady()` appends to its convergence message:
+### `f0` is always validated
 
-```
-#> Reached the convergence tolerance after 12 years. The biomasses change at up
-#> to 0.42 per year. Reduce the tolerance on the distance function to converge
-#> further.
-```
+Every non-missing target feeding level `f0` must now be finite and in the
+interval `[0, 1)`, whether or not a search-volume coefficient `gamma` is also
+supplied. Previously `f0 = 1` divided by zero when mizer calculated `gamma`,
+silently creating an infinite `gamma` and a non-finite `search_vol`; values
+above 1 created negative search volumes. If `gamma` was supplied explicitly,
+the same invalid `f0` could instead be accepted and ignored.
 
-It is a message, not a warning, because convergence at the `tol` you asked for
-did happen.
+If code now errors here, choose a physically attainable feeding level below 1.
+When `gamma` is the parameter you intend to control, omit the `f0` value or use
+a valid value; `gamma` will still take precedence (#517).
 
-### `steady()` says when it stopped short of a fixed point
+### Resource scalars refresh calculated `gamma` and `q`
 
-`steady()` and `projectToSteady()` stop as soon as the distance function drops
-below `tol`, exactly as they always did. **Their stopping rule has not changed**,
-and a script that relies on a loose `tol` to get a quick, rough run still gets
-one.
+The resource power law is also the reference spectrum used to calculate search
+volume parameters. Changing `lambda` through `resource_params<-()` or
+`setResource()` now recalculates every `q` and `gamma` entry that mizer owns;
+changing `kappa` recalculates every mizer-owned `gamma`. A value you supplied
+explicitly remains protected, including when only some species in a column were
+given (#497).
 
-What has changed is that they now measure the model's biomass drift at the state
-they stop on, and say so. Where that drift is above `0.05`/year — the tolerance
-`isSteady()` uses — the state is not a fixed point, and the `"convergence"`
-attribute records `termination = "distance_tolerance"` (the distance criterion,
-and only that, was met) with `attractor = NA`:
+Previously the resource capacity was rebuilt but the calculated species
+parameters and `search_vol` were left at the values for the old resource:
 
 ```r
-conv <- attr(steady(params, tol = 1e3), "convergence")
-conv$termination   # "distance_tolerance"
-conv$attractor     # NA — not a fixed point
-conv$residual      # how fast it is still moving, in 1/year
+params <- newMultispeciesParams(sp)
+resource_params(params)$lambda <- 2.2
+
+# These now follow the new lambda automatically
+species_params(params)$q
+species_params(params)$gamma
 ```
 
-The successful case is `termination = "residual_tolerance"` with
-`attractor = "fixed_point"`. Nothing errors or warns in either case; code that
-ignores the attribute is unaffected.
+If existing code deliberately wanted to keep the old values, record them as
+given before changing the resource:
 
-The new `tuneSteadyState()` and `findSteadyState()` take the stricter line: a
-run there does not stop until the drift is within `residual_tol` as well
-(default `0.05`/year), and carries on to `t_max` otherwise, reporting
-
-```
-#> Simulation run did not converge after 100 years. The distance function
-#> returned 0.0002, which is below the distance tolerance, but the biomasses are
-#> still changing at up to 0.4 per year, which is above the residual tolerance,
-#> so this state is not a fixed point.
+```r
+given <- given_species_params(params)
+given$q <- species_params(params)$q
+given$gamma <- species_params(params)$gamma
+given_species_params(params) <- given
+resource_params(params)$lambda <- 2.2
 ```
 
-The remedy there is nearly always to look at what is moving, with
-`plot(getSteadyResidual(params))`, rather than to loosen `residual_tol`. Pass
-`t_max = t_check` to stop after a single check, or `residual_tol = Inf` for the
-wrappers' rule.
+### `setExtMort()` warns when `z0pre` or `z0exp` is ignored
 
-<!-- agent-only -->
-If a user reports that `steady()` has become slow, this is **not** the cause —
-its stopping rule is untouched. Check `t_max`, the model size, and whether they
-have switched to `tuneSteadyState()`, which is where the stricter rule lives.
-<!-- /agent-only -->
+The `z0pre` and `z0exp` arguments of `setExtMort()` are used only to calculate
+values of the `z0` species parameter that are not present in
+`given_species_params()`. If `z0` is given for every species, calls such as
 
-### The steady-state run advances time like `project()` does
-
-`steady()` and `projectToSteady()` broke the run into blocks of `t_per` years,
-and each block used to start its clock again at `t = 0`. A rate function or a
-component's dynamics function that reads `t` therefore saw the same short
-interval over and over instead of a clock that runs. Seasonal forcing, a
-time-dependent external mortality, or anything else registered with
-`setRateFunction()` or `setComponent()` that depends on `t` was affected; the
-result differed from `project()` over the same period and could not settle onto
-a forced cycle.
-
-The clock now runs from 0 to the end of the run, exactly as in `project()`.
-Results move for models with time-dependent dynamics, and the new numbers are
-the right ones. Models whose rates do not depend on `t` — which is nearly all of
-them — are unaffected to the last digit.
-
-### `steady()` reports the tolerance it reached rather than announcing convergence
-
-`steady()` and `projectToSteady()` used to end a successful run with
-
-```
-#> Convergence was achieved in 12 years.
+```r
+params <- setExtMort(params, z0pre = 2)
+params <- setParams(params, z0exp = -0.25)
 ```
 
-They now say what was actually tested — the distance function dropped below
-`tol`, which is not the same thing as having reached a fixed point — and they
-report the biomass drift every time rather than only when it is large:
+were accepted but changed nothing. They now warn that the arguments were
+ignored. `reset = TRUE` does not make them applicable: it hands the
+external-mortality array back to the species parameters but does not remove the
+given `z0` values.
 
+Set `z0` explicitly when changing an existing model:
+
+```r
+given_species_params(params)$z0 <- 2 * species_params(params)$w_inf^(-0.25)
 ```
-#> Reached the convergence tolerance after 12 years. The biomasses change at up
-#> to 3.2e-05 per year.
-```
 
-Code that matched the old wording needs the new string: an `expect_message()` in
-an extension package's tests, or a script grepping the output. In a script the
-`"convergence"` attribute is the better check anyway, since `info_level = 0`
-suppresses the message entirely.
+The arguments still work wherever `z0` is not given. A `z0` value present only
+in `species_params()` is the cached result of an earlier calculation and is
+recalculated. If either argument was supplied explicitly, the newly calculated
+`z0` values are recorded in `given_species_params()` so that they survive later
+rebuilds. Values calculated from the default `z0pre = 0.6` and
+`z0exp = n - 1` remain calculated parameters and are not recorded there (#493).
 
-The same reasoning reshaped that attribute; see *The convergence attribute has a
-new shape* above. Nothing in it now reads as a promise that the state is a fixed
-point unless it is one: `attractor` is the field that answers that, and it is
-set from the measured drift.
+### One report, one switch
+
+Nearly everything mizer says while building or changing a model now goes
+through the same mechanism, including the reports in `steady()`,
+`projectToSteady()`, `validParams()`, `setInteraction()`,
+`setReproduction()`, `setResource()`, `newTraitParams()`,
+`newSingleSpeciesParams()` and `plotYieldObservedVsModel()`. Two consequences
+for existing code:
+
+- **`info_level = 0` now means silence.** Reports that were plain `message()`
+  calls ignored `info_level` altogether and appeared anyway; they no longer do.
+  If your code relied on seeing one of them, drop the `info_level = 0`.
+- **Reports are collected and given at the end of the call**, one message and
+  one warning rather than a stream. A test doing `expect_message()` on an
+  individual report inside a longer call may need adjusting, and the text now
+  arrives with any others in the same message.
 
 ### The steady-state finders have new names
 
@@ -627,8 +523,7 @@ params <- findSteadyState(params)
 ```
 
 It is called "settled" rather than "steady" because a run may equally settle on
-a limit cycle, which is what the `settled` field of the `"convergence"`
-attribute has always meant.
+a limit cycle.
 
 Both finders gained a `solver` argument. The default `solver = "project"` runs
 the dynamics until they settle, which is the old behaviour.
@@ -663,49 +558,163 @@ code, plus the three arguments above.
 Because the wrappers do not warn, a user running old code sees no signal at all.
 **Do not tell them their code is about to break; it is not.** Suggest the new
 name when you are already editing the line.
-
-Both wrappers are still S3 generics with `MizerParams` methods, so an extension
-package that defines `steady.MyClass` or `projectToSteady.MyClass` keeps
-dispatching. A package that wants the new names should add
-`tuneSteadyState.MyClass` / `findSteadyState.MyClass` methods rather than move
-the old ones.
 <!-- /agent-only -->
 
-### `getStability()` checks that it was given a steady state
+### The convergence attribute has a new shape
 
-Both `getStability()` and `getOscillationModeSim()` linearise the dynamics *at*
-`initialN(params)`. If that state is not a fixed point, the eigenvalues describe
-the neighbourhood of a point the model is not sitting at and the verdict on
-stability is meaningless. Both now warn in that case. Run
-`findSteadyState(params, solver = "newton")` first, or silence with
-`options(mizer_info_level = 0)` if you know what you are doing.
+The `"convergence"` attribute attached by `projectToSteady()` and `steady()`
+used to carry `type` and `settled`. It now carries three fields in their place,
+because those two were being read as one answer to three different questions:
 
-### The steady-state and stability tools say that they cover fish and resource
+| Field | Answers | Values |
+|---|---|---|
+| `termination` | Why the run stopped | `"residual_tolerance"`, `"distance_tolerance"`, `"cycle_detected"`, `"time_limit"`, `"extinction"`, and from the Newton solver `"solver_converged"`, `"solver_failed"` |
+| `converged` | Whether the solver met its own criterion | `TRUE`/`FALSE` |
+| `attractor` | What the state reached *is* | `"fixed_point"`, `"limit_cycle"`, `NA` |
+
+`distance`, `years`, `period` and `amplitude` are unchanged, and there is a new
+`residual` (the largest relative rate of biomass change at the state reached,
+in 1/year) and `extinct` (a character vector naming any species that went
+extinct during the run, or `character(0)` if none).
+
+Code that tested `conv$type == "steady"` or `conv$settled` needs updating, and
+so does any `expect_named()` or `names()` check on the attribute. The
+translation:
+
+```r
+# old
+if (conv$settled && conv$type == "below_tolerance") ...
+# new — the question is almost always about the state, not the run
+if (identical(conv$attractor, "fixed_point")) ...
+```
+
+`attractor` is the only one of the three that may be read as a claim that the
+model is at a steady state: it is set from the measured biomass drift, so it is
+`"fixed_point"` only where that drift is within tolerance. `converged` says the
+numerics went well, which is a different thing and is why a limit cycle could
+previously be reported as a converged fixed point.
+
+**`steady()` and `projectToSteady()` still stop as soon as the distance function
+drops below `tol`.** Their stopping rule has not changed, and a script that
+relies on a loose `tol` to get a quick, rough run still gets one. What is new is
+that they measure the model's biomass drift at the state they stop on, and
+record it. Where that drift is above `0.05`/year the state is not a fixed point,
+and the attribute says so:
+
+```r
+conv <- attr(steady(params, tol = 1e3), "convergence")
+conv$termination   # "distance_tolerance" — that criterion, and only that, was met
+conv$attractor     # NA — not a fixed point
+conv$residual      # how fast it is still moving, in 1/year
+```
+
+The successful case is `termination = "residual_tolerance"` with
+`attractor = "fixed_point"`. Nothing errors or warns in either case; code that
+ignores the attribute is unaffected.
+
+The new `tuneSteadyState()` and `findSteadyState()` take the stricter line: a
+run there does not stop until the drift is within `residual_tol` as well
+(default `0.05`/year), and carries on to `t_max` otherwise, reporting
+
+```
+#> Simulation run did not converge after 100 years. The distance function
+#> returned 0.0002, which is below the distance tolerance, but the biomasses are
+#> still changing at up to 0.4 per year, which is above the residual tolerance,
+#> so this state is not a fixed point.
+```
+
+The remedy there is nearly always to look at what is moving, with
+`plot(getSteadyResidual(params))`, rather than to loosen `residual_tol`. Pass
+`t_max = t_check` to stop after a single check, or `residual_tol = Inf` for the
+wrappers' rule.
+
+<!-- agent-only -->
+If a user reports that `steady()` has become slow, this is **not** the cause —
+its stopping rule is untouched. Check `t_max`, the model size, and whether they
+have switched to `tuneSteadyState()`, which is where the stricter rule lives.
+<!-- /agent-only -->
+
+### `steady()` reports the tolerance it reached rather than announcing convergence
+
+`steady()` and `projectToSteady()` used to end a successful run with
+
+```
+#> Convergence was achieved in 12 years.
+```
+
+They now say what was actually tested — the distance function dropped below
+`tol`, which is not the same thing as having reached a fixed point — and they
+report the biomass drift every time rather than only when it is large:
+
+```
+#> Reached the convergence tolerance after 12 years. The biomasses change at up
+#> to 3.2e-05 per year.
+```
+
+Where the distance function is satisfied but the drift is not negligible, the
+message adds `Reduce the tolerance on the distance function to converge
+further.` It is a message, not a warning, because convergence at the `tol` you
+asked for did happen.
+
+Code that matched the old wording needs the new string: an `expect_message()`
+in a test, or a script grepping the output. In a script the `"convergence"`
+attribute is the better check anyway, since `info_level = 0` suppresses the
+message entirely.
+
+### The steady-state run advances time like `project()` does
+
+`steady()` and `projectToSteady()` broke the run into blocks of `t_per` years,
+and each block used to start its clock again at `t = 0`. A rate function or a
+component's dynamics function that reads `t` therefore saw the same short
+interval over and over instead of a clock that runs. Seasonal forcing, a
+time-dependent external mortality, or anything else registered with
+`setRateFunction()` or `setComponent()` that depends on `t` was affected; the
+result differed from `project()` over the same period and could not settle onto
+a forced cycle.
+
+The clock now runs from 0 to the end of the run, exactly as in `project()`.
+Results move for models with time-dependent dynamics, and the new numbers are
+the right ones. Models whose rates do not depend on `t` — which is nearly all of
+them — are unaffected to the last digit.
+
+### `projectToSteady()` ignores initial transients
+
+To decide whether a simulation has settled onto a limit cycle,
+`projectToSteady()` calculates the autocorrelation of a fine-resolution biomass
+series. Previously it used the entire history from the start of the run. A large
+initial transient could therefore dominate the autocorrelation and obscure a
+cycle that had settled more recently. The autocorrelation step now uses only the
+second half of the series (or the most recent 20 samples if the series is
+shorter). A cycle will be found earlier, and some cycles that were previously
+missed entirely will now be correctly reported.
+
+### The steady-state tools hold other components fixed
 
 `tuneSteadyState()` holds the components registered with `setComponent()` at
 their stored values while it solves for the spectra, and puts their dynamics
-back afterwards without solving or rebalancing them. `getStability()` and
-`getDiscreteStability()` likewise give the Jacobian a row for every fish cell
-and every resource cell and none for any component. That has always been true
-and was never said, so a model built with `setComponent()` could come back
-described as being at a fixed point of dynamics that had not been solved.
+back afterwards without solving them. The stability analyses likewise give the
+Jacobian a row for every fish cell and every resource cell and none for any
+component. That has always been true and was never said, so a model built with
+`setComponent()` could come back described as being at a fixed point of dynamics
+that had not been solved.
 
-Both now warn when they meet a component whose `dynamics_fun` is not
+Mizer now warns when it meets a component whose `dynamics_fun` is not
 `constant_other`:
 
 ```
 #> The component `detritus` has dynamics of their own, and mizer's steady-state
 #> and stability machinery covers the consumers and the resource only: it is
-#> held at the stored value throughout.
+#> held at the stored value throughout and is not included in the biomass drift
+#> that mizer reports. See `attr(getSteadyResidual(params), "other")` for its
+#> rate of change.
 ```
 
 Nothing is refused: the analysis is the right one whenever the component is
 slaved to the fish or moves on a very different timescale, and only the user
-knows which. What has changed is that the assumption is now visible, and that
-the `residual` in the `"convergence"` attribute — which *does* cover the
-components — is measured on the model that is actually returned. Use
-`findSteadyState(solver = "project")` where the components need to settle too:
-the projection advances them like everything else and is not restricted.
+knows which. What has changed is that the assumption is now visible. Use
+`findSteadyState(solver = "project")`, or `projectUntilSettled()` for the
+trajectory, where the components need to settle too: the projection advances
+them like everything else and is not restricted.
 
 A model with a custom `resource_dynamics` and no matching
 `balance_<dynamics>()` function gets a second warning from `tuneSteadyState()`,
@@ -720,138 +729,99 @@ steady cannot be derived:
 
 This too used to happen silently. Supply a `balance_<dynamics>()` function
 (see `balance_resource_semichemostat()` for the shape of one), or read the
-reported residual and decide whether the drift matters.
+reported residual and decide whether the drift matters. `resource_constant()` is
+exempt: it hands back the abundance it was given, so there is nothing to
+rebalance.
 
-An extension package whose tests assert that these calls are silent will see
-them fail. That is the point of the change; suppress with
-`options(mizer_info_level = 0)` where the assumption is deliberate.
+Tests that assert that these calls are silent will see them fail. That is the
+point of the change; suppress with `options(mizer_info_level = 0)` where the
+assumption is deliberate.
 
-### `steady()` converges under the `van_leer` flux scheme
+### `summary()` reports the steady state
 
-On a model whose `second_order_w()` selects the `"van_leer"` flux, `steady()`
-used to fall into a limit cycle instead of converging: the flux limiter weights
-flipped from one cell to the next between iterations, and the iteration chased
-itself. The limiter is now relaxed with an exponential moving average, and the
-run converges (#522).
+`summary()` of a `MizerParams` object has a new block:
 
-Code that worked around this — a `steady()` call wrapped in `try()`, a hand-set
-`t_max`, or a fall-back to the default upwind flux — is no longer needed. The steady state it now
-reaches is the one the `van_leer` discretisation actually has, so it differs
-from the upwind steady state the workaround was settling on; recalibrate rather
-than treat the difference as a regression.
-
-### `compareParams()` compares small parameters properly
-
-`compareParams()` now uses a relative tolerance for species parameters, so
-small-magnitude parameters such as `gamma` (~1e-8) are no longer treated as equal
-when they differ by up to ~10%. Comparisons that previously reported two models
-as identical may now report differences — those differences were always there.
-
-### Resource scalars refresh calculated `gamma` and `q`
-
-The resource power law is also the reference spectrum used to calculate search
-volume parameters. Changing `lambda` through `resource_params<-()` or
-`setResource()` now recalculates every `q` and `gamma` entry that mizer owns;
-changing `kappa` recalculates every mizer-owned `gamma`. A value you supplied
-explicitly remains protected, including when only some species in a column were
-given (#497).
-
-Previously the resource capacity was rebuilt but the calculated species
-parameters and `search_vol` were left at the values for the old resource:
-
-```r
-params <- newMultispeciesParams(sp)
-resource_params(params)$lambda <- 2.2
-
-# These now follow the new lambda automatically
-species_params(params)$q
-species_params(params)$gamma
+```
+Steady state:
+	biomass drift:	3.2e-05 /year	(at steady state)
 ```
 
-If existing code deliberately wanted to keep the old values, record them as
-given before changing the resource:
+Code that parses the output of `summary()` by line position needs updating. The
+same number is available directly as `rowSums(getSteadyResidual(params))`.
 
-```r
-given <- given_species_params(params)
-given$q <- species_params(params)$q
-given$gamma <- species_params(params)$gamma
-given_species_params(params) <- given
-resource_params(params)$lambda <- 2.2
-```
+### The `match…()` functions announce that they broke the steady state
 
-### Defaults for `gamma` and `f0` ignore a hand-set search volume
+`matchBiomasses()`, `matchNumbers()` and `matchGrowth()` now
+report that they have moved the model off its steady state. This is a message,
+so `info_level = 0` or `options(mizer_info_level = 0)` silences it, as does the
+`info_level` argument, which `matchGrowth()` gains and which `matchBiomasses()`
+and `matchNumbers()` previously accepted but ignored.
 
-`get_gamma_default()` works out how much energy is available to a predator by
-giving it a search volume coefficient of 1. It used to obtain that search volume
-by calling `setSearchVolume()`, which refuses to recalculate a `search_vol`
-array you have set by hand — so mizer's own internal call was blocked along with
-yours, and the available energy was measured with *your* array. The resulting
-`gamma` was wrong by whatever factor separated your array from the unit-gamma
-one, which in a realistic model is many orders of magnitude. `get_f0_default()`,
-the inverse, had the same problem. Both now build the search volume they need
-directly from the species parameters (#488).
+The `calibrate…()` functions and `scaleModel()` say nothing, because they do not
+break the steady state: they apply one overall scaling factor, which is an exact
+symmetry of the model. If your workflow re-ran `steady()` after every
+`calibrate…()` step, that step was never necessary.
 
-```r
-sv <- search_vol(params)
-search_vol(params) <- sv * 10          # freeze the search volume
+`matchNumbers()` also gains the empty-selection guard that `matchBiomasses()`
+already had. Its own guard could never fire, so when it had nothing to match —
+no `number_observed` values, or none for the species you asked for — it left the
+abundances alone but still called `setBevertonHolt()`, updated `time_modified`
+and announced that it had moved the model off its steady state. It now returns
+the model unchanged, as `matchBiomasses()` always did. Code that relied on the
+incidental re-tuning of the reproduction parameters should call
+`setBevertonHolt()` itself.
 
-given_species_params(params)$gamma <- NA   # ask mizer to recalculate gamma
+### Fixes under the second-order size scheme
 
-species_params(params)$gamma
-#> Used to come back ~1e9 times too large; now the same value you would
-#> get without the frozen search volume.
-```
+These all concern a model that has opted in to second-order bin-averaging or to
+the `van_leer` flux with `second_order_w()`. **On the default first-order scheme
+nothing in this section changes anything.** Under the second-order scheme,
+several functions were hand-rolling a first-order sum over the size grid instead
+of using the model's own quadrature, and are now consistent with it:
 
-If you have a model in which you set `search_vol` by hand and then let mizer
-fill in a missing `gamma` or `f0`, that model's species parameters were wrong
-and change with this release. Note that the recalculated `gamma` still has no
-effect on the model while the search volume stays frozen — mizer now warns you
-about that separately, see "Species parameter setters distinguish edits from
-declarations" above.
-Call `setSearchVolume(params, reset = TRUE)` to put the search volume back under
-the control of the species parameters.
+- **`getDiet(proportion = FALSE)`** was applying the prey-bin quadrature twice,
+  making it uniformly too large by a factor `(1 + beta) / 2`, where `beta` is
+  the grid ratio — 9.7% for `NS_params`. Summing the diet over prey now
+  reproduces `getEncounter() * (1 - getFeedingLevel())` (#474).
+  `getDiet(proportion = TRUE)`, the default, was unaffected: the factor was
+  uniform and divided out.
+- **`getTrophicLevel()`** built its numerator and denominator from different
+  quadratures, so reported trophic levels were off by up to 0.06. A predator
+  whose prey all have trophic level 1 now comes out at exactly 2 (#474).
+- **`getN(params, min_w = ...)`** now bin-averages the size-range window, so the
+  bin straddling `min_w` or `max_w` contributes only partially — as
+  `getBiomass()` already did. Numbers over a restricted size range therefore
+  change slightly; over the full size range nothing changes (#494).
+- **`calibrateBiomass()`, `calibrateNumber()`, `matchNumbers()`,
+  `plotBiomassObservedVsModel()` and `plotYieldObservedVsModel()`** each wrote
+  out their own sum over the size grid and cut the size range at a bin boundary.
+  The calibration functions therefore left the abundances at values that
+  disagreed with the `getBiomass()` or `getN()` you would check them against,
+  and a species matched to its observed biomass was then plotted off the 1:1
+  line. All five now integrate the same way `getBiomass()`, `getN()` and
+  `getYield()` do, so a matched species really does come out at its observation
+  (#504, #529). `plotYieldObservedVsModel()` is where the size of the error
+  matters: its model yields were 10-20% below `getYield()`, and the total
+  relative error in the plot caption is computed from them, so it told you the
+  model under-predicted the yields when it did not. If you have read a yield
+  calibration off that plot, re-read it.
+- **`plot()` on an `ArrayTimeBySpeciesBySize`** took its time slice by hand and
+  lost the array's `representation` tag, so a bin-averaged quantity such as
+  `getFMort(sim)` or `getFeedingLevel(sim)` was drawn at the left bin edges
+  instead of the geometric bin centres where it lives — one bin to the left of
+  the right place. Only the drawn location moves; the values are unchanged.
+- **`steady()` under the `van_leer` flux** used to fall into a limit cycle
+  instead of converging: the flux limiter weights flipped from one cell to the
+  next between iterations, and the iteration chased itself. The limiter is now
+  relaxed with an exponential moving average, and the run converges (#522). A
+  workaround — a `steady()` call wrapped in `try()`, a hand-set `t_max`, or a
+  fall-back to the default upwind flux — is no longer needed. The steady state
+  it now reaches is the one the `van_leer` discretisation actually has, so it
+  differs from the upwind steady state the workaround was settling on;
+  recalibrate rather than treat the difference as a regression.
 
-### `f0` is always validated
-
-Every non-missing target feeding level `f0` must now be finite and in the
-interval `[0, 1)`, whether or not a search-volume coefficient `gamma` is also
-supplied. Previously `f0 = 1` divided by zero when mizer calculated `gamma`,
-silently creating an infinite `gamma` and a non-finite `search_vol`; values
-above 1 created negative search volumes. If `gamma` was supplied explicitly,
-the same invalid `f0` could instead be accepted and ignored.
-
-If code now errors here, choose a physically attainable feeding level below 1.
-When `gamma` is the parameter you intend to control, omit the `f0` value or use
-a valid value; `gamma` will still take precedence (#517).
-
-### `setExtMort()` warns when `z0pre` or `z0exp` is ignored
-
-The `z0pre` and `z0exp` arguments of `setExtMort()` are used only to calculate
-values of the `z0` species parameter that are not present in
-`given_species_params()`. If `z0` is given for every species, calls such as
-
-```r
-params <- setExtMort(params, z0pre = 2)
-params <- setParams(params, z0exp = -0.25)
-```
-
-were accepted but changed nothing. They now warn that the arguments were
-ignored. `reset = TRUE` does not make them applicable: it hands the
-external-mortality array back to the species parameters but does not remove the
-given `z0` values.
-
-Set `z0` explicitly when changing an existing model:
-
-```r
-given_species_params(params)$z0 <- 2 * species_params(params)$w_inf^(-0.25)
-```
-
-The arguments still work wherever `z0` is not given. A `z0` value present only
-in `species_params()` is the cached result of an earlier calculation and is
-recalculated. If either argument was supplied explicitly, the newly calculated
-`z0` values are recorded in `given_species_params()` so that they survive later
-rebuilds. Values calculated from the default `z0pre = 0.6` and
-`z0exp = n - 1` remain calculated parameters and are not recorded there (#493).
+If you have published absolute diet values, trophic levels or calibrated
+abundances computed under `second_order_w`, they need recomputing.
 
 ### `setParams()` rejects arguments it does not use
 
@@ -940,13 +910,6 @@ stored in the object.
 
 <!-- agent-only -->
 
-The `get` forms are no longer S3 generics of their own; each is now bound to the
-same function object as the bare name (`getExtMort <- ext_mort`). Dispatch still
-works for a custom class, but on the bare name, so an extension that defined
-`getExtMort.MyClass` or `getInteraction.MizerParams` must rename its method to
-`ext_mort.MyClass` or `interaction_matrix.MizerParams`. A method on the bare
-name has always worked and keeps working through both names.
-
 Because the aliases no longer warn, a user running old code sees no signal at
 all. Do not tell them their code is about to break; it is not. Suggest the new
 name when you are already editing the line.
@@ -957,24 +920,6 @@ than `encounter_kernel()` — the rename does not change that distinction, but i
 makes the two names look more alike than they used to.
 
 <!-- /agent-only -->
-
-### `yield_observed` belongs to the gear parameters
-
-`plotYieldObservedVsModel()` now takes the observed yield from the
-`yield_observed` column of `gear_params()`, where the yield is given for each
-gear-species pair and the plot adds it up over the gears:
-
-```r
-gear_params(params)["Cod, Otter", "yield_observed"] <- 3e11
-plotYieldObservedVsModel(params)
-```
-
-Nothing breaks if your model keeps `yield_observed` among the species
-parameters: a species that has no observation in the gear parameters takes its
-value from there. What changes is that a model following mizer's own advice —
-`given_species_params<-()` has been telling you to use `gear_params()<-` —
-now works, where before the plot stopped with "You have not provided values for
-the column 'yield_observed'".
 
 ### `matchYields()` and `calibrateYield()` have been removed
 
@@ -997,13 +942,19 @@ total yield summed over all species matched the total observation. If you were
 using it to set the scale of your model, use `calibrateBiomass()` with observed
 biomasses, or `scaleModel()` with a factor of your own choosing.
 
+### `compareParams()` compares small parameters properly
+
+`compareParams()` now uses a relative tolerance for species parameters, so
+small-magnitude parameters such as `gamma` (~1e-8) are no longer treated as equal
+when they differ by up to ~10%. Comparisons that previously reported two models
+as identical may now report differences — those differences were always there.
+
 ### The cheatsheet articles are now called guides
 
 The topic articles that used to be called cheatsheets are called guides. A
 cheatsheet reminds you of something you already know; these articles assume no
 prior knowledge, so the name was wrong. Each article is now named after the
-agent skill it is generated from, so that a topic has one name rather than
-three, and its title is that skill's own heading:
+agent skill it is generated from, and its title is that skill's own heading:
 
 | Old article | New article | New title |
 |---|---|---|
@@ -1016,37 +967,7 @@ three, and its title is that skill's own heading:
 | `cheatsheet-analysis-and-plotting` | `guide-analyse-and-plot` | Guide: Analysing and plotting mizer results |
 | `cheatsheet-stability` | `guide-analyse-stability` | Guide: Analysing dynamic stability |
 | `cheatsheet-extending-mizer` | `guide-extend-mizer` | Guide: Extending mizer |
-
-"Using mizer extension packages" and "Creating a mizer extension package" are
-now generated from skills too, so they are named after those skills like the
-rest:
-
-| Old article | New article | New title |
-|---|---|---|
 | `using-extension-packages` | `guide-use-extension-packages` | Guide: Using mizer extension packages |
-| `creating-extension-packages` | `guide-create-extension-package` | Guide: Creating a mizer extension package |
-
-The packaging article became a skill so that an agent helping you package an
-extension can find it; it was previously the only extension document that was
-not generated from one. Everything in the `extend-mizer` skill that only matters
-once you share an extension moved into it at the same time, so the articles split
-along that line: the mechanisms for changing mizer's dynamics in
-**guide-extend-mizer**, and everything about turning that into a package other
-people can install in **guide-create-extension-package**.
-
-Its advice on marker classes was also corrected. It still told you to define
-them with `setClass("myExtension", contains = "MizerParams")`, which mizer
-3.2 made unnecessary and which actively prevents your package from being chained
-with another, because a sealed class cannot be re-parented into the chain. Let
-mizer create the classes; see the `create-extension-package` skill.
-
-"Extending mizer" and "Guide: Extending mizer" were two articles on one topic,
-the guide a short companion to the article. They are now a single guide,
-generated from the `extend-mizer` skill, holding both the article's worked
-examples and the guide's rules on quadrature schemes and discontinuous rates:
-
-| Old article | New article | New title |
-|---|---|---|
 | `extending-mizer` | `guide-extend-mizer` | Guide: Extending mizer |
 
 On the website the old addresses redirect, so a bookmark or a link in your own
@@ -1060,22 +981,13 @@ vignette("cheatsheet-fishing")
 vignette("guide-set-up-fishing")
 ```
 
+One of those rows is more than a rename. "Extending mizer" and "Guide:
+Extending mizer" were two articles on one topic; they are now the single
+**guide-extend-mizer**, holding both the article's worked examples and the
+guide's rules on quadrature schemes and discontinuous rates.
+
 The `build-multispecies-model` skill was renamed to **build-model** in the same
 pass: it covers `newTraitParams()`, `newCommunityParams()` and
 `newSingleSpeciesParams()` as well, so its name claimed a narrower scope than it
 has. If you install mizer's skills with `mizerAgents::setup_mizer_agent()`,
 re-run it to pick up the new name.
-
-### `projectToSteady()` ignores initial transients
-
-To decide whether a simulation has settled onto a limit cycle,
-`projectToSteady()` calculates the autocorrelation of a fine-resolution biomass
-series. Previously it used the entire history from the start of the run. A large
-initial transient could therefore dominate the autocorrelation and obscure a
-cycle that had settled more recently.
-In mizer 3.3, the autocorrelation step uses only the second half of the series
-(or the most recent 20 samples if the series is shorter). This allows it to
-ignore the initial transient. A cycle will now be found earlier (because the
-check does not wait for the long-settled cycle to outweigh the transient), and
-some cycles that were previously missed entirely will now be correctly reported.
-
