@@ -4,6 +4,16 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
+> **The Ecopath-to-mizer core now lives in
+> [mizerFromEcopath](https://github.com/gustavdelius/mizerFromEcopath).**
+> mizerEcopath depends on it, so `library(mizerEcopath)` still gives you
+> everything — `addEcopathParams()`, `matchCatch()`, `matchDiet()`,
+> `getConsumption()`, `celtic_params` and the rest. What this package adds on
+> top is the interactive tuning gadget `tuneEcopath()`, an allometric
+> alternative to the von Bertalanffy starting model, and a growth-diffusion /
+> age-at-size module.
+
+
 The `mizerEcopath` package provides a framework for setting up and calibrating multi-species size spectrum models using the [mizer](https://sizespectrum.org/mizer/) package. The size spectra are obtained by balancing the effects of growth and mortality. In that sense it is similar to the [Ecopath](https://ecopath.org/) model, but where Ecopath is only concerned with balancing at the species level, mizerEcopath balances at each size class of each species.
 
 mizerEcopath offers tools to assist in translating empirical observations into steady-state size spectrum models that are ecologically coherent. If one already has an Ecopath model, it is possible to start from parameters of that model.

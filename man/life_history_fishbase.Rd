@@ -21,6 +21,6 @@ life_history_fishbase
 }
 \description{
 Life history parameters for Celtic Sea species obtained from FishBase
-using \code{\link[=fillDefaultsFromFishBase]{fillDefaultsFromFishBase()}}.
+using \code{\link[mizerFromEcopath:fillDefaultsFromFishBase]{mizerFromEcopath::fillDefaultsFromFishBase()}}.
 }
 \keyword{datasets}

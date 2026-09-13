@@ -1,4 +1,9 @@
 url: https://gustavdelius.github.io/mizerEcopath/
+
+navbar:
+  structure:
+    right: [search, github]
+
 template:
   bootstrap: 5
   math-rendering: mathjax
@@ -8,38 +13,6 @@ build:
   lazy: false
 
 reference:
-- title: "Building model"
-  desc: >
-    Functions to prepare model parameters and control interaction states.
-  contents:
-  - newAllometricParams
-  - newVonBertalanffyParams
-  - isAllometric
-  - makeInteracting
-  - makeNoninteracting
-  - setFeedingLevel
-  - setFeedingLevels
-  - bindParams
-- title: "Calibrating model"
-  desc: >
-    Tools to match model output to empirical observations.
-  contents:
-  - matchCatch
-  - matchConsumption
-  - matchGonadicProportionOnce
-  - matchDiet
-  - alignResource
-  - setResourceInteraction
-- title: "Working with Ecopath"
-  desc: >
-    Functions for importing and validating data.
-  contents:
-  - addEcopathParams
-  - addEcopathCatchTotal
-  - reduceEcopathDiet
-  - validEcopathParams
-  - validEcopathCatch
-  - fillDefaultsFromFishBase
 - title: "Shiny gadget"
   desc: >
     Interactive interface for tuning mizer model parameters.
@@ -50,27 +23,6 @@ reference:
   - tuningGadget
   - has_concept("gadget tabs")
   - has_concept("gadget controls")
-- title: "Calculating rates"
-  desc: >
-    Extract rates and other parameters from the model.
-  contents:
-  - getConsumption
-  - getUnassimilated
-  - getProduction
-  - getTotalProduction
-  - getSomaticProduction
-  - getGonadicProduction
-  - getOffspringProduction
-  - getReproductiveLoss
-  - getRespiration
-  - getMetabolicRespiration
-  - getEcotrophicEfficiency
-  - getM0B
-  - getM2B
-  - getZB
-  - getDietMatrix
-  - getResourceEncounterRate
-  - getReproductiveEfficiency
 - title: "Plotting"
   desc: >
     Basic visualisations
@@ -80,20 +32,8 @@ reference:
   desc: >
     Internal tools to support calibration and simulation.
   contents:
-  - prepare_data
-  - update_params
-  - precompute_weights
-  - valid_catch
   - addCatch
   - has_concept("helper")
-- title: "Obsolete?"
-  desc: >
-    Functions retained for compatibility or reference but not in active use.
-  contents:
-  - matchEcopath
-  - matchExtMortOnce
-  - matchProduction
-  - matchRespirationOnce
 - title: "Data sets"
   desc: >
     Example input and output objects for illustrating functions.

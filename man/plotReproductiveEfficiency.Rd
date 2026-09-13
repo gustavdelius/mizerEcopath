@@ -96,6 +96,6 @@ needs to be revisited.
 plotReproductiveEfficiency(celtic_params)
 }
 \seealso{
-\code{\link[=getReproductiveEfficiency]{getReproductiveEfficiency()}} returns the realised efficiency
+\code{\link[mizerFromEcopath:getReproductiveEfficiency]{mizerFromEcopath::getReproductiveEfficiency()}} returns the realised efficiency
 without plotting it, also for a MizerSim object.
 }

@@ -13,7 +13,6 @@
 ^\.gemini$
 ^\.mcp\.json$
 ^\.vscode$
-^vignettes/Celtic Sea Model\.qmd$
 ^vignettes/build\.qmd$
 ^vignettes/Celtic_Sea_Status_Quo_Model\.qmd$
 ^vignettes/diffusion\.qmd$
@@ -22,3 +21,11 @@
 ^vignettes/todo\.qmd$
 ^CLAUDE.md
 ^\.posit/assistant$
+^vignettes/Jess\.qmd$
+^vignettes/.*_files$
+^vignettes/.*\.html$
+^vignettes/\.quarto$
+^AGENTS\.md$
+^GEMINI\.md$
+^MIZER-AGENTS\.md$
+^\.Rprofile$

@@ -1,13 +1,10 @@
-#' @keywords internal
-#' @import mizer ggplot2 dplyr tidyr assertthat shiny rintrojs mizerExperimental
+#' @import mizer ggplot2 dplyr tidyr assertthat shiny rintrojs
+#' @import mizerFromEcopath
+#' @rawNamespace import(mizerExperimental, except = alignResource)
 #' @importFrom methods is
-#' @importFrom utils hasName head tail
-#' @importFrom stats runif median nlminb plogis qlogis rmultinom setNames
-#' @importFrom graphics legend lines rect
-#' @importFrom rlang `:=`
+#' @importFrom stats runif rmultinom setNames
+#' @importFrom utils hasName
 #' @rawNamespace import(plotly, except = last_plot)
-#' @useDynLib mizerEcopath
-#' @importFrom TMB MakeADFun compile dynlib
 #' @md
 #' @keywords internal
 "_PACKAGE"

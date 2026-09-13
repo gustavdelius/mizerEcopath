@@ -75,7 +75,7 @@
 #'
 #' @return A ggplot2 object, or a data frame if `return_data = TRUE`.
 #' @export
-#' @seealso [getReproductiveEfficiency()] returns the realised efficiency
+#' @seealso [mizerFromEcopath::getReproductiveEfficiency()] returns the realised efficiency
 #'   without plotting it, also for a MizerSim object.
 #' @examples
 #' plotReproductiveEfficiency(celtic_params)

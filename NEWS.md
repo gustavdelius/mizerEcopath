@@ -1,3 +1,31 @@
+# mizerEcopath 0.4.0
+
+* **The Ecopath-to-mizer core has moved to the new
+  [mizerFromEcopath](https://github.com/gustavdelius/mizerFromEcopath)
+  package.** mizerEcopath now depends on it, so `library(mizerEcopath)` still
+  puts `matchCatch()`, `getConsumption()`, `celtic_params` and the rest on the
+  search path and no user code needs to change. What stays here is the
+  interactive tuning gadget, the allometric starting model
+  (`newAllometricParams()`, `setFeedingLevels()`), the growth-diffusion and
+  age-at-size module, and the general mizer utilities that touch no Ecopath
+  data (`bindParams()`, `addCatch()`, `plotPreyAvailability()`,
+  `plotReproductiveEfficiency()`, `plotDeathX()`).
+
+* `matchEcopath()`, `matchProduction()`, `matchProductionOnce()`,
+  `matchExtMortOnce()`, `matchRespirationOnce()` and
+  `matchGonadicProportionOnce()` have been removed rather than moved.
+  `matchProductionOnce()` rescaled the metabolic rate without compensating the
+  encounter rate, so it changed the energy available for growth -- on a model
+  from `newVonBertalanffyParams()` it moved somatic growth by up to a factor of
+  four. `matchExtMortOnce()` additionally discarded the result of its own
+  `steady = TRUE` pipe, and `matchGonadicProportionOnce()` referenced an
+  undefined variable.
+
+* `plotYieldVsSizeByGear()` has been removed; it was never exported or called.
+
+* mizerEcopath no longer contains compiled code. The TMB objective used by
+  `matchCatch()` lives in mizerFromEcopath.
+
 # mizerEcopath 0.3.2.9000
 
 * mizerEcopath now requires mizer 3.4.0 and mizerExperimental 3.3.0. All
