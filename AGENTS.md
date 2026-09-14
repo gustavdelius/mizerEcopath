@@ -79,8 +79,14 @@ Vignettes are in `vignettes/` as Quarto (`.qmd`) files. The most important are `
 
 ## Project-Specific Skills
 
-- **`calibrate-with-diet-and-size`** ([`.claude/skills/calibrate-with-diet-and-size/SKILL.md`](file:///.claude/skills/calibrate-with-diet-and-size/SKILL.md)):
-  Build and calibrate a multi-species mizer model from biomass, catch/survey size distributions,
-  growth parameters (von Bertalanffy or allometric), diet matrices, and reference points ($F_{MSY}$)
-  using an invariance-preserving multi-stage workflow. Read this skill before calibrating mizer models
-  against size spectra, diet compositions, or target fishing mortalities.
+- **`build-model-from-ecopath`** — lives with the package it documents, at
+  `../mizerFromEcopath/.claude/skills/build-model-from-ecopath/SKILL.md`.
+  The ordered workflow for turning an Ecopath model into a mizer model: reading
+  the Ecopath exports and the three silent traps in them, mapping
+  juvenile/adult stanzas onto mizer species, and the invariant that decides
+  which Ecopath quantity may be matched with which parameter. Read it before
+  building or debugging an Ecopath-derived model — including one you are about
+  to open in `tuneEcopath()`.
+
+(The previous entry here pointed at `calibrate-with-diet-and-size`, which has
+never existed on disk.)
