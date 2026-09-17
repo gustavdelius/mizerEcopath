@@ -6,7 +6,7 @@
 \alias{mizerEcopath-package}
 \title{mizerEcopath: Building a Mizer version of an Ecopath model}
 \description{
-Tools for creating a mizer model matching averaged observations.
+An interactive Shiny gadget for tuning a mizer model built with mizerFromEcopath, together with a growth-diffusion and age-at-size module and an allometric alternative to the von Bertalanffy starting model.
 }
 \seealso{
 Useful links:

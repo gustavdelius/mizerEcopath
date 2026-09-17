@@ -1,18 +1,22 @@
 Type: Package
 Package: mizerEcopath
 Title: Building a Mizer version of an Ecopath model
-Version: 0.3.2.9000
+Version: 0.4.0
 Authors@R: 
     person("Gustav", "Delius", , "gustav.delius@york.ac.uk", role = c("cre", "aut", "cph"),
            comment = c(ORCID = "0000-0003-4092-8228"))
 Maintainer: Gustav Delius <gustav.delius@york.ac.uk>
-Description: Tools for creating a mizer model matching averaged observations.
+Description: An interactive Shiny gadget for tuning a mizer model built with
+    mizerFromEcopath, together with a growth-diffusion and age-at-size module
+    and an allometric alternative to the von Bertalanffy starting model.
 License: GPL-3
-URL: https://github.com/gustavdelius/mizerEcopath
+URL: https://github.com/gustavdelius/mizerEcopath,
+    https://gustavdelius.github.io/mizerEcopath/
 BugReports: https://github.com/gustavdelius/mizerEcopath/issues
 Depends:
     mizer (>= 3.4.0),
     mizerExperimental (>= 3.3.0),
+    mizerFromEcopath (>= 0.1.0),
     R (>= 4.1)
 Imports:
     assertthat,
@@ -22,24 +26,24 @@ Imports:
     lubridate,
     methods,
     plotly,
-    rlang,
     prompter,
     rintrojs,
     shiny,
     shinyBS,
     shinyjs,
+    stats,
     tidyr,
-    TMB
+    utils
 Suggests:
     pkgdown,
     knitr,
     quarto,
-    rfishbase,
     rmarkdown,
     roxygen2,
     testthat (>= 3.0.0),
     spelling
 Remotes:
+    gustavdelius/mizerFromEcopath,
     sizespectrum/mizer,
     sizespectrum/mizerExperimental
 Encoding: UTF-8
@@ -48,5 +52,4 @@ Roxygen: list(markdown = TRUE)
 VignetteBuilder: quarto
 Config/testthat/edition: 3
 Language: en-GB
-LinkingTo: TMB, RcppEigen
 Config/roxygen2/version: 8.1.0

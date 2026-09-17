@@ -27,8 +27,8 @@
 #'   recover information from log files left over from aborted previous runs.
 #' @param diet An optional diet matrix to display in the Diet tab. If NULL,
 #'   the diet tab will not show observed diet data.
-#' @inheritParams matchCatch
-#' @inheritParams matchDiet
+#' @inheritParams mizerFromEcopath::matchCatch
+#' @inheritParams mizerFromEcopath::matchDiet
 #' @param controls A character vector of names of input parameter control
 #'   sections that should be displayed in the sidebar. See
 #'   [tuningGadget()] for details.
@@ -111,9 +111,6 @@ ecopath_prepare_hook <- function(p) {
     if (!"catch_dist_weight" %in% names(p@gear_params)) {
         p@gear_params$catch_dist_weight <- 1
     }
-    # Determine gonad proportion
-    current <- getGonadicProduction(p) / getProduction(p)
-    p <- set_species_param_default(p, "gonad_proportion", current)
     p <- set_species_param_default(p, "spawning_mu", 0.5)
     p <- set_species_param_default(p, "spawning_kappa", 5)
     p <- set_species_param_default(p, "annuli_min_age", 0)

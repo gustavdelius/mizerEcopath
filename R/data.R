@@ -1,57 +1,3 @@
-#' Example species parameters from a few Celtic Sea species.
-#'
-#' A curated subset of species parameters derived from the Celtic Sea model of Lauria et al. (2016),
-#' as well as arbitrary power-law exponents and stanza mapping dictionary.
-#'
-#' @format A data frame with 12 rows and 18 columns. Key columns include:
-#' \describe{
-#'   \item{species}{Common name of the species}
-#'   \item{w_max}{Maximum body weight (g)}
-#'   \item{w_mat}{Maturity weight (g)}
-#'   \item{age_mat}{Age at maturity (years)}
-#'   \item{a, b}{Length-weight relationship parameters}
-#'   \item{n, p, d}{Allometric exponents for consumption, metabolism, and mortality}
-#'   \item{alpha}{Assimilation efficiency}
-#'   \item{ecopath_groups}{List column mapping Ecopath stanza groups}
-#'   \item{biomass_observed}{Observed biomass (t/km^2) from Ecopath}
-#'   \item{consumption_observed}{Observed consumption (t/km^2/year) from Ecopath}
-#'   \item{production_observed}{Observed production (t/km^2/year) from Ecopath}
-#' }
-#' @name species_params_example
-#' @docType data
-#' @keywords datasets
-"species_params_example"
-
-#' Celtic Sea MizerParams object
-#'
-#' A 12-species MizerParams object for the Celtic Sea, built from the Ecopath
-#' model of Lauria et al. (2016). Used as the main example object in tests and
-#' vignettes.
-#'
-#' @format A MizerParams object with 12 species.
-#' @name celtic_params
-#' @docType data
-#' @keywords datasets
-"celtic_params"
-
-#' Celtic Sea catch size distributions
-#'
-#' Observed catch size distributions from DATRAS survey data for Celtic Sea
-#' species, used to calibrate gear selectivity via [matchCatch()].
-#'
-#' @format A data frame with columns:
-#' \describe{
-#'   \item{length}{Length class (cm)}
-#'   \item{gear}{Survey gear identifier}
-#'   \item{catch}{Observed catch count}
-#'   \item{Scientific_name}{Scientific name}
-#'   \item{species}{Species name matching MizerParams}
-#'   \item{dl}{Width of the length bin (cm)}
-#' }
-#' @name celtic_catch
-#' @docType data
-#' @keywords datasets
-"celtic_catch"
 
 #' Reduced Celtic Sea diet matrix
 #'
@@ -207,7 +153,7 @@
 #' Life history parameters from FishBase
 #'
 #' Life history parameters for Celtic Sea species obtained from FishBase
-#' using [fillDefaultsFromFishBase()].
+#' using [mizerFromEcopath::fillDefaultsFromFishBase()].
 #'
 #' @format A data frame with columns:
 #' \describe{
@@ -266,26 +212,3 @@
 #' @docType data
 #' @keywords datasets
 "survey_length_distribution"
-
-#' Ecopath diet matrix from Lauria et al. (2016)
-#'
-#' A group-level diet composition matrix derived from Lauria et al. (2016),
-#' used as input to `reduceEcopathDiet()`. Columns and rows include juvenile and adult stanzas.
-#'
-#' @format A data frame with predator groups as row names and prey groups as columns.
-#' @name ecopath_diet_example
-#' @docType data
-#' @keywords datasets
-"ecopath_diet_example"
-
-#' Example reduced diet matrix for mizer
-#'
-#' The output of applying `reduceEcopathDiet()` to the example diet matrix.
-#' Rows and columns are matched to `species_params_example$species`.
-#'
-#' @format A matrix with species as both row and column names, giving the proportion of each prey
-#' in each predator’s diet.
-#' @name diet_matrix_example
-#' @docType data
-#' @keywords datasets
-"diet_matrix_example"
